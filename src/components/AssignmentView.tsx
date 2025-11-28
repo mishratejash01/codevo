@@ -18,6 +18,7 @@ interface AssignmentViewProps {
 export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
   const [code, setCode] = useState('# Write your Python code here\n');
   const [activeTab, setActiveTab] = useState('overview');
+  // New state to store the results of the test run
   const [testResults, setTestResults] = useState<Record<string, { output: string; passed: boolean; error?: string | null }>>({});
   const { runCode, loading: pyodideLoading } = usePyodide();
   const { toast } = useToast();
@@ -74,7 +75,6 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Please log in to submit');
 
-      // Run all test cases
       const publicTests = testCases.filter(tc => tc.is_public);
       const privateTests = testCases.filter(tc => !tc.is_public);
 
@@ -147,9 +147,11 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
 
     for (const test of publicTests) {
       const result = await runCode(code, test.input);
+      // Compare output with expected output (trimming whitespace for safety)
       const isPassed = result.success && result.output.trim() === test.expected_output.trim();
       if (isPassed) passed++;
       
+      // Store the full result including output and any errors
       results[test.id] = {
         output: result.error ? result.error : result.output,
         passed: isPassed,
@@ -158,6 +160,7 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
     }
 
     setTestResults(results);
+    // Automatically switch to the Test Cases tab to show results
     setActiveTab('testcases');
 
     toast({
@@ -268,6 +271,7 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
           </TabsContent>
 
           <TabsContent value="testcases" className="p-6 m-0">
+            {/* Pass the new testResults to TestCaseView */}
             <TestCaseView testCases={testCases} testResults={testResults} />
           </TabsContent>
 
