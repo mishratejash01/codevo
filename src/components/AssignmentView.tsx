@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,7 +20,6 @@ interface AssignmentViewProps {
 }
 
 export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: AssignmentViewProps) => {
-  // Initialize with safe default code
   const [code, setCode] = useState<string>('# Write your Python code here\n');
   const [activeTab, setActiveTab] = useState('overview');
   const [consoleOutput, setConsoleOutput] = useState<string>('');
@@ -30,7 +29,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Robust Data Fetching
+  // --- Data Fetching ---
   const { data: assignment, isLoading, error, refetch } = useQuery({
     queryKey: ['assignment', assignmentId],
     queryFn: async () => {
@@ -61,7 +60,6 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     enabled: !!assignmentId
   });
 
-  // Fetch previous submission
   const { data: latestSubmission } = useQuery({
     queryKey: ['submission', assignmentId],
     queryFn: async () => {
@@ -80,19 +78,20 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     enabled: !!assignmentId
   });
 
-  // Safe State Update Effect
+  // --- Effects ---
   useEffect(() => {
     if (latestSubmission?.code) {
       setCode(latestSubmission.code);
     } else {
       setCode('# Write your Python code here\n');
     }
-    // Reset transient UI states when assignment changes
     setTestResults({});
     setConsoleOutput('');
+    // Ensure we start on overview when switching questions
     setActiveTab('overview');
   }, [assignmentId, latestSubmission]);
 
+  // --- Submission Logic ---
   const submitMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -147,7 +146,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     try {
       const result = await runCode(code, '');
       const output = result.error ? `Error:\n${result.error}` : (result.output || 'Code executed successfully.');
-      setConsoleOutput(String(output)); // Ensure string
+      setConsoleOutput(String(output));
     } catch (e) {
       setConsoleOutput('An unexpected error occurred during execution.');
     }
@@ -156,7 +155,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
   const publicTests = testCases.filter(tc => tc.is_public);
   const privateTests = testCases.filter(tc => !tc.is_public);
 
-  // --- SAFE LOADING STATE ---
+  // --- Loading/Error Views ---
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full w-full bg-[#09090b] text-white gap-4">
@@ -166,7 +165,6 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     );
   }
 
-  // --- SAFE ERROR STATE ---
   if (error || !assignment) {
     return (
       <div className="flex flex-col items-center justify-center h-full w-full bg-[#09090b] gap-4 p-6 text-center">
@@ -179,18 +177,18 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
     );
   }
 
+  // --- Main Render ---
+  // FIX: Ensure <Tabs> wraps both the list (header) and the content (body)
   return (
-    <div className="h-full flex flex-col bg-[#09090b] text-white">
-      {/* Tab Header */}
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col bg-[#09090b] text-white">
+      {/* Header Section */}
       <div className="border-b border-white/10 bg-black/20 px-4 py-2 flex items-center justify-between shrink-0 h-14">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
-          <TabsList className="h-9 bg-white/5 border border-white/10 p-1 rounded-lg">
-            <TabsTrigger value="overview" className="text-xs h-7 px-3 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Overview</TabsTrigger>
-            <TabsTrigger value="code" className="text-xs h-7 px-3 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Editor</TabsTrigger>
-            <TabsTrigger value="testcases" className="text-xs h-7 px-3 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Tests</TabsTrigger>
-            <TabsTrigger value="console" className="text-xs h-7 px-3 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Console</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <TabsList className="h-9 bg-white/5 border border-white/10 p-1 rounded-lg">
+          <TabsTrigger value="overview" className="text-xs h-7 px-3 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Overview</TabsTrigger>
+          <TabsTrigger value="code" className="text-xs h-7 px-3 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Editor</TabsTrigger>
+          <TabsTrigger value="testcases" className="text-xs h-7 px-3 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Tests</TabsTrigger>
+          <TabsTrigger value="console" className="text-xs h-7 px-3 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Console</TabsTrigger>
+        </TabsList>
         
         <Button
           variant="outline"
@@ -209,10 +207,11 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
         </Button>
       </div>
 
-      {/* Main Content Area */}
+      {/* Content Section */}
       <div className="flex-1 overflow-hidden relative">
-        <div className="absolute inset-0 overflow-y-auto">
-          <TabsContent value="overview" className="p-6 m-0 h-full animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
+          
+          <TabsContent value="overview" className="p-6 m-0 h-full animate-in fade-in zoom-in-95 duration-200 focus-visible:ring-0">
             <div className="max-w-4xl mx-auto space-y-6 pb-20">
               <div className="flex items-start justify-between">
                 <h1 className="text-2xl font-bold tracking-tight text-white">{assignment.title}</h1>
@@ -250,7 +249,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
             </div>
           </TabsContent>
 
-          <TabsContent value="code" className="m-0 h-full flex flex-col">
+          <TabsContent value="code" className="m-0 h-full flex flex-col focus-visible:ring-0">
             <div className="flex-1 min-h-[300px] relative">
               <CodeEditor value={code} onChange={setCode} />
             </div>
@@ -269,11 +268,11 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
             </div>
           </TabsContent>
 
-          <TabsContent value="testcases" className="p-6 m-0 h-full">
+          <TabsContent value="testcases" className="p-6 m-0 h-full focus-visible:ring-0">
             <TestCaseView testCases={testCases} testResults={testResults} />
           </TabsContent>
 
-          <TabsContent value="console" className="p-0 m-0 h-full">
+          <TabsContent value="console" className="p-0 m-0 h-full focus-visible:ring-0">
             <div className="h-full bg-[#0c0c0c] p-4 font-mono text-sm overflow-auto text-green-400">
               <div className="border-b border-white/10 pb-2 mb-2 text-muted-foreground text-xs flex items-center gap-2">
                 <Terminal className="w-3 h-3"/> Output
@@ -283,6 +282,6 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
           </TabsContent>
         </div>
       </div>
-    </div>
+    </Tabs>
   );
 };
