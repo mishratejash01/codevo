@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface Assignment {
   id: string;
@@ -40,9 +41,9 @@ export const AssignmentSidebar = ({ selectedId, onSelect }: AssignmentSidebarPro
   }, {} as Record<string, Assignment[]>);
 
   return (
-    <ScrollArea className="h-full bg-sidebar border-r border-sidebar-border">
-      <div className="p-4 space-y-2">
-        <h2 className="text-lg font-semibold text-sidebar-foreground mb-4">Modules</h2>
+    <ScrollArea className="h-full bg-transparent">
+      <div className="p-4 space-y-4">
+        <h2 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-4 px-2">Modules</h2>
         {Object.entries(groupedAssignments).map(([category, items]) => (
           <CategoryGroup
             key={category}
@@ -74,22 +75,28 @@ const CategoryGroup = ({
     <div className="space-y-1">
       <Button
         variant="ghost"
-        className="w-full justify-start text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent"
+        className="w-full justify-start text-sm font-medium text-foreground hover:bg-white/5 px-2"
         onClick={() => setExpanded(!expanded)}
       >
-        {expanded ? <ChevronDown className="h-4 w-4 mr-2" /> : <ChevronRight className="h-4 w-4 mr-2" />}
+        {expanded ? <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 mr-2 text-muted-foreground" />}
         {category}
       </Button>
+      
       {expanded && (
-        <div className="ml-6 space-y-1">
+        <div className="ml-4 space-y-1 border-l border-white/10 pl-2">
           {assignments.map((assignment) => (
             <Button
               key={assignment.id}
-              variant={selectedId === assignment.id ? 'secondary' : 'ghost'}
-              className="w-full justify-start text-sm text-sidebar-foreground hover:bg-sidebar-accent"
+              variant="ghost"
+              className={cn(
+                "w-full justify-start text-sm transition-all duration-200 border border-transparent h-9",
+                selectedId === assignment.id 
+                  ? "bg-primary/10 text-primary border-primary/20 shadow-[0_0_15px_rgba(168,85,247,0.15)] font-medium translate-x-1" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/5 hover:translate-x-1"
+              )}
               onClick={() => onSelect(assignment.id)}
             >
-              {assignment.title}
+              <span className="truncate">{assignment.title}</span>
             </Button>
           ))}
         </div>
