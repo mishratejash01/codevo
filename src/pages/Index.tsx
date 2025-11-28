@@ -53,11 +53,17 @@ const Index = () => {
   };
 
   const handleEndExam = () => {
+    // CRITICAL: Clear all saved code drafts when ending the exam
+    sessionStorage.clear();
+    
     toast({
       title: "Exam Submitted",
-      description: "Your responses have been recorded.",
+      description: "Your responses have been recorded. Storage cleared.",
       duration: 5000,
     });
+    
+    // Optional: Redirect to home or result page
+    // navigate('/');
   };
 
   return (
