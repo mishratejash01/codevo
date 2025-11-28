@@ -9,7 +9,7 @@ import { TestCaseView } from './TestCaseView';
 import { usePyodide } from '@/hooks/usePyodide';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Play, Terminal } from 'lucide-react';
 
 interface AssignmentViewProps {
   assignmentId: string;
@@ -18,8 +18,9 @@ interface AssignmentViewProps {
 export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
   const [code, setCode] = useState('# Write your Python code here\n');
   const [activeTab, setActiveTab] = useState('overview');
-  // New state to store the results of the test run
+  const [consoleOutput, setConsoleOutput] = useState<string>('');
   const [testResults, setTestResults] = useState<Record<string, { output: string; passed: boolean; error?: string | null }>>({});
+  
   const { runCode, loading: pyodideLoading } = usePyodide();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -130,6 +131,23 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
     },
   });
 
+  // Simple Run button handler (No test cases)
+  const handleRun = async () => {
+    if (pyodideLoading) return;
+    
+    setConsoleOutput('Running...');
+    setActiveTab('console');
+    
+    const result = await runCode(code, '');
+    
+    if (result.error) {
+      setConsoleOutput(`Error:\n${result.error}`);
+    } else {
+      setConsoleOutput(result.output || 'Code ran successfully (No output).');
+    }
+  };
+
+  // Test Run handler (With test cases)
   const handleTestRun = async () => {
     if (pyodideLoading) {
       toast({ title: 'Python is still loading...', description: 'Please wait a moment' });
@@ -147,11 +165,9 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
 
     for (const test of publicTests) {
       const result = await runCode(code, test.input);
-      // Compare output with expected output (trimming whitespace for safety)
       const isPassed = result.success && result.output.trim() === test.expected_output.trim();
       if (isPassed) passed++;
       
-      // Store the full result including output and any errors
       results[test.id] = {
         output: result.error ? result.error : result.output,
         passed: isPassed,
@@ -160,7 +176,6 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
     }
 
     setTestResults(results);
-    // Automatically switch to the Test Cases tab to show results
     setActiveTab('testcases');
 
     toast({
@@ -188,6 +203,7 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="question">Question</TabsTrigger>
             <TabsTrigger value="testcases">Test Cases</TabsTrigger>
+            <TabsTrigger value="console">Console</TabsTrigger>
             <TabsTrigger value="code">Code</TabsTrigger>
           </TabsList>
         </div>
@@ -271,8 +287,21 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
           </TabsContent>
 
           <TabsContent value="testcases" className="p-6 m-0">
-            {/* Pass the new testResults to TestCaseView */}
             <TestCaseView testCases={testCases} testResults={testResults} />
+          </TabsContent>
+
+          <TabsContent value="console" className="p-6 m-0 h-full">
+            <Card className="h-full">
+              <CardContent className="pt-6 h-full flex flex-col">
+                <div className="flex items-center gap-2 mb-4 text-muted-foreground">
+                  <Terminal className="h-4 w-4" />
+                  <span className="font-semibold">Console Output</span>
+                </div>
+                <div className="bg-muted p-4 rounded-md font-mono text-sm whitespace-pre-wrap overflow-auto flex-1">
+                  {consoleOutput || "Run your code to see output here..."}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="code" className="m-0 h-full flex flex-col">
@@ -281,12 +310,21 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
             </div>
             <div className="border-t p-4 flex justify-end gap-3 bg-card">
               <Button
+                variant="secondary"
+                onClick={handleRun}
+                disabled={pyodideLoading || submitMutation.isPending}
+                className="gap-2"
+              >
+                <Play className="h-4 w-4" />
+                {pyodideLoading ? 'Loading...' : 'Run'}
+              </Button>
+              <Button
                 variant="outline"
                 onClick={handleTestRun}
                 disabled={pyodideLoading || submitMutation.isPending}
                 className="bg-accent hover:bg-accent/90 text-accent-foreground"
               >
-                {pyodideLoading ? 'Loading Python...' : 'Test Run'}
+                Test Run
               </Button>
               <Button
                 onClick={() => submitMutation.mutate()}
