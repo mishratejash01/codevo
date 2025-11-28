@@ -15,14 +15,12 @@ const EXAM_DURATION = 120 * 60; // 2 hours in seconds
 const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  // Safe access to query param
   const selectedAssignment = searchParams.get('q');
 
   const [timeLeft, setTimeLeft] = useState(EXAM_DURATION);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, QuestionStatus>>({});
   const { toast } = useToast();
 
-  // Timer Logic
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -48,10 +46,7 @@ const Index = () => {
   };
 
   const handleQuestionSelect = (id: string) => {
-    // Push to history stack so "Back" button works naturally
     setSearchParams({ q: id });
-    
-    // Mark as visited
     if (questionStatuses[id] !== 'attempted' && questionStatuses[id] !== 'review') {
       handleStatusUpdate(id, 'visited');
     }
@@ -67,7 +62,6 @@ const Index = () => {
 
   return (
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden selection:bg-primary/20">
-      {/* Exam Header */}
       <header className="border-b border-white/10 bg-[#09090b] px-4 py-3 flex items-center justify-between z-50 shadow-md shrink-0 h-16">
         <div className="flex items-center gap-4">
           <Button 
@@ -108,11 +102,8 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Main Workspace */}
       <div className="flex-1 overflow-hidden relative">
         <ResizablePanelGroup direction="horizontal" className="h-full">
-          
-          {/* Question Palette Sidebar */}
           <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#0c0c0e] border-r border-white/10 flex flex-col">
             <AssignmentSidebar
               selectedId={selectedAssignment}
@@ -123,12 +114,11 @@ const Index = () => {
 
           <ResizableHandle withHandle className="bg-white/5 hover:bg-primary/50 transition-colors w-1" />
 
-          {/* Content Area */}
           <ResizablePanel defaultSize={80} className="bg-[#09090b] relative">
             <ErrorBoundary>
               {selectedAssignment ? (
                 <AssignmentView 
-                  key={selectedAssignment} // Force remount on ID change to prevent stale state
+                  key={selectedAssignment}
                   assignmentId={selectedAssignment} 
                   onStatusUpdate={(status) => handleStatusUpdate(selectedAssignment, status)}
                   currentStatus={questionStatuses[selectedAssignment]}
