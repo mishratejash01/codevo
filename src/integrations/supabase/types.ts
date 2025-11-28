@@ -14,7 +14,127 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assignments: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          deadline: string | null
+          description: string
+          id: string
+          instructions: string | null
+          max_score: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description: string
+          id?: string
+          instructions?: string | null
+          max_score?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description?: string
+          id?: string
+          instructions?: string | null
+          max_score?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      submissions: {
+        Row: {
+          assignment_id: string
+          code: string
+          id: string
+          private_tests_passed: number | null
+          private_tests_total: number | null
+          public_tests_passed: number | null
+          public_tests_total: number | null
+          score: number | null
+          submitted_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assignment_id: string
+          code: string
+          id?: string
+          private_tests_passed?: number | null
+          private_tests_total?: number | null
+          public_tests_passed?: number | null
+          public_tests_total?: number | null
+          score?: number | null
+          submitted_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assignment_id?: string
+          code?: string
+          id?: string
+          private_tests_passed?: number | null
+          private_tests_total?: number | null
+          public_tests_passed?: number | null
+          public_tests_total?: number | null
+          score?: number | null
+          submitted_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_cases: {
+        Row: {
+          assignment_id: string
+          created_at: string | null
+          expected_output: string
+          id: string
+          input: string
+          is_public: boolean | null
+          weight: number | null
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string | null
+          expected_output: string
+          id?: string
+          input: string
+          is_public?: boolean | null
+          weight?: number | null
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string | null
+          expected_output?: string
+          id?: string
+          input?: string
+          is_public?: boolean | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_cases_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
