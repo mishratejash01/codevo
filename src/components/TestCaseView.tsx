@@ -10,6 +10,7 @@ interface TestCase {
   is_public: boolean;
 }
 
+// Define structure for test results
 interface TestResult {
   output: string;
   passed: boolean;
@@ -44,6 +45,7 @@ export const TestCaseView = ({ testCases, testResults = {} }: TestCaseViewProps)
             <>
               <div className="flex gap-2 flex-wrap">
                 {publicTests.map((test, index) => {
+                  // Check if we have a result for this specific test case
                   const result = testResults[test.id];
                   return (
                     <Badge
@@ -99,6 +101,7 @@ export const TestCaseView = ({ testCases, testResults = {} }: TestCaseViewProps)
   );
 };
 
+// Updated Card to display Actual Output
 const TestCaseCard = ({ testCase, result }: { testCase: TestCase; result?: TestResult }) => (
   <div className="space-y-4">
     <Card>
@@ -119,6 +122,7 @@ const TestCaseCard = ({ testCase, result }: { testCase: TestCase; result?: TestR
       </CardContent>
     </Card>
 
+    {/* Only show this section if we have run a test */}
     {result && (
       <Card className={result.passed ? "border-green-500" : "border-red-500 border-2"}>
         <CardContent className="pt-6">
