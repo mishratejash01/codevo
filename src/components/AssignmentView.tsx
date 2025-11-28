@@ -18,6 +18,7 @@ interface AssignmentViewProps {
 export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
   const [code, setCode] = useState('# Write your Python code here\n');
   const [activeTab, setActiveTab] = useState('overview');
+  const [testResults, setTestResults] = useState<Record<string, { output: string; passed: boolean; error?: string | null }>>({});
   const { runCode, loading: pyodideLoading } = usePyodide();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -141,13 +142,23 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
       return;
     }
 
+    const results: Record<string, { output: string; passed: boolean; error?: string | null }> = {};
     let passed = 0;
+
     for (const test of publicTests) {
       const result = await runCode(code, test.input);
-      if (result.success && result.output.trim() === test.expected_output.trim()) {
-        passed++;
-      }
+      const isPassed = result.success && result.output.trim() === test.expected_output.trim();
+      if (isPassed) passed++;
+      
+      results[test.id] = {
+        output: result.error ? result.error : result.output,
+        passed: isPassed,
+        error: result.error
+      };
     }
+
+    setTestResults(results);
+    setActiveTab('testcases');
 
     toast({
       title: 'Test Run Complete',
@@ -257,7 +268,7 @@ export const AssignmentView = ({ assignmentId }: AssignmentViewProps) => {
           </TabsContent>
 
           <TabsContent value="testcases" className="p-6 m-0">
-            <TestCaseView testCases={testCases} />
+            <TestCaseView testCases={testCases} testResults={testResults} />
           </TabsContent>
 
           <TabsContent value="code" className="m-0 h-full flex flex-col">
