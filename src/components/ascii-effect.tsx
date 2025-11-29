@@ -238,7 +238,7 @@ let _resolution = new Vector2(1920, 1080)
 let _mousePos = new Vector2(0, 0)
 
 class AsciiEffectImpl extends Effect {
-  constructor(options) {
+  constructor(options: any) {
     const {
       cellSize = 4,
       invert = false,
@@ -293,8 +293,8 @@ class AsciiEffectImpl extends Effect {
     _mousePos = mousePos
   }
 
-  update(renderer, inputBuffer, deltaTime) {
-    const targetFPS = this.uniforms.get("targetFPS").value
+  update(renderer: any, inputBuffer: any, deltaTime: number) {
+    const targetFPS = this.uniforms.get("targetFPS")!.value
 
     if (targetFPS > 0) {
       const frameDuration = 1 / targetFPS
@@ -307,13 +307,13 @@ class AsciiEffectImpl extends Effect {
       _time += deltaTime
     }
 
-    this.uniforms.get("time").value = _time
-    this.uniforms.get("cellSize").value = _cellSize
-    this.uniforms.get("invert").value = _invert
-    this.uniforms.get("colorMode").value = _colorMode
-    this.uniforms.get("asciiStyle").value = _asciiStyle
-    this.uniforms.get("resolution").value = _resolution
-    this.uniforms.get("mousePos").value = _mousePos
+    this.uniforms.get("time")!.value = _time
+    this.uniforms.get("cellSize")!.value = _cellSize
+    this.uniforms.get("invert")!.value = _invert
+    this.uniforms.get("colorMode")!.value = _colorMode
+    this.uniforms.get("asciiStyle")!.value = _asciiStyle
+    this.uniforms.get("resolution")!.value = _resolution
+    this.uniforms.get("mousePos")!.value = _mousePos
   }
 }
 
