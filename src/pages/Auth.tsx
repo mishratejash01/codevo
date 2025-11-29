@@ -64,8 +64,7 @@ const Auth = () => {
 
           <div className="grid gap-4">
             <Button 
-              variant="outline" 
-              className="w-full h-11 bg-white text-black hover:bg-gray-100 border-none font-medium flex items-center justify-center gap-3 transition-colors"
+              className="w-full h-11 bg-white text-black hover:bg-gray-200 border-none font-medium flex items-center justify-center gap-3 transition-colors"
               onClick={handleGoogleLogin}
               disabled={loading}
             >
