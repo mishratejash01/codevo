@@ -33,6 +33,48 @@ const normalizeOutput = (str: string) => {
   return str.replace(/'/g, '"').replace(/\s+/g, '').trim();
 };
 
+// Helper function to execute tests against a list of test cases
+const executeTests = async (
+  tests: any[],
+  code: string,
+  functionName: string,
+  runTestFunction: (code: string, functionName: string, input: string) => Promise<any>
+) => {
+  let passedCount = 0;
+  const newTestResults: Record<string, any> = {};
+
+  for (const test of tests) {
+    try {
+      const result = await runTestFunction(code, functionName, test.input);
+      
+      if (!result.success) {
+        newTestResults[test.id] = { 
+          passed: false, 
+          output: "Error", 
+          error: result.error 
+        };
+        continue;
+      }
+
+      const actual = normalizeOutput(result.result);
+      const expected = normalizeOutput(test.expected_output);
+      const isMatch = actual === expected;
+
+      if (isMatch) passedCount++;
+
+      newTestResults[test.id] = {
+        passed: isMatch,
+        output: result.result,
+        error: isMatch ? null : `Expected: ${test.expected_output}`
+      };
+    } catch (e: any) {
+      newTestResults[test.id] = { passed: false, output: "", error: e.message };
+    }
+  }
+
+  return { passedCount, newTestResults };
+};
+
 export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: AssignmentViewProps) => {
   const [code, setCode] = useState<string>(''); 
   const [consoleOutput, setConsoleOutput] = useState<string>('');
@@ -107,52 +149,16 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
 
       const publicTests = testCases.filter(tc => tc.is_public);
       const privateTests = testCases.filter(tc => !tc.is_public);
-      let publicPassed = 0;
-      let privatePassed = 0;
-      const newTestResults: Record<string, any> = {};
 
-      // Execute tests sequentially
-      const executeTests = async (tests: any[]) => {
-        let passedCount = 0;
-        for (const test of tests) {
-          try {
-            // Run specific test case
-            const result = await runTestFunction(code, functionName, test.input);
-            
-            if (!result.success) {
-              newTestResults[test.id] = { 
-                passed: false, 
-                output: "Error", 
-                error: result.error 
-              };
-              continue;
-            }
+      const publicResults = await executeTests(publicTests, code, functionName, runTestFunction);
+      const privateResults = await executeTests(privateTests, code, functionName, runTestFunction);
 
-            // Compare Results
-            const actual = normalizeOutput(result.result);
-            const expected = normalizeOutput(test.expected_output);
-            const isMatch = actual === expected;
-
-            if (isMatch) passedCount++;
-
-            newTestResults[test.id] = {
-              passed: isMatch,
-              output: result.result, // Raw python repr()
-              error: isMatch ? null : `Expected: ${test.expected_output}`
-            };
-          } catch (e: any) {
-            newTestResults[test.id] = { passed: false, output: "", error: e.message };
-          }
-        }
-        return passedCount;
-      };
-
-      publicPassed = await executeTests(publicTests);
-      privatePassed = await executeTests(privateTests);
-
-      setTestResults(newTestResults);
+      const allTestResults = { ...publicResults.newTestResults, ...privateResults.newTestResults };
+      setTestResults(allTestResults);
 
       const totalTests = testCases.length;
+      const publicPassed = publicResults.passedCount;
+      const privatePassed = privateResults.passedCount;
       const score = totalTests > 0 ? ((publicPassed + privatePassed) / totalTests) * (assignment.max_score || 100) : 0;
 
       await supabase.from('submissions').insert({
@@ -186,11 +192,39 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
 
   const handleRun = async () => {
     if (pyodideLoading) return;
-    setConsoleOutput('Running...');
-    setBottomTab('console');
-    // Just run the script for output checking (manual debug)
-    const result = await runCode(code);
-    setConsoleOutput(result.error ? `Error:\n${result.error}` : (result.output || 'Code executed successfully.'));
+    
+    setConsoleOutput('Running against public test cases...');
+    setBottomTab('testcases');
+    
+    try {
+      const functionName = getFunctionName(code);
+      if (!functionName) {
+        setConsoleOutput("Error: Could not find a function definition (def name...).");
+        setBottomTab('console');
+        return;
+      }
+
+      const publicTests = testCases.filter(tc => tc.is_public);
+      
+      if (publicTests.length === 0) {
+        setConsoleOutput("No public test cases available.");
+        return;
+      }
+
+      const { passedCount, newTestResults } = await executeTests(
+        publicTests,
+        code,
+        functionName,
+        runTestFunction
+      );
+
+      setTestResults(newTestResults);
+      setConsoleOutput(`Ran ${publicTests.length} public test case(s). Passed: ${passedCount}/${publicTests.length}`);
+      
+    } catch (err: any) {
+      setConsoleOutput(`Error: ${err.message}`);
+      setBottomTab('console');
+    }
   };
 
   const handleMarkForReview = () => {
