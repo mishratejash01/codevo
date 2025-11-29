@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Canvas } from "@react-three/fiber"
 import { EffectComposer } from "@react-three/postprocessing"
-import { OrbitControls, TorusKnot } from "@react-three/drei"
+import { OrbitControls } from "@react-three/drei"
 import { Vector2 } from "three"
 import { AsciiEffect } from "./ascii-effect"
 
@@ -47,20 +47,14 @@ export function AsciiScene() {
   }, [])
 
   return (
-    <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
+    <div ref={containerRef} style={{ width: "100%", height: "100vh" }}>
       <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
         style={{ background: "#000000" }}
       >
         <color attach="background" args={["#000000"]} />
 
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} intensity={1.5} />
-        <OrbitControls autoRotate autoRotateSpeed={2} enableZoom={false} />
-
-        <TorusKnot args={[1, 0.3, 128, 16]}>
-          <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.8} />
-        </TorusKnot>
+        
 
         {/* ASCII Effect with PostFX */}
         <EffectComposer>
@@ -82,7 +76,7 @@ export function AsciiScene() {
               mouseGlowIntensity: 1.5,
               vignetteIntensity: 0,
               vignetteRadius: 0.8,
-              colorPalette: 0,
+              colorPalette: "original",
               curvature: 0,
               aberrationStrength: 0,
               noiseIntensity: 0,
