@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
+import { AsciiScene } from "@/components/ascii-scene";
 import { cn } from "@/lib/utils";
 
-// --- Custom Typewriter Hook ---
+// --- Custom Typewriter Hook (Fixed Logic) ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
   const [displayText, setDisplayText] = useState('');
   const [started, setStarted] = useState(false);
@@ -22,18 +23,21 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
   useEffect(() => {
     if (!started) return;
 
-    let i = 0;
-    const typingInterval = setInterval(() => {
-      if (i < text.length) {
-        setDisplayText((prev) => prev + text.charAt(i));
-        i++;
-      } else {
-        clearInterval(typingInterval);
-      }
+    const interval = setInterval(() => {
+      setDisplayText((currentText) => {
+        // If we haven't typed the whole string yet
+        if (currentText.length < text.length) {
+          // Add the next character based on current length
+          return currentText + text.charAt(currentText.length);
+        }
+        // Finished typing
+        clearInterval(interval);
+        return currentText;
+      });
     }, speed);
 
-    return () => clearInterval(typingInterval);
-  }, [text, speed, started]);
+    return () => clearInterval(interval);
+  }, [started, text, speed]);
 
   return displayText;
 };
@@ -127,7 +131,7 @@ const Auth = () => {
             </Button>
           </div>
 
-          {/* Branding Section with Light Ray Animation */}
+          {/* Branding Section */}
           <div className="pt-8 border-t border-white/10 mt-8">
             <div className="flex flex-col items-center justify-center space-y-3 opacity-90 transition-opacity cursor-default">
               <span className={cn(
@@ -154,7 +158,6 @@ const Auth = () => {
 
       {/* RIGHT SIDE: Video Background */}
       <div className="hidden lg:block lg:w-1/2 bg-[#0c0c0e] relative h-screen">
-        {/* Fixed: Removed 'relative' and 'z-0' to allow absolute inset-0 to fill parent height */}
         <div className="absolute inset-0 m-4 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl">
            <video 
              src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/efecto-recording-2025-11-29T22-59-44.webm"
@@ -169,8 +172,9 @@ const Auth = () => {
            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 pointer-events-none z-10" />
 
            {/* TYPEWRITER TEXT OVERLAY */}
-           <div className="absolute bottom-10 inset-x-0 flex justify-center z-20 pointer-events-none">
-             <div className="bg-black/40 backdrop-blur-sm px-6 py-3 rounded-full border border-white/5">
+           <div className="absolute bottom-12 inset-x-0 flex justify-center z-20 pointer-events-none">
+             {/* Added more padding (px-8) and slightly raised position (bottom-12) to prevent clipping */}
+             <div className="bg-black/40 backdrop-blur-sm px-8 py-3 rounded-full border border-white/5 shadow-2xl">
                <p className={cn(
                  "text-white/90 text-sm font-mono tracking-wider",
                  "flex items-center gap-1",
