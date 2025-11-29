@@ -1,6 +1,6 @@
 "use client"
 
-import { forwardRef, useMemo } from "react"
+import { forwardRef, useMemo, useRef } from "react"
 import { Effect, BlendFunction } from "postprocessing"
 import { Uniform, Vector2 } from "three"
 
@@ -238,7 +238,7 @@ let _resolution = new Vector2(1920, 1080)
 let _mousePos = new Vector2(0, 0)
 
 class AsciiEffectImpl extends Effect {
-  constructor(options: any) {
+  constructor(options) {
     const {
       cellSize = 4,
       invert = false,
@@ -293,8 +293,8 @@ class AsciiEffectImpl extends Effect {
     _mousePos = mousePos
   }
 
-  update(renderer: any, inputBuffer: any, deltaTime: number) {
-    const targetFPS = this.uniforms.get("targetFPS")!.value
+  update(renderer, inputBuffer, deltaTime) {
+    const targetFPS = this.uniforms.get("targetFPS").value
 
     if (targetFPS > 0) {
       const frameDuration = 1 / targetFPS
@@ -307,17 +307,17 @@ class AsciiEffectImpl extends Effect {
       _time += deltaTime
     }
 
-    this.uniforms.get("time")!.value = _time
-    this.uniforms.get("cellSize")!.value = _cellSize
-    this.uniforms.get("invert")!.value = _invert
-    this.uniforms.get("colorMode")!.value = _colorMode
-    this.uniforms.get("asciiStyle")!.value = _asciiStyle
-    this.uniforms.get("resolution")!.value = _resolution
-    this.uniforms.get("mousePos")!.value = _mousePos
+    this.uniforms.get("time").value = _time
+    this.uniforms.get("cellSize").value = _cellSize
+    this.uniforms.get("invert").value = _invert
+    this.uniforms.get("colorMode").value = _colorMode
+    this.uniforms.get("asciiStyle").value = _asciiStyle
+    this.uniforms.get("resolution").value = _resolution
+    this.uniforms.get("mousePos").value = _mousePos
   }
 }
 
-export const AsciiEffect = forwardRef((props: any, ref) => {
+export const AsciiEffect = forwardRef((props, ref) => {
   const {
     style = "standard",
     cellSize = 4,
@@ -328,7 +328,7 @@ export const AsciiEffect = forwardRef((props: any, ref) => {
     mousePos = new Vector2(0, 0)
   } = props
 
-  const styleMap: Record<string, number> = { standard: 0, dense: 1, minimal: 2, blocks: 3 }
+  const styleMap = { standard: 0, dense: 1, minimal: 2, blocks: 3 }
   const styleNum = styleMap[style] || 0
 
   _cellSize = cellSize
