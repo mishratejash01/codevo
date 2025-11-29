@@ -31,7 +31,6 @@ const Auth = () => {
       });
 
       if (error) throw error;
-      // No toast needed here as it redirects immediately
     } catch (error: any) {
       toast({
         title: "Login Failed",
