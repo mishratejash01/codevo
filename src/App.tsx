@@ -25,12 +25,12 @@ const App = () => (
       </BrowserRouter>
       
       {/* Persistent Footer Element */}
-      <div className="fixed bottom-4 left-0 right-0 flex justify-center pointer-events-none z-[100]">
-        <div className="bg-black/40 backdrop-blur-sm border border-white/5 px-4 py-1.5 rounded-full shadow-2xl">
+      <div className="fixed bottom-8 left-0 right-0 flex justify-center pointer-events-none z-[100]">
+        <div className="bg-black/60 backdrop-blur-md border border-white/10 px-8 py-3 rounded-full shadow-2xl pointer-events-auto">
           <FuzzyText 
-            fontSize="0.75rem" 
-            fontWeight={600} 
-            color="#a1a1aa" 
+            fontSize="2.5rem" 
+            fontWeight={800} 
+            color="#e4e4e7" 
             baseIntensity={0.15} 
             hoverIntensity={0.4}
             fontFamily="'JetBrains Mono', monospace"
