@@ -47,7 +47,7 @@ export function AsciiScene() {
   }, [])
 
   return (
-    <div ref={containerRef} style={{ width: "100%", height: "100vh" }}>
+    <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
       <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
         style={{ background: "#000000" }}
