@@ -20,12 +20,23 @@ const Landing = () => {
     // Listen for changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+
+      // FIX: Clean up the URL if we just signed in and the hash exists
+      if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
+        // Replace the current history entry with one without the hash
+        window.history.replaceState(null, '', window.location.pathname);
+        
+        toast({
+          title: "Successfully Logged In",
+          description: "Welcome back!",
+        });
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -131,7 +142,6 @@ const Landing = () => {
                 <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
                   <Button 
                     size="lg"
-                    // Route check for login
                     onClick={() => session ? navigate('/practice') : navigate('/auth')}
                     className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-12 text-base font-medium transition-all hover:scale-[1.02]"
                   >
@@ -165,7 +175,6 @@ const Landing = () => {
                     size="lg"
                     variant="outline"
                     className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]"
-                    // Route check for login
                     onClick={() => session ? navigate('/exam') : navigate('/auth')}
                   >
                     {session ? "Enter Exam Hall" : "Login to Exam"}
