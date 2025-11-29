@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
-// Ensure you have created this component from the previous steps!
+// Ensure you have created src/components/ascii-scene.tsx first!
 import { AsciiScene } from "@/components/ascii-scene";
 import { cn } from "@/lib/utils";
 
