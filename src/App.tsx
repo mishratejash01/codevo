@@ -5,9 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Practice from "./pages/Practice";
-// IMPORT THE NEW EXAM PAGE
-import Exam from "./pages/Exam"; 
+import Exam from "./pages/Exam";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth"; // Import Auth component
 
 const queryClient = new QueryClient();
 
@@ -19,8 +19,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/auth" element={<Auth />} /> {/* Add Auth Route */}
           <Route path="/practice" element={<Practice />} />
-          {/* ADD THE EXAM ROUTE HERE */}
           <Route path="/exam" element={<Exam />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
