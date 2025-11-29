@@ -58,17 +58,46 @@
   @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-xl;
 }
 
-/* CUSTOM FONT DEFINITION */
+/* CUSTOM FONT: Neuropol X */
 @font-face {
   font-family: 'Neuropol X';
-  /* Ensure this file exists in your public/fonts folder! */
   src: url('/fonts/neuropol-x-free.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
-/* This utility class applies the font */
 .font-neuropol {
   font-family: 'Neuropol X', sans-serif;
+}
+
+/* --- NEW: Light Ray Reveal Animation --- */
+@keyframes light-ray-pass {
+  0% {
+    background-position: 200% center;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    background-position: -200% center;
+    opacity: 1;
+  }
+}
+
+.animate-light-ray {
+  /* Gradient: Dark Gray -> Bright White -> Dark Gray */
+  background: linear-gradient(
+    120deg, 
+    #52525b 0%, 
+    #ffffff 50%, 
+    #52525b 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  /* Runs once for 1.5s then stops */
+  animation: light-ray-pass 2s ease-out forwards;
 }
