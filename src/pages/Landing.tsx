@@ -4,36 +4,36 @@ import { useNavigate } from 'react-router-dom';
 import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Header } from '@/components/Header'; // Import the new Header component
+import { Header } from '@/components/Header'; // Ensure this path is correct
 
 const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
 
-  // Monitor Auth State & URL Cleanup
+  // Monitor Auth State & Clean URL Hash
   useEffect(() => {
-    // 1. Initial Check
+    // 1. Initial Session Check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       
-      // Cleanup URL hash if returning from Google OAuth
+      // Clean up URL if returning from Google OAuth with a hash
       if (session && window.location.hash && window.location.hash.includes('access_token')) {
         window.history.replaceState(null, '', window.location.pathname);
         toast({
           title: "Welcome back!",
-          description: "Successfully logged in.",
+          description: "Successfully logged in via Google.",
         });
       }
     });
 
-    // 2. Auth State Listener
+    // 2. Listen for Auth Changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
 
-      // Cleanup hash on sign-in event
+      // Clean up URL on sign-in event
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && window.location.hash.includes('access_token')) {
         window.history.replaceState(null, '', window.location.pathname);
       }
@@ -60,7 +60,7 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-primary/20 flex flex-col">
-      {/* Use the new Header Component with Auth props */}
+      {/* New Header Component */}
       <Header session={session} onLogout={handleLogout} />
 
       <main className="flex-1 w-full">
