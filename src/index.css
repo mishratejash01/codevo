@@ -1,81 +1,163 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Menu, X, LogIn, LogOut, User } from 'lucide-react';
+import { Session } from '@supabase/supabase-js';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  :root {
-    /* Defaulting to Dark Mode aesthetics for premium feel */
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-
-    --card: 240 10% 5%; /* Slightly lighter than bg */
-    --card-foreground: 0 0% 98%;
-
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 263.4 70% 50.4%; /* Deep Purple */
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 263.4 70% 50.4%;
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 240 10% 3.9%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+interface HeaderProps {
+  session: Session | null;
+  onLogout: () => void;
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-    /* Premium subtle noise texture */
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-  }
-  
-  /* Scrollbar styling for a cleaner look */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.3);
-    border-radius: 99px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.5);
-  }
-}
+export function Header({ session, onLogout }: HeaderProps) {
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const navigate = useNavigate();
 
-/* Glassmorphism utility */
-.glass-panel {
-  @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-xl;
+  const links = [
+    { label: 'Services', href: '/services' },
+    { label: 'Projects', href: '/projects' },
+    { label: 'About', href: '/about' },
+  ];
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+  return (
+    <header
+      className={cn(
+        'sticky top-0 z-50 mx-auto w-full border-b border-transparent transition-all duration-300 ease-out',
+        {
+          'bg-black/80 backdrop-blur-md border-white/10 shadow-md': scrolled,
+          'bg-transparent': !scrolled && !open,
+          'bg-[#09090b]': open,
+        }
+      )}
+    >
+      <div className="container mx-auto px-4 md:px-6">
+        <nav className="flex h-16 w-full items-center justify-between">
+          {/* LEFT: Logo in Neuropol X */}
+          <Link to="/" className="flex items-center gap-2 z-50">
+            <span className="font-neuropol text-2xl md:text-3xl font-bold tracking-wider text-white hover:text-primary transition-colors">
+              CODéVO
+            </span>
+          </Link>
+
+          {/* CENTER: Text Links (Hidden on Mobile) */}
+          <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
+            {links.map((link) => (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* RIGHT: Login/User Button & Mobile Toggle */}
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-4">
+              {session ? (
+                <>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                    <User className="w-3.5 h-3.5" />
+                    <span className="truncate max-w-[150px]">{session.user.email}</span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={onLogout}
+                    className="text-muted-foreground hover:text-white hover:bg-white/10 gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  className="border-primary/20 hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-all rounded-full px-6"
+                  onClick={() => navigate('/auth')}
+                >
+                  Login
+                </Button>
+              )}
+            </div>
+
+            {/* Mobile Menu Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden text-muted-foreground hover:text-white"
+              onClick={() => setOpen(!open)}
+            >
+              {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
+        </nav>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {open && (
+        <div className="fixed inset-0 top-16 z-40 bg-[#09090b] border-t border-white/10 md:hidden animate-in slide-in-from-top-5 duration-200">
+          <div className="flex flex-col p-6 gap-6">
+            {links.map((link) => (
+              <Link
+                key={link.label}
+                to={link.href}
+                onClick={() => setOpen(false)}
+                className="text-lg font-medium text-muted-foreground hover:text-primary transition-colors py-2 border-b border-white/5"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="mt-4">
+              {session ? (
+                <Button 
+                  className="w-full bg-destructive/80 hover:bg-destructive text-white rounded-full" 
+                  onClick={() => {
+                    onLogout();
+                    setOpen(false);
+                  }}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90 rounded-full" 
+                  onClick={() => {
+                    setOpen(false);
+                    navigate('/auth');
+                  }}
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Login
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </header>
+  );
 }
