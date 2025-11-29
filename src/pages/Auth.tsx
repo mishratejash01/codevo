@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
-// Make sure src/components/ascii-scene.tsx exists!
+// Ensure you have created this component from the previous steps!
 import { AsciiScene } from "@/components/ascii-scene";
+import { cn } from "@/lib/utils";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -49,7 +50,7 @@ const Auth = () => {
         {/* Back Button */}
         <Button 
           variant="ghost" 
-          className="self-start text-muted-foreground hover:text-white mb-12 -ml-4"
+          className="self-start text-muted-foreground hover:text-white mb-12 -ml-4 rounded-xl"
           onClick={() => navigate("/")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -60,19 +61,23 @@ const Auth = () => {
         <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full space-y-8">
           <div className="space-y-2">
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Welcome back</h1>
-            <p className="text-muted-foreground">Please enter your details to sign in.</p>
+            <p className="text-muted-foreground">Please sign in to continue.</p>
           </div>
 
           <div className="grid gap-4">
-            {/* Google Login Button with fixed hover visibility */}
             <Button 
               variant="outline" 
-              className="w-full h-11 bg-white text-black hover:bg-gray-200 border-none font-medium flex items-center justify-center gap-3 transition-colors"
+              className={cn(
+                "w-full h-12 bg-white text-black border-none font-medium text-base",
+                "flex items-center justify-center gap-3 transition-all duration-200",
+                "hover:bg-gray-200 hover:scale-[1.02]", // Subtle hover effect
+                "rounded-xl" // Rectangular round corner style
+              )}
               onClick={handleGoogleLogin}
               disabled={loading}
             >
               {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
                   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
@@ -90,14 +95,17 @@ const Auth = () => {
 
           {/* Branding Section */}
           <div className="pt-8 border-t border-white/10 mt-8">
-            <div className="flex flex-col items-center justify-center space-y-3 opacity-80 hover:opacity-100 transition-opacity">
+            <div className="flex flex-col items-center justify-center space-y-3 opacity-80 hover:opacity-100 transition-opacity cursor-default">
               {/* Logo matching Header.tsx style exactly */}
-              <span className="font-neuropol text-xl tracking-wider text-white">
+              <span className={cn(
+                "font-neuropol text-2xl font-bold tracking-wider text-white",
+                "drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]" // Subtle constant glow
+              )}>
                 COD
                 <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
                 VO
               </span>
-              <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
+              <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-medium">
                 A Product of Unknown IITians
               </span>
             </div>
@@ -112,9 +120,11 @@ const Auth = () => {
 
       {/* RIGHT SIDE: ASCII Scene */}
       <div className="hidden lg:block lg:w-1/2 bg-[#0c0c0e] relative">
-        <div className="absolute inset-0 m-4 rounded-[40px] overflow-hidden border border-white/5 bg-black">
-           {/* If AsciiScene causes errors, temporarily comment it out to fix deployment */}
+        <div className="absolute inset-0 m-6 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl">
            <AsciiScene />
+           
+           {/* Overlay Gradient for better depth */}
+           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none" />
         </div>
       </div>
     </div>
