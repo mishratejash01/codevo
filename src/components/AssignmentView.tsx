@@ -27,10 +27,21 @@ const getFunctionName = (code: string) => {
   return match ? match[1] : null;
 };
 
-// Normalize output for flexible comparison (ignores extra spaces)
+// Normalize output for flexible comparison (handles whitespace and quotes intelligently)
 const normalizeOutput = (str: string) => {
   if (!str) return '';
-  return str.replace(/'/g, '"').replace(/\s+/g, '').trim();
+  return str
+    .trim() // Remove leading/trailing whitespace
+    .replace(/'/g, '"') // Normalize quotes
+    .replace(/\s+/g, ' ') // Collapse multiple spaces to single space
+    .replace(/\s*,\s*/g, ',') // Remove spaces around commas
+    .replace(/\s*:\s*/g, ':') // Remove spaces around colons
+    .replace(/\[\s+/g, '[') // Remove spaces after opening brackets
+    .replace(/\s+\]/g, ']') // Remove spaces before closing brackets
+    .replace(/\(\s+/g, '(') // Remove spaces after opening parentheses
+    .replace(/\s+\)/g, ')') // Remove spaces before closing parentheses
+    .replace(/\{\s+/g, '{') // Remove spaces after opening braces
+    .replace(/\s+\}/g, '}'); // Remove spaces before closing braces
 };
 
 // Helper function to execute tests against a list of test cases
