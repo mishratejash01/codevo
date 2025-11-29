@@ -61,32 +61,35 @@ export const TestCaseView = ({ testCases, testResults }: TestCaseViewProps) => {
 
                 {/* Always show input for public tests */}
                 {test.is_public && (
-                   <div className="grid grid-cols-[60px_1fr] gap-2 text-xs font-mono mb-1">
-                     <span className="text-muted-foreground">Input:</span>
-                     <span className="text-white/80 bg-black/30 px-1.5 py-0.5 rounded">{test.input}</span>
+                   <div className="grid grid-cols-[70px_1fr] gap-2 text-xs font-mono mb-1">
+                     <span className="text-muted-foreground font-semibold">Input:</span>
+                     <span className="text-white bg-black/40 px-2 py-1 rounded font-medium">{test.input}</span>
                    </div>
                 )}
 
                 {/* Only show details if the test has run */}
                 {hasRun && (
-                  <div className="space-y-1 mt-2 border-t border-white/5 pt-2">
-                    {test.is_public && (
-                      <div className="grid grid-cols-[60px_1fr] gap-2 text-xs font-mono">
-                        <span className="text-muted-foreground">Expected:</span>
-                        <span className="text-green-400/80">{test.expected_output}</span>
-                      </div>
-                    )}
-                    
-                    <div className="grid grid-cols-[60px_1fr] gap-2 text-xs font-mono">
-                      <span className="text-muted-foreground">Actual:</span>
-                      <span className={cn(result.passed ? "text-white/80" : "text-red-400")}>
+                  <div className="space-y-2 mt-2 border-t border-white/5 pt-2">
+                    <div className="grid grid-cols-[70px_1fr] gap-2 text-xs font-mono">
+                      <span className="text-muted-foreground font-semibold">Your Output:</span>
+                      <span className={cn(
+                        "px-2 py-1 rounded font-medium",
+                        result.passed ? "text-white bg-black/40" : "text-red-400 bg-red-950/20"
+                      )}>
                          {result.output || "No output"}
                       </span>
                     </div>
 
-                    {result.error && (
-                      <div className="mt-2 text-xs text-red-400 bg-red-950/20 p-2 rounded">
-                        Error: {result.error}
+                    {test.is_public && (
+                      <div className="grid grid-cols-[70px_1fr] gap-2 text-xs font-mono">
+                        <span className="text-muted-foreground font-semibold">Expected:</span>
+                        <span className="text-green-400 bg-green-950/20 px-2 py-1 rounded font-medium">{test.expected_output}</span>
+                      </div>
+                    )}
+
+                    {result.error && !result.passed && (
+                      <div className="mt-2 text-xs text-red-400 bg-red-950/30 p-2 rounded border border-red-500/20">
+                        <span className="font-semibold">❌ Error:</span> {result.error}
                       </div>
                     )}
                   </div>

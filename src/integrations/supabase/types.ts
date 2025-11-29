@@ -23,6 +23,7 @@ export type Database = {
           id: string
           instructions: string | null
           max_score: number | null
+          starter_code: string | null
           title: string
           updated_at: string | null
         }
@@ -34,6 +35,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           max_score?: number | null
+          starter_code?: string | null
           title: string
           updated_at?: string | null
         }
@@ -45,6 +47,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           max_score?: number | null
+          starter_code?: string | null
           title?: string
           updated_at?: string | null
         }

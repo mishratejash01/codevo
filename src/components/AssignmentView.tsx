@@ -126,12 +126,14 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
         setCode(savedDraft);
     } else if (latestSubmission?.code) {
         setCode(latestSubmission.code);
+    } else if (assignment?.starter_code) {
+        setCode(assignment.starter_code);
     } else {
         setCode('# Write your Python code here\n');
     }
     setTestResults({});
     setConsoleOutput('');
-  }, [assignmentId, latestSubmission]);
+  }, [assignmentId, latestSubmission, assignment]);
 
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
@@ -193,13 +195,13 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
   const handleRun = async () => {
     if (pyodideLoading) return;
     
-    setConsoleOutput('Running against public test cases...');
+    setConsoleOutput('🔄 Running against public test cases...\n');
     setBottomTab('testcases');
     
     try {
       const functionName = getFunctionName(code);
       if (!functionName) {
-        setConsoleOutput("Error: Could not find a function definition (def name...).");
+        setConsoleOutput("❌ Error: Could not find a function definition (def name...).\n\nMake sure your code contains a function definition like:\ndef function_name(args):\n    # your code here");
         setBottomTab('console');
         return;
       }
@@ -207,7 +209,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
       const publicTests = testCases.filter(tc => tc.is_public);
       
       if (publicTests.length === 0) {
-        setConsoleOutput("No public test cases available.");
+        setConsoleOutput("⚠️ No public test cases available.");
         return;
       }
 
@@ -219,10 +221,16 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
       );
 
       setTestResults(newTestResults);
-      setConsoleOutput(`Ran ${publicTests.length} public test case(s). Passed: ${passedCount}/${publicTests.length}`);
+      
+      const allPassed = passedCount === publicTests.length;
+      setConsoleOutput(
+        allPassed 
+          ? `✅ Run Complete: ${passedCount}/${publicTests.length} Public Tests Passed\n\n🎉 All public tests passed! Ready to submit.`
+          : `⚠️ Run Complete: ${passedCount}/${publicTests.length} Public Tests Passed\n\n${publicTests.length - passedCount} test(s) failed. Check the Test Cases tab for details.`
+      );
       
     } catch (err: any) {
-      setConsoleOutput(`Error: ${err.message}`);
+      setConsoleOutput(`❌ Runtime Error:\n\n${err.message}\n\nFix the error and try again.`);
       setBottomTab('console');
     }
   };
@@ -347,8 +355,17 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
                 <div className="flex-1 overflow-hidden relative">
                   <TabsContent value="testcases" className="h-full m-0 p-4 overflow-auto custom-scrollbar"><TestCaseView testCases={testCases} testResults={testResults} /></TabsContent>
                   <TabsContent value="console" className="h-full m-0 p-0">
-                    <div className="h-full p-4 font-mono text-sm overflow-auto text-green-400/90 bg-[#0a0a0a]">
-                      <pre className="whitespace-pre-wrap">{consoleOutput || <span className="text-muted-foreground/40 italic"># No output yet. Run your code to see results.</span>}</pre>
+                    <div className="h-full p-4 font-mono text-sm overflow-auto bg-[#0a0a0a]">
+                      {consoleOutput ? (
+                        <pre className={cn(
+                          "whitespace-pre-wrap",
+                          consoleOutput.includes('❌') || consoleOutput.includes('Error') ? "text-red-400" : 
+                          consoleOutput.includes('✅') || consoleOutput.includes('All public tests passed') ? "text-green-400" :
+                          "text-blue-400"
+                        )}>{consoleOutput}</pre>
+                      ) : (
+                        <span className="text-muted-foreground/40 italic"># No output yet. Run your code to see results.</span>
+                      )}
                     </div>
                   </TabsContent>
                 </div>
