@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
+import { AsciiScene } from "@/components/ascii-scene";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ const Auth = () => {
           <div className="grid gap-4">
             <Button 
               variant="outline" 
-              className="w-full h-11 bg-white text-black hover:bg-gray-200 border-none font-medium flex items-center justify-center gap-3"
+              className="w-full h-11 bg-white text-black hover:bg-gray-100 border-none font-medium flex items-center justify-center gap-3 transition-colors"
               onClick={handleGoogleLogin}
               disabled={loading}
             >
@@ -88,7 +89,12 @@ const Auth = () => {
           {/* Branding Section */}
           <div className="pt-8 border-t border-white/10 mt-8">
             <div className="flex flex-col items-center justify-center space-y-3 opacity-80 hover:opacity-100 transition-opacity">
-              <span className="font-neuropol text-xl tracking-widest text-white">CODéVO</span>
+              {/* Corrected CODéVO Logo styling matching Header */}
+              <span className="font-neuropol text-xl tracking-wider text-white">
+                COD
+                <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
+                VO
+              </span>
               <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
                 A Product of Unknown IITians
               </span>
@@ -96,23 +102,16 @@ const Auth = () => {
           </div>
         </div>
         
-        {/* Footer Copyright (Optional/Empty space filler) */}
+        {/* Footer Copyright */}
         <div className="mt-auto text-xs text-muted-foreground hidden lg:block">
           &copy; {new Date().getFullYear()} CODéVO. All rights reserved.
         </div>
       </div>
 
-      {/* RIGHT SIDE: Image */}
+      {/* RIGHT SIDE: ASCII Scene */}
       <div className="hidden lg:block lg:w-1/2 bg-[#0c0c0e] relative">
-        <div className="absolute inset-0 m-4 rounded-[40px] overflow-hidden">
-           {/* Replace this src with your actual image URL */}
-           <img 
-             src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop" 
-             alt="Authentication Background" 
-             className="w-full h-full object-cover opacity-80 hover:scale-105 transition-transform duration-700"
-           />
-           {/* Gradient Overlay for subtle premium look */}
-           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 m-4 rounded-[40px] overflow-hidden border border-white/5 bg-black">
+           <AsciiScene />
         </div>
       </div>
     </div>
