@@ -1,26 +1,94 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Shield, TrendingUp, ArrowRight, Terminal, Lock } from 'lucide-react';
+import { Code2, Zap, Shield, TrendingUp, ArrowRight, Terminal, Lock, LogIn, LogOut, User } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [session, setSession] = useState<any>(null);
+
+  // Check initial session and subscribe to auth changes
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error signing out",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed out",
+        description: "You have been successfully logged out.",
+      });
+      // Optionally redirect to home or refresh state
+      setSession(null); 
+    }
+  };
 
   return (
-    // FIX 1: Added 'flex flex-col' to ensure vertical layout
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-primary/20 flex flex-col">
       {/* Header */}
       <header className="border-b border-white/10 bg-[#09090b]/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
             <Terminal className="w-6 h-6 text-primary" />
             <h1 className="text-xl font-bold tracking-tight">OPPE Practice</h1>
+          </div>
+
+          {/* Navigation Items */}
+          <div className="flex items-center gap-4">
+            {session ? (
+              <>
+                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                  <User className="w-3.5 h-3.5" />
+                  <span className="truncate max-w-[150px]">{session.user.email}</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleLogout}
+                  className="text-muted-foreground hover:text-white hover:bg-white/10 gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Logout</span>
+                </Button>
+              </>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/auth')}
+                className="border-primary/20 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-2 transition-all"
+              >
+                <LogIn className="w-4 h-4" />
+                Login
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
-      {/* FIX 2: Wrapped content in <main> with 'flex-1'. 
-          This forces the content to grow and push the footer to the bottom. */}
+      {/* Rest of the Landing page content... (unchanged) */}
       <main className="flex-1 w-full">
+        {/* ... (keep existing Hero, Features, and Footer sections) ... */}
         {/* Hero Section */}
         <section className="container mx-auto px-6 pt-24 pb-32 text-center">
           <div className="max-w-6xl mx-auto space-y-12">
@@ -66,10 +134,11 @@ const Landing = () => {
                 <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
                   <Button 
                     size="lg"
-                    onClick={() => navigate('/practice')}
+                    // Redirect to login if no session, otherwise practice
+                    onClick={() => session ? navigate('/practice') : navigate('/auth')}
                     className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-12 text-base font-medium transition-all hover:scale-[1.02]"
                   >
-                    Enter Learning Mode
+                    {session ? "Enter Learning Mode" : "Login to Practice"}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
@@ -99,10 +168,10 @@ const Landing = () => {
                     size="lg"
                     variant="outline"
                     className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]"
-                    // FIX 3: Working navigation for the Exam Portal
-                    onClick={() => navigate('/exam')}
+                    // Redirect to login if no session, otherwise exam
+                    onClick={() => session ? navigate('/exam') : navigate('/auth')}
                   >
-                    Enter Exam Hall
+                    {session ? "Enter Exam Hall" : "Login to Exam"}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
