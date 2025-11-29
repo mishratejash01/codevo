@@ -127,7 +127,7 @@ const Auth = () => {
             </Button>
           </div>
 
-          {/* Branding Section */}
+          {/* Branding Section with Light Ray Animation */}
           <div className="pt-8 border-t border-white/10 mt-8">
             <div className="flex flex-col items-center justify-center space-y-3 opacity-90 transition-opacity cursor-default">
               <span className={cn(
@@ -139,7 +139,6 @@ const Auth = () => {
                 VO
               </span>
               
-              {/* Light Ray Animation applied here */}
               <span className="text-[10px] uppercase tracking-[0.3em] font-medium animate-light-ray whitespace-nowrap">
                 A Product of Unknown IITians
               </span>
@@ -154,9 +153,9 @@ const Auth = () => {
       </div>
 
       {/* RIGHT SIDE: Video Background */}
-      <div className="hidden lg:block lg:w-1/2 bg-[#0c0c0e] relative h-full">
-        {/* INCREASED HEIGHT: Changed m-6 to m-2 for maximum frame size */}
-        <div className="absolute inset-0 m-2 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl relative z-0">
+      <div className="hidden lg:block lg:w-1/2 bg-[#0c0c0e] relative h-screen">
+        {/* Fixed: Removed 'relative' and 'z-0' to allow absolute inset-0 to fill parent height */}
+        <div className="absolute inset-0 m-4 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl">
            <video 
              src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/efecto-recording-2025-11-29T22-59-44.webm"
              autoPlay 
@@ -169,11 +168,11 @@ const Auth = () => {
            {/* Overlay Gradient for text readability */}
            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 pointer-events-none z-10" />
 
-           {/* TYPEWRITER TEXT OVERLAY (Overlapping the video frame) */}
-           <div className="absolute bottom-8 inset-x-0 flex justify-center z-20 pointer-events-none">
-             <div className="bg-black/40 backdrop-blur-sm px-4 py-2 rounded-full border border-white/5">
+           {/* TYPEWRITER TEXT OVERLAY */}
+           <div className="absolute bottom-10 inset-x-0 flex justify-center z-20 pointer-events-none">
+             <div className="bg-black/40 backdrop-blur-sm px-6 py-3 rounded-full border border-white/5">
                <p className={cn(
-                 "text-white/90 text-xs md:text-sm font-mono tracking-wider",
+                 "text-white/90 text-sm font-mono tracking-wider",
                  "flex items-center gap-1",
                  "drop-shadow-lg"
                )}>
