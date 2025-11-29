@@ -42,8 +42,8 @@ export function Header({ session, onLogout }: HeaderProps) {
               "group-hover:text-white group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]"
             )}>
               COD
-              {/* Scaled up lowercase 'é' to match capital height */}
-              <span className="text-[1.2em] lowercase relative -top-[2px] mx-[1px] inline-block">é</span>
+              {/* ALIGNMENT FIX: Changed top value to bring 'é' down to the baseline */}
+              <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
               VO
             </span>
           </Link>
