@@ -137,7 +137,7 @@ const Auth = () => {
               
               {/* Subtitle with unveil animation */}
               <span className="text-[10px] uppercase tracking-[0.3em] font-medium animate-light-ray whitespace-nowrap">
-                The Product of Unknown IITians
+                A Product of Unknown IITians
               </span>
             </div>
           </div>
@@ -149,7 +149,8 @@ const Auth = () => {
       </div>
 
       {/* RIGHT SIDE: Video Background */}
-      <div className="hidden lg:block lg:w-1/2 bg-[#0c0c0e] relative h-screen">
+      {/* CHANGED: bg-[#0c0c0e] -> bg-[#09090b] to match left side */}
+      <div className="hidden lg:block lg:w-1/2 bg-[#09090b] relative h-screen">
         <div className="absolute inset-0 m-4 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl">
            <video 
              src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/efecto-recording-2025-11-29T22-59-44.webm"
