@@ -27,8 +27,8 @@ export const TestCaseView = ({ testCases, testResults }: TestCaseViewProps) => {
   }
 
   return (
-    <ScrollArea className="h-full pr-4">
-      <div className="space-y-3">
+    <ScrollArea className="h-full">
+      <div className="space-y-3 p-4">
         {testCases.map((test, index) => {
           const result = testResults[test.id];
           const hasRun = !!result;
