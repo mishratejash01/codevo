@@ -6,9 +6,7 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { ShieldAlert, Lock, Timer, Video, Maximize, FileText, CheckCircle2, AlertTriangle, Monitor, AlertCircle } from 'lucide-react';
+import { ShieldAlert, Lock, Timer, Video, Maximize } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -37,13 +35,11 @@ const Exam = () => {
 
   // --- State ---
   const [isExamStarted, setIsExamStarted] = useState(false);
-  const [rulesAccepted, setRulesAccepted] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
   
-  // Time & Metrics
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [totalDuration, setTotalDuration] = useState(0); // In seconds
+  // Timers
+  const [elapsedTime, setElapsedTime] = useState(0); 
   const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
 
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -64,7 +60,7 @@ const Exam = () => {
 
   const MAX_VIOLATIONS = 3;
 
-  // --- Data Fetching ---
+  // --- 1. Data Fetching ---
   const { data: assignments = [] } = useQuery({
     queryKey: ['exam_assignments', iitmSubjectId, examType, setName],
     queryFn: async () => {
@@ -82,33 +78,33 @@ const Exam = () => {
     },
   });
 
-  // Calculate total duration when assignments load
-  useEffect(() => {
-    if (assignments.length > 0) {
-      const totalMinutes = assignments.reduce((acc: number, curr: any) => acc + (curr.expected_time || 0), 0);
-      setTotalDuration(totalMinutes * 60);
-    }
-  }, [assignments]);
-
   useEffect(() => {
     currentQuestionRef.current = selectedAssignmentId;
   }, [selectedAssignmentId]);
 
-  // --- Media Logic (Fixed Sensitivity) ---
+  // --- 2. Strict Monitoring Logic ---
+
   const startMediaStream = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, frameRate: 15 }, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 320, height: 240, frameRate: 15 }, 
+        audio: true 
+      });
       setMediaStream(stream);
       
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioContext = new AudioContextClass();
-      if (audioContext.state === 'suspended') await audioContext.resume();
+      
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
 
       const analyser = audioContext.createAnalyser();
       const microphone = audioContext.createMediaStreamSource(stream);
       analyser.fftSize = 256;
       analyser.smoothingTimeConstant = 0.5;
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
       microphone.connect(analyser);
       
       audioContextRef.current = audioContext;
@@ -118,26 +114,24 @@ const Exam = () => {
       analyzeAudio();
       return true;
     } catch (err) {
-      console.error(err);
-      toast({ title: "Permission Denied", description: "Camera and Microphone access are required.", variant: "destructive" });
+      console.error("Media Error:", err);
+      toast({ title: "Permission Denied", description: "Camera/Mic access is mandatory.", variant: "destructive" });
       return false;
     }
   };
 
   const analyzeAudio = () => {
     if (!analyserRef.current || !dataArrayRef.current) return;
+    
     analyserRef.current.getByteFrequencyData(dataArrayRef.current);
     
     let sum = 0;
-    // Calculate average of lower frequencies (voice range)
-    for (let i = 0; i < dataArrayRef.current.length / 2; i++) {
+    for (let i = 0; i < dataArrayRef.current.length; i++) {
       sum += dataArrayRef.current[i];
     }
-    const average = sum / (dataArrayRef.current.length / 2);
-    
-    // Adjust sensitivity: Subtract noise floor (15) and scale up
-    const adjustedAvg = Math.max(0, average - 15);
-    const volume = Math.min(100, Math.round(adjustedAvg * 3.5)); 
+    const average = sum / dataArrayRef.current.length;
+    const adjustedAverage = Math.max(0, average - 20); 
+    const volume = Math.min(100, Math.round(adjustedAverage * 3)); 
     
     setAudioLevel(volume);
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
@@ -152,7 +146,6 @@ const Exam = () => {
     return false;
   };
 
-  // --- Violation Logic ---
   const handleViolation = async (type: string, message: string) => {
     if (!isExamStarted || isSubmitting) return;
     
@@ -164,18 +157,18 @@ const Exam = () => {
     }
 
     if (newCount >= MAX_VIOLATIONS) {
-      finishExam("TERMINATED: Excessive Violations");
+      finishExam("Terminated: Max Violations Reached");
     } else {
       toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 });
     }
   };
 
-  // Event Listeners
+  // --- 3. Event Listeners ---
   useEffect(() => {
     if (!isExamStarted) return;
 
     const handleVisibility = () => { if (document.hidden) handleViolation("Tab Switch", "Tab switching detected."); };
-    const handleFullScreen = () => { if (!document.fullscreenElement && !isSubmitting) finishExam("TERMINATED: Fullscreen Exited"); };
+    const handleFullScreen = () => { if (!document.fullscreenElement && !isSubmitting) finishExam("Terminated: Fullscreen Exited"); };
     
     const handleKeys = (e: KeyboardEvent) => {
       if (e.metaKey || e.key === 'Meta' || e.key === 'Escape' || e.key === 'OS' || (e.altKey && e.key === 'Tab')) {
@@ -209,21 +202,13 @@ const Exam = () => {
     }
   }, [videoNode, mediaStream]);
 
-  // --- Timer Logic (Auto Submit) ---
+  // --- 4. Timers ---
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isExamStarted && !isSubmitting) {
       interval = setInterval(() => {
-        setElapsedTime(prev => {
-          const newTime = prev + 1;
-          // Auto-submit if time runs out (only if totalDuration is set)
-          if (totalDuration > 0 && newTime >= totalDuration) {
-            clearInterval(interval);
-            finishExam("TIME_UP"); // Special flag for successful time-up
-          }
-          return newTime;
-        });
-
+        setElapsedTime(prev => prev + 1);
+        
         if (currentQuestionRef.current) {
           const qId = currentQuestionRef.current;
           setQuestionMetrics(prev => ({
@@ -240,31 +225,38 @@ const Exam = () => {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isExamStarted, isSubmitting, totalDuration]);
+  }, [isExamStarted, isSubmitting]);
 
-  // --- Handlers ---
+  // --- 5. Handlers ---
 
   const handleStartExamRequest = async () => {
-    if (!rulesAccepted) {
-        toast({ title: "Agreement Required", description: "Please accept the exam rules.", variant: "destructive" });
-        return;
-    }
     const perms = await startMediaStream();
     if (!perms) return;
     const fs = await enterFullScreen();
     if (!fs) { toast({ title: "Full Screen Required", variant: "destructive" }); return; }
     
     if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-      await audioContextRef.current.resume();
+      await audioContext.resume();
     }
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate('/auth'); return; }
-      const { data: session } = await supabase.from('exam_sessions').insert({ user_id: user.id, total_questions: assignments.length, status: 'in_progress', start_time: new Date().toISOString() }).select().single();
-      if (session) setSessionId(session.id);
       
+      // INSERT SESSION WITH METADATA (Crucial for Leaderboard)
+      const { data: session } = await supabase.from('exam_sessions').insert({
+        user_id: user.id,
+        total_questions: assignments.length,
+        status: 'in_progress',
+        start_time: new Date().toISOString(),
+        subject_id: iitmSubjectId || null,
+        exam_type: decodeURIComponent(examType || ''),
+        set_name: setName
+      }).select().single();
+      
+      if (session) setSessionId(session.id);
       setIsExamStarted(true);
+      
       if (assignments.length > 0) {
         setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('q', assignments[0].id); return p; });
       }
@@ -285,12 +277,10 @@ const Exam = () => {
     }));
   };
 
-  // --- Finish Exam Logic ---
-  const finishExam = (statusReason?: string) => {
+  const finishExam = (reason?: string) => {
     setIsSubmitting(true);
     setFinishDialogOpen(false);
     
-    // Stop Media
     if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
     if (audioContextRef.current) audioContextRef.current.close();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
@@ -314,10 +304,6 @@ const Exam = () => {
       };
     });
 
-    // Logic: If statusReason contains "TERMINATED", it's an error. Otherwise (manual or time up), it's success.
-    const isTermination = statusReason?.includes("TERMINATED");
-    const displayReason = isTermination ? statusReason : (statusReason === "TIME_UP" ? "Time Limit Reached" : null);
-
     const resultsPayload = {
       stats: {
         score: totalScore,
@@ -328,14 +314,18 @@ const Exam = () => {
         attempted: qIds.length
       },
       questionDetails,
-      terminationReason: displayReason, // Only passed if it's an error or specific status
-      isError: isTermination, // Explicit flag for the result page
-      totalTime: elapsedTime
+      terminationReason: reason || null,
+      totalTime: elapsedTime,
+      examMetadata: { // Pass metadata for leaderboard query
+        subjectId: iitmSubjectId,
+        examType,
+        setName
+      }
     };
 
     if (sessionId) {
       supabase.from('exam_sessions').update({
-        status: isTermination ? 'terminated' : 'completed',
+        status: reason ? 'terminated' : 'completed',
         end_time: new Date().toISOString(),
         duration_seconds: elapsedTime,
         questions_attempted: qIds.length,
@@ -410,119 +400,14 @@ const Exam = () => {
              </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
-          /* Full Page Instructions Layout */
-          <div className="h-full w-full bg-[#09090b] text-white flex flex-col lg:flex-row overflow-hidden">
-            
-            {/* LEFT: Instructions Panel (Scrollable) */}
-            <div className="flex-1 overflow-auto border-r border-white/10 bg-[#0c0c0e]">
-              <div className="p-8 lg:p-12 space-y-8 max-w-3xl mx-auto">
-                <div className="space-y-4 border-b border-white/10 pb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-4">
-                    <FileText className="w-8 h-8" />
-                  </div>
-                  <h1 className="text-4xl font-bold font-neuropol tracking-wide text-white">Exam Instructions</h1>
-                  <p className="text-lg text-muted-foreground leading-relaxed">
-                    Welcome to the proctored assessment environment. Please read the following rules carefully before proceeding. 
-                    Violation of these rules will result in immediate termination of your session.
-                  </p>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="flex gap-4">
-                    <div className="mt-1"><ShieldAlert className="w-6 h-6 text-red-400" /></div>
-                    <div>
-                      <h3 className="font-bold text-lg text-white mb-2">Zero Tolerance Policy</h3>
-                      <p className="text-sm text-gray-400 leading-relaxed">
-                        This exam uses AI-based monitoring. Any attempt to switch tabs, minimize the browser, or exit full-screen mode is recorded as a violation. 
-                        <strong>Accumulating 3 violations will automatically submit and lock your exam.</strong>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="mt-1"><Monitor className="w-6 h-6 text-blue-400" /></div>
-                    <div>
-                      <h3 className="font-bold text-lg text-white mb-2">System Requirements</h3>
-                      <ul className="list-disc list-outside ml-4 space-y-2 text-sm text-gray-400">
-                        <li><strong>Full Screen:</strong> You must remain in full-screen mode for the entire duration.</li>
-                        <li><strong>Webcam & Mic:</strong> Your camera and microphone must remain active. Do not cover the camera or mute the microphone.</li>
-                        <li><strong>Clipboard:</strong> Copy, Paste, and Right-Click functionalities are disabled within the editor.</li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="mt-1"><AlertTriangle className="w-6 h-6 text-yellow-500" /></div>
-                    <div>
-                      <h3 className="font-bold text-lg text-white mb-2">Prohibited Actions</h3>
-                      <ul className="list-disc list-outside ml-4 space-y-2 text-sm text-gray-400">
-                        <li>Using keyboard shortcuts like <code className="bg-white/10 px-1 rounded">Alt+Tab</code>, <code className="bg-white/10 px-1 rounded">Win</code>, or <code className="bg-white/10 px-1 rounded">Cmd+Tab</code>.</li>
-                        <li>Using a secondary monitor or external device.</li>
-                        <li>Having another person in the room.</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <div className="h-full flex flex-col items-center justify-center p-6 space-y-8 bg-[#09090b]">
+            <div className="text-center space-y-2"><h1 className="text-3xl font-bold font-neuropol text-white">System Check</h1><p className="text-muted-foreground">Verification required.</p></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+               <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto text-blue-400"><Video /></div><div><h3 className="font-medium">Camera & Mic</h3><p className="text-xs text-muted-foreground">Active</p></div></div>
+               <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto text-purple-400"><Maximize /></div><div><h3 className="font-medium">Full Screen</h3><p className="text-xs text-muted-foreground">Mandatory</p></div></div>
+               <div className="bg-white/5 border border-white/10 p-6 rounded-xl text-center space-y-4"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-red-400"><ShieldAlert /></div><div><h3 className="font-medium">No Switching</h3><p className="text-xs text-muted-foreground">Instant Fail</p></div></div>
             </div>
-
-            {/* RIGHT: System Check & Action (Fixed) */}
-            <div className="lg:w-[450px] bg-[#09090b] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col">
-              <div className="flex-1 p-8 flex flex-col justify-center space-y-8">
-                <div>
-                  <h2 className="text-2xl font-bold text-white mb-6">System Check</h2>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                      <div className="flex items-center gap-3">
-                        <Video className="w-5 h-5 text-blue-400" />
-                        <span className="text-sm font-medium">Webcam</span>
-                      </div>
-                      <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded">Ready</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                      <div className="flex items-center gap-3">
-                        <Mic className="w-5 h-5 text-blue-400" />
-                        <span className="text-sm font-medium">Microphone</span>
-                      </div>
-                      <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded">Ready</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                      <div className="flex items-center gap-3">
-                        <Maximize className="w-5 h-5 text-blue-400" />
-                        <span className="text-sm font-medium">Fullscreen</span>
-                      </div>
-                      <span className="text-xs font-bold text-orange-400 bg-orange-400/10 px-2 py-1 rounded">Required</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-6 pt-6 border-t border-white/10">
-                  <div className="flex items-start space-x-3">
-                    <Checkbox 
-                      id="terms" 
-                      checked={rulesAccepted} 
-                      onCheckedChange={(c) => setRulesAccepted(c as boolean)} 
-                      className="mt-1 border-white/30 data-[state=checked]:bg-primary data-[state=checked]:text-black"
-                    />
-                    <div className="grid gap-1.5 leading-none">
-                      <label htmlFor="terms" className="text-sm font-medium text-white cursor-pointer select-none">
-                        I have read and agree to the exam rules. I understand that my session will be recorded and monitored.
-                      </label>
-                    </div>
-                  </div>
-
-                  <Button 
-                    size="lg" 
-                    className="w-full bg-primary hover:bg-primary/90 text-white h-14 text-lg font-bold rounded-xl shadow-lg shadow-blue-900/20 transition-all active:scale-[0.98]"
-                    onClick={handleStartExamRequest}
-                    disabled={!rulesAccepted}
-                  >
-                    Start Exam Session
-                  </Button>
-                </div>
-              </div>
-            </div>
-
+            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-12 py-6 text-lg" onClick={handleStartExamRequest}>I Agree & Start Exam</Button>
           </div>
         )}
       </div>
