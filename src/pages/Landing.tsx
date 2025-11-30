@@ -54,13 +54,13 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white selection:bg-primary/20 flex flex-col">
-      {/* Header is now fixed, so it floats over the content */}
+    // CHANGED: bg-black instead of bg-[#09090b] for seamless loading
+    <div className="min-h-screen bg-black text-white selection:bg-primary/20 flex flex-col">
+      {/* Header */}
       <Header session={session} onLogout={handleLogout} />
 
       <main className="flex-1 w-full">
         {/* Hero Section with DarkVeil Background */}
-        {/* CHANGED: Added min-h-screen so it covers the full height behind the fixed header */}
         <section className="relative w-full min-h-screen overflow-hidden pt-32 pb-48 text-center flex flex-col justify-center">
           {/* Absolute Background at Z-0 */}
           <div className="absolute inset-0 z-0 h-full w-full">
@@ -90,7 +90,6 @@ const Landing = () => {
                 </p>
               </div>
 
-              {/* Feature Cards Grid */}
               <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mt-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
                 
                 {/* Learning Environment Card */}
