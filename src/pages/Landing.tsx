@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import DarkVeil from '@/components/DarkVeil';
+import { cn } from "@/lib/utils";
 
 // --- Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
@@ -90,15 +91,11 @@ const Landing = () => {
   };
 
   // --- Animation Calculations ---
-  // Scale: 1 -> 0.9 (Shrinks width, but top stays fixed due to origin)
   const scale = Math.max(0.9, 1 - scrollY / 1500);
-  
-  // Radius: 0 -> 60px (Only applies to bottom corners)
   const borderRadius = Math.min(60, scrollY / 8);
 
   return (
     <div className="min-h-screen bg-white selection:bg-primary/20 flex flex-col">
-      {/* Inline styles for custom scroller animation */}
       <style>{`
         @keyframes scroll-arrow-move {
           0% { transform: translateY(0); opacity: 0.5; }
@@ -124,16 +121,12 @@ const Landing = () => {
             <div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
               style={{
-                // Scale affects width, but top is pinned by transformOrigin
                 transform: `scale(${scale})`, 
                 transformOrigin: 'top center', 
-                
-                // Radius only on bottom corners
                 borderBottomLeftRadius: `${borderRadius}px`,
                 borderBottomRightRadius: `${borderRadius}px`,
                 borderTopLeftRadius: '0px',
                 borderTopRightRadius: '0px',
-                
                 transition: 'transform 0.1s ease-out, border-radius 0.1s ease-out',
               }}
             >
@@ -188,23 +181,43 @@ const Landing = () => {
                     </div>
                   </div>
 
-                  {/* --- NEW: COMPACT TESTIMONIAL STRIP --- */}
-                  <div className="flex flex-col items-center gap-5 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+                  {/* --- TESTIMONIAL STRIP (Horizontal Layout) --- */}
+                  <div className="flex flex-wrap items-center justify-center gap-4 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
                     
                     {/* Avatar Group */}
-                    <div className="flex items-center justify-center -space-x-5">
+                    <div className="flex items-center -space-x-4">
                       {[
-                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
-                        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
-                        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
-                      ].map((src, i) => (
+                        { 
+                          src: "https://images.unsplash.com/photo-1628157588553-5eeea00af15c?w=150&h=150&fit=crop", 
+                          rotate: "-rotate-6", 
+                          zIndex: "z-0" 
+                        },
+                        { 
+                          src: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150&h=150&fit=crop", 
+                          rotate: "rotate-3", 
+                          zIndex: "z-10" 
+                        },
+                        { 
+                          src: "https://images.unsplash.com/photo-1619895862022-09114b41f16f?w=150&h=150&fit=crop", 
+                          rotate: "-rotate-3", 
+                          zIndex: "z-20" 
+                        },
+                        { 
+                          src: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=150&h=150&fit=crop", 
+                          rotate: "rotate-6", 
+                          zIndex: "z-30" 
+                        }
+                      ].map((item, i) => (
                         <div 
                           key={i} 
-                          className="relative w-12 h-14 md:w-14 md:h-16 rounded-2xl border-[3px] border-[#0c0c0e] overflow-hidden shadow-lg transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-110 hover:z-10 hover:border-white/40 hover:shadow-2xl bg-gray-800"
+                          className={cn(
+                            "relative w-10 h-12 md:w-12 md:h-14 rounded-xl border-[2px] border-[#0c0c0e] overflow-hidden shadow-lg transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-110 hover:!z-50 hover:border-white/40 hover:shadow-2xl bg-gray-800",
+                            item.rotate,
+                            item.zIndex
+                          )}
                         >
                           <img 
-                            src={src} 
+                            src={item.src} 
                             alt="User" 
                             className="w-full h-full object-cover opacity-90 hover:opacity-100"
                           />
@@ -212,9 +225,9 @@ const Landing = () => {
                       ))}
                     </div>
 
-                    {/* Trust Text */}
-                    <p className="text-sm md:text-base font-medium text-muted-foreground/80 tracking-wide">
-                      Trusted by <span className="text-white font-semibold">100K+</span> community users
+                    {/* Trust Text - Same Line */}
+                    <p className="text-xs md:text-sm font-medium text-muted-foreground/80 tracking-wide border-l border-white/10 pl-4 h-full flex items-center">
+                      Trusted by <span className="text-white font-semibold mx-1">100K+</span> community users
                     </p>
                   </div>
                   {/* -------------------------------------- */}
@@ -238,7 +251,7 @@ const Landing = () => {
           </div>
         </div>
 
-        {/* Modes Section (Below Fold - Dark Theme Resumes) */}
+        {/* Modes Section */}
         <section id="modes-section" className="relative w-full min-h-screen flex items-center justify-center bg-[#09090b] z-10 py-24">
           <div className="container mx-auto px-6">
             <div className="text-center mb-16 space-y-4">
@@ -247,10 +260,8 @@ const Landing = () => {
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              {/* Learning Environment Card */}
               <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-primary/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col overflow-hidden h-full">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                
                 <div className="relative z-10 flex-1">
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-primary/20">
                     <Code2 className="w-8 h-8 text-primary" />
@@ -265,7 +276,6 @@ const Landing = () => {
                     </ul>
                   </div>
                 </div>
-
                 <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
                   <Button 
                     size="lg"
@@ -278,10 +288,8 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* Proctored Environment Card */}
               <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-red-500/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col overflow-hidden h-full">
                 <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                
                 <div className="relative z-10 flex-1">
                   <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-red-500/20">
                     <Lock className="w-8 h-8 text-red-500" />
@@ -296,7 +304,6 @@ const Landing = () => {
                     </ul>
                   </div>
                 </div>
-
                 <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
                   <Button 
                     size="lg"
