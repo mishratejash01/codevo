@@ -9,8 +9,8 @@ import Practice from "./pages/Practice";
 import Exam from "./pages/Exam";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
-import SubjectOppeSelection from "./pages/SubjectOppeSelection";
 import SubjectModeSelection from "./pages/SubjectModeSelection"; 
+import DegreeSelection from "./pages/DegreeSelection";
 import { SplashScreen } from "@/components/SplashScreen";
 
 const queryClient = new QueryClient();
@@ -52,10 +52,10 @@ const App = () => {
             
             {/* IITM Routes */}
             
-            {/* Step 1: Select OPPE 1 or 2 */}
-            <Route path="/degree/subject/:subjectId/:subjectName" element={<SubjectOppeSelection />} />
+            {/* Main Selection Hub */}
+            <Route path="/degree" element={<DegreeSelection />} />
             
-            {/* Step 2: Select Mode (Learning/Exam) - Now includes examType */}
+            {/* Mode Selection (Learning/Exam) */}
             <Route path="/degree/mode/:subjectId/:subjectName/:examType" element={<SubjectModeSelection />} />
             
             <Route path="*" element={<NotFound />} />
