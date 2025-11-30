@@ -20,11 +20,11 @@ export function Header({ session, onLogout }: HeaderProps) {
     { label: 'About', href: '/about' },
   ];
 
-  // Safely get the user's name from metadata, fallback to email if missing
   const userName = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || session?.user?.email;
 
   return (
-    <header className="sticky top-5 z-50 mx-auto w-full max-w-4xl px-4 md:px-0 transition-all duration-300">
+    // CHANGED: 'sticky' -> 'fixed', added 'left-0 right-0' to center it while fixed
+    <header className="fixed top-5 z-50 left-0 right-0 mx-auto w-full max-w-4xl px-4 md:px-0 transition-all duration-300">
       <div className={cn(
         "rounded-2xl border border-white/10 shadow-2xl",
         "bg-black/60 backdrop-blur-xl supports-[backdrop-filter]:bg-black/40",
