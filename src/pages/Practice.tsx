@@ -36,7 +36,6 @@ const Practice = () => {
     queryFn: async () => {
       // @ts-ignore
       let query = supabase.from(activeTables.assignments).select('id, title, category, expected_time');
-      
       if (iitmSubjectId) {
         // @ts-ignore
         query = query.eq('subject_id', iitmSubjectId);
@@ -45,29 +44,24 @@ const Practice = () => {
           query = query.eq('category', categoryParam);
         }
       }
-      
       const { data, error } = await query;
       if (error) throw error;
       
       let result = data || [];
-      
       if (limitParam) {
         const limit = parseInt(limitParam);
-        // SAFETY: Even if limit > available, slice just returns what exists (available questions)
-        // This ensures questions "don't disappear" if requested count is too high
+        // SAFETY: slice(0, 10) on array of length 5 returns 5. This prevents "disappearing" questions.
         if (!isNaN(limit) && limit > 0) {
           result = result.sort(() => 0.5 - Math.random()).slice(0, limit);
         }
       } else {
         result = result.sort((a, b) => a.title.localeCompare(b.title));
       }
-      
       return result;
     },
   });
 
   useEffect(() => {
-    // If questions exist but none selected, select the first one
     if (assignments.length > 0 && !selectedAssignmentId) {
       setSearchParams(prev => {
         const p = new URLSearchParams(prev);
@@ -110,9 +104,7 @@ const Practice = () => {
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden selection:bg-primary/20">
       <header className="border-b border-white/10 bg-[#09090b] px-4 py-3 flex items-center justify-between z-50 shadow-md shrink-0 h-16">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-white hover:bg-white/10">
-            <Home className="w-5 h-5" />
-          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-white hover:bg-white/10"><Home className="w-5 h-5" /></Button>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
             <LayoutGrid className="w-4 h-4 text-primary" />
             <h1 className="text-sm font-bold tracking-tight text-primary hidden sm:block">
@@ -122,12 +114,9 @@ const Practice = () => {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-sm font-bold bg-black/40 border-white/10 text-muted-foreground">
-            <Timer className="w-4 h-4" />
-            <span>{formatTime(elapsedTime)}</span>
+            <Timer className="w-4 h-4" /><span>{formatTime(elapsedTime)}</span>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExitEnvironment} className="gap-2 border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/10">
-            <LogOut className="w-4 h-4" /> Exit
-          </Button>
+          <Button variant="outline" size="sm" onClick={handleExitEnvironment} className="gap-2 border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/10"><LogOut className="w-4 h-4" /> Exit</Button>
         </div>
       </header>
 
@@ -153,10 +142,7 @@ const Practice = () => {
                   tables={activeTables} 
                 />
               ) : (
-                <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground">
-                  <LayoutGrid className="w-10 h-10 mb-4 opacity-20" />
-                  <p>Select a question to begin</p>
-                </div>
+                <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground"><LayoutGrid className="w-10 h-10 mb-4 opacity-20" /><p>Select a question to begin</p></div>
               )}
             </ErrorBoundary>
           </ResizablePanel>
@@ -165,14 +151,8 @@ const Practice = () => {
 
       <Dialog open={isExitDialogOpen} onOpenChange={setIsExitDialogOpen}>
         <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>End Practice Session?</DialogTitle>
-            <DialogDescription>Your progress for this session will be cleared.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsExitDialogOpen(false)}>Cancel</Button>
-            <Button onClick={confirmExit} variant="destructive">End Session</Button>
-          </DialogFooter>
+          <DialogHeader><DialogTitle>End Practice Session?</DialogTitle><DialogDescription>Your progress for this session will be cleared.</DialogDescription></DialogHeader>
+          <DialogFooter><Button variant="ghost" onClick={() => setIsExitDialogOpen(false)}>Cancel</Button><Button onClick={confirmExit} variant="destructive">End Session</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
