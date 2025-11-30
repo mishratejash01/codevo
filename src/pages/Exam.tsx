@@ -6,7 +6,7 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, AlertTriangle, Lock, LogOut, FileWarning, CheckCircle2, Timer } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Lock, LogOut, FileWarning, CheckCircle2, Timer, Trophy, Target, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
@@ -17,6 +17,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -49,6 +59,17 @@ const Exam = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [violationLogs, setViolationLogs] = useState<ViolationLog[]>([]);
   const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
+
+  // Dialog States
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [examStats, setExamStats] = useState({
+    attempted: 0,
+    correct: 0,
+    score: 0,
+    total: 0,
+    accuracy: 0
+  });
 
   // Constants
   const MAX_VIOLATIONS = 3;
@@ -139,7 +160,6 @@ const Exam = () => {
     const handleFullScreenChange = () => {
       if (!document.fullscreenElement && !isSubmitting) {
         handleViolation("fullscreen_exit", "You cannot exit full screen mode.");
-        // Try to force it back? Usually requires user gesture.
       }
     };
 
@@ -183,10 +203,7 @@ const Exam = () => {
   // Actions
   const startExam = async () => {
     try {
-      console.log('Starting exam...');
-      // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      console.log('User data:', user, 'User error:', userError);
       
       if (!user) {
         toast({
@@ -198,16 +215,12 @@ const Exam = () => {
         return;
       }
 
-      // Get user profile
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('id', user.id)
         .single();
       
-      console.log('Profile:', profile, 'Profile error:', profileError);
-
-      // Create exam session
       const sessionData = {
         user_id: user.id,
         user_email: user.email || '',
@@ -217,37 +230,14 @@ const Exam = () => {
         start_time: new Date().toISOString(),
       };
       
-      console.log('Creating session with data:', sessionData);
-
       const { data: session, error } = await supabase
         .from('exam_sessions')
         .insert(sessionData)
         .select()
         .single();
 
-      console.log('Session created:', session, 'Error:', error);
+      if (error) throw error;
 
-      if (error) {
-        console.error('Error creating exam session:', error);
-        toast({
-          title: "Error",
-          description: `Failed to start exam session: ${error.message}`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!session) {
-        console.error('No session returned');
-        toast({
-          title: "Error",
-          description: "Failed to create exam session",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log('Session ID set to:', session.id);
       setSessionId(session.id);
       enterFullScreen();
       setIsExamStarted(true);
@@ -260,33 +250,53 @@ const Exam = () => {
       if (assignments.length > 0 && !selectedAssignmentId) {
         setSearchParams({ q: assignments[0].id });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting exam:', error);
       toast({
         title: "Error",
-        description: `Failed to start exam: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to start exam: ${error.message}`,
         variant: "destructive",
       });
     }
   };
 
+  const handleFinishRequest = () => {
+    setFinishDialogOpen(true);
+  };
+
+  const handleConfirmFinish = () => {
+    setFinishDialogOpen(false);
+    submitExam("User initiated submission");
+  };
+
   const submitExam = async (reason?: string) => {
     console.log('Submitting exam with reason:', reason, 'Session ID:', sessionId);
-    setIsSubmitting(true);
+    setIsSubmitting(true); // Stops timer
+    
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
 
-    if (sessionId) {
-      // Calculate metrics
-      const questionsAttempted = Object.keys(questionMetrics).length;
-      const questionsCorrect = Object.values(questionMetrics).filter(m => m.isCorrect).length;
-      const totalScore = Object.values(questionMetrics).reduce((sum, m) => sum + m.score, 0);
-      const totalAttempts = Object.values(questionMetrics).reduce((sum, m) => sum + m.attempts, 0);
-      const avgAttemptsPerCorrect = questionsCorrect > 0 ? totalAttempts / questionsCorrect : 0;
+    // Calculate metrics locally for immediate display
+    const questionsAttempted = Object.keys(questionMetrics).length;
+    const questionsCorrect = Object.values(questionMetrics).filter(m => m.isCorrect).length;
+    const totalScore = Object.values(questionMetrics).reduce((sum, m) => sum + m.score, 0);
+    const totalAttempts = Object.values(questionMetrics).reduce((sum, m) => sum + m.attempts, 0);
+    const avgAttemptsPerCorrect = questionsCorrect > 0 ? totalAttempts / questionsCorrect : 0;
+    const accuracy = questionsAttempted > 0 ? Math.round((questionsCorrect / questionsAttempted) * 100) : 0;
 
+    // Set stats for summary modal
+    setExamStats({
+      attempted: questionsAttempted,
+      correct: questionsCorrect,
+      score: totalScore,
+      total: assignments.length,
+      accuracy: accuracy
+    });
+
+    if (sessionId) {
       const finalData = {
-        status: reason ? 'terminated' : 'completed',
+        status: reason && reason.includes("User") ? 'completed' : 'terminated',
         end_time: new Date().toISOString(),
         duration_seconds: elapsedTime,
         questions_attempted: questionsAttempted,
@@ -296,41 +306,23 @@ const Exam = () => {
         avg_attempts_per_correct: avgAttemptsPerCorrect,
       };
       
-      console.log('Final exam data:', finalData);
-
-      // Update exam session
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('exam_sessions')
         .update(finalData)
-        .eq('id', sessionId)
-        .select();
+        .eq('id', sessionId);
         
-      console.log('Exam submission result:', { data, error });
-      
       if (error) {
         console.error('Error submitting exam:', error);
         toast({
           title: "Error",
-          description: `Failed to submit exam: ${error.message}`,
+          description: `Failed to save submission: ${error.message}`,
           variant: "destructive",
         });
-        setIsSubmitting(false);
-        return;
       }
-    } else {
-      console.warn('No session ID available for submission');
     }
     
-    toast({
-      title: "Exam Submitted",
-      description: reason || "Your exam has been submitted successfully.",
-      variant: reason ? "destructive" : "default",
-    });
-
-    // Short delay before redirect
-    setTimeout(() => {
-      navigate('/');
-    }, 2000);
+    // Open Summary Modal instead of navigating immediately
+    setSummaryOpen(true);
   };
 
   const handleQuestionSelect = (id: string) => {
@@ -341,8 +333,6 @@ const Exam = () => {
   };
 
   const handleQuestionAttempt = (questionId: string, isCorrect: boolean, score: number) => {
-    console.log('Question attempt:', { questionId, isCorrect, score, sessionId });
-    
     setQuestionMetrics(prev => {
       const updated = {
         ...prev,
@@ -353,37 +343,24 @@ const Exam = () => {
         }
       };
       
-      console.log('Updated question metrics:', updated);
-      
-      // Update session in database immediately with the updated state
       if (sessionId) {
         const questionsAttempted = Object.keys(updated).length;
         const questionsCorrect = Object.values(updated).filter(m => m.isCorrect).length;
         const totalScore = Object.values(updated).reduce((sum, m) => sum + m.score, 0);
         const totalAttempts = Object.values(updated).reduce((sum, m) => sum + m.attempts, 0);
         
-        const updateData = {
-          questions_attempted: questionsAttempted,
-          questions_correct: questionsCorrect,
-          total_score: totalScore,
-          total_attempts: totalAttempts,
-        };
-        
-        console.log('Updating session with data:', updateData);
-
         supabase
           .from('exam_sessions')
-          .update(updateData)
+          .update({
+            questions_attempted: questionsAttempted,
+            questions_correct: questionsCorrect,
+            total_score: totalScore,
+            total_attempts: totalAttempts,
+          })
           .eq('id', sessionId)
-          .then(({ data, error }) => {
-            if (error) {
-              console.error('Error updating session metrics:', error);
-            } else {
-              console.log('Session updated successfully:', data);
-            }
+          .then(({ error }) => {
+            if (error) console.error('Error updating session metrics:', error);
           });
-      } else {
-        console.warn('No session ID available for update');
       }
       
       return updated;
@@ -432,7 +409,7 @@ const Exam = () => {
           <Button 
             variant="destructive" 
             size="sm"
-            onClick={() => submitExam("User initiated submission")}
+            onClick={handleFinishRequest}
             className="gap-1 md:gap-2 px-2 md:px-4"
           >
             <CheckCircle2 className="w-4 h-4" />
@@ -451,7 +428,7 @@ const Exam = () => {
                 selectedId={selectedAssignmentId}
                 onSelect={handleQuestionSelect}
                 questionStatuses={questionStatuses}
-                preLoadedAssignments={assignments as any} // Reusing type from Practice
+                preLoadedAssignments={assignments as any} 
               />
             </ResizablePanel>
             
@@ -487,7 +464,7 @@ const Exam = () => {
         )}
       </div>
 
-      {/* Instruction Modal (Entry Gate) */}
+      {/* 1. Entry Instruction Modal */}
       <Dialog open={!isExamStarted} onOpenChange={() => {}}>
         <DialogContent className="bg-[#0c0c0e] border-red-500/20 text-white sm:max-w-lg [&>button]:hidden">
           <DialogHeader>
@@ -515,13 +492,6 @@ const Exam = () => {
                 Moving to another tab or window is strictly prohibited.
               </div>
             </div>
-            <div className="flex gap-3 items-start text-sm">
-              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-              <div>
-                <strong className="text-red-400 block mb-1">No Copy/Paste</strong>
-                Clipboard functionality is completely disabled.
-              </div>
-            </div>
             <div className="flex gap-3 items-start text-sm mt-6 border-t border-red-500/10 pt-4">
               <FileWarning className="w-5 h-5 text-orange-500 shrink-0" />
               <div className="text-orange-400">
@@ -542,6 +512,78 @@ const Exam = () => {
               onClick={startExam}
             >
               I Agree & Start Exam
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 2. Finish Confirmation Alert */}
+      <AlertDialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}>
+        <AlertDialogContent className="bg-[#0c0c0e] border-white/10 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl">Finish Exam?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Are you sure you want to finish the exam? You will not be able to return or change your answers once submitted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-white/10 hover:bg-white/5 hover:text-white">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmFinish} className="bg-red-600 hover:bg-red-700 text-white border-none">
+              Yes, Finish Exam
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 3. Summary Modal */}
+      <Dialog open={summaryOpen} onOpenChange={() => {}}>
+        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md [&>button]:hidden">
+          <DialogHeader>
+            <div className="mx-auto w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-4 border border-green-500/20">
+              <Trophy className="w-8 h-8 text-green-500" />
+            </div>
+            <DialogTitle className="text-2xl text-center">Exam Completed</DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground">
+              Your responses have been successfully recorded.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4 py-6">
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1">
+              <CheckCircle2 className="w-5 h-5 text-green-500 mb-1" />
+              <span className="text-2xl font-bold">{examStats.correct} / {examStats.total}</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Correct</span>
+            </div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1">
+              <Target className="w-5 h-5 text-blue-500 mb-1" />
+              <span className="text-2xl font-bold">{examStats.attempted}</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Attempted</span>
+            </div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1">
+              <Clock className="w-5 h-5 text-orange-500 mb-1" />
+              <span className="text-xl font-bold font-mono">{formatTime(elapsedTime)}</span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Time Taken</span>
+            </div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1">
+              <div className="text-primary font-bold text-lg mb-1">{examStats.accuracy}%</div>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Accuracy</span>
+            </div>
+          </div>
+
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-center">
+            <div className="text-sm text-blue-200">Total Score</div>
+            <div className="text-3xl font-bold text-blue-400 mt-1">{examStats.score.toFixed(0)}</div>
+          </div>
+
+          <DialogFooter className="sm:justify-center mt-4">
+            <Button 
+              className="w-full bg-white text-black hover:bg-gray-200"
+              onClick={() => {
+                sessionStorage.clear(); // Clear exam data
+                navigate('/');
+              }}
+            >
+              Return to Home
             </Button>
           </DialogFooter>
         </DialogContent>
