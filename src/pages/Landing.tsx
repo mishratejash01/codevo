@@ -12,6 +12,7 @@ const Landing = () => {
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
 
+  // Monitor Auth State & Clean URL Hash
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -54,12 +55,13 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-primary/20 flex flex-col">
-      {/* Header */}
+      {/* Header is now fixed, so it floats over the content */}
       <Header session={session} onLogout={handleLogout} />
 
       <main className="flex-1 w-full">
         {/* Hero Section with DarkVeil Background */}
-        <section className="relative w-full overflow-hidden pt-32 pb-48 text-center">
+        {/* CHANGED: Added min-h-screen so it covers the full height behind the fixed header */}
+        <section className="relative w-full min-h-screen overflow-hidden pt-32 pb-48 text-center flex flex-col justify-center">
           {/* Absolute Background at Z-0 */}
           <div className="absolute inset-0 z-0 h-full w-full">
              <DarkVeil />
@@ -159,9 +161,8 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* ... (Rest of the sections like Features and Footer remain the same) ... */}
+        {/* Features Grid */}
         <section className="container mx-auto px-6 py-24 border-t border-white/10 bg-[#09090b]">
-          {/* ... Feature cards content ... */}
           <div className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">Platform Features</h2>
               <p className="text-muted-foreground">Everything you need to master your coding skills</p>
@@ -200,6 +201,7 @@ const Landing = () => {
         </section>
       </main>
 
+      {/* Footer */}
       <footer className="border-t border-white/10 mt-12 bg-[#0c0c0e]">
         <div className="container mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
