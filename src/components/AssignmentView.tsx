@@ -23,6 +23,7 @@ interface AssignmentViewProps {
   tables?: { assignments: string; testCases: string; submissions: string; };
 }
 
+// ... regex and normalization helpers same as before ...
 const getTargetName = (code: string) => {
   const funcMatch = code.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
   if (funcMatch) return funcMatch[1];
@@ -154,6 +155,8 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
       toast({ title: 'Submitted', description: `Score: ${data.score.toFixed(0)}%` });
       onStatusUpdate('attempted');
       setBottomTab('testcases');
+      
+      // CALL PARENT TO UPDATE EXAM METRICS
       if (onAttempt) onAttempt(data.passed === data.total, data.score);
     },
     onError: (err: any) => {
