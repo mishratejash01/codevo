@@ -17,6 +17,7 @@ interface AssignmentViewProps {
   assignmentId: string;
   onStatusUpdate: (status: QuestionStatus) => void;
   currentStatus?: QuestionStatus;
+  onAttempt?: (isCorrect: boolean, score: number) => void;
 }
 
 // IMPROVED REGEX: Finds both 'def function_name' and 'class ClassName'
@@ -85,7 +86,7 @@ const executeTests = async (
   return { passedCount, newTestResults };
 };
 
-export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: AssignmentViewProps) => {
+export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, onAttempt }: AssignmentViewProps) => {
   const [code, setCode] = useState<string>(''); 
   const [consoleOutput, setConsoleOutput] = useState<string>('');
   const [testResults, setTestResults] = useState<Record<string, { output: string; passed: boolean; error?: string | null }>>({});
@@ -191,6 +192,12 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus }: 
       });
       onStatusUpdate('attempted');
       setBottomTab('testcases');
+      
+      // Notify parent about the attempt
+      const isCorrect = (data.publicPassed + data.privatePassed) === data.totalTests;
+      if (onAttempt) {
+        onAttempt(isCorrect, data.score);
+      }
     },
     onError: (err: any) => {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
