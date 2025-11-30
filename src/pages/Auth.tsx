@@ -4,10 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { AsciiScene } from "@/components/ascii-scene";
 import { cn } from "@/lib/utils";
 
-// --- Custom Typewriter Hook (Fixed Logic) ---
+// --- Custom Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
   const [displayText, setDisplayText] = useState('');
   const [started, setStarted] = useState(false);
@@ -25,12 +24,9 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
 
     const interval = setInterval(() => {
       setDisplayText((currentText) => {
-        // If we haven't typed the whole string yet
         if (currentText.length < text.length) {
-          // Add the next character based on current length
           return currentText + text.charAt(currentText.length);
         }
-        // Finished typing
         clearInterval(interval);
         return currentText;
       });
@@ -48,10 +44,8 @@ const Auth = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   
-  // Typewriter text for the video overlay
   const typewriterText = useTypewriter("Built and Maintained by Neural AI", 60, 1200);
 
-  // Redirect if already logged in
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -131,26 +125,24 @@ const Auth = () => {
             </Button>
           </div>
 
-          {/* Branding Section */}
+          {/* Branding Section - Clean & Flat */}
           <div className="pt-8 border-t border-white/10 mt-8">
             <div className="flex flex-col items-center justify-center space-y-3 opacity-90 transition-opacity cursor-default">
-              <span className={cn(
-                "font-neuropol text-2xl font-bold tracking-wider text-white",
-                "drop-shadow-[0_0_15px_rgba(255,255,255,0.15)]"
-              )}>
+              {/* Logo: Solid white, no shadow */}
+              <span className="font-neuropol text-2xl font-bold tracking-wider text-white">
                 COD
                 <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
                 VO
               </span>
               
+              {/* Subtitle with unveil animation */}
               <span className="text-[10px] uppercase tracking-[0.3em] font-medium animate-light-ray whitespace-nowrap">
-                The Product of Unknown IITians
+                A Product of Unknown IITians
               </span>
             </div>
           </div>
         </div>
         
-        {/* Footer Copyright */}
         <div className="mt-auto text-xs text-muted-foreground hidden lg:block">
           &copy; {new Date().getFullYear()} CODéVO. All rights reserved.
         </div>
@@ -168,20 +160,14 @@ const Auth = () => {
              className="w-full h-full object-cover opacity-80"
            />
            
-           {/* Overlay Gradient for text readability */}
            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 pointer-events-none z-10" />
 
-           {/* TYPEWRITER TEXT OVERLAY */}
+           {/* Typewriter Text - Clean & Flat */}
            <div className="absolute bottom-12 inset-x-0 flex justify-center z-20 pointer-events-none">
-             {/* Added more padding (px-8) and slightly raised position (bottom-12) to prevent clipping */}
              <div className="bg-black/40 backdrop-blur-sm px-8 py-3 rounded-full border border-white/5 shadow-2xl">
-               <p className={cn(
-                 "text-white/90 text-sm font-mono tracking-wider",
-                 "flex items-center gap-1",
-                 "drop-shadow-lg"
-               )}>
+               <p className="text-white/90 text-sm font-mono tracking-wider flex items-center gap-1">
                  {typewriterText}
-                 <span className="animate-pulse w-[2px] h-[1.2em] bg-green-400 inline-block shadow-[0_0_8px_rgba(74,222,128,0.8)]"></span>
+                 <span className="animate-pulse w-[2px] h-[1.2em] bg-green-400 inline-block"></span>
                </p>
              </div>
            </div>
