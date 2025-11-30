@@ -398,9 +398,9 @@ const Exam = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white flex flex-col font-sans select-none" onContextMenu={(e) => e.preventDefault()}>
+    <div className="h-screen bg-[#09090b] text-white flex flex-col font-sans select-none overflow-hidden" onContextMenu={(e) => e.preventDefault()}>
       {/* Header */}
-      <header className="h-16 border-b border-red-500/20 bg-[#0c0c0e] flex items-center justify-between px-6 z-50">
+      <header className="h-16 shrink-0 border-b border-red-500/20 bg-[#0c0c0e] flex items-center justify-between px-4 md:px-6 z-50">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded bg-red-500/10 flex items-center justify-center border border-red-500/20">
             <Lock className="w-4 h-4 text-red-500" />
@@ -408,20 +408,20 @@ const Exam = () => {
           <span className="font-bold tracking-tight text-red-500">Proctored Exam Portal</span>
         </div>
 
-        <div className="flex items-center gap-6">
-           <div className="flex items-center gap-2 px-4 py-1.5 bg-white/5 rounded-full border border-white/10">
+        <div className="flex items-center gap-2 md:gap-6">
+           <div className="hidden sm:flex items-center gap-2 px-3 md:px-4 py-1.5 bg-white/5 rounded-full border border-white/10">
             <Timer className="w-4 h-4 text-muted-foreground" />
-            <span className="font-mono font-medium">{formatTime(elapsedTime)}</span>
+            <span className="font-mono font-medium text-sm">{formatTime(elapsedTime)}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">Violations</span>
+            <span className="hidden md:block text-xs text-muted-foreground uppercase tracking-wider">Violations</span>
             <div className="flex gap-1">
               {[...Array(MAX_VIOLATIONS)].map((_, i) => (
                 <div 
                   key={i} 
                   className={cn(
-                    "w-8 h-2 rounded-full transition-colors duration-300",
+                    "w-6 md:w-8 h-2 rounded-full transition-colors duration-300",
                     i < violationCount ? "bg-red-500" : "bg-white/10"
                   )} 
                 />
@@ -433,19 +433,20 @@ const Exam = () => {
             variant="destructive" 
             size="sm"
             onClick={() => submitExam("User initiated submission")}
-            className="gap-2"
+            className="gap-1 md:gap-2 px-2 md:px-4"
           >
             <CheckCircle2 className="w-4 h-4" />
-            Finish Exam
+            <span className="hidden sm:inline">Finish Exam</span>
+            <span className="sm:hidden">Finish</span>
           </Button>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0">
         {isExamStarted ? (
-          <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#0c0c0e] border-r border-white/10">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#0c0c0e] border-r border-white/10 hidden md:block">
               <AssignmentSidebar
                 selectedId={selectedAssignmentId}
                 onSelect={handleQuestionSelect}
@@ -454,9 +455,9 @@ const Exam = () => {
               />
             </ResizablePanel>
             
-            <ResizableHandle withHandle />
+            <ResizableHandle withHandle className="hidden md:flex" />
             
-            <ResizablePanel defaultSize={80}>
+            <ResizablePanel defaultSize={80} className="h-full overflow-auto">
                <ErrorBoundary>
                 {selectedAssignmentId ? (
                    <AssignmentView 
