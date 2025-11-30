@@ -183,8 +183,11 @@ const Exam = () => {
   // Actions
   const startExam = async () => {
     try {
+      console.log('Starting exam...');
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('User data:', user, 'User error:', userError);
+      
       if (!user) {
         toast({
           title: "Authentication Required",
@@ -196,39 +199,63 @@ const Exam = () => {
       }
 
       // Get user profile
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('id', user.id)
         .single();
+      
+      console.log('Profile:', profile, 'Profile error:', profileError);
 
       // Create exam session
+      const sessionData = {
+        user_id: user.id,
+        user_email: user.email || '',
+        full_name: profile?.full_name || '',
+        total_questions: assignments.length,
+        status: 'in_progress',
+        start_time: new Date().toISOString(),
+      };
+      
+      console.log('Creating session with data:', sessionData);
+
       const { data: session, error } = await supabase
         .from('exam_sessions')
-        .insert({
-          user_id: user.id,
-          user_email: user.email || '',
-          full_name: profile?.full_name || '',
-          total_questions: assignments.length,
-          status: 'in_progress',
-          start_time: new Date().toISOString(),
-        })
+        .insert(sessionData)
         .select()
         .single();
+
+      console.log('Session created:', session, 'Error:', error);
 
       if (error) {
         console.error('Error creating exam session:', error);
         toast({
           title: "Error",
-          description: "Failed to start exam session.",
+          description: `Failed to start exam session: ${error.message}`,
           variant: "destructive",
         });
         return;
       }
 
+      if (!session) {
+        console.error('No session returned');
+        toast({
+          title: "Error",
+          description: "Failed to create exam session",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Session ID set to:', session.id);
       setSessionId(session.id);
       enterFullScreen();
       setIsExamStarted(true);
+      
+      toast({
+        title: "Exam Started",
+        description: "Your exam session has been created successfully.",
+      });
       
       if (assignments.length > 0 && !selectedAssignmentId) {
         setSearchParams({ q: assignments[0].id });
@@ -237,13 +264,14 @@ const Exam = () => {
       console.error('Error starting exam:', error);
       toast({
         title: "Error",
-        description: "Failed to start exam.",
+        description: `Failed to start exam: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }
   };
 
   const submitExam = async (reason?: string) => {
+    console.log('Submitting exam with reason:', reason, 'Session ID:', sessionId);
     setIsSubmitting(true);
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
@@ -257,20 +285,40 @@ const Exam = () => {
       const totalAttempts = Object.values(questionMetrics).reduce((sum, m) => sum + m.attempts, 0);
       const avgAttemptsPerCorrect = questionsCorrect > 0 ? totalAttempts / questionsCorrect : 0;
 
+      const finalData = {
+        status: reason ? 'terminated' : 'completed',
+        end_time: new Date().toISOString(),
+        duration_seconds: elapsedTime,
+        questions_attempted: questionsAttempted,
+        questions_correct: questionsCorrect,
+        total_score: totalScore,
+        total_attempts: totalAttempts,
+        avg_attempts_per_correct: avgAttemptsPerCorrect,
+      };
+      
+      console.log('Final exam data:', finalData);
+
       // Update exam session
-      await supabase
+      const { data, error } = await supabase
         .from('exam_sessions')
-        .update({
-          status: reason ? 'terminated' : 'completed',
-          end_time: new Date().toISOString(),
-          duration_seconds: elapsedTime,
-          questions_attempted: questionsAttempted,
-          questions_correct: questionsCorrect,
-          total_score: totalScore,
-          total_attempts: totalAttempts,
-          avg_attempts_per_correct: avgAttemptsPerCorrect,
-        })
-        .eq('id', sessionId);
+        .update(finalData)
+        .eq('id', sessionId)
+        .select();
+        
+      console.log('Exam submission result:', { data, error });
+      
+      if (error) {
+        console.error('Error submitting exam:', error);
+        toast({
+          title: "Error",
+          description: `Failed to submit exam: ${error.message}`,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+    } else {
+      console.warn('No session ID available for submission');
     }
     
     toast({
@@ -293,44 +341,53 @@ const Exam = () => {
   };
 
   const handleQuestionAttempt = (questionId: string, isCorrect: boolean, score: number) => {
-    setQuestionMetrics(prev => ({
-      ...prev,
-      [questionId]: {
-        attempts: (prev[questionId]?.attempts || 0) + 1,
-        isCorrect: isCorrect || prev[questionId]?.isCorrect || false,
-        score: Math.max(score, prev[questionId]?.score || 0)
-      }
-    }));
-
-    // Update session in database
-    if (sessionId) {
-      const updatedMetrics = {
-        ...questionMetrics,
+    console.log('Question attempt:', { questionId, isCorrect, score, sessionId });
+    
+    setQuestionMetrics(prev => {
+      const updated = {
+        ...prev,
         [questionId]: {
-          attempts: (questionMetrics[questionId]?.attempts || 0) + 1,
-          isCorrect: isCorrect || questionMetrics[questionId]?.isCorrect || false,
-          score: Math.max(score, questionMetrics[questionId]?.score || 0)
+          attempts: (prev[questionId]?.attempts || 0) + 1,
+          isCorrect: isCorrect || prev[questionId]?.isCorrect || false,
+          score: Math.max(score, prev[questionId]?.score || 0)
         }
       };
-
-      const questionsAttempted = Object.keys(updatedMetrics).length;
-      const questionsCorrect = Object.values(updatedMetrics).filter(m => m.isCorrect).length;
-      const totalScore = Object.values(updatedMetrics).reduce((sum, m) => sum + m.score, 0);
-      const totalAttempts = Object.values(updatedMetrics).reduce((sum, m) => sum + m.attempts, 0);
-
-      supabase
-        .from('exam_sessions')
-        .update({
+      
+      console.log('Updated question metrics:', updated);
+      
+      // Update session in database immediately with the updated state
+      if (sessionId) {
+        const questionsAttempted = Object.keys(updated).length;
+        const questionsCorrect = Object.values(updated).filter(m => m.isCorrect).length;
+        const totalScore = Object.values(updated).reduce((sum, m) => sum + m.score, 0);
+        const totalAttempts = Object.values(updated).reduce((sum, m) => sum + m.attempts, 0);
+        
+        const updateData = {
           questions_attempted: questionsAttempted,
           questions_correct: questionsCorrect,
           total_score: totalScore,
           total_attempts: totalAttempts,
-        })
-        .eq('id', sessionId)
-        .then(({ error }) => {
-          if (error) console.error('Error updating session metrics:', error);
-        });
-    }
+        };
+        
+        console.log('Updating session with data:', updateData);
+
+        supabase
+          .from('exam_sessions')
+          .update(updateData)
+          .eq('id', sessionId)
+          .then(({ data, error }) => {
+            if (error) {
+              console.error('Error updating session metrics:', error);
+            } else {
+              console.log('Session updated successfully:', data);
+            }
+          });
+      } else {
+        console.warn('No session ID available for update');
+      }
+      
+      return updated;
+    });
   };
 
   const formatTime = (seconds: number) => {
