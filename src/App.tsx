@@ -50,12 +50,12 @@ const App = () => {
             <Route path="/practice" element={<Practice />} />
             <Route path="/exam" element={<Exam />} />
             
-            {/* IITM New Flow Routes */}
+            {/* IITM Routes */}
             
             {/* 1. Main Filter Page + Mode Popup */}
             <Route path="/degree" element={<DegreeSelection />} />
             
-            {/* 2. Question Paper Set Selection */}
+            {/* 2. Question Paper Set/Topic Selection */}
             <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
             
             <Route path="*" element={<NotFound />} />
