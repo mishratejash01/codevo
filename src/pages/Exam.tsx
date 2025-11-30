@@ -64,7 +64,7 @@ const Exam = () => {
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
   
-  // FIX: Use state for video node to ensure we catch when it mounts
+  // Video Node State
   const [videoNode, setVideoNode] = useState<HTMLVideoElement | null>(null);
   
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -157,8 +157,6 @@ const Exam = () => {
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
   };
 
-  // FIX: This effect now depends on the videoNode state variable
-  // This guarantees the video element exists before we try to attach the stream
   useEffect(() => {
     if (videoNode && mediaStream) {
       console.log("Attaching media stream to video element");
@@ -302,11 +300,8 @@ const Exam = () => {
 
   // Actions
   const handleStartExamRequest = async () => {
-    // 1. Request Media Permissions First
     const permissionsGranted = await startMediaStream();
     if (!permissionsGranted) return;
-
-    // 2. If granted, proceed to start logic
     await startExam();
   };
 
@@ -502,12 +497,11 @@ const Exam = () => {
               <div className="w-24 h-14 bg-black rounded-md overflow-hidden border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.1)] relative">
                 {/* Live Video Feed */}
                 <video 
-                  // FIX: Use ref callback pattern via state to ensure attachment
                   ref={setVideoNode}
                   autoPlay 
                   muted 
                   playsInline 
-                  className="w-full h-full object-cover transform scale-x-[-1]" // Mirror effect
+                  className="w-full h-full object-cover transform scale-x-[-1]" 
                 />
                 
                 {/* Recording indicator dot */}
@@ -521,10 +515,8 @@ const Exam = () => {
             {/* Audio Meter Visualizer */}
             <div className="h-14 w-2 flex flex-col-reverse gap-0.5 bg-black/50 p-0.5 rounded-sm border border-white/10">
               {[...Array(10)].map((_, i) => {
-                // Calculate if this segment is "lit" based on volume
                 const threshold = (i + 1) * 10;
                 const isLit = audioLevel >= threshold;
-                // Color gradient from green to red
                 let colorClass = "bg-green-500";
                 if (i > 6) colorClass = "bg-yellow-500";
                 if (i > 8) colorClass = "bg-red-500";
@@ -622,71 +614,104 @@ const Exam = () => {
         )}
       </div>
 
-      {/* 1. Entry Instruction Modal */}
+      {/* 1. Entry Instruction Modal - REDESIGNED */}
       <Dialog open={!isExamStarted} onOpenChange={() => {}}>
-        <DialogContent className="bg-[#0c0c0e] border-red-500/20 text-white sm:max-w-lg [&>button]:hidden">
-          <DialogHeader>
-            <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/20 mx-auto">
-              <ShieldAlert className="w-6 h-6 text-red-500" />
-            </div>
-            <DialogTitle className="text-2xl text-center">Exam Environment Rules</DialogTitle>
-            <DialogDescription className="text-center text-muted-foreground pt-2">
-              You are about to enter a secure proctored environment. Monitoring permissions are required.
+        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-3xl [&>button]:hidden overflow-hidden flex flex-col max-h-[90vh]">
+          {/* Header */}
+          <DialogHeader className="pb-4 border-b border-white/10">
+            <DialogTitle className="text-3xl font-bold text-center tracking-tight">
+              Exam Instructions
+            </DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground">
+              Please read the following instructions carefully before proceeding.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 my-4 bg-red-950/10 p-6 rounded-lg border border-red-500/10">
-            
-            {/* Permission Notice */}
-            <div className="flex gap-3 items-start text-sm bg-black/40 p-3 rounded border border-white/5 mb-4">
-               <Video className="w-5 h-5 text-blue-400 shrink-0" />
-               <div className="text-blue-200">
-                 <strong>Media Access Required</strong>
-                 <p className="opacity-70 text-xs mt-1">We will request access to your Camera and Microphone for proctoring purposes. The feed is monitored in real-time.</p>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto py-6 px-2 custom-scrollbar">
+             {/* Media Check Banner */}
+             <div className="flex items-center gap-4 bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl mb-8">
+               <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+                 <Video className="w-5 h-5 text-blue-400" />
                </div>
-            </div>
+               <div>
+                 <h4 className="font-semibold text-blue-100">Proctoring Active</h4>
+                 <p className="text-sm text-blue-300/80">Your camera, microphone, and screen activity will be monitored throughout the session.</p>
+               </div>
+             </div>
 
-            <div className="flex gap-3 items-start text-sm">
-              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-              <div>
-                <strong className="text-red-400 block mb-1">Strict Full Screen Enforcement</strong>
-                <span className="text-red-300">Leaving full screen mode will <u>immediately terminate and submit</u> your exam. No warnings.</span>
-              </div>
-            </div>
-            <div className="flex gap-3 items-start text-sm">
-              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-              <div>
-                <strong className="text-red-400 block mb-1">No Tab Switching</strong>
-                <span className="text-red-300">Moving to another tab or window will <u>immediately terminate and submit</u> your exam.</span>
-              </div>
-            </div>
-            <div className="flex gap-3 items-start text-sm">
-              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-              <div>
-                <strong className="text-red-400 block mb-1">No Copy/Paste</strong>
-                Clipboard functionality is completely disabled.
-              </div>
-            </div>
-            <div className="flex gap-3 items-start text-sm mt-6 border-t border-red-500/10 pt-4">
-              <FileWarning className="w-5 h-5 text-orange-500 shrink-0" />
-              <div className="text-orange-400">
-                <strong>Violation Policy</strong>
-                <p className="text-orange-400/70 text-xs mt-1">
-                  Exiting full screen or switching tabs terminates the exam immediately. Other violations (like copy/paste) are allowed up to 3 times before auto-submission.
-                </p>
-              </div>
-            </div>
+             <div className="grid md:grid-cols-2 gap-6">
+               {/* Do's */}
+               <div className="space-y-4">
+                 <h3 className="text-lg font-semibold flex items-center gap-2 text-green-400">
+                   <CheckCircle2 className="w-5 h-5" />
+                   Do's
+                 </h3>
+                 <ul className="space-y-3">
+                   {[
+                     "Ensure you are in a well-lit, quiet room.",
+                     "Keep your face visible in the camera frame at all times.",
+                     "Remain in full-screen mode for the entire duration.",
+                     "Ensure a stable internet connection.",
+                     "Submit your answers before the timer runs out."
+                   ].map((item, i) => (
+                     <li key={i} className="flex gap-3 text-sm text-muted-foreground">
+                       <div className="w-1.5 h-1.5 rounded-full bg-green-500/50 mt-1.5 shrink-0" />
+                       {item}
+                     </li>
+                   ))}
+                 </ul>
+               </div>
+
+               {/* Don'ts */}
+               <div className="space-y-4">
+                 <h3 className="text-lg font-semibold flex items-center gap-2 text-red-400">
+                   <AlertTriangle className="w-5 h-5" />
+                   Don'ts
+                 </h3>
+                 <ul className="space-y-3">
+                   {[
+                     "Do not switch tabs or open other windows.",
+                     "Do not exit full-screen mode.",
+                     "Do not use copy/paste functionality.",
+                     "Do not use keyboard shortcuts (Alt+Tab, Win, etc.).",
+                     "Do not move out of the camera view."
+                   ].map((item, i) => (
+                     <li key={i} className="flex gap-3 text-sm text-muted-foreground">
+                       <div className="w-1.5 h-1.5 rounded-full bg-red-500/50 mt-1.5 shrink-0" />
+                       {item}
+                     </li>
+                   ))}
+                 </ul>
+               </div>
+             </div>
+
+             {/* Termination Warning */}
+             <div className="mt-8 bg-red-500/5 border border-red-500/20 p-4 rounded-xl">
+               <h4 className="flex items-center gap-2 font-semibold text-red-400 mb-2">
+                 <ShieldAlert className="w-5 h-5" />
+                 Immediate Termination Policy
+               </h4>
+               <div className="text-sm text-red-300/70 leading-relaxed">
+                 The exam will be <strong>automatically submitted and terminated</strong> if you:
+                 <ul className="list-disc list-inside mt-1 ml-1 space-y-1 opacity-90">
+                   <li>Switch tabs or windows</li>
+                   <li>Exit full-screen mode</li>
+                   <li>Attempt to use prohibited keyboard shortcuts (Windows Key, Alt+Tab)</li>
+                 </ul>
+               </div>
+             </div>
           </div>
 
-          <DialogFooter className="sm:justify-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/')}>
-              Cancel & Exit
+          <DialogFooter className="pt-4 border-t border-white/10 sm:justify-between gap-4">
+            <Button variant="ghost" onClick={() => navigate('/')} className="hover:bg-white/5">
+              Back to Home
             </Button>
             <Button 
-              className="bg-red-600 hover:bg-red-700 text-white px-8"
+              className="bg-primary hover:bg-primary/90 text-white px-8 min-w-[200px]"
               onClick={handleStartExamRequest}
             >
-              I Agree & Start Exam
+              I Understand & Start Exam
             </Button>
           </DialogFooter>
         </DialogContent>
