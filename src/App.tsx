@@ -9,7 +9,7 @@ import Practice from "./pages/Practice";
 import Exam from "./pages/Exam";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
-import { SplashScreen } from "@/components/SplashScreen"; // Import the splash screen
+import { SplashScreen } from "@/components/SplashScreen";
 
 const queryClient = new QueryClient();
 
@@ -17,33 +17,26 @@ const App = () => {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    // Check if the user has already seen the splash screen in this session
     const hasSeenSplash = sessionStorage.getItem("has_seen_splash");
 
     if (hasSeenSplash) {
-      // If already seen (e.g., on refresh), skip splash
       setShowSplash(false);
     } else {
-      // If not seen (new tab), show splash and set flag
-      
-      // Mark as seen immediately so it doesn't show on accidental quick reload
       sessionStorage.setItem("has_seen_splash", "true");
 
-      // Duration of the splash screen (e.g., 3.5 seconds)
+      // Increased duration to 4.5s to match the new slower animations
       const timer = setTimeout(() => {
         setShowSplash(false);
-      }, 3500);
+      }, 4500);
 
       return () => clearTimeout(timer);
     }
   }, []);
 
-  // Render Splash Screen if active
   if (showSplash) {
     return <SplashScreen />;
   }
 
-  // Render Main App
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
