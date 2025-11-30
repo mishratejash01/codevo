@@ -22,6 +22,18 @@ import { cn } from "@/lib/utils";
 // Types
 type QuestionStatus = 'not-visited' | 'visited' | 'attempted' | 'review';
 
+interface ViolationLog {
+  timestamp: string;
+  type: string;
+  message: string;
+}
+
+interface QuestionMetrics {
+  attempts: number;
+  isCorrect: boolean;
+  score: number;
+}
+
 const Exam = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -34,6 +46,9 @@ const Exam = () => {
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, QuestionStatus>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [violationLogs, setViolationLogs] = useState<ViolationLog[]>([]);
+  const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
 
   // Constants
   const MAX_VIOLATIONS = 3;
@@ -69,12 +84,32 @@ const Exam = () => {
   };
 
   // 2. Violation Handler
-  const handleViolation = (type: string, message: string) => {
-    if (!isExamStarted || isSubmitting) return;
+  const handleViolation = async (type: string, message: string) => {
+    if (!isExamStarted || isSubmitting || !sessionId) return;
+
+    const violation: ViolationLog = {
+      timestamp: new Date().toISOString(),
+      type,
+      message
+    };
+
+    setViolationLogs(prev => [...prev, violation]);
 
     setViolationCount(prev => {
       const newCount = prev + 1;
       
+      // Update database with violation
+      supabase
+        .from('exam_sessions')
+        .update({
+          violation_count: newCount,
+          violation_logs: [...violationLogs, violation] as any
+        })
+        .eq('id', sessionId)
+        .then(({ error }) => {
+          if (error) console.error('Error updating violations:', error);
+        });
+
       if (newCount >= MAX_VIOLATIONS) {
         submitExam("Too many violations recorded.");
         return MAX_VIOLATIONS;
@@ -146,18 +181,96 @@ const Exam = () => {
   }, [isExamStarted, isSubmitting]);
 
   // Actions
-  const startExam = () => {
-    enterFullScreen();
-    setIsExamStarted(true);
-    if (assignments.length > 0 && !selectedAssignmentId) {
-      setSearchParams({ q: assignments[0].id });
+  const startExam = async () => {
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to start the exam.",
+          variant: "destructive",
+        });
+        navigate('/auth');
+        return;
+      }
+
+      // Get user profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      // Create exam session
+      const { data: session, error } = await supabase
+        .from('exam_sessions')
+        .insert({
+          user_id: user.id,
+          user_email: user.email || '',
+          full_name: profile?.full_name || '',
+          total_questions: assignments.length,
+          status: 'in_progress',
+          start_time: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating exam session:', error);
+        toast({
+          title: "Error",
+          description: "Failed to start exam session.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSessionId(session.id);
+      enterFullScreen();
+      setIsExamStarted(true);
+      
+      if (assignments.length > 0 && !selectedAssignmentId) {
+        setSearchParams({ q: assignments[0].id });
+      }
+    } catch (error) {
+      console.error('Error starting exam:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start exam.",
+        variant: "destructive",
+      });
     }
   };
 
-  const submitExam = (reason?: string) => {
+  const submitExam = async (reason?: string) => {
     setIsSubmitting(true);
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
+    }
+
+    if (sessionId) {
+      // Calculate metrics
+      const questionsAttempted = Object.keys(questionMetrics).length;
+      const questionsCorrect = Object.values(questionMetrics).filter(m => m.isCorrect).length;
+      const totalScore = Object.values(questionMetrics).reduce((sum, m) => sum + m.score, 0);
+      const totalAttempts = Object.values(questionMetrics).reduce((sum, m) => sum + m.attempts, 0);
+      const avgAttemptsPerCorrect = questionsCorrect > 0 ? totalAttempts / questionsCorrect : 0;
+
+      // Update exam session
+      await supabase
+        .from('exam_sessions')
+        .update({
+          status: reason ? 'terminated' : 'completed',
+          end_time: new Date().toISOString(),
+          duration_seconds: elapsedTime,
+          questions_attempted: questionsAttempted,
+          questions_correct: questionsCorrect,
+          total_score: totalScore,
+          total_attempts: totalAttempts,
+          avg_attempts_per_correct: avgAttemptsPerCorrect,
+        })
+        .eq('id', sessionId);
     }
     
     toast({
@@ -176,6 +289,47 @@ const Exam = () => {
     setSearchParams({ q: id });
     if (questionStatuses[id] !== 'attempted') {
       setQuestionStatuses(prev => ({ ...prev, [id]: 'visited' }));
+    }
+  };
+
+  const handleQuestionAttempt = (questionId: string, isCorrect: boolean, score: number) => {
+    setQuestionMetrics(prev => ({
+      ...prev,
+      [questionId]: {
+        attempts: (prev[questionId]?.attempts || 0) + 1,
+        isCorrect: isCorrect || prev[questionId]?.isCorrect || false,
+        score: Math.max(score, prev[questionId]?.score || 0)
+      }
+    }));
+
+    // Update session in database
+    if (sessionId) {
+      const updatedMetrics = {
+        ...questionMetrics,
+        [questionId]: {
+          attempts: (questionMetrics[questionId]?.attempts || 0) + 1,
+          isCorrect: isCorrect || questionMetrics[questionId]?.isCorrect || false,
+          score: Math.max(score, questionMetrics[questionId]?.score || 0)
+        }
+      };
+
+      const questionsAttempted = Object.keys(updatedMetrics).length;
+      const questionsCorrect = Object.values(updatedMetrics).filter(m => m.isCorrect).length;
+      const totalScore = Object.values(updatedMetrics).reduce((sum, m) => sum + m.score, 0);
+      const totalAttempts = Object.values(updatedMetrics).reduce((sum, m) => sum + m.attempts, 0);
+
+      supabase
+        .from('exam_sessions')
+        .update({
+          questions_attempted: questionsAttempted,
+          questions_correct: questionsCorrect,
+          total_score: totalScore,
+          total_attempts: totalAttempts,
+        })
+        .eq('id', sessionId)
+        .then(({ error }) => {
+          if (error) console.error('Error updating session metrics:', error);
+        });
     }
   };
 
@@ -251,10 +405,13 @@ const Exam = () => {
                    <AssignmentView 
                      key={selectedAssignmentId}
                      assignmentId={selectedAssignmentId}
-                     onStatusUpdate={(status) => setQuestionStatuses(prev => ({ ...prev, [selectedAssignmentId]: status }))}
+                     onStatusUpdate={(status) => {
+                       setQuestionStatuses(prev => ({ ...prev, [selectedAssignmentId]: status }));
+                     }}
                      currentStatus={questionStatuses[selectedAssignmentId]}
-                     // In exam mode, we might want to hide certain things like "Expected Time" or "Category" 
-                     // but reusing the component as is for now.
+                     onAttempt={(isCorrect: boolean, score: number) => {
+                       handleQuestionAttempt(selectedAssignmentId, isCorrect, score);
+                     }}
                    />
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-muted-foreground">

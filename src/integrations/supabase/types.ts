@@ -20,6 +20,7 @@ export type Database = {
           created_at: string | null
           deadline: string | null
           description: string
+          expected_time: number | null
           id: string
           instructions: string | null
           max_score: number | null
@@ -32,6 +33,7 @@ export type Database = {
           created_at?: string | null
           deadline?: string | null
           description: string
+          expected_time?: number | null
           id?: string
           instructions?: string | null
           max_score?: number | null
@@ -44,6 +46,7 @@ export type Database = {
           created_at?: string | null
           deadline?: string | null
           description?: string
+          expected_time?: number | null
           id?: string
           instructions?: string | null
           max_score?: number | null
@@ -53,10 +56,122 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_sessions: {
+        Row: {
+          avg_attempts_per_correct: number | null
+          created_at: string | null
+          duration_seconds: number | null
+          end_time: string | null
+          full_name: string | null
+          id: string
+          questions_attempted: number | null
+          questions_correct: number | null
+          start_time: string | null
+          status: string | null
+          total_attempts: number | null
+          total_questions: number | null
+          total_score: number | null
+          user_email: string | null
+          user_id: string
+          violation_count: number | null
+          violation_logs: Json | null
+        }
+        Insert: {
+          avg_attempts_per_correct?: number | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          end_time?: string | null
+          full_name?: string | null
+          id?: string
+          questions_attempted?: number | null
+          questions_correct?: number | null
+          start_time?: string | null
+          status?: string | null
+          total_attempts?: number | null
+          total_questions?: number | null
+          total_score?: number | null
+          user_email?: string | null
+          user_id: string
+          violation_count?: number | null
+          violation_logs?: Json | null
+        }
+        Update: {
+          avg_attempts_per_correct?: number | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          end_time?: string | null
+          full_name?: string | null
+          id?: string
+          questions_attempted?: number | null
+          questions_correct?: number | null
+          start_time?: string | null
+          status?: string | null
+          total_attempts?: number | null
+          total_questions?: number | null
+          total_score?: number | null
+          user_email?: string | null
+          user_id?: string
+          violation_count?: number | null
+          violation_logs?: Json | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          branch: string | null
+          contact_no: string | null
+          created_at: string | null
+          experience_level: string | null
+          full_name: string | null
+          github_handle: string | null
+          id: string
+          last_seen_at: string | null
+          linkedin_url: string | null
+          university: string | null
+          updated_at: string | null
+          username: string | null
+          year_of_study: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          branch?: string | null
+          contact_no?: string | null
+          created_at?: string | null
+          experience_level?: string | null
+          full_name?: string | null
+          github_handle?: string | null
+          id: string
+          last_seen_at?: string | null
+          linkedin_url?: string | null
+          university?: string | null
+          updated_at?: string | null
+          username?: string | null
+          year_of_study?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          branch?: string | null
+          contact_no?: string | null
+          created_at?: string | null
+          experience_level?: string | null
+          full_name?: string | null
+          github_handle?: string | null
+          id?: string
+          last_seen_at?: string | null
+          linkedin_url?: string | null
+          university?: string | null
+          updated_at?: string | null
+          username?: string | null
+          year_of_study?: number | null
+        }
+        Relationships: []
+      }
       submissions: {
         Row: {
           assignment_id: string
           code: string
+          contact_no: string | null
           id: string
           private_tests_passed: number | null
           private_tests_total: number | null
@@ -69,6 +184,7 @@ export type Database = {
         Insert: {
           assignment_id: string
           code: string
+          contact_no?: string | null
           id?: string
           private_tests_passed?: number | null
           private_tests_total?: number | null
@@ -81,6 +197,7 @@ export type Database = {
         Update: {
           assignment_id?: string
           code?: string
+          contact_no?: string | null
           id?: string
           private_tests_passed?: number | null
           private_tests_total?: number | null

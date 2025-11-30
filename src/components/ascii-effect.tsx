@@ -317,7 +317,17 @@ class AsciiEffectImpl extends Effect {
   }
 }
 
-export const AsciiEffect = forwardRef((props, ref) => {
+interface AsciiEffectProps {
+  style?: string;
+  cellSize?: number;
+  invert?: boolean;
+  color?: boolean;
+  postfx?: any;
+  resolution?: Vector2;
+  mousePos?: Vector2;
+}
+
+export const AsciiEffect = forwardRef<unknown, AsciiEffectProps>((props, ref) => {
   const {
     style = "standard",
     cellSize = 4,
