@@ -6,7 +6,7 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, AlertTriangle, Lock, LogOut, FileWarning, CheckCircle2, Timer, Trophy, Target, Clock, AlertCircle } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Lock, LogOut, FileWarning, CheckCircle2, Timer, Trophy, Target, Clock, Mic, Video } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
@@ -60,6 +60,15 @@ const Exam = () => {
   const [violationLogs, setViolationLogs] = useState<ViolationLog[]>([]);
   const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
 
+  // Media State
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
   // Dialog States
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -74,7 +83,7 @@ const Exam = () => {
   // Constants
   const MAX_VIOLATIONS = 3;
 
-  // Fetch Assignments (Reusing logic for content)
+  // Fetch Assignments
   const { data: assignments = [] } = useQuery({
     queryKey: ['assignments_exam'],
     queryFn: async () => {
@@ -88,9 +97,86 @@ const Exam = () => {
     },
   });
 
+  // --- Media & Audio Handling ---
+  const startMediaStream = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 320, height: 240, frameRate: 15 }, 
+        audio: true 
+      });
+      
+      setMediaStream(stream);
+      
+      // Initialize Audio Analysis
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      microphone.connect(analyser);
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      dataArrayRef.current = dataArray;
+
+      analyzeAudio();
+      return true;
+    } catch (err) {
+      console.error("Media permission denied:", err);
+      toast({
+        title: "Permission Denied",
+        description: "Camera and Microphone access are required for proctoring. Please allow access to continue.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const analyzeAudio = () => {
+    if (!analyserRef.current || !dataArrayRef.current) return;
+
+    analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+    
+    // Calculate average volume
+    let sum = 0;
+    for (let i = 0; i < dataArrayRef.current.length; i++) {
+      sum += dataArrayRef.current[i];
+    }
+    const average = sum / dataArrayRef.current.length;
+    
+    // Normalize to 0-100 range roughly
+    const volume = Math.min(100, Math.round(average * 2.5));
+    setAudioLevel(volume);
+
+    animationFrameRef.current = requestAnimationFrame(analyzeAudio);
+  };
+
+  useEffect(() => {
+    if (videoRef.current && mediaStream) {
+      videoRef.current.srcObject = mediaStream;
+    }
+  }, [mediaStream]);
+
+  // Cleanup media on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
+
   // --- Proctoring Logic ---
 
-  // 1. Full Screen Enforcement
   const enterFullScreen = async () => {
     try {
       await document.documentElement.requestFullscreen();
@@ -104,7 +190,6 @@ const Exam = () => {
     }
   };
 
-  // 2. Violation Handler
   const handleViolation = async (type: string, message: string) => {
     if (!isExamStarted || isSubmitting || !sessionId) return;
 
@@ -119,7 +204,6 @@ const Exam = () => {
     setViolationCount(prev => {
       const newCount = prev + 1;
       
-      // Update database with violation
       supabase
         .from('exam_sessions')
         .update({
@@ -147,30 +231,26 @@ const Exam = () => {
     });
   };
 
-  // 3. Event Listeners
   useEffect(() => {
     if (!isExamStarted) return;
 
     const handleVisibilityChange = () => {
-      // IMMEDIATE TERMINATION LOGIC FOR TAB SWITCHING
       if (document.hidden) {
         submitExam("Terminated: Tab Switching Detected");
       }
     };
 
     const handleFullScreenChange = () => {
-      // IMMEDIATE TERMINATION LOGIC FOR FULL SCREEN EXIT
       if (!document.fullscreenElement && !isSubmitting) {
         submitExam("Terminated: Exited Full Screen Mode");
       }
     };
 
-    // Secret Windows Key Ban
     const handleKeyDown = (e: KeyboardEvent) => {
       const isWindows = navigator.platform.includes('Win') || navigator.userAgent.includes('Windows');
       if (isWindows && (e.key === 'Meta' || e.key === 'OS')) {
-        e.preventDefault(); // Attempt to block start menu
-        submitExam("Terminated: Windows Key Usage Prohibited"); // Immediate Termination
+        e.preventDefault();
+        submitExam("Terminated: Windows Key Usage Prohibited");
       }
     };
 
@@ -214,6 +294,15 @@ const Exam = () => {
   }, [isExamStarted, isSubmitting]);
 
   // Actions
+  const handleStartExamRequest = async () => {
+    // 1. Request Media Permissions First
+    const permissionsGranted = await startMediaStream();
+    if (!permissionsGranted) return;
+
+    // 2. If granted, proceed to start logic
+    await startExam();
+  };
+
   const startExam = async () => {
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -257,7 +346,7 @@ const Exam = () => {
       
       toast({
         title: "Exam Started",
-        description: "Your exam session has been created successfully.",
+        description: "Monitoring Active. Good Luck.",
       });
       
       if (assignments.length > 0 && !selectedAssignmentId) {
@@ -283,14 +372,22 @@ const Exam = () => {
   };
 
   const submitExam = async (reason?: string) => {
-    console.log('Submitting exam with reason:', reason, 'Session ID:', sessionId);
-    setIsSubmitting(true); // Stops timer
+    console.log('Submitting exam with reason:', reason);
+    setIsSubmitting(true);
     
+    // Stop media
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
 
-    // Calculate metrics locally for immediate display
+    // Calculate metrics
     const questionsAttempted = Object.keys(questionMetrics).length;
     const questionsCorrect = Object.values(questionMetrics).filter(m => m.isCorrect).length;
     const totalScore = Object.values(questionMetrics).reduce((sum, m) => sum + m.score, 0);
@@ -298,7 +395,6 @@ const Exam = () => {
     const avgAttemptsPerCorrect = questionsCorrect > 0 ? totalAttempts / questionsCorrect : 0;
     const accuracy = questionsAttempted > 0 ? Math.round((questionsCorrect / questionsAttempted) * 100) : 0;
 
-    // Set stats for summary modal
     setExamStats({
       attempted: questionsAttempted,
       correct: questionsCorrect,
@@ -326,15 +422,9 @@ const Exam = () => {
         
       if (error) {
         console.error('Error submitting exam:', error);
-        toast({
-          title: "Error",
-          description: `Failed to save submission: ${error.message}`,
-          variant: "destructive",
-        });
       }
     }
     
-    // Open Summary Modal instead of navigating immediately
     setSummaryOpen(true);
   };
 
@@ -390,13 +480,60 @@ const Exam = () => {
   return (
     <div className="h-screen bg-[#09090b] text-white flex flex-col font-sans select-none overflow-hidden" onContextMenu={(e) => e.preventDefault()}>
       {/* Header */}
-      <header className="h-16 shrink-0 border-b border-red-500/20 bg-[#0c0c0e] flex items-center justify-between px-4 md:px-6 z-50">
+      <header className="h-16 shrink-0 border-b border-red-500/20 bg-[#0c0c0e] flex items-center justify-between px-4 md:px-6 z-50 relative">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded bg-red-500/10 flex items-center justify-center border border-red-500/20">
             <Lock className="w-4 h-4 text-red-500" />
           </div>
           <span className="font-bold tracking-tight text-red-500">Proctored Exam Portal</span>
         </div>
+
+        {/* TOP MIDDLE CAMERA BOX */}
+        {isExamStarted && (
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
+            <div className="relative group">
+              <div className="w-24 h-14 bg-black rounded-md overflow-hidden border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.1)] relative">
+                {/* Live Video Feed */}
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  muted 
+                  playsInline 
+                  className="w-full h-full object-cover transform scale-x-[-1]" // Mirror effect
+                />
+                
+                {/* Recording indicator dot */}
+                <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_5px_red]" />
+              </div>
+              <div className="absolute -bottom-4 left-0 w-full text-center">
+                 <span className="text-[9px] text-red-500/70 font-mono tracking-widest uppercase">Live</span>
+              </div>
+            </div>
+
+            {/* Audio Meter Visualizer */}
+            <div className="h-14 w-2 flex flex-col-reverse gap-0.5 bg-black/50 p-0.5 rounded-sm border border-white/10">
+              {[...Array(10)].map((_, i) => {
+                // Calculate if this segment is "lit" based on volume
+                const threshold = (i + 1) * 10;
+                const isLit = audioLevel >= threshold;
+                // Color gradient from green to red
+                let colorClass = "bg-green-500";
+                if (i > 6) colorClass = "bg-yellow-500";
+                if (i > 8) colorClass = "bg-red-500";
+
+                return (
+                  <div 
+                    key={i} 
+                    className={cn(
+                      "w-full flex-1 rounded-[1px] transition-all duration-75",
+                      isLit ? colorClass : "bg-white/5"
+                    )}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center gap-2 md:gap-6">
            <div className="hidden sm:flex items-center gap-2 px-3 md:px-4 py-1.5 bg-white/5 rounded-full border border-white/10">
@@ -486,11 +623,21 @@ const Exam = () => {
             </div>
             <DialogTitle className="text-2xl text-center">Exam Environment Rules</DialogTitle>
             <DialogDescription className="text-center text-muted-foreground pt-2">
-              You are about to enter a secure proctored environment. Please review the following strict regulations carefully.
+              You are about to enter a secure proctored environment. Monitoring permissions are required.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 my-4 bg-red-950/10 p-6 rounded-lg border border-red-500/10">
+            
+            {/* Permission Notice */}
+            <div className="flex gap-3 items-start text-sm bg-black/40 p-3 rounded border border-white/5 mb-4">
+               <Video className="w-5 h-5 text-blue-400 shrink-0" />
+               <div className="text-blue-200">
+                 <strong>Media Access Required</strong>
+                 <p className="opacity-70 text-xs mt-1">We will request access to your Camera and Microphone for proctoring purposes. The feed is monitored in real-time.</p>
+               </div>
+            </div>
+
             <div className="flex gap-3 items-start text-sm">
               <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
               <div>
@@ -529,7 +676,7 @@ const Exam = () => {
             </Button>
             <Button 
               className="bg-red-600 hover:bg-red-700 text-white px-8"
-              onClick={startExam}
+              onClick={handleStartExamRequest}
             >
               I Agree & Start Exam
             </Button>
