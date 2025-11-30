@@ -20,49 +20,78 @@ import {
 
 export type QuestionStatus = 'not-visited' | 'visited' | 'attempted' | 'review';
 
-// Define interface for assignment data needed at this level
+// Table Configurations
+const IITM_TABLES = {
+  assignments: 'iitm_assignments',
+  testCases: 'iitm_test_cases',
+  submissions: 'iitm_submissions'
+};
+
+const STANDARD_TABLES = {
+  assignments: 'assignments',
+  testCases: 'test_cases',
+  submissions: 'submissions'
+};
+
 interface AssignmentSummary {
   id: string;
   title: string;
   category: string | null;
-  expected_time?: number; // In minutes
+  expected_time?: number; 
 }
 
 const Practice = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  
+  // Params
+  const iitmSubjectId = searchParams.get('iitm_subject');
+  const examType = searchParams.get('type');
   const selectedAssignmentId = searchParams.get('q');
   
+  // Determine tables
+  const activeTables = iitmSubjectId ? IITM_TABLES : STANDARD_TABLES;
+
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, QuestionStatus>>({});
   const { toast } = useToast();
 
   // Timer State
-  const [elapsedTime, setElapsedTime] = useState(0); // Seconds spent on CURRENT question
+  const [elapsedTime, setElapsedTime] = useState(0); 
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
   const [sessionStats, setSessionStats] = useState({ totalQuestions: 0, attempted: 0, passedCases: 0, totalCases: 0 });
   
-  // Ref to track which question we are LEAVING to trigger the warning
   const previousQuestionRef = useRef<string | null>(null);
 
-  // Fetch all assignments (lifted state so we know expected times)
+  // Fetch Assignments with dynamic table filtering
   const { data: assignments = [] } = useQuery({
-    queryKey: ['assignments_list'],
+    queryKey: [activeTables.assignments, iitmSubjectId, examType], 
     queryFn: async () => {
-      // UPDATED: Added 'expected_time' to the select string
-      const { data, error } = await supabase
-        .from('assignments')
-        .select('id, title, category, expected_time')
-        .order('category', { ascending: true })
+      let query = supabase
+        .from(activeTables.assignments)
+        .select('id, title, category, expected_time') // Select only needed fields
         .order('title', { ascending: true });
       
+      // Strict IITM Filtering
+      if (iitmSubjectId) {
+        // @ts-ignore - dynamic table types
+        query = query.eq('subject_id', iitmSubjectId);
+        
+        if (examType) {
+           // @ts-ignore
+           query = query.eq('exam_type', decodeURIComponent(examType));
+        }
+      } else {
+        // Optional: Standard mode sorting/filtering
+        // @ts-ignore
+        query = query.order('category', { ascending: true });
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      
-      // UPDATED: Removed the .map() that was hardcoding the time
       return data as AssignmentSummary[];
     },
   });
 
-  // Timer Effect - Runs only when a question is selected
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (selectedAssignmentId) {
@@ -73,16 +102,13 @@ const Practice = () => {
     return () => clearInterval(interval);
   }, [selectedAssignmentId]);
 
-  // Handle Question Change Logic (Warning message)
   useEffect(() => {
-    // If we moved FROM a question TO another (or none)
     if (previousQuestionRef.current && previousQuestionRef.current !== selectedAssignmentId) {
       const prevAssignment = assignments.find(a => a.id === previousQuestionRef.current);
       
       if (prevAssignment) {
         const expectedSeconds = (prevAssignment.expected_time || 15) * 60;
         
-        // If user spent more time than expected
         if (elapsedTime > expectedSeconds) {
           toast({
             title: "Speed Check ⏱️",
@@ -92,7 +118,6 @@ const Practice = () => {
           });
         }
       }
-      // Reset timer for the new question
       setElapsedTime(0);
     }
     
@@ -110,18 +135,22 @@ const Practice = () => {
   };
 
   const handleQuestionSelect = (id: string) => {
-    setSearchParams({ q: id });
+    setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev);
+        newParams.set('q', id);
+        return newParams;
+    });
+    
     if (questionStatuses[id] !== 'attempted' && questionStatuses[id] !== 'review') {
       handleStatusUpdate(id, 'visited');
     }
   };
 
   const handleExitEnvironment = async () => {
-    // Fetch stats before opening modal
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data: submissions } = await supabase
-        .from('submissions')
+        .from(activeTables.submissions)
         .select('assignment_id, public_tests_passed, private_tests_passed, public_tests_total, private_tests_total')
         .eq('user_id', user.id);
 
@@ -130,9 +159,8 @@ const Practice = () => {
       const uniqueAttempted = new Set();
 
       if (submissions) {
-        submissions.forEach(sub => {
+        submissions.forEach((sub: any) => {
           uniqueAttempted.add(sub.assignment_id);
-          // Only count tests from the latest submission ideally, but simple sum for now is fine for "cases passed"
           passed += (sub.public_tests_passed || 0) + (sub.private_tests_passed || 0);
           total += (sub.public_tests_total || 0) + (sub.private_tests_total || 0);
         });
@@ -154,7 +182,6 @@ const Practice = () => {
     navigate('/');
   };
 
-  // Get current assignment details for header display
   const currentAssignment = assignments.find(a => a.id === selectedAssignmentId);
   const expectedTimeMin = currentAssignment?.expected_time || 15;
   const isOverTime = elapsedTime > (expectedTimeMin * 60);
@@ -176,7 +203,7 @@ const Practice = () => {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
             <LayoutGrid className="w-4 h-4 text-primary" />
             <h1 className="text-sm font-bold tracking-tight text-primary hidden sm:block">
-              Learning Environment
+              {iitmSubjectId ? decodeURIComponent(searchParams.get('name') || '') + ' - ' + decodeURIComponent(examType || '') : 'Learning Environment'}
             </h1>
           </div>
         </div>
@@ -214,12 +241,11 @@ const Practice = () => {
       <div className="flex-1 overflow-hidden relative">
         <ResizablePanelGroup direction="horizontal" className="h-full">
           <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#0c0c0e] border-r border-white/10 flex flex-col">
-            {/* Pass pre-fetched assignments to sidebar */}
             <AssignmentSidebar
               selectedId={selectedAssignmentId}
               onSelect={handleQuestionSelect}
               questionStatuses={questionStatuses}
-              preLoadedAssignments={assignments} 
+              preLoadedAssignments={assignments as any} 
             />
           </ResizablePanel>
 
@@ -233,6 +259,8 @@ const Practice = () => {
                   assignmentId={selectedAssignmentId} 
                   onStatusUpdate={(status) => handleStatusUpdate(selectedAssignmentId, status)}
                   currentStatus={questionStatuses[selectedAssignmentId]}
+                  // Pass the active tables configuration so AssignmentView knows which table to fetch from
+                  tables={activeTables} 
                 />
               ) : (
                 <div className="h-full flex flex-col items-center justify-center p-6 text-center">
@@ -250,7 +278,6 @@ const Practice = () => {
         </ResizablePanelGroup>
       </div>
 
-      {/* Exit Summary Dialog */}
       <Dialog open={isExitDialogOpen} onOpenChange={setIsExitDialogOpen}>
         <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md">
           <DialogHeader>
@@ -278,10 +305,6 @@ const Practice = () => {
               </div>
               <span className="text-xs text-muted-foreground uppercase tracking-wider">Total Test Cases</span>
             </div>
-          </div>
-
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-md p-3 text-sm text-blue-200">
-            <p>Consistency is key. Come back soon to solve the remaining problems!</p>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
