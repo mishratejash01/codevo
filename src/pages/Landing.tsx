@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import DarkVeil from '@/components/DarkVeil';
 
-// --- Typewriter Hook (No Cursor Logic) ---
+// --- Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
   const [displayText, setDisplayText] = useState('');
   const [started, setStarted] = useState(false);
@@ -90,30 +90,50 @@ const Landing = () => {
   };
 
   // --- Animation Calculations ---
-  // Scale: 1 -> 0.9 (Shrinks back)
+  // Scale: 1 -> 0.9 (Shrinks width, but top stays fixed due to origin)
   const scale = Math.max(0.9, 1 - scrollY / 1500);
-  // Radius: 0 -> 40px (Becomes rounded)
-  const borderRadius = Math.min(40, scrollY / 10);
-  // Opacity for the "White" background reveal effect
-  // We don't fade the hero content, we just shrink the frame.
+  
+  // Radius: 0 -> 60px (Only applies to bottom corners)
+  const borderRadius = Math.min(60, scrollY / 8);
 
   return (
     <div className="min-h-screen bg-white selection:bg-primary/20 flex flex-col">
-      {/* Header - Fixed & Transparent to blend with the black frame initially */}
+      {/* Inline styles for custom scroller animation */}
+      <style>{`
+        @keyframes scroll-arrow-move {
+          0% { transform: translateY(0); opacity: 0.5; }
+          25% { transform: translateY(-4px); opacity: 0.8; }
+          75% { transform: translateY(4px); opacity: 0.8; }
+          100% { transform: translateY(0); opacity: 0.5; }
+        }
+        .animate-scroll-arrow {
+          animation: scroll-arrow-move 2s ease-in-out infinite;
+        }
+      `}</style>
+
+      {/* Header */}
       <Header session={session} onLogout={handleLogout} />
 
       <main className="flex-1 w-full">
         
-        {/* Sticky Container to hold the shrinking frame during initial scroll */}
+        {/* Sticky Container */}
         <div className="relative w-full h-[120vh] bg-white"> 
-          <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
+          <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             
             {/* THE SHRINKING FRAME */}
             <div 
-              className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl origin-center will-change-transform"
+              className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
               style={{
-                transform: `scale(${scale})`,
-                borderRadius: `${borderRadius}px`,
+                // Scale affects width, but top is pinned by transformOrigin
+                transform: `scale(${scale})`, 
+                transformOrigin: 'top center', 
+                
+                // Radius only on bottom corners
+                borderBottomLeftRadius: `${borderRadius}px`,
+                borderBottomRightRadius: `${borderRadius}px`,
+                borderTopLeftRadius: '0px',
+                borderTopRightRadius: '0px',
+                
                 transition: 'transform 0.1s ease-out, border-radius 0.1s ease-out',
               }}
             >
@@ -179,14 +199,15 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* Scroller - Inside the frame, moves with it */}
+              {/* Scroller - Inside Frame, Centered Pill */}
               <div 
                 className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer animate-in fade-in duration-1000 delay-1000"
                 onClick={scrollToContent}
               >
-                <div className="w-[36px] h-[64px] border border-white/30 rounded-full flex justify-center p-2 bg-black/20 backdrop-blur-sm hover:border-white/60 transition-colors shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-                  <div className="animate-[bounce_2s_infinite] mt-1">
-                    <ChevronsDown className="w-5 h-5 text-white/80" />
+                <div className="w-[36px] h-[64px] border border-white/30 rounded-full flex justify-center items-center bg-black/20 backdrop-blur-sm hover:border-white/60 transition-colors shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                  {/* Custom Up/Down Animation from Center */}
+                  <div className="animate-scroll-arrow">
+                    <ChevronsDown className="w-5 h-5 text-white/90" />
                   </div>
                 </div>
               </div>
