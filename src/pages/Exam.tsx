@@ -6,7 +6,7 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, AlertTriangle, Lock, CheckCircle2, Timer, Trophy, Target, Clock, Video, Maximize, Mic } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Lock, CheckCircle2, Timer, Trophy, Target, Clock, Video, Maximize, Mic, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -25,12 +25,6 @@ const STANDARD_TABLES = {
   testCases: 'test_cases', 
   submissions: 'submissions' 
 };
-
-interface ViolationLog {
-  timestamp: string;
-  type: string;
-  message: string;
-}
 
 interface QuestionMetrics {
   attempts: number;
@@ -52,17 +46,16 @@ const Exam = () => {
 
   // --- State ---
   const [isExamStarted, setIsExamStarted] = useState(false);
-  const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
   const [elapsedTime, setElapsedTime] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [violationLogs, setViolationLogs] = useState<ViolationLog[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Performance Metrics State (Restored)
+  // Performance Metrics State
   const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
   const [examStats, setExamStats] = useState({ attempted: 0, correct: 0, score: 0, total: 0, accuracy: 0 });
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [terminationReason, setTerminationReason] = useState<string | null>(null);
   
   // Media State
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
@@ -75,7 +68,6 @@ const Exam = () => {
   const animationFrameRef = useRef<number | null>(null);
   
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
-  const MAX_VIOLATIONS = 3;
 
   // --- Data Fetching ---
   const { data: assignments = [] } = useQuery({
@@ -110,10 +102,18 @@ const Exam = () => {
       });
       setMediaStream(stream);
       
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const audioContext = new AudioContextClass();
+      
+      // CRITICAL FIX: Ensure AudioContext is running (browsers suspend it by default)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+
       const analyser = audioContext.createAnalyser();
       const microphone = audioContext.createMediaStreamSource(stream);
       analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.5;
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
       microphone.connect(analyser);
@@ -128,7 +128,7 @@ const Exam = () => {
       console.error("Media Error:", err);
       toast({
         title: "Permission Denied",
-        description: "Camera and Microphone access are required for proctoring.",
+        description: "Camera and Microphone access are required. Please allow permissions and try again.",
         variant: "destructive"
       });
       return false;
@@ -138,9 +138,18 @@ const Exam = () => {
   const analyzeAudio = () => {
     if (!analyserRef.current || !dataArrayRef.current) return;
     analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+    
+    // Calculate average volume
     let sum = 0;
-    for (let i = 0; i < dataArrayRef.current.length; i++) sum += dataArrayRef.current[i];
-    const volume = Math.min(100, Math.round((sum / dataArrayRef.current.length) * 2.5));
+    for (let i = 0; i < dataArrayRef.current.length; i++) {
+      sum += dataArrayRef.current[i];
+    }
+    const average = sum / dataArrayRef.current.length;
+    
+    // Normalize to 0-100 for the visualizer
+    // Multiply by a factor to make it more sensitive
+    const volume = Math.min(100, Math.round(average * 2.0)); 
+    
     setAudioLevel(volume);
     animationFrameRef.current = requestAnimationFrame(analyzeAudio);
   };
@@ -159,67 +168,43 @@ const Exam = () => {
     return false;
   };
 
-  const handleViolation = async (type: string, message: string) => {
-    if (!isExamStarted || isSubmitting) return;
-    
-    const violation: ViolationLog = { timestamp: new Date().toISOString(), type, message };
-    setViolationLogs(prev => [...prev, violation]);
-    
-    setViolationCount(prev => {
-      const newCount = prev + 1;
-      
-      if (sessionId) {
-        supabase.from('exam_sessions').update({
-          violation_count: newCount,
-          violation_logs: violation // In real app, consider storing array
-        }).eq('id', sessionId).then();
-      }
-
-      if (newCount >= MAX_VIOLATIONS) {
-        finishExam("Terminated: Too many violations");
-        return MAX_VIOLATIONS;
-      }
-      
-      toast({ 
-        title: "⚠️ Proctoring Warning", 
-        description: `Violation ${newCount}/${MAX_VIOLATIONS}: ${message}`, 
-        variant: "destructive",
-        duration: 5000 
-      });
-      
-      return newCount;
-    });
-  };
-
-  // Event Listeners
+  // --- Strict Event Listeners (Immediate Termination) ---
   useEffect(() => {
-    if (!isExamStarted) return;
+    if (!isExamStarted || isSubmitting) return;
 
     const handleVisibilityChange = () => { 
-      if (document.hidden) handleViolation("Tab Switch", "User switched tabs or minimized window."); 
+      if (document.hidden) finishExam("Terminated: Tab Switching Detected"); 
     };
     
     const handleFullScreenChange = () => { 
-      if (!document.fullscreenElement && !isSubmitting) handleViolation("Fullscreen Exit", "User exited full-screen mode."); 
+      if (!document.fullscreenElement && !isSubmitting) finishExam("Terminated: Exited Full Screen Mode"); 
     };
     
     const handleKeyDown = (e: KeyboardEvent) => {
       const isWindows = navigator.platform.includes('Win') || navigator.userAgent.includes('Windows');
+      // Block Windows Key, Command Key, and Escape
       if (isWindows && (e.key === 'Meta' || e.key === 'OS')) { 
         e.preventDefault(); 
-        handleViolation("Prohibited Key", "Windows key Usage."); 
+        finishExam("Terminated: Windows Key Usage Prohibited"); 
       }
       if (e.key === 'Escape') {
         e.preventDefault();
-        handleViolation("Prohibited Key", "Escape key Usage.");
+        // Allow a small grace period or check if it wasn't intended, but for strict:
+        finishExam("Terminated: Escape Key Usage Prohibited");
+      }
+      if (e.altKey && e.key === 'Tab') {
+        e.preventDefault();
       }
     };
     
     const preventEvents = (e: Event) => e.preventDefault();
 
+    // Attach Listeners
     document.addEventListener("visibilitychange", handleVisibilityChange);
     document.addEventListener("fullscreenchange", handleFullScreenChange);
     document.addEventListener("keydown", handleKeyDown);
+    
+    // Prevent Copy/Paste/Right Click
     window.addEventListener("copy", preventEvents);
     window.addEventListener("paste", preventEvents);
     window.addEventListener("cut", preventEvents);
@@ -325,15 +310,21 @@ const Exam = () => {
   const finishExam = async (reason?: string) => {
     setIsSubmitting(true);
     setFinishDialogOpen(false);
+    setTerminationReason(reason || null);
     
+    // Stop Media
     if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    if (audioContextRef.current) audioContextRef.current.close();
+    
+    // Exit Full Screen safely
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
 
     // Calculate Stats
     const questionsAttempted = Object.keys(questionMetrics).length;
     const questionsCorrect = Object.values(questionMetrics).filter(m => m.isCorrect).length;
     const totalScore = Object.values(questionMetrics).reduce((sum, m) => sum + m.score, 0);
-    const totalAttempts = Object.values(questionMetrics).reduce((sum, m) => sum + m.attempts, 0);
     const accuracy = questionsAttempted > 0 ? Math.round((questionsCorrect / questionsAttempted) * 100) : 0;
 
     setExamStats({ 
@@ -394,7 +385,7 @@ const Exam = () => {
             {/* Audio Visualizer */}
             <div className="h-16 w-2 flex flex-col-reverse gap-0.5 bg-black/50 p-0.5 rounded-sm border border-white/10">
               {[...Array(10)].map((_, i) => (
-                <div key={i} className={cn("w-full flex-1 rounded-[1px] transition-all", audioLevel >= (i + 1) * 10 ? (i > 8 ? "bg-red-500" : i > 6 ? "bg-yellow-500" : "bg-green-500") : "bg-white/5")} />
+                <div key={i} className={cn("w-full flex-1 rounded-[1px] transition-all", audioLevel >= (i + 1) * 10 ? (i > 7 ? "bg-red-500" : i > 4 ? "bg-yellow-500" : "bg-green-500") : "bg-white/5")} />
               ))}
             </div>
           </div>
@@ -407,17 +398,6 @@ const Exam = () => {
                {formatTime(elapsedTime)}
              </div>
            )}
-           
-           {/* Violation Counter */}
-           <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground mr-1 uppercase tracking-wide">Strikes</span>
-              <div className="flex gap-1">
-                {[...Array(MAX_VIOLATIONS)].map((_, i) => (
-                  <div key={i} className={cn("w-2 h-6 rounded-sm transition-colors", i < violationCount ? "bg-red-600 shadow-[0_0_8px_red]" : "bg-white/10")} />
-                ))}
-              </div>
-           </div>
-
            <Button variant="destructive" size="sm" onClick={() => setFinishDialogOpen(true)}>Finish Exam</Button>
         </div>
       </header>
@@ -491,23 +471,50 @@ const Exam = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* SUMMARY DIALOG (Restored) */}
+      {/* SUMMARY DIALOG */}
       <Dialog open={summaryOpen} onOpenChange={() => {}}>
         <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md [&>button]:hidden">
           <DialogHeader>
-            <div className="mx-auto w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-4 border border-green-500/20"><Trophy className="w-8 h-8 text-green-500" /></div>
-            <DialogTitle className="text-2xl text-center">Exam Completed</DialogTitle>
-            <DialogDescription className="text-center text-muted-foreground">Responses recorded.</DialogDescription>
+            <div className={cn("mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 border", terminationReason?.includes("Terminated") ? "bg-red-500/10 border-red-500/20" : "bg-green-500/10 border-green-500/20")}>
+              {terminationReason?.includes("Terminated") ? <XCircle className="w-8 h-8 text-red-500" /> : <Trophy className="w-8 h-8 text-green-500" />}
+            </div>
+            <DialogTitle className="text-2xl text-center">{terminationReason?.includes("Terminated") ? "Exam Terminated" : "Exam Completed"}</DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground">
+              {terminationReason || "Responses recorded successfully."}
+            </DialogDescription>
           </DialogHeader>
+          
           <div className="grid grid-cols-2 gap-4 py-6">
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1"><CheckCircle2 className="w-5 h-5 text-green-500 mb-1" /><span className="text-2xl font-bold">{examStats.correct} / {examStats.total}</span><span className="text-[10px] uppercase text-muted-foreground">Correct</span></div>
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1"><Target className="w-5 h-5 text-blue-500 mb-1" /><span className="text-2xl font-bold">{examStats.attempted}</span><span className="text-[10px] uppercase text-muted-foreground">Attempted</span></div>
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1"><Clock className="w-5 h-5 text-orange-500 mb-1" /><span className="text-xl font-bold font-mono">{formatTime(elapsedTime)}</span><span className="text-[10px] uppercase text-muted-foreground">Time</span></div>
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1"><div className="text-primary font-bold text-lg mb-1">{examStats.accuracy}%</div><span className="text-[10px] uppercase text-muted-foreground">Accuracy</span></div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1">
+              <CheckCircle2 className="w-5 h-5 text-green-500 mb-1" />
+              <span className="text-2xl font-bold">{examStats.correct} / {examStats.total}</span>
+              <span className="text-[10px] uppercase text-muted-foreground">Correct</span>
+            </div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1">
+              <Target className="w-5 h-5 text-blue-500 mb-1" />
+              <span className="text-2xl font-bold">{examStats.attempted}</span>
+              <span className="text-[10px] uppercase text-muted-foreground">Attempted</span>
+            </div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1">
+              <Clock className="w-5 h-5 text-orange-500 mb-1" />
+              <span className="text-xl font-bold font-mono">{formatTime(elapsedTime)}</span>
+              <span className="text-[10px] uppercase text-muted-foreground">Time Taken</span>
+            </div>
+            <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1">
+              <div className="text-primary font-bold text-lg mb-1">{examStats.accuracy}%</div>
+              <span className="text-[10px] uppercase text-muted-foreground">Accuracy</span>
+            </div>
           </div>
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-center"><div className="text-sm text-blue-200">Total Score</div><div className="text-3xl font-bold text-blue-400 mt-1">{examStats.score.toFixed(0)}</div></div>
+          
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-center">
+            <div className="text-sm text-blue-200">Total Score</div>
+            <div className="text-3xl font-bold text-blue-400 mt-1">{examStats.score.toFixed(0)}</div>
+          </div>
+          
           <DialogFooter className="sm:justify-center mt-4">
-            <Button className="w-full bg-white text-black hover:bg-gray-200" onClick={() => { sessionStorage.clear(); navigate('/'); }}>Return to Home</Button>
+            <Button className="w-full bg-white text-black hover:bg-gray-200" onClick={() => { sessionStorage.clear(); navigate('/'); }}>
+              Return to Home
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
