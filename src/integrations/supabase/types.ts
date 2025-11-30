@@ -14,6 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
+      // --- ORIGINAL TABLES (Standard Playground) ---
       assignments: {
         Row: {
           category: string | null
@@ -253,6 +254,187 @@ export type Database = {
             referencedRelation: "assignments"
             referencedColumns: ["id"]
           },
+        ]
+      }
+
+      // --- NEW IITM TABLES ---
+      iitm_levels: {
+        Row: {
+          id: string
+          name: string
+          sequence: number | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          sequence?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          sequence?: number | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+      iitm_subjects: {
+        Row: {
+          id: string
+          level_id: string | null
+          name: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          level_id?: string | null
+          name: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          level_id?: string | null
+          name?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iitm_subjects_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "iitm_levels"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      iitm_assignments: {
+        Row: {
+          id: string
+          subject_id: string | null
+          title: string
+          description: string
+          instructions: string | null
+          deadline: string | null
+          max_score: number | null
+          expected_time: number | null
+          starter_code: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          subject_id?: string | null
+          title: string
+          description: string
+          instructions?: string | null
+          deadline?: string | null
+          max_score?: number | null
+          expected_time?: number | null
+          starter_code?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          subject_id?: string | null
+          title?: string
+          description?: string
+          instructions?: string | null
+          deadline?: string | null
+          max_score?: number | null
+          expected_time?: number | null
+          starter_code?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iitm_assignments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "iitm_subjects"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      iitm_test_cases: {
+        Row: {
+          id: string
+          assignment_id: string
+          input: string
+          expected_output: string
+          is_public: boolean | null
+          weight: number | null
+        }
+        Insert: {
+          id?: string
+          assignment_id: string
+          input: string
+          expected_output: string
+          is_public?: boolean | null
+          weight?: number | null
+        }
+        Update: {
+          id?: string
+          assignment_id?: string
+          input?: string
+          expected_output?: string
+          is_public?: boolean | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iitm_test_cases_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "iitm_assignments"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      iitm_submissions: {
+        Row: {
+          id: string
+          assignment_id: string
+          user_id: string
+          code: string
+          score: number | null
+          public_tests_passed: number | null
+          public_tests_total: number | null
+          private_tests_passed: number | null
+          private_tests_total: number | null
+          submitted_at: string | null
+        }
+        Insert: {
+          id?: string
+          assignment_id: string
+          user_id: string
+          code: string
+          score?: number | null
+          public_tests_passed?: number | null
+          public_tests_total?: number | null
+          private_tests_passed?: number | null
+          private_tests_total?: number | null
+          submitted_at?: string | null
+        }
+        Update: {
+          id?: string
+          assignment_id?: string
+          user_id?: string
+          code?: string
+          score?: number | null
+          public_tests_passed?: number | null
+          public_tests_total?: number | null
+          private_tests_passed?: number | null
+          private_tests_total?: number | null
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iitm_submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "iitm_assignments"
+            referencedColumns: ["id"]
+          }
         ]
       }
     }
