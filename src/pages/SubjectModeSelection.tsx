@@ -7,9 +7,11 @@ import { supabase } from '@/integrations/supabase/client';
 const SubjectModeSelection = () => {
   const { subjectId, subjectName } = useParams();
   const navigate = useNavigate();
+  
+  // Decode the URL-encoded subject name (e.g., "System%20Commands" -> "System Commands")
   const decodedSubject = decodeURIComponent(subjectName || 'Subject');
 
-  // Fetch the Level Name dynamically using the Foreign Key relation
+  // Fetch the Level Name (e.g., "Diploma") for this subject using the ID
   const { data: subjectData, isLoading } = useQuery({
     queryKey: ['subject_level_details', subjectId],
     queryFn: async () => {
@@ -27,14 +29,17 @@ const SubjectModeSelection = () => {
         .eq('id', subjectId)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching subject details:', error);
+        return null;
+      }
       return data;
     },
     enabled: !!subjectId
   });
 
-  // Extract level name safely from the joined data
-  // @ts-ignore - Supabase type inference for joins can sometimes be tricky in strict mode
+  // Safely extract the level name from the joined data
+  // @ts-ignore - Supabase types for joined tables can be tricky
   const levelName = subjectData?.iitm_levels?.name || '...';
 
   return (
@@ -45,17 +50,17 @@ const SubjectModeSelection = () => {
 
       <div className="z-10 w-full max-w-5xl space-y-12">
         
-        {/* Header */}
-        <div className="text-center space-y-4">
+        {/* Header Section */}
+        <div className="text-center space-y-4 relative">
           <Button 
             variant="ghost" 
             onClick={() => navigate('/')}
-            className="absolute top-8 left-8 text-muted-foreground hover:text-white"
+            className="absolute -top-12 left-0 md:top-0 md:left-8 text-muted-foreground hover:text-white"
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
 
-          {/* Breadcrumb using fetched Level Name */}
+          {/* Breadcrumb Pill */}
           <div className="inline-flex items-center justify-center px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs font-mono text-primary mb-4 animate-in fade-in slide-in-from-bottom-2">
             {isLoading ? 'Loading...' : `${levelName} > ${decodedSubject}`}
           </div>
@@ -68,48 +73,58 @@ const SubjectModeSelection = () => {
           </p>
         </div>
 
-        {/* Cards Grid */}
+        {/* Selection Cards Grid */}
         <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto">
           
-          {/* Learning Mode */}
+          {/* Option 1: Learning Environment */}
           <div 
-            className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-primary/50 transition-all duration-500 hover:shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col cursor-pointer"
-            onClick={() => navigate(`/practice?iitm_subject=${subjectId}&name=${subjectName}`)}
+            className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-primary/50 transition-all duration-500 hover:shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col cursor-pointer overflow-hidden"
+            onClick={() => navigate(`/practice?iitm_subject=${subjectId}&name=${encodeURIComponent(decodedSubject)}`)}
           >
-            <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-primary/20">
-              <Code2 className="w-7 h-7 text-primary" />
+            {/* Hover Gradient Effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-primary/20">
+                <Code2 className="w-7 h-7 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-primary transition-colors">Learning Environment</h2>
+              <p className="text-muted-foreground mb-8 flex-1 leading-relaxed">
+                Practice assignments specific to <strong>{decodedSubject}</strong>. Features instant grading, test cases, and unlimited attempts.
+              </p>
+              <Button 
+                size="lg"
+                className="w-full bg-primary hover:bg-primary/90 pointer-events-none"
+              >
+                Enter Practice
+              </Button>
             </div>
-            <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-primary transition-colors">Learning Environment</h2>
-            <p className="text-muted-foreground mb-8 flex-1">
-              Practice assignments specific to {decodedSubject} with instant grading and detailed feedback.
-            </p>
-            <Button 
-              size="lg"
-              className="w-full bg-primary hover:bg-primary/90 pointer-events-none"
-            >
-              Enter Practice
-            </Button>
           </div>
 
-          {/* Exam Mode */}
+          {/* Option 2: Exam Portal */}
           <div 
-            className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-red-500/50 transition-all duration-500 hover:shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col cursor-pointer"
-            onClick={() => navigate(`/exam?iitm_subject=${subjectId}&name=${subjectName}`)}
+            className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-red-500/50 transition-all duration-500 hover:shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col cursor-pointer overflow-hidden"
+            onClick={() => navigate(`/exam?iitm_subject=${subjectId}&name=${encodeURIComponent(decodedSubject)}`)}
           >
-            <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-red-500/20">
-              <Lock className="w-7 h-7 text-red-500" />
+            {/* Hover Gradient Effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-red-500/20">
+                <Lock className="w-7 h-7 text-red-500" />
+              </div>
+              <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-red-500 transition-colors">Exam Portal</h2>
+              <p className="text-muted-foreground mb-8 flex-1 leading-relaxed">
+                Strict proctored environment for <strong>{decodedSubject}</strong>. Includes full-screen enforcement and activity monitoring.
+              </p>
+              <Button 
+                size="lg"
+                variant="outline"
+                className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 pointer-events-none"
+              >
+                Enter Exam Hall
+              </Button>
             </div>
-            <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-red-500 transition-colors">Exam Portal</h2>
-            <p className="text-muted-foreground mb-8 flex-1">
-              Strict proctored environment for {decodedSubject}. Full-screen enforcement and activity monitoring enabled.
-            </p>
-            <Button 
-              size="lg"
-              variant="outline"
-              className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 pointer-events-none"
-            >
-              Enter Exam Hall
-            </Button>
           </div>
 
         </div>
