@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock } from 'lucide-react';
+import { Code2, Zap, Shield, TrendingUp, ArrowRight, Terminal, Lock, LogIn, LogOut, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -12,13 +12,9 @@ const Landing = () => {
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
 
-  // Monitor Auth State & Clean URL Hash
   useEffect(() => {
-    // 1. Initial Session Check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      
-      // Clean up URL if returning from Google OAuth with a hash
       if (session && window.location.hash && window.location.hash.includes('access_token')) {
         window.history.replaceState(null, '', window.location.pathname);
         toast({
@@ -28,13 +24,10 @@ const Landing = () => {
       }
     });
 
-    // 2. Listen for Auth Changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-
-      // Clean up URL on sign-in event
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && window.location.hash.includes('access_token')) {
         window.history.replaceState(null, '', window.location.pathname);
       }
@@ -67,13 +60,14 @@ const Landing = () => {
       <main className="flex-1 w-full">
         {/* Hero Section with DarkVeil Background */}
         <section className="relative w-full overflow-hidden pt-32 pb-48 text-center">
-          {/* Absolute Background */}
-          <div className="absolute inset-0 -z-10 h-full w-full">
+          {/* Absolute Background at Z-0 */}
+          <div className="absolute inset-0 z-0 h-full w-full">
              <DarkVeil />
-             {/* Optional: Add a gradient overlay to ensure text readability */}
-             <div className="absolute inset-0 bg-black/40" />
+             {/* Darker overlay for text contrast */}
+             <div className="absolute inset-0 bg-black/60" />
           </div>
 
+          {/* Content at Z-10 */}
           <div className="container mx-auto px-6 relative z-10">
             <div className="max-w-6xl mx-auto space-y-12">
               <div className="space-y-6 max-w-4xl mx-auto">
@@ -94,6 +88,7 @@ const Landing = () => {
                 </p>
               </div>
 
+              {/* Feature Cards Grid */}
               <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mt-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
                 
                 {/* Learning Environment Card */}
@@ -164,8 +159,9 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Features Grid */}
-        <section className="container mx-auto px-6 py-24 border-t border-white/10">
+        {/* ... (Rest of the sections like Features and Footer remain the same) ... */}
+        <section className="container mx-auto px-6 py-24 border-t border-white/10 bg-[#09090b]">
+          {/* ... Feature cards content ... */}
           <div className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">Platform Features</h2>
               <p className="text-muted-foreground">Everything you need to master your coding skills</p>
@@ -204,7 +200,6 @@ const Landing = () => {
         </section>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-white/10 mt-12 bg-[#0c0c0e]">
         <div className="container mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
