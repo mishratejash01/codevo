@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/comp
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
-import { ArrowLeft, FileCode2, Clock, Layers, Play, BookOpen, Lock } from 'lucide-react';
+import { ArrowLeft, FileCode2, Clock, Layers, Play, BookOpen, Lock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const QuestionSetSelection = () => {
@@ -18,6 +18,7 @@ const QuestionSetSelection = () => {
   const [configOpen, setConfigOpen] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState([10]);
+  const [maxAvailable, setMaxAvailable] = useState(0); // Track max questions for selected topic
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['iitm_sets_or_topics', subjectId, examType, mode],
@@ -32,7 +33,6 @@ const QuestionSetSelection = () => {
       if (error) throw error;
 
       if (isProctored) {
-        // Group by 'set_name' for Proctored
         const sets = new Map();
         data?.forEach(q => {
           if (q.set_name && !sets.has(q.set_name)) {
@@ -48,7 +48,6 @@ const QuestionSetSelection = () => {
         });
         return Array.from(sets.values());
       } else {
-        // Group by 'category' for Learning
         const topics = new Map();
         data?.forEach(q => {
           const cat = q.category || 'General Practice';
@@ -76,19 +75,33 @@ const QuestionSetSelection = () => {
       });
       navigate(`/exam?${params.toString()}`);
     } else {
+      // Learning Mode Configuration
       setSelectedTopic(item.id);
+      
+      // Determine max available questions for this topic
+      const max = item.available_count || 0;
+      setMaxAvailable(max);
+      
+      // Reset slider to a valid number (e.g., 10 or the max if less than 10)
+      const initialCount = Math.min(10, max);
+      setQuestionCount([initialCount > 0 ? initialCount : 1]);
+      
       setConfigOpen(true);
     }
   };
 
   const startPractice = () => {
     if (!selectedTopic) return;
+    
+    // Ensure we don't request more than available
+    const finalCount = Math.min(questionCount[0], maxAvailable);
+    
     const params = new URLSearchParams({
       iitm_subject: subjectId || '',
       name: subjectName || '',
       type: examType || '',
       category: selectedTopic,
-      limit: questionCount[0].toString()
+      limit: finalCount.toString()
     });
     navigate(`/practice?${params.toString()}`);
   };
@@ -136,11 +149,7 @@ const QuestionSetSelection = () => {
                 )}
                 onClick={() => handleCardClick(item)}
               >
-                <div className={cn(
-                  "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br",
-                  isProctored ? "from-red-500/5 via-transparent to-transparent" : "from-blue-500/5 via-transparent to-transparent"
-                )} />
-
+                <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br", isProctored ? "from-red-500/5 via-transparent" : "from-blue-500/5 via-transparent")} />
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
                     <div className={cn(
@@ -151,14 +160,9 @@ const QuestionSetSelection = () => {
                     </div>
                     {isProctored && <Lock className="w-4 h-4 text-muted-foreground" />}
                   </div>
-                  <CardTitle className="text-xl text-white group-hover:text-white/90">
-                    {item.title}
-                  </CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {item.description}
-                  </CardDescription>
+                  <CardTitle className="text-xl text-white group-hover:text-white/90">{item.title}</CardTitle>
+                  <CardDescription className="line-clamp-2">{item.description}</CardDescription>
                 </CardHeader>
-
                 <CardFooter className="flex justify-between items-center text-xs text-muted-foreground border-t border-white/5 pt-4 mt-2">
                   <div className="flex items-center gap-3">
                     {isProctored ? (
@@ -167,49 +171,58 @@ const QuestionSetSelection = () => {
                       <span className="flex items-center gap-1"><Layers className="w-3 h-3"/> {item.available_count} Available</span>
                     )}
                   </div>
-                  <div className={cn(
-                    "flex items-center gap-1 font-medium transition-colors",
-                    isProctored ? "group-hover:text-red-400" : "group-hover:text-blue-400"
-                  )}>
-                    {isProctored ? "Start Exam" : "Configure"} <Play className="w-3 h-3 ml-0.5" />
+                  <div className={cn("flex items-center gap-1 font-medium transition-colors", isProctored ? "group-hover:text-red-400" : "group-hover:text-blue-400")}>
+                    {isProctored ? "Start" : "Configure"} <Play className="w-3 h-3 ml-0.5" />
                   </div>
                 </CardFooter>
               </Card>
             ))}
           </div>
         )}
-
-        {!isLoading && items.length === 0 && (
-          <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10 border-dashed">
-            <p className="text-muted-foreground">No content found.</p>
-          </div>
-        )}
       </div>
 
+      {/* Configuration Dialog for Practice */}
       <Dialog open={configOpen} onOpenChange={setConfigOpen}>
         <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Configure Practice</DialogTitle>
-            <DialogDescription>Topic: <span className="text-blue-400">{selectedTopic}</span></DialogDescription>
+            <DialogDescription>
+              Topic: <span className="text-blue-400">{selectedTopic}</span>
+            </DialogDescription>
           </DialogHeader>
           
           <div className="py-6 space-y-6">
+            
+            {/* Availability Warning / Info */}
+            <div className="flex items-start gap-3 bg-white/5 p-3 rounded-lg border border-white/10">
+              <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-white">Questions Available</p>
+                <p className="text-xs text-muted-foreground">
+                  There are <span className="text-blue-400 font-bold">{maxAvailable}</span> questions available in this category.
+                </p>
+              </div>
+            </div>
+
             <div className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Number of Questions</span>
+                <span className="text-muted-foreground">Select Number of Questions</span>
                 <span className="font-mono font-bold text-white">{questionCount[0]}</span>
               </div>
+              
               <Slider 
                 value={questionCount} 
                 onValueChange={setQuestionCount} 
-                max={40} 
-                min={5} 
-                step={5}
+                max={maxAvailable} // Dynamically limited to available questions
+                min={1} 
+                step={1}
                 className="py-2"
+                disabled={maxAvailable === 0}
               />
+              
               <div className="flex justify-between text-xs text-muted-foreground px-1">
-                <span>5</span>
-                <span>40</span>
+                <span>1</span>
+                <span>{maxAvailable}</span>
               </div>
             </div>
 
@@ -223,7 +236,11 @@ const QuestionSetSelection = () => {
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setConfigOpen(false)}>Cancel</Button>
-            <Button className="bg-blue-600 hover:bg-blue-500 text-white" onClick={startPractice}>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-500 text-white" 
+              onClick={startPractice}
+              disabled={maxAvailable === 0}
+            >
               Start Practice
             </Button>
           </DialogFooter>
