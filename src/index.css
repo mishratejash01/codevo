@@ -26,6 +26,15 @@
     --input: 240 3.7% 15.9%;
     --ring: 263.4 70% 50.4%;
     --radius: 0.75rem;
+    
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -71,7 +80,28 @@
   font-family: 'Neuropol X', sans-serif;
 }
 
-/* --- LIGHT RAY REVEAL ANIMATION (For Subtitle) --- */
+/* --- 1. PREMIUM CURTAIN REVEAL (For Logo) --- */
+@keyframes curtain-reveal {
+  0% {
+    clip-path: inset(0 100% 0 0); /* Completely hidden from right */
+    opacity: 0;
+    transform: translateY(5px); /* Slight upward float */
+  }
+  100% {
+    clip-path: inset(0 0 0 0); /* Fully visible */
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-curtain-reveal {
+  /* Slow, luxurious easing */
+  animation: curtain-reveal 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: 0.3s; /* Brief pause before starting */
+  opacity: 0; /* Start hidden */
+}
+
+/* --- 2. LIGHT RAY PASS (For Subtitle) --- */
 @keyframes light-ray-pass {
   0% {
     background-position: 200% center;
@@ -89,35 +119,17 @@
 .animate-light-ray {
   background: linear-gradient(
     120deg, 
-    #52525b 0%, 
+    #27272a 0%, 
     #ffffff 50%, 
-    #52525b 100%
+    #27272a 100%
   );
   background-size: 200% auto;
   color: transparent;
   background-clip: text;
   -webkit-background-clip: text;
-  animation: light-ray-pass 2.5s ease-out forwards;
-  animation-delay: 0.5s; /* Wait for logo to start */
-  opacity: 0; /* Initially hidden */
-}
-
-/* --- CINEMATIC TRACKING ANIMATION (For Main Logo) --- */
-@keyframes tracking-in-expand {
-  0% {
-    letter-spacing: -0.5em;
-    opacity: 0;
-    filter: blur(12px);
-  }
-  40% {
-    opacity: 0.6;
-  }
-  100% {
-    opacity: 1;
-    filter: blur(0px);
-  }
-}
-
-.animate-cinematic-logo {
-  animation: tracking-in-expand 1.5s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
+  
+  /* Slower animation, started LATER to avoid overlap */
+  animation: light-ray-pass 3s ease-out forwards;
+  animation-delay: 1.8s; /* Starts after the logo is mostly revealed */
+  opacity: 0;
 }
