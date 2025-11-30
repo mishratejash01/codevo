@@ -9,7 +9,7 @@ import { CodeEditor } from './CodeEditor';
 import { TestCaseView } from './TestCaseView';
 import { usePyodide } from '@/hooks/usePyodide';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Play, BookOpen, Flag, RefreshCw, Code2 } from 'lucide-react';
+import { Loader2, Play, BookOpen, Flag, RefreshCw, Code2, Lock, Unlock } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
 import { cn } from '@/lib/utils';
 
@@ -21,9 +21,10 @@ interface AssignmentViewProps {
   currentStatus?: QuestionStatus;
   onAttempt?: (isCorrect: boolean, score: number) => void;
   tables?: { assignments: string; testCases: string; submissions: string; };
+  disableCopyPaste?: boolean; // New prop
 }
 
-// ... regex and normalization helpers same as before ...
+// Regex and normalization helpers...
 const getTargetName = (code: string) => {
   const funcMatch = code.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
   if (funcMatch) return funcMatch[1];
@@ -59,7 +60,14 @@ const executeTests = async (tests: any[], code: string, targetName: string, runT
   return { passedCount, newTestResults };
 };
 
-export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, onAttempt, tables = DEFAULT_TABLES }: AssignmentViewProps) => {
+export const AssignmentView = ({ 
+  assignmentId, 
+  onStatusUpdate, 
+  currentStatus, 
+  onAttempt, 
+  tables = DEFAULT_TABLES,
+  disableCopyPaste = false 
+}: AssignmentViewProps) => {
   const [code, setCode] = useState<string>(''); 
   const [consoleOutput, setConsoleOutput] = useState<string>('');
   const [testResults, setTestResults] = useState<Record<string, any>>({});
@@ -123,7 +131,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Please log in');
       const targetName = getTargetName(code);
-      if (!targetName) throw new Error("Function/Class not found.");
+      if (!targetName) throw new Error("Function/Class not found. Please define your function.");
       
       const publicTests = testCases.filter((tc:any) => tc.is_public);
       const privateTests = testCases.filter((tc:any) => !tc.is_public);
@@ -148,15 +156,13 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
         private_tests_passed: privRes.passedCount,
         private_tests_total: privateTests.length,
       });
-      return { score, passed, total };
+      return { score, passed, total, pubPassed: pubRes.passedCount, pubTotal: publicTests.length, privPassed: privRes.passedCount, privTotal: privateTests.length };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['submission', assignmentId] });
-      toast({ title: 'Submitted', description: `Score: ${data.score.toFixed(0)}%` });
+      toast({ title: 'Submission Complete', description: `Score: ${data.score.toFixed(0)}%` });
       onStatusUpdate('attempted');
       setBottomTab('testcases');
-      
-      // CALL PARENT TO UPDATE EXAM METRICS
       if (onAttempt) onAttempt(data.passed === data.total, data.score);
     },
     onError: (err: any) => {
@@ -181,12 +187,19 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
       const publicTests = testCases.filter((tc:any) => tc.is_public);
       const { passedCount, newTestResults } = await executeTests(publicTests, code, targetName, runTestFunction);
       setTestResults(newTestResults);
-      setConsoleOutput(passedCount === publicTests.length ? "All Public Tests Passed" : `${passedCount}/${publicTests.length} Passed`);
+      setConsoleOutput(passedCount === publicTests.length ? "All Public Tests Passed" : `${passedCount}/${publicTests.length} Public Tests Passed`);
     } catch (err: any) {
       setConsoleOutput(err.message);
       setBottomTab('console');
     }
   };
+
+  const publicTests = testCases.filter((tc: any) => tc.is_public);
+  const privateTests = testCases.filter((tc: any) => !tc.is_public);
+
+  // Calculate current display stats
+  const currentPubPassed = testResults ? Object.values(testResults).filter((r:any, i) => testCases[i]?.is_public && r.passed).length : (latestSubmission?.public_tests_passed || 0);
+  const currentPrivPassed = latestSubmission?.private_tests_passed || 0; // Private results only update on submit fetch usually, or we can use testResults if we want to show them instantly (usually hidden)
 
   if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-white"/></div>;
   if (error || !assignment) return <div className="text-white text-center p-10"><Button onClick={() => refetch()}>Retry</Button></div>;
@@ -194,11 +207,14 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
   return (
     <div className="h-full w-full bg-[#09090b] text-white overflow-hidden">
       <ResizablePanelGroup direction="horizontal" className="h-full">
+        {/* LEFT PANEL: Problem & Stats */}
         <ResizablePanel defaultSize={40} minSize={30} className="bg-[#0c0c0e] border-r border-white/10 flex flex-col">
           <div className="h-12 border-b border-white/10 flex items-center px-4 justify-between bg-black/20 shrink-0">
-            <div className="flex items-center gap-2 text-sm font-medium text-white/90"><BookOpen className="w-4 h-4 text-primary" /> Problem</div>
+            <div className="flex items-center gap-2 text-sm font-medium text-white/90"><BookOpen className="w-4 h-4 text-primary" /> Problem Description</div>
             <div className="flex items-center gap-2">
-               <span className="text-xs text-muted-foreground bg-white/5 px-2 py-0.5 rounded font-mono">Score: {latestSubmission?.score?.toFixed(0) || 0} / {assignment.max_score}</span>
+               <span className="text-xs text-muted-foreground bg-white/5 px-2 py-0.5 rounded border border-white/10 font-mono">
+                 Score: {latestSubmission?.score?.toFixed(0) || 0} / {assignment.max_score}
+               </span>
                <Button variant="ghost" size="icon" onClick={() => { onStatusUpdate('review'); toast({description:"Marked for Review"}); }} className={cn("h-7 w-7", currentStatus === 'review' ? "text-orange-500" : "text-muted-foreground")}><Flag className="w-4 h-4" /></Button>
             </div>
           </div>
@@ -207,10 +223,38 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
               <div><h1 className="text-2xl font-bold text-white mb-2">{assignment.title}</h1><div className="flex gap-2 text-xs text-muted-foreground"><span>{assignment.category || "General"}</span></div></div>
               <div className="prose prose-invert prose-sm text-gray-300"><div className="whitespace-pre-wrap font-sans">{assignment.description}</div></div>
               {assignment.instructions && <div className="bg-blue-950/20 border border-blue-500/20 rounded-lg p-4 text-xs text-blue-200/70 whitespace-pre-wrap">{assignment.instructions}</div>}
+
+              {/* VISUAL METER (Stats) */}
+              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
+                 {/* Public Tests */}
+                 <div className="bg-white/5 rounded p-3 border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                       <span className="text-xs text-muted-foreground flex items-center gap-1"><Unlock className="w-3 h-3"/> Public Tests</span>
+                       <span className="text-xs font-bold text-white">{currentPubPassed}/{publicTests.length}</span>
+                    </div>
+                    <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden">
+                       <div className="h-full bg-green-500 transition-all duration-500" style={{ width: `${publicTests.length ? (currentPubPassed/publicTests.length)*100 : 0}%` }} />
+                    </div>
+                 </div>
+                 {/* Private Tests */}
+                 <div className="bg-white/5 rounded p-3 border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                       <span className="text-xs text-muted-foreground flex items-center gap-1"><Lock className="w-3 h-3"/> Private Tests</span>
+                       <span className="text-xs font-bold text-white">{currentPrivPassed}/{privateTests.length}</span>
+                    </div>
+                    <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden">
+                       <div className="h-full bg-blue-500 transition-all duration-500" style={{ width: `${privateTests.length ? (currentPrivPassed/privateTests.length)*100 : 0}%` }} />
+                    </div>
+                 </div>
+              </div>
+
             </div>
           </ScrollArea>
         </ResizablePanel>
-        <ResizableHandle withHandle className="bg-black w-2" />
+        
+        <ResizableHandle withHandle className="bg-black border-l border-r border-white/5 w-2 hover:bg-primary/20 transition-colors" />
+
+        {/* RIGHT PANEL: Editor & Output */}
         <ResizablePanel defaultSize={60}>
           <ResizablePanelGroup direction="vertical">
             <ResizablePanel defaultSize={70} className="flex flex-col bg-[#09090b]">
@@ -221,17 +265,23 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
                   <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending} size="sm" className="h-7 text-xs gap-1.5 bg-green-600 hover:bg-green-500 text-white">{submitMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin"/> : 'Submit'}</Button>
                 </div>
               </div>
-              <div className="flex-1 relative"><CodeEditor value={code} onChange={handleCodeChange} /></div>
+              <div className="flex-1 relative">
+                <CodeEditor 
+                  value={code} 
+                  onChange={handleCodeChange} 
+                  disableCopyPaste={disableCopyPaste} // Pass the restriction prop
+                />
+              </div>
             </ResizablePanel>
-            <ResizableHandle withHandle className="bg-black h-2" />
+            <ResizableHandle withHandle className="bg-black border-t border-b border-white/5 h-2 hover:bg-primary/20 transition-colors" />
             <ResizablePanel defaultSize={30} className="bg-[#0c0c0e] flex flex-col">
               <Tabs value={bottomTab} onValueChange={(v:any) => setBottomTab(v)} className="flex-1 flex flex-col min-h-0">
                 <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/20 shrink-0">
                   <TabsList className="h-7 bg-white/5 border border-white/10 p-0.5 gap-1">
                     <TabsTrigger value="testcases" className="text-xs h-6 px-3">Test Cases</TabsTrigger>
-                    <TabsTrigger value="console" className="text-xs h-6 px-3">Console</TabsTrigger>
+                    <TabsTrigger value="console" className="text-xs h-6 px-3">Console Output</TabsTrigger>
                   </TabsList>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => setConsoleOutput('')}><RefreshCw className="w-3 h-3"/></Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-white" onClick={() => setConsoleOutput('')}><RefreshCw className="w-3 h-3"/></Button>
                 </div>
                 <div className="flex-1 min-h-0 relative">
                   <TabsContent value="testcases" className="h-full m-0 p-0"><TestCaseView testCases={testCases} testResults={testResults} /></TabsContent>
