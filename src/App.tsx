@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Practice from "./pages/Practice";
 import Exam from "./pages/Exam";
+import ExamResult from "./pages/ExamResult"; // Import the result page
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import DegreeSelection from "./pages/DegreeSelection";
@@ -20,21 +21,16 @@ const App = () => {
 
   useEffect(() => {
     const hasSeenSplash = sessionStorage.getItem("has_seen_splash");
-
     if (hasSeenSplash) {
       setShowSplash(false);
     } else {
       sessionStorage.setItem("has_seen_splash", "true");
-      const timer = setTimeout(() => {
-        setShowSplash(false);
-      }, 3000);
+      const timer = setTimeout(() => setShowSplash(false), 3000);
       return () => clearTimeout(timer);
     }
   }, []);
 
-  if (showSplash) {
-    return <SplashScreen />;
-  }
+  if (showSplash) return <SplashScreen />;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -46,16 +42,15 @@ const App = () => {
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             
-            {/* Standard Playground Routes */}
+            {/* Learning Flow */}
             <Route path="/practice" element={<Practice />} />
+            
+            {/* Exam Flow */}
             <Route path="/exam" element={<Exam />} />
+            <Route path="/exam/result" element={<ExamResult />} /> {/* CRITICAL FIX: Registered Route */}
             
-            {/* IITM Routes */}
-            
-            {/* 1. Main Filter Page + Mode Popup */}
+            {/* Selection Flow */}
             <Route path="/degree" element={<DegreeSelection />} />
-            
-            {/* 2. Question Paper Set/Topic Selection */}
             <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
             
             <Route path="*" element={<NotFound />} />
