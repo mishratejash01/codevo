@@ -53,6 +53,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+    "ogl": "^1.0.11",
     "postprocessing": "^6.35.4",
     "pyodide": "^0.25.0",
     "react": "^18.3.1",
