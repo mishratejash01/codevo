@@ -23,7 +23,6 @@ export function Header({ session, onLogout }: HeaderProps) {
   const userName = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || session?.user?.email;
 
   return (
-    // CHANGED: 'sticky' -> 'fixed', added 'left-0 right-0' to center it while fixed
     <header className="fixed top-5 z-50 left-0 right-0 mx-auto w-full max-w-4xl px-4 md:px-0 transition-all duration-300">
       <div className={cn(
         "rounded-2xl border border-white/10 shadow-2xl",
@@ -34,7 +33,12 @@ export function Header({ session, onLogout }: HeaderProps) {
           
           {/* LEFT: Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-opacity duration-300 hover:opacity-80">
+            <span className={cn(
+              "font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white",
+              "transition-all duration-300",
+              // RESTORED: Minimal White Glow on Hover
+              "group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+            )}>
               COD
               <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
               VO
