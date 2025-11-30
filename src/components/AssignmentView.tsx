@@ -358,7 +358,7 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
             <ResizableHandle withHandle className="bg-black border-t border-b border-white/5 h-2 hover:bg-primary/20 transition-colors" />
 
             <ResizablePanel defaultSize={30} className="bg-[#0c0c0e] flex flex-col">
-              <Tabs value={bottomTab} onValueChange={(v) => setBottomTab(v as any)} className="flex-1 flex flex-col">
+              <Tabs value={bottomTab} onValueChange={(v) => setBottomTab(v as any)} className="flex-1 flex flex-col min-h-0">
                 <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/20 shrink-0">
                   <TabsList className="h-7 bg-white/5 border border-white/10 p-0.5 gap-1">
                     <TabsTrigger value="testcases" className="text-xs h-6 px-3 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Test Cases</TabsTrigger>
@@ -366,8 +366,11 @@ export const AssignmentView = ({ assignmentId, onStatusUpdate, currentStatus, on
                   </TabsList>
                   <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-white" onClick={() => setConsoleOutput('')}><RefreshCw className="w-3 h-3"/></Button>
                 </div>
-                <div className="flex-1 overflow-hidden relative">
-                  <TabsContent value="testcases" className="h-full m-0 p-4 overflow-auto custom-scrollbar"><TestCaseView testCases={testCases} testResults={testResults} /></TabsContent>
+                {/* REMOVED: overflow-auto, p-4 from container. Added min-h-0 to ensure flex child shrinks properly */}
+                <div className="flex-1 min-h-0 relative">
+                  <TabsContent value="testcases" className="h-full m-0 p-0 data-[state=active]:flex flex-col">
+                    <TestCaseView testCases={testCases} testResults={testResults} />
+                  </TabsContent>
                   <TabsContent value="console" className="h-full m-0 p-0">
                     <div className="h-full p-4 font-mono text-sm overflow-auto bg-[#0a0a0a]">
                       {consoleOutput ? (
