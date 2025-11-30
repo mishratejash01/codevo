@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, LogIn, LogOut } from 'lucide-react';
+import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -44,8 +44,8 @@ const Landing = () => {
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
 
-  // Typewriter text state
-  const codeTagline = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
+  // Typewriter for "Hello World" specifically
+  const typedHello = useTypewriter("Hello World", 150, 500);
 
   // Monitor Auth State & Clean URL Hash
   useEffect(() => {
@@ -100,46 +100,34 @@ const Landing = () => {
           <div className="absolute inset-0 z-0 h-full w-full">
              <DarkVeil />
              {/* Darker overlay for text contrast */}
-             <div className="absolute inset-0 bg-black/60" />
+             <div className="absolute inset-0 bg-black/70" />
           </div>
 
           {/* Content at Z-10 */}
           <div className="container mx-auto px-6 relative z-10">
             <div className="max-w-6xl mx-auto space-y-10">
-              <div className="space-y-8 max-w-4xl mx-auto">
+              <div className="space-y-8 max-w-5xl mx-auto">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-sm text-primary animate-in fade-in slide-in-from-bottom-4 duration-1000">
                   <Zap className="w-4 h-4" />
                   <span>Official IIT Madras Portal</span>
                 </div>
                 
-                {/* --- CODED TAGLINE ANIMATION --- */}
-                <div className="flex justify-center animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-75">
-                  <div className="relative group cursor-default">
-                    {/* Glow Effect */}
-                    <div className="absolute -inset-1 bg-green-500/20 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000" />
-                    
-                    <div className="relative bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-6 py-3 shadow-2xl flex items-center gap-3 min-h-[3.5rem]">
-                      <div className="flex gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
-                      </div>
-                      <div className="h-4 w-px bg-white/10 mx-1" />
-                      <p className="font-mono text-base md:text-lg text-green-400 font-medium tracking-wide flex items-center">
-                        <span className="text-gray-500 mr-3 select-none">$</span>
-                        {codeTagline}
-                        <span className="w-2.5 h-5 bg-green-400 ml-1 animate-pulse inline-block align-middle shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                {/* ------------------------------- */}
-
-                <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-100">
-                  Évolve from <br />
-                  <span className="bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent">
-                    Hello World to Hired.
+                {/* --- MAIN HEADLINE --- */}
+                <h1 className="text-5xl md:text-8xl font-bold tracking-tight leading-tight animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-100">
+                  Évolve from <br className="hidden md:block" />
+                  
+                  {/* Coded 'Hello World' */}
+                  <span className="font-mono text-primary mx-2 md:mx-4 inline-block">
+                    {typedHello}
+                    <span className="animate-pulse inline-block w-[3px] h-[0.8em] bg-primary align-middle ml-1 shadow-[0_0_10px_currentColor]" />
                   </span>
+                  
+                  <span className="text-muted-foreground/60 mx-2">to</span>
+                  
+                  {/* Faded 'Hired' - Barely Visible */}
+                  <span className="text-[#1a1a1a] transition-colors duration-1000 hover:text-white cursor-default" title="Keep coding to reveal">
+                    Hired
+                  </span>.
                 </h1>
                 
                 <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
