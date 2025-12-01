@@ -72,7 +72,7 @@ function DockItem({
   );
 }
 
-function DockIcon({ children, className }: { children: React.ReactNode; className?: string }) {
+function DockIcon({ children, className, isHovered }: { children: React.ReactNode; className?: string; isHovered?: MotionValue<number> }) {
   return <div className={cn("flex items-center justify-center w-full h-full text-white", className)}>{children}</div>;
 }
 
