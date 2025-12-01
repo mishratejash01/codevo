@@ -15,7 +15,7 @@ import QuestionSetSelection from "./pages/QuestionSetSelection";
 import Leaderboard from "./pages/Leaderboard";
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
-import { Home, GraduationCap, Code2, Trophy } from "lucide-react";
+import { Home, Code2, Trophy } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -90,9 +90,9 @@ const AppContent = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
 
-      {/* Desktop Dock - Hidden on Mobile via CSS media query or logic */}
+      {/* Dock - Visible on Mobile and Desktop if showDock is true */}
       {showDock && (
-        <div className="hidden md:block">
+        <div>
           <Dock 
             items={dockItems} 
             baseItemSize={45}
