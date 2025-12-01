@@ -109,9 +109,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                   <DropdownMenuContent align="end" className="w-56 bg-[#0c0c0e] border-white/10 text-white">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator className="bg-white/10" />
-                    <DropdownMenuItem className="focus:bg-white/5 focus:text-white cursor-pointer" onClick={() => navigate('/profile')}>
-                      <User className="mr-2 h-4 w-4" /> Profile
-                    </DropdownMenuItem>
+                    {/* Removed Profile Option as requested */}
                     <DropdownMenuItem className="focus:bg-red-500/10 focus:text-red-400 text-red-400 cursor-pointer" onClick={onLogout}>
                       <LogOut className="mr-2 h-4 w-4" /> Logout
                     </DropdownMenuItem>
