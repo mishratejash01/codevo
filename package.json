@@ -1,4 +1,7 @@
 {
+type: "uploaded file",
+fileName: "mishratejash01/pycoder-playground/pycoder-playground-a782311e0675fe1aa4ad6c605c2f37df7aa93d6f/package.json",
+fullContent: {
   "name": "vite_react_shadcn_ts",
   "private": true,
   "version": "0.0.0",
@@ -52,6 +55,7 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
+    "motion": "^12.0.0",
     "next-themes": "^0.3.0",
     "ogl": "^1.0.11",
     "postprocessing": "^6.35.4",
@@ -89,4 +93,5 @@
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19"
   }
+}
 }
