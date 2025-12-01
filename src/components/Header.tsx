@@ -1,12 +1,8 @@
-{
-type: "uploaded file",
-fileName: "mishratejash01/pycoder-playground/pycoder-playground-a782311e0675fe1aa4ad6c605c2f37df7aa93d6f/src/components/Header.tsx",
-fullContent: `
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, GraduationCap, Info, Home, User, Code, Trophy } from 'lucide-react';
+import { LogIn, LogOut, GraduationCap, Info, Home, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -161,9 +157,9 @@ export function Header({ session, onLogout }: HeaderProps) {
             {/* 3. CENTER: Start Upskilling (Prominent) */}
             <div className="col-span-1 relative flex justify-center">
                <Link to="/practice" className="absolute -top-6 bg-gradient-to-tr from-primary to-purple-400 p-4 rounded-full shadow-[0_0_20px_rgba(168,85,247,0.4)] border-4 border-[#0c0c0e] hover:scale-105 transition-transform active:scale-95 group">
-                  <Code className="w-6 h-6 text-white group-hover:rotate-12 transition-transform" />
+                  <span className="font-bold text-white text-lg group-hover:rotate-12 transition-transform">{'<>'}</span>
                </Link>
-               <span className="text-[9px] font-bold uppercase tracking-wide text-primary pt-8 pb-2">Practice</span>
+               <span className="text-[9px] font-bold uppercase tracking-wide text-primary pt-8 pb-2">Code</span>
             </div>
 
             {/* 4. Leaderboard */}
@@ -183,6 +179,4 @@ export function Header({ session, onLogout }: HeaderProps) {
       </div>
     </>
   );
-}
-`
 }
