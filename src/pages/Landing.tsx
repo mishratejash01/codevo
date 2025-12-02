@@ -90,13 +90,14 @@ const Landing = () => {
   // Framer Motion Scroll Logic
   const { scrollY } = useScroll();
   
-  // Transform scroll range [0, 500] to scale [1, 0.9]
-  const rawScale = useTransform(scrollY, [0, 500], [1, 0.9]);
-  const smoothScale = useSpring(rawScale, { stiffness: 60, damping: 20, mass: 0.5 });
+  // Animate scale from 1 down to 0.90 over the first 500px of scroll
+  const rawScale = useTransform(scrollY, [0, 500], [1, 0.90]);
+  // Use spring physics for smooth, non-snappy animation
+  const smoothScale = useSpring(rawScale, { stiffness: 50, damping: 15, mass: 0.2 });
 
-  // Transform scroll range [0, 500] to border radius [0, 32]
+  // Animate border radius from 0 to 32px over the first 500px
   const rawRadius = useTransform(scrollY, [0, 500], [0, 32]);
-  const smoothRadius = useSpring(rawRadius, { stiffness: 60, damping: 20, mass: 0.5 });
+  const smoothRadius = useSpring(rawRadius, { stiffness: 50, damping: 15, mass: 0.2 });
 
   // Animation Loop
   useEffect(() => {
@@ -150,10 +151,7 @@ const Landing = () => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setSession(session));
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [toast]);
 
   const handleLogout = async () => {
@@ -237,6 +235,7 @@ const Landing = () => {
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
+        {/* Height is slightly > 100vh to allow scroll, but white background is properly contained */}
         <div className="relative w-full h-[115vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <motion.div 
@@ -295,6 +294,7 @@ const Landing = () => {
         </div>
 
         {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
+        {/* Negative top margin pulls this section UP over the hero container's white background */}
         <section id="laptop-section" className="w-full bg-[#09090b] py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
@@ -311,7 +311,6 @@ const Landing = () => {
                   <h2 className="text-3xl md:text-6xl font-mono font-bold tracking-tight text-white leading-tight">
                     EXPERIENCE <br/> <span className="text-blue-500">REAL CODING</span>
                   </h2>
-                  {/* FIXED: Added w-full, max-w-[90vw] (responsive width), and break-words to prevent cut-off on small screens */}
                   <p className="font-mono text-xs md:text-base text-gray-400 w-full max-w-[90vw] md:max-w-lg mx-auto lg:mx-0 leading-relaxed break-words px-2 md:px-0">
                     A fully functional development environment right in your browser. <br/>
                     <span className="text-white">Write. Run. Debug. Succeed.</span>
@@ -447,7 +446,6 @@ const Landing = () => {
                   Real-time Interaction
                 </h3>
                 <div className="w-full">
-                  {/* Replaced manual transform scale with fully responsive component */}
                   <VirtualKeyboard activeChar={activeKey} />
                 </div>
               </div>
@@ -537,7 +535,8 @@ const Landing = () => {
 
           <div className="container mx-auto px-6 relative z-20 max-w-7xl">
             <div className="text-left mb-12">
-              <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight font-sans">
+              {/* UPDATED: Added mask-image to fade text from bottom */}
+              <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight font-sans [mask-image:linear-gradient(to_bottom,white_40%,transparent_100%)]">
                 Play n Codé
               </h2>
             </div>
