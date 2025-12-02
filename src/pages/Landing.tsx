@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ArrowRight, Lock, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity, Cpu, Zap, Shield, TrendingUp } from 'lucide-react';
+import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity, Cpu } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -175,9 +175,11 @@ const Landing = () => {
     }, 800);
   };
 
-  // Adjusted Scale (Subtle Shrink)
-  const scale = Math.max(0.98, 1 - scrollY / 5000);
-  const borderRadius = Math.min(24, scrollY / 25);
+  // Adjusted Scale for "Less Shrinking"
+  // Shrinks width slightly, but keeps top position constant (effectively shrinking from bottom/sides)
+  const scale = Math.max(0.98, 1 - scrollY / 3000);
+  const translateY = Math.min(20, scrollY / 10); // Moves slightly up to counteract visual drop if needed
+  const borderRadius = Math.min(24, scrollY / 20);
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
@@ -244,9 +246,8 @@ const Landing = () => {
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
               style={{
                 transform: `scale(${scale})`, 
-                transformOrigin: 'top center', 
-                borderBottomLeftRadius: `${borderRadius}px`,
-                borderBottomRightRadius: `${borderRadius}px`,
+                transformOrigin: 'top center', // Ensures shrinking happens from bottom/sides
+                borderRadius: `0 0 ${borderRadius}px ${borderRadius}px`, // Only bottom radius
               }}
             >
               <div className="absolute inset-0 z-0 w-full h-full"><DarkVeil /><div className="absolute inset-0 bg-black/60" /></div>
@@ -458,16 +459,17 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* --- SECTION 4: CODE ON CODEVO (New Component) --- */}
+        {/* --- SECTION 4: CODE ON CODEVO --- */}
         <CodevoShowcase />
 
         {/* --- SECTION 5: "Play n Codé" (Asteroid Game) --- */}
-        <section className="w-full bg-[#09090b] py-20 relative overflow-hidden border-t border-white/5">
-          {/* Fade to footer */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0c0c0e] to-transparent pointer-events-none z-10" />
+        <section className="w-full bg-[#000000] py-20 relative overflow-hidden border-t border-white/5">
+          
+          {/* FADE EFFECT: Shrinking into footer */}
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0ee0] to-transparent pointer-events-none z-20" />
 
-          <div className="container mx-auto px-6 relative z-20">
-            {/* Header: Left Aligned, Sans-Serif, No Description */}
+          <div className="container mx-auto px-6 relative z-10">
+            {/* Header: Left Aligned, Sans-Serif */}
             <div className="text-left mb-12">
               <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight font-sans">
                 Play n Codé
