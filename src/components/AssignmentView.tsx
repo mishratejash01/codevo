@@ -5,11 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CodeEditor } from './CodeEditor';
 import { TestCaseView } from './TestCaseView';
-import { useCodeRunner, Language } from '@/hooks/useCodeRunner'; // Use the new hook
+import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Play, BookOpen, Flag, RefreshCw, Code2, Lock, Unlock } from 'lucide-react';
+import { Loader2, Play, BookOpen, Flag, RefreshCw, Code2, Lock, Unlock, FileCode } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
 import { cn } from '@/lib/utils';
 
@@ -24,12 +25,10 @@ interface AssignmentViewProps {
   disableCopyPaste?: boolean;
 }
 
-// Regex to find Python function/class name
+// Helper: Extract function/class name for Python wrapping
 const getTargetName = (code: string) => {
   const funcMatch = code.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
   if (funcMatch) return funcMatch[1];
-  const classMatch = code.match(/class\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*[:\(]/);
-  if (classMatch) return classMatch[1];
   return null;
 };
 
@@ -38,14 +37,34 @@ const normalizeOutput = (str: string) => {
   return str.trim().replace(/'/g, '"').replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
 };
 
-// Helper: Detect language based on Title or Category
-const detectLanguage = (title: string, category: string): Language => {
+// Initial detection only
+const detectInitialLanguage = (title: string, category: string): Language => {
   const text = (title + category).toLowerCase();
   if (text.includes('java')) return 'java';
   if (text.includes('c++') || text.includes('cpp')) return 'cpp';
   if (text.includes('javascript') || text.includes('js')) return 'javascript';
-  if (text.includes(' c ') || text.endsWith(' c')) return 'c'; // Avoid matching 'category'
+  if (text.includes(' c ') || text.endsWith(' c')) return 'c';
   return 'python';
+};
+
+const getStarterTemplate = (lang: Language) => {
+  switch(lang) {
+    case 'java': return 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Your code here\n        \n    }\n}';
+    case 'cpp': return '#include <iostream>\nusing namespace std;\n\nint main() {\n    // Your code here\n    return 0;\n}';
+    case 'c': return '#include <stdio.h>\n\nint main() {\n    // Your code here\n    return 0;\n}';
+    case 'javascript': return 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf-8").trim();\n\n// Your code here';
+    default: return '# Write your Python code here\nimport sys\n\n# Read input from stdin\ninput_data = sys.stdin.read().strip()\n\n# Your logic\n';
+  }
+};
+
+const getFileName = (lang: Language) => {
+  switch(lang) {
+    case 'java': return 'Main.java';
+    case 'cpp': return 'main.cpp';
+    case 'c': return 'main.c';
+    case 'javascript': return 'index.js';
+    default: return 'main.py';
+  }
 };
 
 export const AssignmentView = ({ 
@@ -60,13 +79,12 @@ export const AssignmentView = ({
   const [consoleOutput, setConsoleOutput] = useState<string>('');
   const [testResults, setTestResults] = useState<Record<string, any>>({});
   const [bottomTab, setBottomTab] = useState<'console' | 'testcases'>('testcases');
+  const [activeLanguage, setActiveLanguage] = useState<Language>('python');
   
-  // Use the universal runner
   const { executeCode, loading: runnerLoading } = useCodeRunner();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch Assignment
   const { data: assignment, isLoading, error, refetch } = useQuery({
     queryKey: ['assignment', assignmentId, tables.assignments],
     queryFn: async () => {
@@ -100,31 +118,31 @@ export const AssignmentView = ({
     enabled: !!assignmentId
   });
 
-  // LOGIC: Enable Multi-language ONLY for IITM assignments
-  const isIITM = tables.assignments === 'iitm_assignments';
-  const currentLanguage = (isIITM && assignment) 
-    ? detectLanguage(assignment.title, assignment.category || '') 
-    : 'python';
-
   useEffect(() => {
-    const sessionKey = `exam_draft_${assignmentId}`;
-    const savedDraft = sessionStorage.getItem(sessionKey);
-    
-    // Set Code
-    if (savedDraft) setCode(savedDraft);
-    else if (latestSubmission?.code) setCode(latestSubmission.code);
-    else if (assignment?.starter_code) setCode(assignment.starter_code);
-    else {
-      // Default starter code based on language
-      if (currentLanguage === 'java') setCode('public class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}');
-      else if (currentLanguage === 'cpp') setCode('#include <iostream>\nusing namespace std;\n\nint main() {\n    // Your code here\n    return 0;\n}');
-      else if (currentLanguage === 'javascript') setCode('// Your JavaScript code here\n');
-      else setCode('# Write your Python code here\n');
+    if (assignment) {
+      const detected = detectInitialLanguage(assignment.title, assignment.category || '');
+      setActiveLanguage(detected);
+      
+      const sessionKey = `exam_draft_${assignmentId}`;
+      const savedDraft = sessionStorage.getItem(sessionKey);
+      
+      if (savedDraft) setCode(savedDraft);
+      else if (latestSubmission?.code) setCode(latestSubmission.code);
+      else if (assignment.starter_code) setCode(assignment.starter_code);
+      else setCode(getStarterTemplate(detected));
+      
+      setTestResults({});
+      setConsoleOutput('');
     }
+  }, [assignmentId, latestSubmission, assignment]);
 
-    setTestResults({});
-    setConsoleOutput('');
-  }, [assignmentId, latestSubmission, assignment, currentLanguage]);
+  const handleLanguageChange = (val: string) => {
+    const newLang = val as Language;
+    setActiveLanguage(newLang);
+    // Reset code to starter template for that language
+    // Note: You might want to confirm this with the user in a real app to prevent data loss
+    setCode(getStarterTemplate(newLang));
+  };
 
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
@@ -133,14 +151,12 @@ export const AssignmentView = ({
 
   // Prepare code specifically for Python function wrapping
   const prepareExecutionCode = (rawCode: string, input: string) => {
-    if (currentLanguage === 'python') {
+    if (activeLanguage === 'python') {
       const targetName = getTargetName(rawCode);
       if (targetName && input) {
-        // If it's a function assignment, wrap the call
         return `${rawCode}\n\n# Auto-generated runner\ntry:\n    print(${targetName}(${input}))\nexcept Exception as e:\n    print(e)`;
       }
     }
-    // For Java/C++/JS, we pass input via STDIN, so code remains as is
     return rawCode;
   };
 
@@ -157,11 +173,8 @@ export const AssignmentView = ({
       let passedCount = 0;
 
       for (const test of allTests) {
-        // Prepare Code (Wraps Python functions, leaves others alone)
         const codeToRun = prepareExecutionCode(code, test.input);
-        
-        // Execute (Input is passed as STDIN for Piston languages)
-        const result = await executeCode(currentLanguage, codeToRun, test.input);
+        const result = await executeCode(activeLanguage, codeToRun, test.input);
         
         if (!result.success) {
           newTestResults[test.id] = { passed: false, output: "Error", error: result.error };
@@ -181,11 +194,9 @@ export const AssignmentView = ({
       }
       
       setTestResults(newTestResults);
-      
       const total = allTests.length;
       const score = total > 0 ? (passedCount / total) * (assignment.max_score || 100) : 0;
       
-      // Save submission
       // @ts-ignore
       await supabase.from(tables.submissions).insert({
         assignment_id: assignmentId,
@@ -218,7 +229,7 @@ export const AssignmentView = ({
     setConsoleOutput('Running...');
     setBottomTab('console');
     try {
-      const res = await executeCode(currentLanguage, code, ""); 
+      const res = await executeCode(activeLanguage, code, ""); 
       if (res.success) {
         setConsoleOutput(res.output || "Code executed successfully (No output).");
       } else {
@@ -256,15 +267,13 @@ export const AssignmentView = ({
               <div>
                 <h1 className="text-2xl font-bold text-white mb-2">{assignment.title}</h1>
                 <div className="flex gap-2 text-xs text-muted-foreground">
-                  <span className={cn("uppercase tracking-wider font-bold", currentLanguage !== 'python' ? "text-blue-400" : "text-yellow-400")}>{currentLanguage}</span>
-                  <span>•</span>
-                  <span>{assignment.category || "General"}</span>
+                  <span className="bg-white/10 px-2 py-0.5 rounded text-white">{assignment.category || "General"}</span>
                 </div>
               </div>
               <div className="prose prose-invert prose-sm text-gray-300"><div className="whitespace-pre-wrap font-sans">{assignment.description}</div></div>
               {assignment.instructions && <div className="bg-blue-950/20 border border-blue-500/20 rounded-lg p-4 text-xs text-blue-200/70 whitespace-pre-wrap">{assignment.instructions}</div>}
 
-              {/* Progress Bars */}
+              {/* Stats */}
               <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
                  <div className="bg-white/5 rounded p-3 border border-white/10">
                     <div className="flex items-center justify-between mb-2">
@@ -296,10 +305,29 @@ export const AssignmentView = ({
           <ResizablePanelGroup direction="vertical">
             <ResizablePanel defaultSize={70} className="flex flex-col bg-[#09090b]">
               <div className="h-12 border-b border-white/10 flex items-center justify-between px-4 bg-black/40 shrink-0">
-                <div className="flex items-center gap-2 text-sm font-medium text-white/90">
-                  <Code2 className="w-4 h-4 text-green-500" /> 
-                  {currentLanguage === 'java' ? 'Main.java' : currentLanguage === 'cpp' ? 'main.cpp' : 'main.py'}
+                <div className="flex items-center gap-4">
+                  {/* LANGUAGE DROPDOWN */}
+                  <Select value={activeLanguage} onValueChange={handleLanguageChange}>
+                    <SelectTrigger className="h-8 w-[140px] bg-white/5 border-white/10 text-xs font-medium">
+                      <div className="flex items-center gap-2">
+                        <Code2 className="w-3.5 h-3.5 text-green-500" />
+                        <SelectValue />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1a1a1c] border-white/10 text-white">
+                      <SelectItem value="python">Python</SelectItem>
+                      <SelectItem value="java">Java</SelectItem>
+                      <SelectItem value="cpp">C++</SelectItem>
+                      <SelectItem value="c">C</SelectItem>
+                      <SelectItem value="javascript">JavaScript</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    <FileCode className="w-3 h-3" /> {getFileName(activeLanguage)}
+                  </div>
                 </div>
+
                 <div className="flex gap-2">
                   <Button variant="secondary" size="sm" onClick={handleRun} disabled={runnerLoading} className="h-7 text-xs gap-1.5"><Play className="w-3 h-3 mr-1"/> Run</Button>
                   <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending || runnerLoading} size="sm" className="h-7 text-xs gap-1.5 bg-green-600 hover:bg-green-500 text-white">{submitMutation.isPending || runnerLoading ? <Loader2 className="w-3 h-3 animate-spin"/> : 'Submit'}</Button>
@@ -310,13 +338,12 @@ export const AssignmentView = ({
                   value={code} 
                   onChange={handleCodeChange} 
                   disableCopyPaste={disableCopyPaste} 
-                  language={currentLanguage}
+                  language={activeLanguage}
                 />
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle className="bg-black border-t border-b border-white/5 h-2 hover:bg-primary/20 transition-colors" />
             
-            {/* BOTTOM PANEL: Console/TestCases */}
             <ResizablePanel defaultSize={30} className="bg-[#0c0c0e] flex flex-col">
               <Tabs value={bottomTab} onValueChange={(v:any) => setBottomTab(v)} className="flex-1 flex flex-col min-h-0">
                 <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/20 shrink-0">
