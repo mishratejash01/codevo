@@ -5,18 +5,26 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CodeEditor } from '@/components/CodeEditor';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
-import { Loader2, Play, RefreshCw, Code2, FileCode, Home, Terminal, Download } from 'lucide-react';
+import { explainCodeWithGroq } from '@/services/groq'; // Make sure you created Step 2!
+import { Loader2, Play, RefreshCw, Code2, FileCode, Home, Terminal, Download, Sparkles, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-// --- Helper Functions (Reused from AssignmentView) ---
+// Helper Functions
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
-    case 'java': return 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
+    case 'java': return 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
     case 'cpp': return '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}';
     case 'c': return '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}';
     case 'javascript': return 'console.log("Hello, World!");';
-    case 'sql': return '-- Write your SQL Query here\nCREATE TABLE demo (id INTEGER, message TEXT);\nINSERT INTO demo VALUES (1, "Hello World");\nSELECT * FROM demo;';
+    case 'sql': return '-- SQL Query\nCREATE TABLE demo (id INTEGER, message TEXT);\nINSERT INTO demo VALUES (1, "Hello World");\nSELECT * FROM demo;';
     case 'bash': return '#!/bin/bash\necho "Hello, World!"';
     default: return '# Python 3\nprint("Hello, World!")';
   }
@@ -42,6 +50,11 @@ const Compiler = () => {
   const [output, setOutput] = useState<string>('// Output will appear here...');
   const { executeCode, loading } = useCodeRunner();
 
+  // AI & UI State
+  const [isExplaining, setIsExplaining] = useState(false);
+  const [explanation, setExplanation] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   const handleLanguageChange = (val: string) => {
     const newLang = val as Language;
     setActiveLanguage(newLang);
@@ -53,7 +66,6 @@ const Compiler = () => {
     if (loading) return;
     setOutput('Running...');
     
-    // For standard compiler, we don't need hidden input logic
     const result = await executeCode(activeLanguage, code, "");
     
     if (result.success) {
@@ -63,40 +75,46 @@ const Compiler = () => {
     }
   };
 
-  // --- NEW: Client-Side Download Logic ---
+  // The AI Logic
+  const handleExplain = async () => {
+    if (!code.trim()) return;
+    
+    setIsExplaining(true);
+    setIsDialogOpen(true);
+    setExplanation(""); 
+
+    try {
+      const contextOutput = output.includes("//") ? "No output yet" : output;
+      const result = await explainCodeWithGroq(code, contextOutput, activeLanguage);
+      setExplanation(result);
+    } catch (error: any) {
+      setExplanation("Failed to connect to AI Tutor.");
+    } finally {
+      setIsExplaining(false);
+    }
+  };
+
   const handleDownload = () => {
     try {
       const filename = getFileName(activeLanguage);
       const blob = new Blob([code], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
-      
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
-      
-      // Cleanup
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
-      toast({
-        title: "Download Started",
-        description: `Downloading ${filename}`,
-        duration: 2000,
-      });
+      toast({ title: "Downloaded", description: filename });
     } catch (err) {
-      toast({
-        title: "Download Failed",
-        description: "Could not generate file.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Download failed.", variant: "destructive" });
     }
   };
 
   return (
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden">
-      {/* Header Bar */}
+      {/* Header */}
       <header className="border-b border-white/10 bg-[#0c0c0e] px-4 py-3 flex items-center justify-between shrink-0 h-16">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-white hover:bg-white/10">
@@ -104,9 +122,7 @@ const Compiler = () => {
           </Button>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
             <Terminal className="w-4 h-4 text-purple-400" />
-            <h1 className="text-sm font-bold tracking-tight text-purple-400">
-              CodeVo Compiler
-            </h1>
+            <h1 className="text-sm font-bold tracking-tight text-purple-400">CodeVo Compiler</h1>
           </div>
         </div>
 
@@ -130,30 +146,24 @@ const Compiler = () => {
             </SelectContent>
           </Select>
 
-          <div className="hidden sm:flex items-center text-xs text-muted-foreground bg-white/5 px-3 py-2 rounded border border-white/10">
-            <FileCode className="w-3 h-3 mr-2" /> 
-            {getFileName(activeLanguage)}
-          </div>
-
-          {/* Download Button */}
+          {/* AI Explain Button */}
           <Button 
-            onClick={handleDownload} 
-            variant="outline"
+            onClick={handleExplain} 
+            variant="secondary"
             size="sm" 
-            className="h-9 border-white/10 bg-white/5 hover:bg-white/10 text-white"
-            title="Download Source Code"
+            className="h-9 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 transition-all"
           >
-            <Download className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Save File</span>
+            <Sparkles className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Explain</span>
           </Button>
 
-          <Button 
-            onClick={handleRun} 
-            disabled={loading} 
-            size="sm" 
-            className="h-9 bg-green-600 hover:bg-green-500 text-white px-6 font-bold shadow-[0_0_15px_rgba(22,163,74,0.4)]"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Play className="w-4 h-4 mr-2 fill-current"/> Run Code</>}
+          <Button onClick={handleDownload} variant="outline" size="sm" className="h-9 border-white/10 bg-white/5 hover:bg-white/10 text-white">
+            <Download className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Save</span>
+          </Button>
+
+          <Button onClick={handleRun} disabled={loading} size="sm" className="h-9 bg-green-600 hover:bg-green-500 text-white px-6 font-bold">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <><Play className="w-4 h-4 mr-2 fill-current"/> Run</>}
           </Button>
         </div>
       </header>
@@ -161,19 +171,10 @@ const Compiler = () => {
       {/* Main Layout */}
       <div className="flex-1 overflow-hidden relative">
         <ResizablePanelGroup direction="vertical" className="h-full">
-          
-          {/* Top Panel: Editor */}
           <ResizablePanel defaultSize={70} className="bg-[#09090b]">
-            <CodeEditor 
-              value={code} 
-              onChange={setCode} 
-              language={activeLanguage}
-            />
+            <CodeEditor value={code} onChange={setCode} language={activeLanguage} />
           </ResizablePanel>
-
           <ResizableHandle withHandle className="bg-black border-t border-b border-white/10 h-2 hover:bg-purple-500/20 transition-colors" />
-
-          {/* Bottom Panel: Output */}
           <ResizablePanel defaultSize={30} className="bg-[#0c0c0e] flex flex-col min-h-[100px]">
             <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/20 shrink-0">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
@@ -184,14 +185,33 @@ const Compiler = () => {
               </Button>
             </div>
             <div className="flex-1 p-4 font-mono text-sm overflow-auto custom-scrollbar">
-              <pre className={cn("whitespace-pre-wrap", output.includes('Error') ? "text-red-400" : "text-blue-300")}>
-                {output}
-              </pre>
+              <pre className={cn("whitespace-pre-wrap", output.includes('Error') ? "text-red-400" : "text-blue-300")}>{output}</pre>
             </div>
           </ResizablePanel>
-
         </ResizablePanelGroup>
       </div>
+
+      {/* AI Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-purple-400">
+              <Bot className="w-6 h-6" /> AI Tutor
+            </DialogTitle>
+            <DialogDescription>Analyzing your code logic...</DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 p-4 rounded-lg bg-white/5 border border-white/10 min-h-[100px] max-h-[400px] overflow-y-auto">
+            {isExplaining ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-8 text-muted-foreground">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                <p className="text-sm animate-pulse">Thinking...</p>
+              </div>
+            ) : (
+              <div className="prose prose-invert prose-sm text-gray-300 whitespace-pre-wrap">{explanation}</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
