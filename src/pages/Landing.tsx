@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown, Terminal, Sparkles, LayoutGrid, Play, Server, Activity, Cpu } from 'lucide-react';
+import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import DarkVeil from '@/components/DarkVeil';
 import { cn } from "@/lib/utils";
 import { VirtualKeyboard } from '@/components/VirtualKeyboard';
+import { AsteroidGameFrame } from '@/components/AsteroidGameFrame'; // Imported here
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Typewriter Hook ---
@@ -173,12 +174,12 @@ const Landing = () => {
     }, 800);
   };
 
-  // Adjusted Scale: Even closer to 1 to minimize white space
-  const scale = Math.max(0.99, 1 - scrollY / 6000);
-  const borderRadius = Math.min(20, scrollY / 30);
+  // Adjusted Scale for "Less Shrinking"
+  const scale = Math.max(0.985, 1 - scrollY / 4000);
+  const borderRadius = Math.min(24, scrollY / 20);
 
   return (
-    <div className="min-h-screen bg-white selection:bg-primary/20 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
       <style>{`
         @keyframes scroll-arrow-move {
           0% { transform: translateY(0); opacity: 0.5; }
@@ -233,10 +234,10 @@ const Landing = () => {
       {/* Header */}
       <Header session={session} onLogout={handleLogout} />
 
-      <main className="flex-1 w-full">
+      <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full h-[120vh] bg-white"> 
+        <div className="relative w-full h-[120vh] bg-[#09090b]"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
@@ -318,7 +319,7 @@ const Landing = () => {
                 </div>
 
                 <div className="flex flex-col items-center lg:items-start gap-8">
-                  {/* BUTTON: Round Rectangular with Arrow */}
+                  {/* BUTTON */}
                   <Button 
                     onClick={handlePracticeClick}
                     className="group relative h-14 px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-lg font-bold shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] overflow-hidden"
@@ -329,7 +330,7 @@ const Landing = () => {
                     </span>
                   </Button>
 
-                  {/* Tech Stack Marquee (Below Button) */}
+                  {/* Tech Stack Marquee */}
                   <div className="w-full max-w-md">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-4 text-center lg:text-left opacity-70 font-mono">
                       // POWERED BY MODERN TECHNOLOGIES
@@ -353,30 +354,21 @@ const Landing = () => {
               {/* RIGHT: 3D Laptop Mockup */}
               <div className="flex-1 w-full max-w-2xl lg:max-w-none perspective-1000">
                 <div className="relative transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
-                  
-                  {/* Laptop Lid */}
                   <div className="relative bg-[#151515] rounded-t-xl p-1.5 pb-0 border border-white/10 shadow-2xl">
                     <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-700 rounded-full z-20" />
-                    
-                    {/* Screen Content */}
                     <div className="bg-[#09090b] rounded-t-md border border-white/5 overflow-hidden aspect-[16/10] relative group">
                       <div className="absolute inset-0 flex flex-col font-mono text-[9px] md:text-[10px] text-gray-400">
-                        {/* Top Bar */}
                         <div className="h-6 border-b border-white/10 flex items-center px-3 justify-between bg-[#0c0c0e]">
                           <div className="flex gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-red-500/50" /><div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" /><div className="w-1.5 h-1.5 rounded-full bg-green-500/50" /></div>
                           <div className="text-xs text-white/40">codevo_practice.py</div>
                           <div className="w-10 h-3 bg-white/5 rounded" />
                         </div>
-
                         <div className="flex-1 flex overflow-hidden">
-                          {/* Sidebar */}
                           <div className="w-10 border-r border-white/10 flex flex-col items-center py-2 gap-3 bg-[#0c0c0e]">
                             <LayoutGrid className="w-3 h-3 text-primary" />
                             <Code2 className="w-3 h-3 opacity-50" />
                             <Server className="w-3 h-3 opacity-50" />
                           </div>
-
-                          {/* Editor */}
                           <div className="flex-1 p-3 relative bg-[#09090b]">
                             <div className="text-blue-400">def optimize_route(nodes):</div>
                             <div className="text-gray-500 pl-4"># Initialize dynamic programming table</div>
@@ -386,14 +378,10 @@ const Landing = () => {
                               for i in range(1, len(nodes)):
                               <span className="inline-block w-1 h-2.5 bg-primary ml-0.5 animate-[code-blink_1s_infinite]" />
                             </div>
-                            
-                            {/* Run Overlay */}
                             <div className="absolute bottom-3 right-3 bg-green-900/30 text-green-400 border border-green-500/30 px-2 py-0.5 rounded text-[8px] flex items-center gap-1 shadow-lg">
                               <Play className="w-2 h-2 fill-current" /> EXECUTE
                             </div>
                           </div>
-
-                          {/* Terminal Output */}
                           <div className="w-1/3 border-l border-white/10 bg-black/60 p-2 font-mono">
                             <div className="text-green-500 mb-1">➜  ~ running tests...</div>
                             <div className="mt-2 space-y-1">
@@ -407,13 +395,9 @@ const Landing = () => {
                       <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
                     </div>
                   </div>
-
-                  {/* Laptop Base */}
                   <div className="h-2.5 md:h-3.5 bg-[#1f1f1f] rounded-b-lg border-t border-black/50 shadow-2xl relative z-10 mx-[1px]">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gray-600 rounded-b-[2px]" />
                   </div>
-                  
-                  {/* Reflection/Shadow under laptop */}
                   <div className="absolute -bottom-10 left-4 right-4 h-8 bg-black/40 blur-xl rounded-full transform scale-y-50" />
                 </div>
               </div>
@@ -422,12 +406,12 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* --- SECTION 3: KEYBOARD & TERMINAL (Reordered) --- */}
+        {/* --- SECTION 3: KEYBOARD & TERMINAL --- */}
         <section className="py-24 relative overflow-hidden bg-[#09090b] border-t border-white/5">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 max-w-7xl mx-auto">
               
-              {/* LEFT: Terminal (Question/Output) - Swapped */}
+              {/* LEFT: Terminal (Swapped) */}
               <div className="relative order-2 lg:order-1 h-[350px] md:h-[450px] w-full bg-[#121212] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden group hover:border-white/20 transition-colors">
                 <div className="h-10 bg-[#1a1a1a] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
                   <div className="w-3 h-3 rounded-full bg-red-500/80" /><div className="w-3 h-3 rounded-full bg-yellow-500/80" /><div className="w-3 h-3 rounded-full bg-green-500/80" />
@@ -460,7 +444,7 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* RIGHT: Keyboard - Swapped */}
+              {/* RIGHT: Keyboard (Swapped) */}
               <div className="relative order-1 lg:order-2">
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 blur-3xl -z-10 rounded-full" />
                 <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6 flex items-center gap-2">
@@ -473,136 +457,30 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* --- SECTION 4: "CODE ON CODEVO" (GROK STYLE) --- */}
-        <section className="w-full bg-[#050505] py-24 relative overflow-hidden border-t border-white/5">
-          <div className="container mx-auto px-6">
-            
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
-              <div className="max-w-xl">
-                <h2 className="text-5xl md:text-6xl font-bold text-white tracking-tight leading-[1.1]">
-                  Code on <span className="font-neuropol text-white">CODéVO</span>
-                </h2>
-              </div>
-              <div className="max-w-sm">
-                <p className="text-sm md:text-base text-gray-400 leading-relaxed">
-                  Experience the future of coding. Featuring frontier capabilities in real-time execution, secure proctoring, and global competition.
-                </p>
-              </div>
+        {/* --- SECTION 4: "Play n Codé" (Asteroid Game) --- */}
+        <section className="w-full bg-[#000000] py-20 relative overflow-hidden border-t border-white/5">
+          {/* Fade to footer */}
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0c0c0e] to-transparent pointer-events-none z-10" />
+
+          <div className="container mx-auto px-6 relative z-20">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
+                Play n <span className="font-neuropol text-white">Codé</span>
+              </h2>
+              <p className="text-gray-400 max-w-xl mx-auto text-lg">
+                 Taking a break? Keep your reflexes sharp with our integrated asteroid simulation. Warning: System locks after inactivity.
+              </p>
             </div>
 
-            {/* Screens Container */}
-            <div className="relative w-full h-[450px] md:h-[700px] mt-12">
-              
-              {/* Desktop IDE View */}
-              <div className="absolute left-0 top-0 w-[85%] md:w-[80%] h-[90%] bg-[#0f0f11] rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-10">
-                 <div className="w-full h-full flex flex-col bg-[#0c0c0e] rounded-xl border border-white/5 overflow-hidden">
-                    <div className="h-12 border-b border-white/5 flex items-center px-6 justify-between bg-[#151517]">
-                       <div className="flex gap-2">
-                          <div className="w-3 h-3 rounded-full bg-white/10" />
-                          <div className="w-3 h-3 rounded-full bg-white/10" />
-                          <div className="w-3 h-3 rounded-full bg-white/10" />
-                       </div>
-                       <div className="text-sm text-gray-500 font-mono">codevo_ide_v2.tsx</div>
-                       <div className="w-20 h-8 bg-white/5 rounded-md" />
-                    </div>
-                    <div className="flex-1 p-8 font-mono text-sm md:text-base text-gray-400 space-y-4">
-                       <div className="flex gap-4">
-                          <span className="text-gray-600 select-none">1</span>
-                          <span className="text-purple-400">import</span> <span className="text-white">React</span> <span className="text-purple-400">from</span> <span className="text-green-400">'react'</span>;
-                       </div>
-                       <div className="flex gap-4">
-                          <span className="text-gray-600 select-none">2</span>
-                          <span className="text-blue-400">const</span> <span className="text-yellow-200">App</span> = () <span className="text-blue-400">=&gt;</span> {'{'}
-                       </div>
-                       <div className="flex gap-4">
-                          <span className="text-gray-600 select-none">3</span>
-                          <span className="pl-8 text-pink-400">return</span> (
-                       </div>
-                       <div className="flex gap-4">
-                          <span className="text-gray-600 select-none">4</span>
-                          <span className="pl-12 text-gray-300">&lt;<span className="text-blue-300">CodevoEnvironment</span> mode=<span className="text-green-300">"pro"</span> /&gt;</span>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-
-              {/* Mobile Phone Overlay */}
-              <div className="absolute right-[5%] bottom-[50px] md:bottom-[-20px] w-[140px] md:w-[300px] aspect-[9/19] bg-black rounded-[2rem] md:rounded-[3rem] border-[6px] md:border-[8px] border-[#1a1a1a] shadow-[0_25px_50px_-12px_rgba(0,0,0,1)] z-30 overflow-hidden transform md:translate-y-10">
-                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-5 md:h-7 bg-black rounded-b-xl z-40" />
-                 <div className="h-full w-full bg-[#0c0c0e] pt-12 px-3 md:px-5 pb-8 flex flex-col relative">
-                    <div className="flex justify-between items-center mb-6">
-                       <div className="w-8 h-8 rounded-full bg-white/10" />
-                       <div className="w-20 h-4 bg-white/10 rounded-full" />
-                    </div>
-                    <div className="bg-white/5 rounded-2xl p-4 mb-3 border border-white/5 backdrop-blur-md">
-                       <div className="h-2 w-1/2 bg-blue-500/40 rounded mb-2" />
-                       <div className="h-2 w-3/4 bg-white/10 rounded mb-1" />
-                       <div className="h-2 w-full bg-white/10 rounded" />
-                    </div>
-                    <div className="bg-white/10 rounded-2xl p-4 mb-3 border border-blue-500/20 relative overflow-hidden">
-                       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10" />
-                       <div className="relative z-10">
-                          <div className="flex justify-between items-center mb-3">
-                             <div className="h-3 w-12 bg-green-500/40 rounded" />
-                             <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
-                          </div>
-                          <div className="space-y-2">
-                             <div className="h-2 w-full bg-white/20 rounded" />
-                             <div className="h-2 w-5/6 bg-white/20 rounded" />
-                          </div>
-                       </div>
-                    </div>
-                    <div className="mt-auto w-full h-10 md:h-12 bg-white text-black rounded-full flex items-center justify-center font-bold text-xs md:text-sm shadow-lg cursor-pointer hover:scale-105 transition-transform">
-                       Start Coding
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
-                 </div>
-              </div>
+            <div className="max-w-5xl mx-auto">
+              <AsteroidGameFrame />
             </div>
           </div>
         </section>
 
-        {/* Modes Section */}
-        <section id="modes-section" className="relative w-full min-h-screen flex items-center justify-center bg-[#09090b] z-10 py-24 border-t border-white/5">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-16 space-y-4">
-              <h2 className="text-3xl md:text-4xl font-bold text-white">Select Mode</h2>
-              <p className="text-muted-foreground text-lg">Choose how you want to code today.</p>
-            </div>
-            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-primary/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col overflow-hidden h-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 flex-1">
-                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-primary/20"><Code2 className="w-8 h-8 text-primary" /></div>
-                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-primary transition-colors">Learning Environment</h2>
-                  <div className="text-muted-foreground leading-relaxed mb-6">Standard practice console with instant feedback.</div>
-                </div>
-                <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
-                  <Button size="lg" onClick={() => session ? navigate('/practice') : navigate('/auth')} className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg h-12 text-base font-medium transition-all hover:scale-[1.02]">
-                    {session ? "Enter Learning Mode" : "Login to Practice"} <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </div>
-              </div>
-              <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-red-500/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col overflow-hidden h-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 flex-1">
-                  <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-red-500/20"><Lock className="w-8 h-8 text-red-500" /></div>
-                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-red-500 transition-colors">Exam Portal</h2>
-                  <div className="text-muted-foreground leading-relaxed mb-6">Secure proctored environment with strict monitoring.</div>
-                </div>
-                <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
-                  <Button size="lg" variant="outline" className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]" onClick={() => session ? navigate('/exam') : navigate('/auth')}>
-                    {session ? "Enter Exam Hall" : "Login to Exam"} <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
-      <footer className="border-t border-white/10 mt-12 bg-[#0c0c0e] relative z-10">
+      <footer className="border-t border-white/10 mt-0 bg-[#0c0c0e] relative z-10">
         <div className="container mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
             <p>© 2024 IIT Madras. All rights reserved.</p>
