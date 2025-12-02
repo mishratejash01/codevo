@@ -330,6 +330,9 @@ export const AsteroidGameFrame = () => {
       inactive && "border-red-500/50 shadow-[0_0_50px_rgba(220,38,38,0.2)]"
     )}>
       
+      {/* Faded Effect Mask at Bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#000000] via-[#000000cc] to-transparent z-20 pointer-events-none" />
+
       {/* HUD */}
       <div className="absolute top-8 left-10 z-30 flex items-center gap-4 pointer-events-none">
         <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md rounded-full border border-white/5">
@@ -360,8 +363,8 @@ export const AsteroidGameFrame = () => {
         className="w-full h-full block cursor-crosshair" 
       />
 
-      {/* Bottom Bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-md border-t border-white/5 flex items-center justify-between px-8 z-30 pointer-events-none">
+      {/* Bottom Bar (Below Gradient Mask) */}
+      <div className="absolute bottom-4 left-0 right-0 flex items-center justify-between px-8 z-30 pointer-events-none opacity-80">
          <div className="flex items-center gap-6">
             <div className="flex gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest items-center">
                <div className="flex gap-1">
