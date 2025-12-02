@@ -113,7 +113,7 @@ export const AsteroidGameFrame = () => {
         }
       }
 
-      // MONOCHROME AESTHETIC (Shades of White/Gray)
+      // MONOCHROME AESTHETIC
       const colors = ['#ffffff', '#e5e5e5', '#d4d4d4', '#a3a3a3']; 
       const color = colors[Math.floor(Math.random() * colors.length)];
 
@@ -122,7 +122,7 @@ export const AsteroidGameFrame = () => {
         y: startY || 0,
         dx: (Math.random() - 0.5) * 2,
         dy: (Math.random() - 0.5) * 2,
-        size: size || Math.random() * 15 + 25, // Big by default
+        size: size || Math.random() * 15 + 25,
         color
       };
     };
@@ -157,15 +157,15 @@ export const AsteroidGameFrame = () => {
 
       // --- RENDER BACKGROUND (Premium Faded B&W) ---
       const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
-      gradient.addColorStop(0, '#0a0a0a');  // Very Dark Gray center
-      gradient.addColorStop(1, '#000000');  // Pitch Black edges
+      gradient.addColorStop(0, '#1a1a1a');  
+      gradient.addColorStop(1, '#000000'); 
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
 
-      // Draw Stars (Subtle)
+      // Draw Stars
       ctx.fillStyle = '#ffffff';
       state.stars.forEach(star => {
-        ctx.globalAlpha = star.alpha * 0.2 + 0.05; // Very subtle
+        ctx.globalAlpha = star.alpha * 0.2 + 0.05; 
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.s, 0, Math.PI * 2);
         ctx.fill();
@@ -192,7 +192,7 @@ export const AsteroidGameFrame = () => {
         }
       }
 
-      // 3. Asteroids (Bubbles)
+      // 3. Asteroids
       for (let i = state.asteroids.length - 1; i >= 0; i--) {
         const a = state.asteroids[i];
         a.x += a.dx;
@@ -212,7 +212,6 @@ export const AsteroidGameFrame = () => {
           const dist = Math.sqrt(dx*dx + dy*dy);
           
           if (dist < a.size + 5) { 
-            // HIT!
             // Explosion particles
             for (let k = 0; k < 8; k++) {
                state.particles.push({
@@ -228,13 +227,13 @@ export const AsteroidGameFrame = () => {
             state.asteroids.splice(i, 1);
             setScore(s => s + (a.size > 20 ? 50 : 100));
             
-            // SPLIT LOGIC
+            // Split Logic
             if (a.size > 20) {
               state.asteroids.push(spawnAsteroid(width, height, a.size / 1.6, a.x, a.y));
               state.asteroids.push(spawnAsteroid(width, height, a.size / 1.6, a.x, a.y));
             }
 
-            // Ensure minimum population
+            // Respawn Check
             if (state.asteroids.length < 3) {
                setTimeout(() => {
                  if (gameState.current.asteroids.length < 5) {
@@ -258,7 +257,7 @@ export const AsteroidGameFrame = () => {
 
       // --- DRAWING ---
 
-      // Draw Particles
+      // Particles
       state.particles.forEach(p => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.life / 25;
@@ -268,10 +267,10 @@ export const AsteroidGameFrame = () => {
       });
       ctx.globalAlpha = 1.0;
 
-      // Draw Asteroids (Clean Circles - No Reflection Arc)
+      // Asteroids
       state.asteroids.forEach(a => {
         ctx.shadowBlur = 15;
-        ctx.shadowColor = 'rgba(255,255,255,0.1)'; // Subtle white glow
+        ctx.shadowColor = 'rgba(255,255,255,0.1)';
         
         ctx.strokeStyle = 'rgba(255,255,255,0.9)';
         ctx.lineWidth = 1.5;
@@ -280,14 +279,13 @@ export const AsteroidGameFrame = () => {
         ctx.arc(a.x, a.y, a.size, 0, Math.PI * 2);
         ctx.stroke();
         
-        // Fill 
         ctx.fillStyle = 'rgba(255,255,255,0.02)'; 
         ctx.fill();
         
         ctx.shadowBlur = 0;
       });
 
-      // Draw Bullets
+      // Bullets
       ctx.shadowBlur = 8;
       ctx.shadowColor = '#ffffff';
       ctx.fillStyle = '#ffffff';
@@ -298,7 +296,7 @@ export const AsteroidGameFrame = () => {
       });
       ctx.shadowBlur = 0;
 
-      // Draw Player
+      // Player
       ctx.save();
       ctx.translate(state.player.x, state.player.y);
       ctx.rotate(state.player.angle);
@@ -327,26 +325,27 @@ export const AsteroidGameFrame = () => {
 
   return (
     <div className={cn(
-      "relative w-full aspect-video bg-[#050505] rounded-[2rem] border-4 border-[#1a1a1a] overflow-hidden shadow-2xl group select-none",
+      // BROAD BORDER & HEIGHT INCREASE
+      "relative w-full h-[600px] bg-[#050505] rounded-[2rem] border-[12px] border-white/5 overflow-hidden shadow-2xl group select-none",
       inactive && "border-red-500/50 shadow-[0_0_50px_rgba(220,38,38,0.2)]"
     )}>
       
-      {/* HUD (Monochrome) */}
-      <div className="absolute top-6 left-8 z-30 flex items-center gap-4 pointer-events-none">
+      {/* HUD */}
+      <div className="absolute top-8 left-10 z-30 flex items-center gap-4 pointer-events-none">
         <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md rounded-full border border-white/5">
           <Heart className="w-4 h-4 text-white fill-white" />
           <span className="text-xs font-mono text-white font-bold">100%</span>
         </div>
       </div>
       
-      <div className="absolute top-6 right-8 z-30 pointer-events-none">
+      <div className="absolute top-8 right-10 z-30 pointer-events-none">
         <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md rounded-full border border-white/5">
           <Trophy className="w-4 h-4 text-white" />
           <span className="text-xs font-mono text-white font-bold">{score.toString().padStart(6, '0')}</span>
         </div>
       </div>
 
-      {/* Inactivity Warning */}
+      {/* Inactivity */}
       {inactive && (
         <div className="absolute inset-0 flex items-center justify-center z-40 bg-red-950/20 backdrop-blur-[1px] pointer-events-none">
           <div className="bg-black/90 border border-red-500 px-8 py-4 rounded text-red-500 font-mono text-lg animate-bounce shadow-[0_0_30px_rgba(220,38,38,0.5)]">
@@ -362,7 +361,7 @@ export const AsteroidGameFrame = () => {
       />
 
       {/* Bottom Bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-14 bg-black/80 backdrop-blur-md border-t border-white/5 flex items-center justify-between px-6 z-30 pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-md border-t border-white/5 flex items-center justify-between px-8 z-30 pointer-events-none">
          <div className="flex items-center gap-6">
             <div className="flex gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest items-center">
                <div className="flex gap-1">
