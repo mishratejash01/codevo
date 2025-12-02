@@ -14,11 +14,18 @@ export const CodeEditor = ({ value, onChange, readOnly = false, disableCopyPaste
   const handleEditorDidMount = (editor: any, monaco: any) => {
     if (disableCopyPaste) {
       const container = editor.getContainerDomNode();
-      const preventDefault = (e: any) => { e.preventDefault(); e.stopPropagation(); return false; };
+      
+      const preventDefault = (e: any) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      };
+
       container.addEventListener('copy', preventDefault, true);
       container.addEventListener('paste', preventDefault, true);
       container.addEventListener('cut', preventDefault, true);
       container.addEventListener('contextmenu', preventDefault, true);
+      
       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC, () => null);
       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV, () => null);
       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyX, () => null);
@@ -32,7 +39,7 @@ export const CodeEditor = ({ value, onChange, readOnly = false, disableCopyPaste
       <div className="h-full w-full overflow-hidden border-none shadow-2xl bg-black">
         <Editor
           height="100%"
-          language={language} // Dynamic Language
+          language={language} // Pass the dynamic language here
           value={value}
           onChange={(value) => onChange(value || '')}
           onMount={handleEditorDidMount}
