@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown, Terminal, Sparkles, Database, Cpu, Globe } from 'lucide-react';
+import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown, Terminal, Sparkles, LayoutGrid, Play, Cpu, Activity, Server } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import DarkVeil from '@/components/DarkVeil';
 import { cn } from "@/lib/utils";
 import { VirtualKeyboard } from '@/components/VirtualKeyboard';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
@@ -41,12 +42,12 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
   return displayText;
 };
 
-// Filtered Tech Stack (Only supported languages)
+// Filtered Tech Stack
 const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg",
-  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg", // SQL
+  "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg",
@@ -76,6 +77,8 @@ const Landing = () => {
   const { toast } = useToast();
   const [session, setSession] = useState<any>(null);
   const [scrollY, setScrollY] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
   // Typewriter states
   const taglineText = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
@@ -154,17 +157,26 @@ const Landing = () => {
   };
 
   const scrollToContent = () => {
-    const element = document.getElementById('showcase-section');
+    const element = document.getElementById('technical-section');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handlePracticeClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setButtonPosition({ x: rect.left, y: rect.top, width: rect.width, height: rect.height });
+    setIsNavigating(true);
+    setTimeout(() => {
+      session ? navigate('/practice') : navigate('/auth');
+    }, 800);
   };
 
   const scale = Math.max(0.9, 1 - scrollY / 1500);
   const borderRadius = Math.min(60, scrollY / 8);
 
   return (
-    <div className="min-h-screen bg-white selection:bg-primary/20 flex flex-col">
+    <div className="min-h-screen bg-white selection:bg-primary/20 flex flex-col relative overflow-hidden">
       <style>{`
         @keyframes scroll-arrow-move {
           0% { transform: translateY(0); opacity: 0.5; }
@@ -185,18 +197,29 @@ const Landing = () => {
         .animate-marquee:hover {
           animation-play-state: paused;
         }
-        .cursor-blink {
-          display: inline-block;
-          width: 8px;
-          height: 15px;
-          background-color: #3b82f6;
-          animation: blink 1s step-end infinite;
-          vertical-align: middle;
-          margin-left: 2px;
-        }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes code-blink { 50% { opacity: 0; } }
       `}</style>
 
+      {/* Page Transition Overlay */}
+      <AnimatePresence>
+        {isNavigating && (
+          <motion.div
+            initial={{ 
+              position: 'fixed', top: buttonPosition.y, left: buttonPosition.x, width: buttonPosition.width, height: buttonPosition.height, borderRadius: '0.75rem', backgroundColor: '#7c3aed', zIndex: 9999,
+            }}
+            animate={{ 
+              top: 0, left: 0, width: '100vw', height: '100vh', borderRadius: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+            }}
+            className="flex items-center justify-center"
+          >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.3 } }} className="text-white font-neuropol text-4xl">
+              INITIALIZING_ENV...
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Header */}
       <Header session={session} onLogout={handleLogout} />
 
       <main className="flex-1 w-full">
@@ -259,12 +282,133 @@ const Landing = () => {
           </div>
         </div>
 
+        {/* --- TECHNICAL LAPTOP & TEXT SECTION --- */}
+        <section id="technical-section" className="w-full bg-[#09090b] py-24 relative overflow-hidden">
+          {/* Grid Background */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+          
+          <div className="container mx-auto px-6 relative z-10">
+            <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+              
+              {/* LEFT: Technical Text */}
+              <div className="flex-1 space-y-8 text-center lg:text-left">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 justify-center lg:justify-start text-xs font-mono text-green-500 mb-2">
+                    <Activity className="w-3 h-3 animate-pulse" />
+                    <span>SYSTEM::READY</span>
+                  </div>
+                  <h2 className="text-4xl md:text-5xl font-mono font-bold tracking-tight text-white leading-tight">
+                    DEPLOY_<span className="text-blue-500">ENV</span>.EXE
+                  </h2>
+                  <div className="font-mono text-xs md:text-sm text-muted-foreground/80 space-y-2 bg-black/40 p-4 border-l-2 border-blue-500/50 rounded-r-lg max-w-md mx-auto lg:mx-0 text-left">
+                    <p>
+                      <span className="text-gray-500">[INIT]</span> Loading isolated sandbox container...
+                    </p>
+                    <p>
+                      <span className="text-gray-500">[CONF]</span> Runtime: Pyodide v0.25.0 (WASM)
+                    </p>
+                    <p>
+                      <span className="text-gray-500">[NET]</span> Latency: &lt;5ms (Local Execution)
+                    </p>
+                    <p className="text-green-400">
+                      <span className="text-gray-500">[STAT]</span> Environment successfully mounted.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                  <Button 
+                    size="lg"
+                    onClick={handlePracticeClick}
+                    className="group relative overflow-hidden bg-white text-black hover:bg-white/90 h-12 px-8 rounded-xl text-base font-bold font-mono shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02]"
+                  >
+                    <span className="relative z-10 flex items-center gap-2">
+                      <Terminal className="w-4 h-4" />
+                      INITIALIZE_SESSION
+                    </span>
+                    <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* RIGHT: 3D Laptop Mockup (Website Interface) */}
+              <div className="flex-1 w-full max-w-2xl lg:max-w-none perspective-1000">
+                <div className="relative transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
+                  
+                  {/* Laptop Lid */}
+                  <div className="relative bg-[#151515] rounded-t-xl p-1.5 pb-0 border border-white/10 shadow-2xl">
+                    <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-700 rounded-full z-20" />
+                    
+                    {/* Screen Content - Replicating actual assignment view */}
+                    <div className="bg-[#09090b] rounded-t-md border border-white/5 overflow-hidden aspect-[16/10] relative group">
+                      
+                      {/* Fake Interface */}
+                      <div className="absolute inset-0 flex flex-col font-mono text-[9px] md:text-[10px] text-gray-400">
+                        {/* Top Bar */}
+                        <div className="h-6 border-b border-white/10 flex items-center px-3 justify-between bg-[#0c0c0e]">
+                          <div className="flex gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-red-500/50" /><div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" /><div className="w-1.5 h-1.5 rounded-full bg-green-500/50" /></div>
+                          <div className="text-xs text-white/40">main.py - Visual Studio Code</div>
+                          <div className="w-10 h-3 bg-white/5 rounded" />
+                        </div>
+
+                        <div className="flex-1 flex overflow-hidden">
+                          {/* Sidebar */}
+                          <div className="w-10 border-r border-white/10 flex flex-col items-center py-2 gap-3 bg-[#0c0c0e]">
+                            <LayoutGrid className="w-3 h-3 text-primary" />
+                            <Code2 className="w-3 h-3 opacity-50" />
+                            <Server className="w-3 h-3 opacity-50" />
+                          </div>
+
+                          {/* Editor */}
+                          <div className="flex-1 p-3 relative bg-[#09090b]">
+                            <div className="text-blue-400">def optimize_route(nodes):</div>
+                            <div className="text-gray-500 pl-4"># Initialize dynamic programming table</div>
+                            <div className="text-purple-400 pl-4">dp = [float('inf')] * len(nodes)</div>
+                            <div className="text-white pl-4">dp[0] = 0</div>
+                            <div className="text-white pl-4 mt-1">
+                              for i in range(1, len(nodes)):
+                              <span className="inline-block w-1 h-2.5 bg-primary ml-0.5 animate-[code-blink_1s_infinite]" />
+                            </div>
+                            
+                            {/* Run Overlay */}
+                            <div className="absolute bottom-3 right-3 bg-green-900/30 text-green-400 border border-green-500/30 px-2 py-0.5 rounded text-[8px] flex items-center gap-1 shadow-lg">
+                              <Play className="w-2 h-2 fill-current" /> RUN_TESTS
+                            </div>
+                          </div>
+
+                          {/* Terminal Output */}
+                          <div className="w-1/3 border-l border-white/10 bg-black/60 p-2 font-mono">
+                            <div className="text-green-500 mb-1">➜  ~ python3 test.py</div>
+                            <div className="text-white/70">Running tests...</div>
+                            <div className="mt-2 space-y-1">
+                              <div className="flex items-center gap-1 text-green-400">✓ Test 1 Passed (0.02s)</div>
+                              <div className="flex items-center gap-1 text-green-400">✓ Test 2 Passed (0.01s)</div>
+                              <div className="flex items-center gap-1 text-red-400">✗ Test 3 Failed</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Glare */}
+                      <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Laptop Base */}
+                  <div className="h-2.5 md:h-3.5 bg-[#1f1f1f] rounded-b-lg border-t border-black/50 shadow-2xl relative z-10 mx-[1px]">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-gray-600 rounded-b-[2px]" />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
         {/* --- KEYBOARD & TERMINAL SHOWCASE --- */}
         <section id="showcase-section" className="w-full bg-[#09090b] pt-16 pb-24 relative z-10 overflow-hidden border-t border-white/5">
           <div className="container mx-auto px-4 md:px-6">
-            
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 max-w-7xl mx-auto">
-              
               {/* RIGHT: Dynamic Terminal */}
               <div className="relative order-1 lg:order-2 h-[350px] md:h-[450px] w-full bg-[#121212] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden group hover:border-white/20 transition-colors">
                 <div className="h-10 bg-[#1a1a1a] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
@@ -273,13 +417,8 @@ const Landing = () => {
                     {showcasePhase === 'question' ? 'challenge.md' : 'solution.py'}
                   </div>
                 </div>
-
                 <div className="flex-1 relative p-6 md:p-8 font-mono text-sm md:text-base overflow-hidden">
-                  
-                  {/* Phase 1: Question/Marketing View */}
                   <div className={cn("absolute inset-0 p-8 flex flex-col items-center justify-center text-center transition-all duration-700 ease-in-out", showcasePhase === 'question' ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-10 scale-95 pointer-events-none")}>
-                    
-                    {/* Premium Illustration */}
                     <div className="relative mb-8 group/icon">
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl group-hover/icon:bg-blue-500/30 transition-all duration-700" />
                       <div className="relative">
@@ -290,14 +429,11 @@ const Landing = () => {
                         </div>
                       </div>
                     </div>
-
                     <h3 className="text-xl md:text-2xl font-bold text-white mb-4 tracking-tight">Codevo Challenge</h3>
                     <p className="text-muted-foreground max-w-md leading-relaxed text-base md:text-lg">
                       "{DEMO_SCENARIO.question}"
                     </p>
                   </div>
-
-                  {/* Phase 2: Terminal View */}
                   <div className={cn("absolute inset-0 p-6 md:p-8 bg-[#0c0c0e] transition-all duration-500 ease-in-out flex flex-col", showcasePhase === 'terminal' ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none")}>
                     <div className="flex items-center gap-2 text-muted-foreground mb-4 opacity-50 text-xs">
                       <Terminal className="w-4 h-4" />
@@ -307,10 +443,8 @@ const Landing = () => {
                       {typedCode}<span className="cursor-blink" />
                     </div>
                   </div>
-
                 </div>
               </div>
-
               {/* LEFT: Keyboard */}
               <div className="relative order-2 lg:order-1">
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 blur-3xl -z-10 rounded-full" />
@@ -341,49 +475,38 @@ const Landing = () => {
               </p>
             </div>
 
-            {/* Features Grid (Integrated) */}
+            {/* Features Grid */}
             <div className="grid md:grid-cols-3 gap-6">
-              
               <div className="bg-[#0c0c0e] border border-white/10 p-6 rounded-xl hover:bg-white/5 transition-all group cursor-default relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Cpu className="w-24 h-24" />
-                </div>
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Cpu className="w-24 h-24" /></div>
                 <div className="relative z-10">
                   <Zap className="w-8 h-8 text-yellow-400 mb-4" />
                   <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-yellow-400 transition-colors">01_INSTANT_EVAL</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">Client-side Pyodide WASM engine. Zero latency. 100% speed.</p>
                 </div>
               </div>
-
               <div className="bg-[#0c0c0e] border border-white/10 p-6 rounded-xl hover:bg-white/5 transition-all group cursor-default relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Database className="w-24 h-24" />
-                </div>
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><ArrowRight className="w-24 h-24" /></div>
                 <div className="relative z-10">
                   <Shield className="w-8 h-8 text-blue-400 mb-4" />
                   <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">02_SECURE_ENV</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">Proctored exam simulations with fullscreen enforcement & breach detection.</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Proctored exam simulations with fullscreen enforcement.</p>
                 </div>
               </div>
-
               <div className="bg-[#0c0c0e] border border-white/10 p-6 rounded-xl hover:bg-white/5 transition-all group cursor-default relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Globe className="w-24 h-24" />
-                </div>
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Activity className="w-24 h-24" /></div>
                 <div className="relative z-10">
                   <TrendingUp className="w-8 h-8 text-green-400 mb-4" />
                   <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-green-400 transition-colors">03_GLOBAL_RANKS</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">Live leaderboards. Compete against the best. Claim your spot.</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Live leaderboards. Compete against the best.</p>
                 </div>
               </div>
-
             </div>
 
-            {/* Marquee (Tech Stack) */}
+            {/* Tech Marquee */}
             <div className="mt-20 w-full overflow-hidden relative group">
               <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-[#09090b] to-transparent z-10 pointer-events-none" />
               <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-[#09090b] to-transparent z-10 pointer-events-none" />
-              
               <div className="flex gap-16 animate-marquee whitespace-nowrap py-4">
                 {[...TECH_STACK, ...TECH_STACK, ...TECH_STACK].map((src, i) => (
                   <div key={i} className="flex-shrink-0 w-12 h-12 opacity-30 hover:opacity-100 transition-all grayscale hover:grayscale-0">
@@ -392,7 +515,6 @@ const Landing = () => {
                 ))}
               </div>
             </div>
-
           </div>
         </section>
 
@@ -403,48 +525,26 @@ const Landing = () => {
               <h2 className="text-3xl md:text-4xl font-bold text-white">Select Mode</h2>
               <p className="text-muted-foreground text-lg">Choose how you want to code today.</p>
             </div>
-
             <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              {/* Learning Mode */}
               <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-primary/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col overflow-hidden h-full">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative z-10 flex-1">
-                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-primary/20">
-                    <Code2 className="w-8 h-8 text-primary" />
-                  </div>
+                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-primary/20"><Code2 className="w-8 h-8 text-primary" /></div>
                   <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-primary transition-colors">Learning Environment</h2>
-                  <div className="text-muted-foreground leading-relaxed mb-6">
-                    Standard practice console offering:
-                    <ul className="mt-4 space-y-3 text-sm">
-                      <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_currentColor]"/> Instant Feedback & Scoring</li>
-                      <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_currentColor]"/> Unlimited Attempts</li>
-                      <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_currentColor]"/> Access to Public Test Cases</li>
-                    </ul>
-                  </div>
+                  <div className="text-muted-foreground leading-relaxed mb-6">Standard practice console with instant feedback.</div>
                 </div>
                 <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
-                  <Button size="lg" onClick={() => session ? navigate('/practice') : navigate('/auth')} className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-12 text-base font-medium transition-all hover:scale-[1.02]">
+                  <Button size="lg" onClick={() => session ? navigate('/practice') : navigate('/auth')} className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg h-12 text-base font-medium transition-all hover:scale-[1.02]">
                     {session ? "Enter Learning Mode" : "Login to Practice"} <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
               </div>
-
-              {/* Exam Mode */}
               <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-red-500/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col overflow-hidden h-full">
                 <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative z-10 flex-1">
-                  <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-red-500/20">
-                    <Lock className="w-8 h-8 text-red-500" />
-                  </div>
+                  <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-red-500/20"><Lock className="w-8 h-8 text-red-500" /></div>
                   <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-red-500 transition-colors">Exam Portal</h2>
-                  <div className="text-muted-foreground leading-relaxed mb-6">
-                    Secure proctored environment featuring:
-                    <ul className="mt-4 space-y-3 text-sm">
-                      <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_10px_currentColor]"/> Strict Time Limits</li>
-                      <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_10px_currentColor]"/> Full-screen Enforcement</li>
-                      <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_10px_currentColor]"/> Activity Monitoring</li>
-                    </ul>
-                  </div>
+                  <div className="text-muted-foreground leading-relaxed mb-6">Secure proctored environment with strict monitoring.</div>
                 </div>
                 <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
                   <Button size="lg" variant="outline" className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]" onClick={() => session ? navigate('/exam') : navigate('/auth')}>
