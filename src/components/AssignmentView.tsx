@@ -25,7 +25,6 @@ interface AssignmentViewProps {
   disableCopyPaste?: boolean;
 }
 
-// Helper: Extract function/class name for Python wrapping
 const getTargetName = (code: string) => {
   const funcMatch = code.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
   if (funcMatch) return funcMatch[1];
@@ -37,7 +36,6 @@ const normalizeOutput = (str: string) => {
   return str.trim().replace(/'/g, '"').replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
 };
 
-// Initial detection only
 const detectInitialLanguage = (title: string, category: string): Language => {
   const text = (title + category).toLowerCase();
   if (text.includes('java')) return 'java';
@@ -139,8 +137,6 @@ export const AssignmentView = ({
   const handleLanguageChange = (val: string) => {
     const newLang = val as Language;
     setActiveLanguage(newLang);
-    // Reset code to starter template for that language
-    // Note: You might want to confirm this with the user in a real app to prevent data loss
     setCode(getStarterTemplate(newLang));
   };
 
@@ -149,7 +145,6 @@ export const AssignmentView = ({
     sessionStorage.setItem(`exam_draft_${assignmentId}`, newCode);
   };
 
-  // Prepare code specifically for Python function wrapping
   const prepareExecutionCode = (rawCode: string, input: string) => {
     if (activeLanguage === 'python') {
       const targetName = getTargetName(rawCode);
@@ -160,6 +155,59 @@ export const AssignmentView = ({
     return rawCode;
   };
 
+  // --- UPDATED RUN LOGIC: Checks code against all test cases immediately ---
+  const handleRun = async () => {
+    if (runnerLoading) return;
+    
+    // Switch to test cases tab to show results
+    setBottomTab('testcases');
+    setTestResults({}); // Clear previous results
+    
+    const newTestResults: Record<string, any> = {};
+    let firstError = "";
+
+    try {
+      // Loop through all test cases and validate
+      for (const test of testCases) {
+        const codeToRun = prepareExecutionCode(code, test.input);
+        const result = await executeCode(activeLanguage, codeToRun, test.input);
+        
+        let isMatch = false;
+        let errorMsg = null;
+
+        if (!result.success) {
+           errorMsg = result.error || "Execution Error";
+           if (!firstError) firstError = errorMsg;
+        } else {
+           const actual = normalizeOutput(result.output);
+           const expected = normalizeOutput(test.expected_output);
+           isMatch = actual === expected || actual.includes(expected);
+           if (!isMatch) errorMsg = `Expected: ${test.expected_output}`;
+        }
+
+        newTestResults[test.id] = { 
+          passed: isMatch, 
+          output: result.output, 
+          error: errorMsg
+        };
+      }
+      
+      setTestResults(newTestResults);
+      
+      // If there was a major execution error, show it in console too
+      if (firstError) {
+        setConsoleOutput(firstError);
+      } else {
+        setConsoleOutput("Execution complete. Check Test Cases tab for details.");
+      }
+
+    } catch (err: any) {
+      setConsoleOutput(err.message);
+      setBottomTab('console');
+    }
+  };
+
+  // Submit Logic (Commit to DB)
   const submitMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -224,26 +272,19 @@ export const AssignmentView = ({
     }
   });
 
-  const handleRun = async () => {
-    if (runnerLoading) return;
-    setConsoleOutput('Running...');
-    setBottomTab('console');
-    try {
-      const res = await executeCode(activeLanguage, code, ""); 
-      if (res.success) {
-        setConsoleOutput(res.output || "Code executed successfully (No output).");
-      } else {
-        setConsoleOutput(res.error || "Execution failed.");
-      }
-    } catch (err: any) {
-      setConsoleOutput(err.message);
-    }
-  };
-
   const publicTests = testCases.filter((tc: any) => tc.is_public);
   const privateTests = testCases.filter((tc: any) => !tc.is_public);
-  const currentPubPassed = testResults ? Object.values(testResults).filter((r:any, i) => testCases[i]?.is_public && r.passed).length : (latestSubmission?.public_tests_passed || 0);
-  const currentPrivPassed = latestSubmission?.private_tests_passed || 0; 
+  
+  // Calculate stats based on testResults if available (for instant feedback), otherwise fallback to DB stats
+  const hasRunTests = Object.keys(testResults).length > 0;
+  
+  const currentPubPassed = hasRunTests 
+    ? Object.values(testResults).filter((r:any, i) => testCases.find((t:any) => t.id === Object.keys(testResults)[i])?.is_public && r.passed).length 
+    : (latestSubmission?.public_tests_passed || 0);
+    
+  const currentPrivPassed = hasRunTests
+    ? Object.values(testResults).filter((r:any, i) => !testCases.find((t:any) => t.id === Object.keys(testResults)[i])?.is_public && r.passed).length
+    : (latestSubmission?.private_tests_passed || 0);
 
   if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-white"/></div>;
   if (error || !assignment) return <div className="text-white text-center p-10"><Button onClick={() => refetch()}>Retry</Button></div>;
@@ -306,7 +347,6 @@ export const AssignmentView = ({
             <ResizablePanel defaultSize={70} className="flex flex-col bg-[#09090b]">
               <div className="h-12 border-b border-white/10 flex items-center justify-between px-4 bg-black/40 shrink-0">
                 <div className="flex items-center gap-4">
-                  {/* LANGUAGE DROPDOWN */}
                   <Select value={activeLanguage} onValueChange={handleLanguageChange}>
                     <SelectTrigger className="h-8 w-[140px] bg-white/5 border-white/10 text-xs font-medium">
                       <div className="flex items-center gap-2">
