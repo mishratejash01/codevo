@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { usePyodide } from './usePyodide';
 
-// Piston API (Public Execution Engine)
+// Piston API
 const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
 
-export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript' | 'sql';
+export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript' | 'sql' | 'bash';
 
 interface ExecutionResult {
   success: boolean;
@@ -16,7 +16,6 @@ export const useCodeRunner = () => {
   const { runCode: runPython, loading: pythonLoading } = usePyodide();
   const [loading, setLoading] = useState(false);
 
-  // Helper to execute code via Piston API (for Java, C++, JS, SQL)
   const runPiston = async (language: string, version: string, code: string, stdin: string = "") => {
     try {
       const response = await fetch(PISTON_API_URL, {
@@ -26,7 +25,7 @@ export const useCodeRunner = () => {
           language,
           version,
           files: [{ content: code }],
-          stdin, // Input for the program (test case input)
+          stdin,
         }),
       });
       const data = await response.json();
@@ -34,7 +33,7 @@ export const useCodeRunner = () => {
       if (data.run) {
         return {
           success: data.run.code === 0,
-          output: data.run.output, // Captures stdout and stderr
+          output: data.run.output,
           error: data.run.code !== 0 ? data.run.stderr : undefined
         };
       }
@@ -51,7 +50,6 @@ export const useCodeRunner = () => {
     try {
       switch (language) {
         case 'python':
-          // Keep using Client-Side Pyodide for Python (Fast & Offline-capable)
           const pyResult = await runPython(code); 
           result = { success: pyResult.success, output: pyResult.output || pyResult.error || "" };
           break;
@@ -61,7 +59,6 @@ export const useCodeRunner = () => {
           break;
 
         case 'java':
-          // Piston automatically handles a public class named 'Main'
           result = await runPiston('java', '15.0.2', code, input);
           break;
 
@@ -74,8 +71,12 @@ export const useCodeRunner = () => {
           break;
 
         case 'sql':
-          // SQLite execution
           result = await runPiston('sqlite3', '3.36.0', code, input);
+          break;
+
+        case 'bash':
+          // Bash execution
+          result = await runPiston('bash', '5.0.0', code, input);
           break;
 
         default:
