@@ -36,6 +36,7 @@ const normalizeOutput = (str: string) => {
   return str.trim().replace(/'/g, '"').replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
 };
 
+// Initial detection only
 const detectInitialLanguage = (title: string, category: string): Language => {
   const text = (title + category).toLowerCase();
   if (text.includes('sql') || text.includes('database')) return 'sql';
@@ -52,7 +53,7 @@ const getStarterTemplate = (lang: Language) => {
     case 'cpp': return '#include <iostream>\nusing namespace std;\n\nint main() {\n    // Your code here\n    return 0;\n}';
     case 'c': return '#include <stdio.h>\n\nint main() {\n    // Your code here\n    return 0;\n}';
     case 'javascript': return 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf-8").trim();\n\n// Your code here';
-    case 'sql': return '-- Write your SQL Query here\n-- Note: Tables must be created within this script for testing.\n\nCREATE TABLE students (id INTEGER, name TEXT, score INTEGER);\nINSERT INTO students VALUES (1, "Alice", 90);\nINSERT INTO students VALUES (2, "Bob", 85);\n\n-- Your SELECT query below:\n';
+    case 'sql': return '-- Write your SQL Query here\n-- Note: Tables must be created within this script for testing.\n\nCREATE TABLE students (id INTEGER, name TEXT, score INTEGER);\nINSERT INTO students VALUES (1, "Alice", 90);\nINSERT INTO students VALUES (2, "Bob", 85);\n\n-- Your SELECT query below:\nSELECT * FROM students;';
     default: return '# Write your Python code here\nimport sys\n\n# Read input from stdin\ninput_data = sys.stdin.read().strip()\n\n# Your logic\n';
   }
 };
@@ -155,8 +156,6 @@ export const AssignmentView = ({
         return `${rawCode}\n\n# Auto-generated runner\ntry:\n    print(${targetName}(${input}))\nexcept Exception as e:\n    print(e)`;
       }
     }
-    // For SQL, we don't usually pass "input" (stdin) unless it's for seeding, 
-    // but here we assume the user writes the full script.
     return rawCode;
   };
 
@@ -169,6 +168,7 @@ export const AssignmentView = ({
     let firstError = "";
 
     try {
+      // Loop through ALL test cases on Run (same as submit)
       for (const test of testCases) {
         const codeToRun = prepareExecutionCode(code, test.input);
         const result = await executeCode(activeLanguage, codeToRun, test.input);
@@ -183,7 +183,7 @@ export const AssignmentView = ({
            const actual = normalizeOutput(result.output);
            const expected = normalizeOutput(test.expected_output);
            isMatch = actual === expected || actual.includes(expected);
-           if (!isMatch) errorMsg = `Expected:\n${test.expected_output}`;
+           if (!isMatch) errorMsg = `Expected: ${test.expected_output}`;
         }
 
         newTestResults[test.id] = { 
