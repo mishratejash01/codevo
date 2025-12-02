@@ -72,7 +72,7 @@ def level_up_career(user):
     confidence = codevo.analyze(skills)
     
     if confidence >= 100:
-        return "You're Hired! 🚀"
+        return "You're HIRED!"
 
 print(level_up_career(me))`
 };
