@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
+import { Code2, ArrowRight, Lock, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity, Cpu, Zap, Shield, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -175,9 +175,9 @@ const Landing = () => {
     }, 800);
   };
 
-  // Subtle Shrinking Effect
-  const scale = Math.max(0.99, 1 - scrollY / 5000);
-  const borderRadius = Math.min(24, scrollY / 30);
+  // Adjusted Scale
+  const scale = Math.max(0.985, 1 - scrollY / 4000);
+  const borderRadius = Math.min(24, scrollY / 20);
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
@@ -238,7 +238,8 @@ const Landing = () => {
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full h-[110vh] bg-white"> 
+        {/* CHANGED: Background is now white to show the shrinking effect correctly */}
+        <div className="relative w-full h-[120vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
@@ -297,6 +298,7 @@ const Landing = () => {
 
         {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
         <section id="laptop-section" className="w-full bg-[#09090b] py-24 relative overflow-hidden border-b border-white/5">
+          {/* Grid Background */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
           <div className="container mx-auto px-6 relative z-10">
@@ -319,6 +321,7 @@ const Landing = () => {
                 </div>
 
                 <div className="flex flex-col items-center lg:items-start gap-8">
+                  {/* BUTTON */}
                   <Button 
                     onClick={handlePracticeClick}
                     className="group relative h-14 px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-lg font-bold shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] overflow-hidden"
@@ -329,6 +332,7 @@ const Landing = () => {
                     </span>
                   </Button>
 
+                  {/* Tech Stack Marquee */}
                   <div className="w-full max-w-md">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-4 text-center lg:text-left opacity-70 font-mono">
                       // POWERED BY MODERN TECHNOLOGIES
@@ -455,16 +459,15 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* --- SECTION 4: CODE ON CODEVO --- */}
+        {/* --- SECTION 4: CODE ON CODEVO (New Component) --- */}
         <CodevoShowcase />
 
         {/* --- SECTION 5: "Play n Codé" (Asteroid Game) --- */}
         <section className="w-full bg-[#000000] py-20 relative overflow-hidden border-t border-white/5">
-          
-          {/* FADE EFFECT: Shrinking into footer */}
-          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0ee0] to-transparent pointer-events-none z-20" />
+          {/* Fade to footer */}
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0c0c0e] to-transparent pointer-events-none z-10" />
 
-          <div className="container mx-auto px-6 relative z-10">
+          <div className="container mx-auto px-6 relative z-20">
             {/* Header: Left Aligned, Sans-Serif */}
             <div className="text-left mb-12">
               <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight font-sans">
