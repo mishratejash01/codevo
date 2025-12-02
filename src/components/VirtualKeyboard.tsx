@@ -18,7 +18,7 @@ const KEY_ROWS = [
     { label: "caps", width: 1.8, value: "CapsLock" }, { label: "A" }, { label: "S" }, { label: "D" }, { label: "F" }, { label: "G" }, { label: "H" }, { label: "J" }, { label: "K" }, { label: "L" }, { label: ";", value: ";:" }, { label: "'", value: "'\"" }, { label: "enter", width: 2.2, value: "\n" }
   ],
   [
-    { label: "shift", width: 2.4, value: "Shift" }, { label: "Z" }, { label: "X" }, { label: "C" }, { label: "V" }, { label: "B" }, { label: "N" }, { label: "M" }, { label: ",", value: ",<" }, { label: ".", value: ".>" }, { label: "/", value: "/?" }, { label: "shift", width: 2.4, value: "Shift" }
+    { label: "shift", width: 2.4, value: "Shift" }, { label: "Z" }, { label: "X" }, { label: "C" }, { label: "V" }, { label: "B" }, { label: "N" }, { label: ",", value: ",<" }, { label: ".", value: ".>" }, { label: "/", value: "/?" }, { label: "shift", width: 2.4, value: "Shift" }
   ],
   [
     { label: "fn" }, { label: "ctrl" }, { label: "opt" }, { label: "cmd", width: 1.2 }, { label: "", width: 6.5, value: " " }, { label: "cmd", width: 1.2 }, { label: "opt" }, { label: "◄" }, { label: "▲" }, { label: "▼" }, { label: "►" }
@@ -47,8 +47,8 @@ export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
       {/* Main Keyboard Chassis */}
       <div className="relative p-2 md:p-4 bg-[#050505] rounded-xl md:rounded-2xl border border-white/10 shadow-2xl transform transition-transform duration-500 hover:rotate-x-1 group">
         
-        {/* Subtle under-glow for the whole board */}
-        <div className="absolute -inset-1 bg-blue-500/5 blur-2xl -z-10 rounded-full opacity-20" />
+        {/* Under-glow */}
+        <div className="absolute -inset-1 bg-white/5 blur-2xl -z-10 rounded-full opacity-20" />
 
         <div className="flex flex-col gap-1.5">
           {KEY_ROWS.map((row, rowIndex) => (
@@ -62,26 +62,27 @@ export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
                     key={keyIndex}
                     className={cn(
                       // Base Shape & Dark Theme
-                      "h-10 md:h-12 flex items-center justify-center text-[10px] md:text-xs font-bold transition-all duration-100 rounded-[6px] border-b-[3px] relative overflow-hidden",
+                      "h-10 md:h-12 flex items-center justify-center text-[10px] md:text-xs font-bold transition-all duration-150 rounded-[6px] border-b-[3px] relative overflow-hidden",
                       "bg-[#111] border-black/60", // Dark button cap
 
-                      // Permanent Backlight & Text Color
-                      isEnter 
-                        ? "text-green-400 shadow-[0_0_15px_rgba(74,222,128,0.25)] drop-shadow-[0_0_5px_rgba(74,222,128,0.5)]" // Enter Key: Green
-                        : "text-white/80 shadow-[0_0_12px_rgba(255,255,255,0.15)] drop-shadow-[0_0_3px_rgba(255,255,255,0.3)]", // Standard: White
+                      // IDLE STATE (Always On White Backlight)
+                      !active && "text-white/70 shadow-[0_0_10px_rgba(255,255,255,0.1)]",
 
-                      // Active (Press) State
-                      active && "scale-95 border-b-[1px] translate-y-[2px] brightness-125 shadow-none"
+                      // ACTIVE STATE (Click)
+                      active && isEnter && "text-green-400 border-green-900/50 shadow-[0_0_25px_rgba(74,222,128,0.6)] translate-y-[2px] border-b-[1px]",
+                      active && !isEnter && "text-blue-400 border-blue-900/50 shadow-[0_0_25px_rgba(59,130,246,0.6)] translate-y-[2px] border-b-[1px]"
                     )}
                     style={{ 
                       flex: key.width || 1,
                       minWidth: key.width ? `${key.width * 1.8}rem` : 'auto' 
                     }}
                   >
-                    {/* Inner "Light Source" gradient for depth */}
+                    {/* Inner Light Source */}
                     <div className={cn(
-                      "absolute inset-0 opacity-10 pointer-events-none",
-                      isEnter ? "bg-gradient-to-t from-green-500/50 to-transparent" : "bg-gradient-to-t from-white/20 to-transparent"
+                      "absolute inset-0 opacity-20 pointer-events-none transition-colors duration-150",
+                      active 
+                        ? (isEnter ? "bg-green-500" : "bg-blue-500") 
+                        : "bg-gradient-to-t from-white/10 to-transparent"
                     )} />
                     
                     <span className="relative z-10 tracking-wide">{key.label}</span>
