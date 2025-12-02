@@ -44,15 +44,15 @@ export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
 
   return (
     <div className="w-full mx-auto select-none perspective-1000">
-      {/* Main Keyboard Chassis */}
-      <div className="relative p-2 md:p-4 bg-[#080808] rounded-xl md:rounded-2xl border border-white/10 shadow-2xl transform transition-transform duration-500 hover:rotate-x-1 group">
+      {/* Main Keyboard Chassis - Responsive key base unit */}
+      <div className="relative p-1 md:p-4 bg-[#080808] rounded-lg md:rounded-2xl border border-white/10 shadow-2xl transform transition-transform duration-500 hover:rotate-x-1 group [--kb-unit:5.2vw] md:[--kb-unit:1.8rem]">
         
         {/* Stronger White Under-glow for visibility */}
         <div className="absolute -inset-2 bg-white/5 blur-3xl -z-10 rounded-full opacity-30" />
 
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-[0.3rem] md:gap-1.5">
           {KEY_ROWS.map((row, rowIndex) => (
-            <div key={rowIndex} className="flex gap-1.5 justify-center">
+            <div key={rowIndex} className="flex gap-[0.3rem] md:gap-1.5 justify-center">
               {row.map((key, keyIndex) => {
                 const active = isActive(key.label, key.value);
                 const isEnter = key.label === "enter";
@@ -61,8 +61,8 @@ export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
                   <div
                     key={keyIndex}
                     className={cn(
-                      // Base Shape & Dark Theme
-                      "h-10 md:h-12 flex items-center justify-center text-[10px] md:text-xs font-bold transition-all duration-75 rounded-[6px] border-b-[3px] relative overflow-hidden",
+                      // Base Shape & Dark Theme - Responsive Height and Text
+                      "h-[2rem] md:h-12 flex items-center justify-center text-[8px] md:text-xs font-bold transition-all duration-75 rounded-[3px] md:rounded-[6px] border-b-[2px] md:border-b-[3px] relative overflow-hidden",
                       "bg-[#0a0a0a] border-black", 
 
                       // IDLE STATE: Bright White Backlight (Always On)
@@ -77,7 +77,8 @@ export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
                     )}
                     style={{ 
                       flex: key.width || 1,
-                      minWidth: key.width ? `${key.width * 1.8}rem` : 'auto' 
+                      // Dynamic width calculation using CSS variable
+                      minWidth: key.width ? `calc(${key.width} * var(--kb-unit))` : 'auto'
                     }}
                   >
                     <span className="relative z-10 tracking-wide">{key.label}</span>
