@@ -11,7 +11,6 @@ import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 
-// --- Typewriter Hook ---
 const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
   const [displayText, setDisplayText] = useState('');
   const [started, setStarted] = useState(false);
@@ -40,7 +39,6 @@ const useTypewriter = (text: string, speed: number = 50, startDelay: number = 10
   return displayText;
 };
 
-// Filtered Tech Stack
 const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg",
@@ -52,7 +50,6 @@ const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg",
 ];
 
-// --- Animation Scenario ---
 const DEMO_SCENARIO = {
   question: "How do I fast-track my coding career?",
   code: `import codevo
@@ -78,28 +75,24 @@ const Landing = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
-  // Typewriter states
   const taglineText = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
   const helloWorldText = useTypewriter("Hello World", 150, 1500);
 
-  // --- Showcase Animation States ---
   const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
   const [typedCode, setTypedCode] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
-  // Framer Motion Scroll Logic
+  // Smooth Scroll Physics for Hero Animation
   const { scrollY } = useScroll();
   
-  // Transform scroll range [0, 500] to scale [1, 0.9]
-  const rawScale = useTransform(scrollY, [0, 500], [1, 0.9]);
-  // Add spring physics to the scale for "slowly animated" effect when scrolling up/down
-  const smoothScale = useSpring(rawScale, { stiffness: 60, damping: 20, mass: 0.5 });
+  // Animate from scale 1 down to 0.90 over the first 500px of scroll
+  const rawScale = useTransform(scrollY, [0, 500], [1, 0.90]);
+  const smoothScale = useSpring(rawScale, { stiffness: 50, damping: 15, mass: 0.2 });
 
-  // Transform scroll range [0, 500] to border radius [0, 32]
+  // Animate border radius from 0 to 32px over the first 500px
   const rawRadius = useTransform(scrollY, [0, 500], [0, 32]);
-  const smoothRadius = useSpring(rawRadius, { stiffness: 60, damping: 20, mass: 0.5 });
+  const smoothRadius = useSpring(rawRadius, { stiffness: 50, damping: 15, mass: 0.2 });
 
-  // Animation Loop
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     let charIndex = 0;
@@ -229,13 +222,13 @@ const Landing = () => {
         )}
       </AnimatePresence>
 
-      {/* Header */}
       <Header session={session} onLogout={handleLogout} />
 
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full h-[102vh] bg-white"> 
+        {/* Height is slightly > 100vh to allow scroll, but white background is properly contained */}
+        <div className="relative w-full h-[115vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <motion.div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
@@ -248,22 +241,22 @@ const Landing = () => {
             >
               <div className="absolute inset-0 z-0 w-full h-full"><DarkVeil /><div className="absolute inset-0 bg-black/60" /></div>
 
-              <div className="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center h-full pb-20">
-                <div className="max-w-7xl mx-auto space-y-10 text-center">
+              <div className="container mx-auto px-4 md:px-6 relative z-10 flex flex-col items-center justify-center h-full pb-20">
+                <div className="max-w-7xl mx-auto space-y-8 md:space-y-10 text-center">
                   <div className="flex justify-center mb-6">
                     <div className="relative group cursor-default">
                       <div className="absolute -inset-1 bg-green-500/20 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000" />
-                      <div className="relative bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-6 py-3 shadow-2xl flex items-center gap-3">
-                        <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500/50" /><div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" /><div className="w-2.5 h-2.5 rounded-full bg-green-500/50" /></div>
-                        <div className="h-4 w-px bg-white/10 mx-1" />
-                        <p className="font-mono text-xs md:text-lg text-green-400 font-medium tracking-wide"><span className="text-gray-500 mr-3 select-none">$</span>{taglineText}</p>
+                      <div className="relative bg-black/50 backdrop-blur-md border border-white/10 rounded-lg px-4 md:px-6 py-2 md:py-3 shadow-2xl flex items-center gap-3">
+                        <div className="flex gap-1.5"><div className="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-red-500/50" /><div className="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-yellow-500/50" /><div className="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-green-500/50" /></div>
+                        <div className="h-3 md:h-4 w-px bg-white/10 mx-1" />
+                        <p className="font-mono text-xs md:text-lg text-green-400 font-medium tracking-wide break-words max-w-[280px] md:max-w-none"><span className="text-gray-500 mr-2 md:mr-3 select-none">$</span>{taglineText}</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex flex-col items-center gap-2">
                     <span className="text-2xl md:text-5xl text-white font-bold tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-1000">Évolve from</span>
-                    <div className="flex flex-wrap items-baseline justify-center gap-3 md:gap-5 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
+                    <div className="flex flex-wrap items-baseline justify-center gap-2 md:gap-5 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
                       <span className="font-mono text-primary text-3xl md:text-8xl font-bold drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">{helloWorldText}</span>
                       <span className="text-xl md:text-4xl text-muted-foreground/60 font-light">to</span>
                       <span className="text-4xl md:text-8xl font-extrabold text-[#1a1a1a] transition-colors duration-700 hover:text-white cursor-default" title="Keep coding to reveal">Hired</span>
@@ -273,7 +266,7 @@ const Landing = () => {
                   <div className="flex flex-wrap items-center justify-center gap-4 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
                     <div className="flex items-center -space-x-4">
                       {[{ src: "https://images.unsplash.com/photo-1628157588553-5eeea00af15c?w=150&h=150&fit=crop", rotate: "-rotate-6", zIndex: "z-0" }, { src: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150&h=150&fit=crop", rotate: "rotate-3", zIndex: "z-10" }, { src: "https://images.unsplash.com/photo-1619895862022-09114b41f16f?w=150&h=150&fit=crop", rotate: "-rotate-3", zIndex: "z-20" }, { src: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=150&h=150&fit=crop", rotate: "rotate-6", zIndex: "z-30" }].map((item, i) => (
-                        <div key={i} className={cn("relative w-10 h-10 md:w-12 md:h-12 rounded-xl border-[2px] border-[#0c0c0e] overflow-hidden shadow-lg transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-110 hover:!z-50 hover:border-white/40 hover:shadow-2xl bg-gray-800", item.rotate, item.zIndex)}>
+                        <div key={i} className={cn("relative w-10 h-10 md:w-12 md:h-14 rounded-xl border-[2px] border-[#0c0c0e] overflow-hidden shadow-lg transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-110 hover:!z-50 hover:border-white/40 hover:shadow-2xl bg-gray-800", item.rotate, item.zIndex)}>
                           <img src={item.src} alt="User" className="w-full h-full object-cover opacity-90 hover:opacity-100" />
                         </div>
                       ))}
@@ -284,8 +277,8 @@ const Landing = () => {
               </div>
 
               <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer animate-in fade-in duration-1000 delay-1000" onClick={scrollToContent}>
-                <div className="w-[36px] h-[64px] border border-white/30 rounded-full flex justify-center items-center bg-black/20 backdrop-blur-sm hover:border-white/60 transition-colors shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-                  <div className="animate-scroll-arrow"><ChevronsDown className="w-5 h-5 text-white/90" /></div>
+                <div className="w-[30px] h-[54px] md:w-[36px] md:h-[64px] border border-white/30 rounded-full flex justify-center items-center bg-black/20 backdrop-blur-sm hover:border-white/60 transition-colors shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                  <div className="animate-scroll-arrow"><ChevronsDown className="w-4 h-4 md:w-5 md:h-5 text-white/90" /></div>
                 </div>
               </div>
             </motion.div>
@@ -293,12 +286,13 @@ const Landing = () => {
         </div>
 
         {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
-        {/* Added z-20 relative to stack on top of the hero's white background area cleanly */}
-        <section id="laptop-section" className="w-full bg-[#09090b] py-12 relative z-20 overflow-hidden border-b border-white/5">
+        {/* Negative top margin pulls this section UP over the hero container's white background */}
+        <section id="laptop-section" className="w-full bg-[#09090b] py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+              
               {/* LEFT: Text & Button */}
               <div className="flex-1 space-y-8 md:space-y-10 text-center lg:text-left">
                 <div className="space-y-4">
@@ -306,7 +300,7 @@ const Landing = () => {
                     <Activity className="w-3 h-3 animate-pulse" />
                     System::Online
                   </div>
-                  <h2 className="text-3xl md:text-5xl font-mono font-bold tracking-tight text-white leading-tight">
+                  <h2 className="text-3xl md:text-6xl font-mono font-bold tracking-tight text-white leading-tight">
                     EXPERIENCE <br/> <span className="text-blue-500">REAL CODING</span>
                   </h2>
                   <p className="font-mono text-xs md:text-base text-gray-400 max-w-lg mx-auto lg:mx-0 leading-relaxed">
@@ -400,7 +394,7 @@ const Landing = () => {
         </section>
 
         {/* --- SECTION 3: KEYBOARD & TERMINAL --- */}
-        <section className="py-12 relative overflow-hidden bg-[#09090b] border-t border-white/5">
+        <section className="py-12 md:py-24 relative overflow-hidden bg-[#09090b] border-t border-white/5">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center mb-16 max-w-7xl mx-auto">
               {/* LEFT: Terminal */}
@@ -452,7 +446,7 @@ const Landing = () => {
         </section>
 
         {/* --- SECTION 4: CODE ON CODEVO --- */}
-        <section className="w-full bg-[#050505] py-12 relative overflow-hidden border-t border-white/5">
+        <section className="w-full bg-[#050505] py-12 md:py-24 relative overflow-hidden border-t border-white/5">
           <div className="container mx-auto px-6 max-w-7xl">
             
             {/* Header */}
@@ -470,7 +464,7 @@ const Landing = () => {
             </div>
 
             {/* Screens Container */}
-            <div className="relative w-full h-[400px] md:h-[700px] mt-12">
+            <div className="relative w-full h-[450px] md:h-[700px] mt-12">
               
               {/* Desktop IDE View */}
               <div className="absolute left-0 top-0 w-[95%] md:w-[80%] h-[90%] bg-[#0f0f11] rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-10">
@@ -506,7 +500,7 @@ const Landing = () => {
               </div>
 
               {/* Mobile Phone Overlay */}
-              <div className="absolute right-[2%] md:right-[5%] bottom-[10px] md:bottom-[-20px] w-[100px] md:w-[300px] aspect-[9/19] bg-black rounded-[1.5rem] md:rounded-[3rem] border-[4px] md:border-[8px] border-[#1a1a1a] shadow-[0_25px_50px_-12px_rgba(0,0,0,1)] z-30 overflow-hidden transform md:translate-y-10">
+              <div className="absolute right-[2%] md:right-[5%] bottom-[10px] md:bottom-[-20px] w-[120px] md:w-[300px] aspect-[9/19] bg-black rounded-[1.5rem] md:rounded-[3rem] border-[4px] md:border-[8px] border-[#1a1a1a] shadow-[0_25px_50px_-12px_rgba(0,0,0,1)] z-30 overflow-hidden transform md:translate-y-10">
                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-4 md:h-7 bg-black rounded-b-xl z-40" />
                  <div className="h-full w-full bg-[#0c0c0e] pt-8 md:pt-12 px-2 md:px-5 pb-4 md:pb-8 flex flex-col relative">
                     <div className="flex justify-between items-center mb-4 md:mb-6">
@@ -528,7 +522,7 @@ const Landing = () => {
         </section>
 
         {/* --- SECTION 5: "Play n Codé" (Asteroid Game) --- */}
-        <section className="w-full bg-[#000000] py-12 relative overflow-hidden border-t border-white/5">
+        <section className="w-full bg-[#000000] py-12 md:py-20 relative overflow-hidden border-t border-white/5">
           <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0ee0] to-transparent pointer-events-none z-20" />
 
           <div className="container mx-auto px-6 relative z-20 max-w-7xl">
