@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { usePyodide } from './usePyodide';
 
-// Piston API
+// Piston API (Public Execution Engine)
 const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
 
 export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript' | 'sql';
@@ -16,6 +16,7 @@ export const useCodeRunner = () => {
   const { runCode: runPython, loading: pythonLoading } = usePyodide();
   const [loading, setLoading] = useState(false);
 
+  // Helper to execute code via Piston API (for Java, C++, JS, SQL)
   const runPiston = async (language: string, version: string, code: string, stdin: string = "") => {
     try {
       const response = await fetch(PISTON_API_URL, {
@@ -25,7 +26,7 @@ export const useCodeRunner = () => {
           language,
           version,
           files: [{ content: code }],
-          stdin,
+          stdin, // Input for the program (test case input)
         }),
       });
       const data = await response.json();
@@ -33,7 +34,7 @@ export const useCodeRunner = () => {
       if (data.run) {
         return {
           success: data.run.code === 0,
-          output: data.run.output,
+          output: data.run.output, // Captures stdout and stderr
           error: data.run.code !== 0 ? data.run.stderr : undefined
         };
       }
@@ -50,6 +51,7 @@ export const useCodeRunner = () => {
     try {
       switch (language) {
         case 'python':
+          // Keep using Client-Side Pyodide for Python (Fast & Offline-capable)
           const pyResult = await runPython(code); 
           result = { success: pyResult.success, output: pyResult.output || pyResult.error || "" };
           break;
@@ -59,6 +61,7 @@ export const useCodeRunner = () => {
           break;
 
         case 'java':
+          // Piston automatically handles a public class named 'Main'
           result = await runPiston('java', '15.0.2', code, input);
           break;
 
