@@ -45,10 +45,10 @@ export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
   return (
     <div className="w-full mx-auto select-none perspective-1000">
       {/* Main Keyboard Chassis */}
-      <div className="relative p-2 md:p-4 bg-[#050505] rounded-xl md:rounded-2xl border border-white/10 shadow-2xl transform transition-transform duration-500 hover:rotate-x-1 group">
+      <div className="relative p-2 md:p-4 bg-[#080808] rounded-xl md:rounded-2xl border border-white/10 shadow-2xl transform transition-transform duration-500 hover:rotate-x-1 group">
         
-        {/* Under-glow */}
-        <div className="absolute -inset-1 bg-white/5 blur-2xl -z-10 rounded-full opacity-20" />
+        {/* Stronger White Under-glow for visibility */}
+        <div className="absolute -inset-2 bg-white/5 blur-3xl -z-10 rounded-full opacity-30" />
 
         <div className="flex flex-col gap-1.5">
           {KEY_ROWS.map((row, rowIndex) => (
@@ -62,29 +62,24 @@ export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
                     key={keyIndex}
                     className={cn(
                       // Base Shape & Dark Theme
-                      "h-10 md:h-12 flex items-center justify-center text-[10px] md:text-xs font-bold transition-all duration-150 rounded-[6px] border-b-[3px] relative overflow-hidden",
-                      "bg-[#111] border-black/60", // Dark button cap
+                      "h-10 md:h-12 flex items-center justify-center text-[10px] md:text-xs font-bold transition-all duration-75 rounded-[6px] border-b-[3px] relative overflow-hidden",
+                      "bg-[#0a0a0a] border-black", 
 
-                      // IDLE STATE (Always On White Backlight)
-                      !active && "text-white/70 shadow-[0_0_10px_rgba(255,255,255,0.1)]",
+                      // IDLE STATE: Bright White Backlight (Always On)
+                      !active && "text-white shadow-[0_0_15px_rgba(255,255,255,0.25)] border-b-white/10",
 
-                      // ACTIVE STATE (Click)
-                      active && isEnter && "text-green-400 border-green-900/50 shadow-[0_0_25px_rgba(74,222,128,0.6)] translate-y-[2px] border-b-[1px]",
-                      active && !isEnter && "text-blue-400 border-blue-900/50 shadow-[0_0_25px_rgba(59,130,246,0.6)] translate-y-[2px] border-b-[1px]"
+                      // ACTIVE STATE: 
+                      // Standard Keys -> Blue Backlight
+                      active && !isEnter && "text-blue-500 border-blue-900 shadow-[0_0_20px_rgba(59,130,246,0.8)] translate-y-[2px] border-b-[1px]",
+                      
+                      // Enter Key -> Dark Green Backlight
+                      active && isEnter && "text-green-600 border-green-900 shadow-[0_0_20px_rgba(22,163,74,0.8)] translate-y-[2px] border-b-[1px]"
                     )}
                     style={{ 
                       flex: key.width || 1,
                       minWidth: key.width ? `${key.width * 1.8}rem` : 'auto' 
                     }}
                   >
-                    {/* Inner Light Source */}
-                    <div className={cn(
-                      "absolute inset-0 opacity-20 pointer-events-none transition-colors duration-150",
-                      active 
-                        ? (isEnter ? "bg-green-500" : "bg-blue-500") 
-                        : "bg-gradient-to-t from-white/10 to-transparent"
-                    )} />
-                    
                     <span className="relative z-10 tracking-wide">{key.label}</span>
                   </div>
                 );
