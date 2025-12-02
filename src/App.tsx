@@ -13,9 +13,10 @@ import Auth from "./pages/Auth";
 import DegreeSelection from "./pages/DegreeSelection";
 import QuestionSetSelection from "./pages/QuestionSetSelection";
 import Leaderboard from "./pages/Leaderboard";
+import Compiler from "./pages/Compiler"; // Import the new page
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
-import { Home, Code2, Trophy } from "lucide-react";
+import { Home, Code2, Trophy, Terminal } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -39,8 +40,8 @@ const AppContent = () => {
   if (showSplash) return <SplashScreen />;
 
   // Define routes where Dock should NOT appear
-  const hideDockRoutes = ['/', '/practice', '/exam'];
-  const showDock = !hideDockRoutes.some(path => location.pathname === path || location.pathname.startsWith('/practice') || location.pathname.startsWith('/exam'));
+  const hideDockRoutes = ['/', '/practice', '/exam', '/compiler']; // Hide dock on Compiler too as it has full layout
+  const showDock = !hideDockRoutes.some(path => location.pathname === path || location.pathname.startsWith('/practice') || location.pathname.startsWith('/exam') || location.pathname.startsWith('/compiler'));
 
   const dockItems = [
     { 
@@ -53,6 +54,12 @@ const AppContent = () => {
       icon: <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, 
       label: 'IITM BS', 
       onClick: () => navigate('/degree') 
+    },
+    { 
+      // Compiler Shortcut in Dock
+      icon: <Terminal size={20} />, 
+      label: 'Compiler', 
+      onClick: () => navigate('/compiler') 
     },
     { 
       // Upskill Block - Disabled for now
@@ -84,8 +91,9 @@ const AppContent = () => {
         <Route path="/degree" element={<DegreeSelection />} />
         <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
         
-        {/* Analytics */}
+        {/* Tools & Analytics */}
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/compiler" element={<Compiler />} /> {/* Added Route */}
         
         <Route path="*" element={<NotFound />} />
       </Routes>
