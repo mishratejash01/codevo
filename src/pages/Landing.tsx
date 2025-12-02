@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ArrowRight, Lock, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
+import { Code2, Zap, Shield, TrendingUp, ArrowRight, Lock, ChevronsDown, Terminal, Sparkles, LayoutGrid, Play, Server, Activity, Cpu } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -173,12 +173,13 @@ const Landing = () => {
     }, 800);
   };
 
-  // Adjusted Scale: Only shrink a TINY bit to show a border, not a huge gap
+  // Adjusted Scale for "Less Shrinking"
+  // Starts at 1, goes down to 0.985 (very subtle border)
   const scale = Math.max(0.985, 1 - scrollY / 4000);
   const borderRadius = Math.min(24, scrollY / 20);
 
   return (
-    <div className="min-h-screen bg-white selection:bg-primary/20 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
       <style>{`
         @keyframes scroll-arrow-move {
           0% { transform: translateY(0); opacity: 0.5; }
@@ -236,7 +237,7 @@ const Landing = () => {
       <main className="flex-1 w-full">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full h-[120vh] bg-white"> 
+        <div className="relative w-full h-[120vh] bg-[#09090b]"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <div 
               className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center shadow-2xl will-change-transform"
@@ -293,7 +294,7 @@ const Landing = () => {
           </div>
         </div>
 
-        {/* --- SECTION 2: LAPTOP & TECHNOLOGIES (RESTORED & PLACED HERE) --- */}
+        {/* --- SECTION 2: 3D LAPTOP & SIMPLE TEXT --- */}
         <section id="laptop-section" className="w-full bg-[#09090b] py-24 relative overflow-hidden border-b border-white/5">
           {/* Grid Background */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
@@ -318,7 +319,7 @@ const Landing = () => {
                 </div>
 
                 <div className="flex flex-col items-center lg:items-start gap-8">
-                  {/* BUTTON: Round Rectangular with Arrow */}
+                  {/* BUTTON */}
                   <Button 
                     onClick={handlePracticeClick}
                     className="group relative h-14 px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-lg font-bold shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.4)] overflow-hidden"
@@ -329,7 +330,7 @@ const Landing = () => {
                     </span>
                   </Button>
 
-                  {/* Tech Stack Marquee (Below Button) */}
+                  {/* Tech Stack Marquee */}
                   <div className="w-full max-w-md">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-4 text-center lg:text-left opacity-70 font-mono">
                       // POWERED BY MODERN TECHNOLOGIES
@@ -489,12 +490,13 @@ const Landing = () => {
             </div>
 
             {/* Screens Container (Black Frame with Mobile Overlay) */}
-            <div className="relative w-full h-[450px] md:h-[700px] bg-[#101010] rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+            {/* NO OVERFLOW HIDDEN ON PARENT - Allows Phone to Pop Out */}
+            <div className="relative w-full h-[450px] md:h-[700px] mt-12">
               
-              {/* Desktop IDE View */}
-              <div className="absolute inset-0 p-4 md:p-8">
+              {/* Desktop IDE View (Clipped) */}
+              <div className="absolute left-0 top-0 w-[85%] md:w-[80%] h-[90%] bg-[#0f0f11] rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-10">
+                 {/* Desktop Content */}
                  <div className="w-full h-full flex flex-col bg-[#0c0c0e] rounded-xl border border-white/5 overflow-hidden">
-                    {/* Top Bar */}
                     <div className="h-12 border-b border-white/5 flex items-center px-6 justify-between bg-[#151517]">
                        <div className="flex gap-2">
                           <div className="w-3 h-3 rounded-full bg-white/10" />
@@ -504,7 +506,6 @@ const Landing = () => {
                        <div className="text-sm text-gray-500 font-mono">codevo_ide_v2.tsx</div>
                        <div className="w-20 h-8 bg-white/5 rounded-md" />
                     </div>
-                    {/* Code Area */}
                     <div className="flex-1 p-8 font-mono text-sm md:text-base text-gray-400 space-y-4">
                        <div className="flex gap-4">
                           <span className="text-gray-600 select-none">1</span>
@@ -522,39 +523,24 @@ const Landing = () => {
                           <span className="text-gray-600 select-none">4</span>
                           <span className="pl-12 text-gray-300">&lt;<span className="text-blue-300">CodevoEnvironment</span> mode=<span className="text-green-300">"pro"</span> /&gt;</span>
                        </div>
-                       <div className="flex gap-4">
-                          <span className="text-gray-600 select-none">5</span>
-                          <span className="pl-8">);</span>
-                       </div>
-                       <div className="flex gap-4">
-                          <span className="text-gray-600 select-none">6</span>
-                          <span>{'}'};</span>
-                       </div>
                     </div>
                  </div>
               </div>
 
-              {/* Mobile Phone Overlay (Bottom Right) */}
-              <div className="absolute right-[5%] bottom-[-20px] w-[140px] md:w-[300px] aspect-[9/19] bg-black rounded-[2rem] md:rounded-[3rem] border-[6px] md:border-[8px] border-[#1a1a1a] shadow-[0_0_50px_rgba(0,0,0,0.8)] z-20 overflow-hidden transform md:translate-y-10">
-                 {/* Notch */}
-                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-5 md:h-7 bg-black rounded-b-xl z-30" />
+              {/* Mobile Phone Overlay (Floating on Top) */}
+              <div className="absolute right-[5%] bottom-[50px] md:bottom-[-20px] w-[140px] md:w-[300px] aspect-[9/19] bg-black rounded-[2rem] md:rounded-[3rem] border-[6px] md:border-[8px] border-[#1a1a1a] shadow-[0_25px_50px_-12px_rgba(0,0,0,1)] z-30 overflow-hidden transform md:translate-y-10">
+                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-5 md:h-7 bg-black rounded-b-xl z-40" />
                  
-                 {/* Mobile Screen Content */}
                  <div className="h-full w-full bg-[#0c0c0e] pt-12 px-3 md:px-5 pb-8 flex flex-col relative">
-                    {/* Header */}
                     <div className="flex justify-between items-center mb-6">
                        <div className="w-8 h-8 rounded-full bg-white/10" />
                        <div className="w-20 h-4 bg-white/10 rounded-full" />
                     </div>
-                    
-                    {/* Card 1 */}
                     <div className="bg-white/5 rounded-2xl p-4 mb-3 border border-white/5 backdrop-blur-md">
                        <div className="h-2 w-1/2 bg-blue-500/40 rounded mb-2" />
                        <div className="h-2 w-3/4 bg-white/10 rounded mb-1" />
                        <div className="h-2 w-full bg-white/10 rounded" />
                     </div>
-                    
-                    {/* Card 2 (Active) */}
                     <div className="bg-white/10 rounded-2xl p-4 mb-3 border border-blue-500/20 relative overflow-hidden">
                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10" />
                        <div className="relative z-10">
@@ -568,13 +554,9 @@ const Landing = () => {
                           </div>
                        </div>
                     </div>
-
-                    {/* Action Button */}
-                    <div className="mt-auto w-full h-10 md:h-12 bg-white text-black rounded-full flex items-center justify-center font-bold text-xs md:text-sm shadow-lg">
+                    <div className="mt-auto w-full h-10 md:h-12 bg-white text-black rounded-full flex items-center justify-center font-bold text-xs md:text-sm shadow-lg cursor-pointer hover:scale-105 transition-transform">
                        Start Coding
                     </div>
-                    
-                    {/* Reflection */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
                  </div>
               </div>
@@ -582,43 +564,38 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Modes Section */}
-        <section id="modes-section" className="relative w-full min-h-screen flex items-center justify-center bg-[#09090b] z-10 py-24 border-t border-white/5">
+        {/* Features Grid */}
+        <section className="bg-[#09090b] py-20 relative overflow-hidden border-t border-white/5">
           <div className="container mx-auto px-6">
-            <div className="text-center mb-16 space-y-4">
-              <h2 className="text-3xl md:text-4xl font-bold text-white">Select Mode</h2>
-              <p className="text-muted-foreground text-lg">Choose how you want to code today.</p>
-            </div>
-            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-primary/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(147,51,234,0.15)] flex flex-col overflow-hidden h-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 flex-1">
-                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-primary/20"><Code2 className="w-8 h-8 text-primary" /></div>
-                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-primary transition-colors">Learning Environment</h2>
-                  <div className="text-muted-foreground leading-relaxed mb-6">Standard practice console with instant feedback.</div>
-                </div>
-                <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
-                  <Button size="lg" onClick={() => session ? navigate('/practice') : navigate('/auth')} className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg h-12 text-base font-medium transition-all hover:scale-[1.02]">
-                    {session ? "Enter Learning Mode" : "Login to Practice"} <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-[#0c0c0e] border border-white/10 p-6 rounded-xl hover:bg-white/5 transition-all group cursor-default relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Cpu className="w-24 h-24" /></div>
+                <div className="relative z-10">
+                  <Zap className="w-8 h-8 text-yellow-400 mb-4" />
+                  <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-yellow-400 transition-colors">01_INSTANT_EVAL</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Client-side Pyodide WASM engine. Zero latency. 100% speed.</p>
                 </div>
               </div>
-              <div className="group relative bg-[#0c0c0e] border border-white/10 rounded-3xl p-8 hover:border-red-500/50 transition-all duration-500 text-left hover:shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col overflow-hidden h-full">
-                <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-10 flex-1">
-                  <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-red-500/20"><Lock className="w-8 h-8 text-red-500" /></div>
-                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-red-500 transition-colors">Exam Portal</h2>
-                  <div className="text-muted-foreground leading-relaxed mb-6">Secure proctored environment with strict monitoring.</div>
+              <div className="bg-[#0c0c0e] border border-white/10 p-6 rounded-xl hover:bg-white/5 transition-all group cursor-default relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><ArrowRight className="w-24 h-24" /></div>
+                <div className="relative z-10">
+                  <Shield className="w-8 h-8 text-blue-400 mb-4" />
+                  <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">02_SECURE_ENV</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Proctored exam simulations. Fullscreen enforcement.</p>
                 </div>
-                <div className="relative z-10 pt-8 mt-auto border-t border-white/5">
-                  <Button size="lg" variant="outline" className="w-full border-red-500/20 hover:bg-red-500/10 text-red-500 hover:text-red-400 h-12 text-base font-medium transition-all hover:scale-[1.02]" onClick={() => session ? navigate('/exam') : navigate('/auth')}>
-                    {session ? "Enter Exam Hall" : "Login to Exam"} <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+              </div>
+              <div className="bg-[#0c0c0e] border border-white/10 p-6 rounded-xl hover:bg-white/5 transition-all group cursor-default relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Activity className="w-24 h-24" /></div>
+                <div className="relative z-10">
+                  <TrendingUp className="w-8 h-8 text-green-400 mb-4" />
+                  <h3 className="font-mono text-lg font-bold text-white mb-2 group-hover:text-green-400 transition-colors">03_GLOBAL_RANKS</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Live leaderboards. Compete against the best.</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
+
       </main>
 
       <footer className="border-t border-white/10 mt-12 bg-[#0c0c0e] relative z-10">
