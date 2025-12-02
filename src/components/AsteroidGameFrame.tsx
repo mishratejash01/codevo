@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Heart, Trophy, MousePointer2 } from 'lucide-react';
+import { Heart, Trophy, MousePointer2, Play } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from "@/lib/utils";
 
 export const AsteroidGameFrame = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
+  const [gameStarted, setGameStarted] = useState(false);
   
   // Inactivity state
   const [inactive, setInactive] = useState(false);
@@ -34,6 +36,8 @@ export const AsteroidGameFrame = () => {
 
   // Input Handling
   useEffect(() => {
+    if (!gameStarted) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       if (key === 'a' || key === 'arrowleft') gameState.current.keys.a = true;
@@ -78,20 +82,12 @@ export const AsteroidGameFrame = () => {
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [inactive]);
-
-  // Inactivity Timer
-  useEffect(() => {
-    const checkActivity = setInterval(() => {
-      if (Date.now() - lastActivity.current > 40000) { 
-        setInactive(true);
-      }
-    }, 1000);
-    return () => clearInterval(checkActivity);
-  }, []);
+  }, [inactive, gameStarted]);
 
   // Game Loop
   useEffect(() => {
+    if (!gameStarted) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -127,19 +123,23 @@ export const AsteroidGameFrame = () => {
       };
     };
 
-    // Generate Stars Background
-    for (let i = 0; i < 50; i++) {
-      gameState.current.stars.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        s: Math.random() * 1.5,
-        alpha: Math.random()
-      });
+    // Only init stars if empty (prevent re-init on restarts if we wanted that logic)
+    if (gameState.current.stars.length === 0) {
+      for (let i = 0; i < 50; i++) {
+        gameState.current.stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          s: Math.random() * 1.5,
+          alpha: Math.random()
+        });
+      }
     }
 
     // Init Asteroids
-    for (let i = 0; i < 5; i++) {
-      gameState.current.asteroids.push(spawnAsteroid(canvas.width, canvas.height));
+    if (gameState.current.asteroids.length === 0) {
+      for (let i = 0; i < 5; i++) {
+        gameState.current.asteroids.push(spawnAsteroid(canvas.width, canvas.height));
+      }
     }
 
     const update = () => {
@@ -321,35 +321,57 @@ export const AsteroidGameFrame = () => {
 
     update();
     return () => cancelAnimationFrame(animationId);
-  }, []);
+  }, [gameStarted]);
 
   return (
     <div className={cn(
-      // BROAD BORDER & HEIGHT INCREASE
-      "relative w-full h-[600px] bg-[#050505] rounded-[2rem] border-[12px] border-white/5 overflow-hidden shadow-2xl group select-none",
-      inactive && "border-red-500/50 shadow-[0_0_50px_rgba(220,38,38,0.2)]"
+      "relative w-full h-[400px] md:h-[600px] bg-[#050505] rounded-[2rem] border-[12px] border-white/5 overflow-hidden shadow-2xl group select-none",
+      inactive && gameStarted && "border-red-500/50 shadow-[0_0_50px_rgba(220,38,38,0.2)]"
     )}>
       
+      {/* Start Game Overlay */}
+      {!gameStarted && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500">
+            <h3 className="text-3xl md:text-4xl font-bold text-white font-neuropol tracking-wide">
+              ASTEROID DEFENSE
+            </h3>
+            <p className="text-gray-400 text-sm max-w-md mx-auto px-4">
+              Defend your station from incoming debris. <br/> Use <span className="text-white border border-white/20 px-1 rounded">A</span> <span className="text-white border border-white/20 px-1 rounded">D</span> to rotate and <span className="text-white border border-white/20 px-1 rounded">SPACE</span> to fire.
+            </p>
+            <Button 
+              onClick={() => setGameStarted(true)}
+              className="bg-white text-black hover:bg-white/90 font-bold px-8 py-6 rounded-full text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all hover:scale-105"
+            >
+              <Play className="w-5 h-5 mr-2 fill-current" />
+              START MISSION
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Faded Effect Mask at Bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#000000] via-[#000000cc] to-transparent z-20 pointer-events-none" />
 
-      {/* HUD */}
-      <div className="absolute top-8 left-10 z-30 flex items-center gap-4 pointer-events-none">
-        <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md rounded-full border border-white/5">
-          <Heart className="w-4 h-4 text-white fill-white" />
-          <span className="text-xs font-mono text-white font-bold">100%</span>
+      {/* HUD (Only visible when started) */}
+      <div className={cn("transition-opacity duration-500", gameStarted ? "opacity-100" : "opacity-0")}>
+        <div className="absolute top-8 left-10 z-30 flex items-center gap-4 pointer-events-none">
+          <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md rounded-full border border-white/5">
+            <Heart className="w-4 h-4 text-white fill-white" />
+            <span className="text-xs font-mono text-white font-bold">100%</span>
+          </div>
         </div>
-      </div>
-      
-      <div className="absolute top-8 right-10 z-30 pointer-events-none">
-        <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md rounded-full border border-white/5">
-          <Trophy className="w-4 h-4 text-white" />
-          <span className="text-xs font-mono text-white font-bold">{score.toString().padStart(6, '0')}</span>
+        
+        <div className="absolute top-8 right-10 z-30 pointer-events-none">
+          <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md rounded-full border border-white/5">
+            <Trophy className="w-4 h-4 text-white" />
+            <span className="text-xs font-mono text-white font-bold">{score.toString().padStart(6, '0')}</span>
+          </div>
         </div>
       </div>
 
-      {/* Inactivity */}
-      {inactive && (
+      {/* Inactivity Warning */}
+      {inactive && gameStarted && (
         <div className="absolute inset-0 flex items-center justify-center z-40 bg-red-950/20 backdrop-blur-[1px] pointer-events-none">
           <div className="bg-black/90 border border-red-500 px-8 py-4 rounded text-red-500 font-mono text-lg animate-bounce shadow-[0_0_30px_rgba(220,38,38,0.5)]">
             SYSTEM_IDLE // WAKE_UP_PILOT
@@ -363,7 +385,7 @@ export const AsteroidGameFrame = () => {
         className="w-full h-full block cursor-crosshair" 
       />
 
-      {/* Bottom Bar (Below Gradient Mask) */}
+      {/* Bottom Bar (Controls) */}
       <div className="absolute bottom-4 left-0 right-0 flex items-center justify-between px-8 z-30 pointer-events-none opacity-80">
          <div className="flex items-center gap-6">
             <div className="flex gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest items-center">
@@ -372,18 +394,18 @@ export const AsteroidGameFrame = () => {
                  <span className="border border-white/10 bg-white/5 px-2 py-1 rounded text-gray-300">A</span>
                  <span className="border border-white/10 bg-white/5 px-2 py-1 rounded text-gray-300">D</span>
                </div>
-               <span>Move</span>
+               <span className="hidden sm:inline">Move</span>
             </div>
             <div className="flex gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest items-center">
                <div className="flex items-center gap-1 border border-white/10 bg-white/5 px-3 py-1 rounded text-gray-300">
                  <MousePointer2 className="w-3 h-3" /> <span>Click</span>
                </div>
-               <span>/ Space to Fire</span>
+               <span className="hidden sm:inline">/ Space to Fire</span>
             </div>
          </div>
          
          <div className="flex items-center gap-2 text-gray-600 text-xs">
-           <span>Built by</span>
+           <span className="hidden sm:inline">Built by</span>
            <span className="text-gray-300 font-bold">Neural AI</span>
          </div>
       </div>
