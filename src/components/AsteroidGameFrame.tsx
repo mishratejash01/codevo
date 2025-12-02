@@ -157,7 +157,7 @@ export const AsteroidGameFrame = () => {
 
       // --- RENDER BACKGROUND (Premium Faded B&W) ---
       const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
-      gradient.addColorStop(0, '#1a1a1a');  // Dark Gray center
+      gradient.addColorStop(0, '#0a0a0a');  // Very Dark Gray center
       gradient.addColorStop(1, '#000000');  // Pitch Black edges
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
@@ -165,7 +165,7 @@ export const AsteroidGameFrame = () => {
       // Draw Stars (Subtle)
       ctx.fillStyle = '#ffffff';
       state.stars.forEach(star => {
-        ctx.globalAlpha = star.alpha * 0.3 + 0.1;
+        ctx.globalAlpha = star.alpha * 0.2 + 0.05; // Very subtle
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.s, 0, Math.PI * 2);
         ctx.fill();
@@ -187,11 +187,6 @@ export const AsteroidGameFrame = () => {
         b.y += b.dy;
         b.life--;
         
-        // Trail (White)
-        if (Math.random() > 0.7) {
-          state.particles.push({ x: b.x, y: b.y, dx: 0, dy: 0, life: 10, color: '#ffffff' });
-        }
-
         if (b.life <= 0 || b.x < -50 || b.x > width + 50 || b.y < -50 || b.y > height + 50) {
           state.bullets.splice(i, 1);
         }
@@ -218,7 +213,6 @@ export const AsteroidGameFrame = () => {
           
           if (dist < a.size + 5) { 
             // HIT!
-            
             // Explosion particles
             for (let k = 0; k < 8; k++) {
                state.particles.push({
@@ -226,7 +220,7 @@ export const AsteroidGameFrame = () => {
                  dx: (Math.random() - 0.5) * 5,
                  dy: (Math.random() - 0.5) * 5,
                  life: 25,
-                 color: a.color
+                 color: '#ffffff'
                });
             }
             
@@ -234,22 +228,19 @@ export const AsteroidGameFrame = () => {
             state.asteroids.splice(i, 1);
             setScore(s => s + (a.size > 20 ? 50 : 100));
             
-            // SPLIT LOGIC:
-            // If it was big (e.g. > 20), split into smaller ones
+            // SPLIT LOGIC
             if (a.size > 20) {
-              // Create 2 small ones
-              state.asteroids.push(spawnAsteroid(width, height, a.size / 1.8, a.x, a.y));
-              state.asteroids.push(spawnAsteroid(width, height, a.size / 1.8, a.x, a.y));
+              state.asteroids.push(spawnAsteroid(width, height, a.size / 1.6, a.x, a.y));
+              state.asteroids.push(spawnAsteroid(width, height, a.size / 1.6, a.x, a.y));
             }
-            // If it was small, it just disappears (destroyed)
 
-            // Ensure minimum population to keep game going
+            // Ensure minimum population
             if (state.asteroids.length < 3) {
                setTimeout(() => {
                  if (gameState.current.asteroids.length < 5) {
                     gameState.current.asteroids.push(spawnAsteroid(width, height));
                  }
-               }, 1000);
+               }, 500);
             }
             break; 
           }
@@ -272,35 +263,28 @@ export const AsteroidGameFrame = () => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.life / 25;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, Math.random() * 2 + 1, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, Math.random() * 1.5 + 0.5, 0, Math.PI * 2);
         ctx.fill();
       });
       ctx.globalAlpha = 1.0;
 
-      // Draw Bubbles (Asteroids) - Pure White/Gray
+      // Draw Asteroids (Clean Circles - No Reflection Arc)
       state.asteroids.forEach(a => {
-        // Glow
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(255,255,255,0.1)'; // Subtle white glow
         
-        // Stroke
-        ctx.strokeStyle = a.color;
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = 1.5;
+        
         ctx.beginPath();
         ctx.arc(a.x, a.y, a.size, 0, Math.PI * 2);
         ctx.stroke();
         
-        // Fill (Glassy look)
-        ctx.fillStyle = '#ffffff10'; 
+        // Fill 
+        ctx.fillStyle = 'rgba(255,255,255,0.02)'; 
         ctx.fill();
-
-        // Reflection (Shine) - NO HYPHEN, just a clean arc
+        
         ctx.shadowBlur = 0;
-        ctx.strokeStyle = '#ffffff80';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(a.x, a.y, a.size * 0.7, Math.PI * 1.2, Math.PI * 1.6);
-        ctx.stroke();
       });
 
       // Draw Bullets
@@ -309,7 +293,7 @@ export const AsteroidGameFrame = () => {
       ctx.fillStyle = '#ffffff';
       state.bullets.forEach(b => {
         ctx.beginPath();
-        ctx.arc(b.x, b.y, 2.5, 0, Math.PI * 2);
+        ctx.arc(b.x, b.y, 2, 0, Math.PI * 2);
         ctx.fill();
       });
       ctx.shadowBlur = 0;
@@ -318,31 +302,20 @@ export const AsteroidGameFrame = () => {
       ctx.save();
       ctx.translate(state.player.x, state.player.y);
       ctx.rotate(state.player.angle);
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = 'rgba(255,255,255,0.3)';
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
       ctx.fillStyle = '#000';
       
       ctx.beginPath();
-      ctx.moveTo(0, -15);
-      ctx.lineTo(10, 15);
-      ctx.lineTo(0, 10);
-      ctx.lineTo(-10, 15);
+      ctx.moveTo(0, -12);
+      ctx.lineTo(8, 12);
+      ctx.lineTo(0, 8);
+      ctx.lineTo(-8, 12);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
-      
-      // Thruster (White/Gray)
-      if (state.keys.w) {
-         ctx.strokeStyle = '#a3a3a3'; 
-         ctx.beginPath();
-         ctx.moveTo(-5, 12);
-         ctx.lineTo(0, 22 + Math.random() * 5);
-         ctx.lineTo(5, 12);
-         ctx.stroke();
-      }
-
       ctx.restore();
 
       animationId = requestAnimationFrame(update);
@@ -354,20 +327,20 @@ export const AsteroidGameFrame = () => {
 
   return (
     <div className={cn(
-      "relative w-full aspect-video bg-[#050505] rounded-t-3xl border-t border-x border-white/10 overflow-hidden shadow-2xl group select-none",
+      "relative w-full aspect-video bg-[#050505] rounded-[2rem] border-4 border-[#1a1a1a] overflow-hidden shadow-2xl group select-none",
       inactive && "border-red-500/50 shadow-[0_0_50px_rgba(220,38,38,0.2)]"
     )}>
       
       {/* HUD (Monochrome) */}
       <div className="absolute top-6 left-8 z-30 flex items-center gap-4 pointer-events-none">
-        <div className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
+        <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md rounded-full border border-white/5">
           <Heart className="w-4 h-4 text-white fill-white" />
           <span className="text-xs font-mono text-white font-bold">100%</span>
         </div>
       </div>
       
       <div className="absolute top-6 right-8 z-30 pointer-events-none">
-        <div className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
+        <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md rounded-full border border-white/5">
           <Trophy className="w-4 h-4 text-white" />
           <span className="text-xs font-mono text-white font-bold">{score.toString().padStart(6, '0')}</span>
         </div>
@@ -389,27 +362,27 @@ export const AsteroidGameFrame = () => {
       />
 
       {/* Bottom Bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-14 bg-black/90 backdrop-blur-md border-t border-white/10 flex items-center justify-between px-6 z-30 pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 h-14 bg-black/80 backdrop-blur-md border-t border-white/5 flex items-center justify-between px-6 z-30 pointer-events-none">
          <div className="flex items-center gap-6">
-            <div className="flex gap-2 text-[10px] font-mono text-gray-400 uppercase tracking-widest items-center">
+            <div className="flex gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest items-center">
                <div className="flex gap-1">
-                 <span className="border border-white/20 bg-white/5 px-2 py-1 rounded text-white shadow-sm">W</span>
-                 <span className="border border-white/20 bg-white/5 px-2 py-1 rounded text-white shadow-sm">A</span>
-                 <span className="border border-white/20 bg-white/5 px-2 py-1 rounded text-white shadow-sm">D</span>
+                 <span className="border border-white/10 bg-white/5 px-2 py-1 rounded text-gray-300">W</span>
+                 <span className="border border-white/10 bg-white/5 px-2 py-1 rounded text-gray-300">A</span>
+                 <span className="border border-white/10 bg-white/5 px-2 py-1 rounded text-gray-300">D</span>
                </div>
                <span>Move</span>
             </div>
-            <div className="flex gap-2 text-[10px] font-mono text-gray-400 uppercase tracking-widest items-center">
-               <div className="flex items-center gap-1 border border-white/20 bg-white/5 px-3 py-1 rounded text-white shadow-sm">
+            <div className="flex gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest items-center">
+               <div className="flex items-center gap-1 border border-white/10 bg-white/5 px-3 py-1 rounded text-gray-300">
                  <MousePointer2 className="w-3 h-3" /> <span>Click</span>
                </div>
                <span>/ Space to Fire</span>
             </div>
          </div>
          
-         <div className="flex items-center gap-2 text-gray-500 text-xs">
+         <div className="flex items-center gap-2 text-gray-600 text-xs">
            <span>Built by</span>
-           <span className="text-white font-bold">Neural AI</span>
+           <span className="text-gray-300 font-bold">Neural AI</span>
          </div>
       </div>
     </div>
