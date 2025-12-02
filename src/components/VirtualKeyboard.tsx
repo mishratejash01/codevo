@@ -55,11 +55,12 @@ export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
 
   return (
     <div className="w-full mx-auto select-none perspective-1000">
-      {/* Keyboard Container - Scaled for mobile */}
-      <div className="relative p-2 md:p-4 bg-[#0f0f11] rounded-xl md:rounded-2xl border border-white/10 shadow-2xl transform transition-transform duration-500 hover:rotate-x-1">
+      {/* Keyboard Container */}
+      <div className="relative p-2 md:p-4 bg-[#0f0f11] rounded-xl md:rounded-2xl border border-white/10 shadow-2xl transform transition-transform duration-500 hover:rotate-x-1 group">
         
-        {/* Glow Underlay */}
-        <div className="absolute -inset-2 bg-gradient-to-tr from-primary/10 via-purple-500/5 to-blue-500/10 blur-xl -z-10 rounded-full opacity-50" />
+        {/* White Backlight Glow */}
+        <div className="absolute -inset-1 bg-white/5 blur-xl -z-10 rounded-full opacity-60 group-hover:opacity-80 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/5 pointer-events-none rounded-xl" />
 
         <div className="flex flex-col gap-1 md:gap-1.5">
           {KEY_ROWS.map((row, rowIndex) => (
@@ -70,16 +71,18 @@ export function VirtualKeyboard({ activeChar }: VirtualKeyboardProps) {
                   <div
                     key={keyIndex}
                     className={cn(
-                      "h-8 md:h-12 flex items-center justify-center text-[8px] md:text-[10px] lg:text-xs font-medium transition-all duration-75 rounded-[4px] md:rounded-lg border-b-[2px] md:border-b-[3px]",
+                      "h-8 md:h-12 flex items-center justify-center text-[8px] md:text-[10px] lg:text-xs font-medium transition-all duration-75 rounded-[4px] md:rounded-lg border-b-[2px] md:border-b-[3px] relative overflow-hidden",
                       active 
-                        ? "bg-[#1e293b] border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)] translate-y-[1px] border-b-[1px] scale-95" 
-                        : "bg-[#27272a] border-black/50 text-gray-500"
+                        ? "bg-white text-black border-gray-300 shadow-[0_0_20px_rgba(255,255,255,0.8)] translate-y-[1px] border-b-[1px] scale-95 z-10" 
+                        : "bg-[#1a1a1c] border-black/50 text-gray-400 hover:bg-[#252528] hover:text-white"
                     )}
                     style={{ 
                       flex: key.width || 1,
                       minWidth: key.width ? `${key.width * 1.5}rem` : 'auto' 
                     }}
                   >
+                    {/* Key Shine Effect */}
+                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/20" />
                     {key.label}
                   </div>
                 );
