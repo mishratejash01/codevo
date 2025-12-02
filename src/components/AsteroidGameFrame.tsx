@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Heart, Trophy, MousePointer2, Play } from 'lucide-react';
+import { Heart, Trophy, MousePointer2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from "@/lib/utils";
 
@@ -123,7 +123,7 @@ export const AsteroidGameFrame = () => {
       };
     };
 
-    // Only init stars if empty (prevent re-init on restarts if we wanted that logic)
+    // Only init stars if empty
     if (gameState.current.stars.length === 0) {
       for (let i = 0; i < 50; i++) {
         gameState.current.stars.push({
@@ -331,7 +331,7 @@ export const AsteroidGameFrame = () => {
       
       {/* Start Game Overlay */}
       {!gameStarted && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/30 backdrop-blur-[2px]">
           <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500">
             <h3 className="text-3xl md:text-4xl font-bold text-white font-neuropol tracking-wide">
               ASTEROID DEFENSE
@@ -341,9 +341,8 @@ export const AsteroidGameFrame = () => {
             </p>
             <Button 
               onClick={() => setGameStarted(true)}
-              className="bg-white text-black hover:bg-white/90 font-bold px-8 py-6 rounded-full text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all hover:scale-105"
+              className="bg-transparent border-2 border-white text-white hover:bg-white/10 font-bold px-10 py-6 rounded-none text-lg tracking-widest transition-all hover:scale-105"
             >
-              <Play className="w-5 h-5 mr-2 fill-current" />
               START MISSION
             </Button>
           </div>
