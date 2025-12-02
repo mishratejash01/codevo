@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { usePyodide } from './usePyodide';
 
-// Piston API (Public Execution Engine)
+// Piston API
 const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
 
-export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript';
+export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript' | 'sql';
 
 interface ExecutionResult {
   success: boolean;
@@ -13,10 +13,9 @@ interface ExecutionResult {
 }
 
 export const useCodeRunner = () => {
-  const { runCode: runPython, runTestFunction: runPythonTests, loading: pythonLoading } = usePyodide();
+  const { runCode: runPython, loading: pythonLoading } = usePyodide();
   const [loading, setLoading] = useState(false);
 
-  // Helper to execute code via Piston API (for Java, C++, JS)
   const runPiston = async (language: string, version: string, code: string, stdin: string = "") => {
     try {
       const response = await fetch(PISTON_API_URL, {
@@ -26,7 +25,7 @@ export const useCodeRunner = () => {
           language,
           version,
           files: [{ content: code }],
-          stdin, // Input for the program (test case input)
+          stdin,
         }),
       });
       const data = await response.json();
@@ -34,7 +33,7 @@ export const useCodeRunner = () => {
       if (data.run) {
         return {
           success: data.run.code === 0,
-          output: data.run.output, // Captures stdout and stderr
+          output: data.run.output,
           error: data.run.code !== 0 ? data.run.stderr : undefined
         };
       }
@@ -51,9 +50,6 @@ export const useCodeRunner = () => {
     try {
       switch (language) {
         case 'python':
-          // Keep using Client-Side Pyodide for Python (Fast & Offline-capable)
-          // Note: Standard Pyodide run doesn't take stdin easily, 
-          // but our wrapper in AssignmentView handles function calls.
           const pyResult = await runPython(code); 
           result = { success: pyResult.success, output: pyResult.output || pyResult.error || "" };
           break;
@@ -63,7 +59,6 @@ export const useCodeRunner = () => {
           break;
 
         case 'java':
-          // Piston automatically handles a public class named 'Main' or infers it
           result = await runPiston('java', '15.0.2', code, input);
           break;
 
@@ -73,6 +68,11 @@ export const useCodeRunner = () => {
           
         case 'c':
           result = await runPiston('c', '10.2.0', code, input);
+          break;
+
+        case 'sql':
+          // SQLite execution
+          result = await runPiston('sqlite3', '3.36.0', code, input);
           break;
 
         default:
