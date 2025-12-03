@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 // --- Mini Visual Components (Mockups) ---
 
-// Abstract Version (as requested)
+// Abstract Version
 const MiniLanding = () => (
   <div className="flex flex-col h-full bg-black/90 p-4 relative overflow-hidden">
     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500" />
@@ -54,7 +54,7 @@ const MiniAuth = () => (
   </div>
 );
 
-// Abstract Version (as requested)
+// Abstract Version
 const MiniDegree = () => (
   <div className="flex flex-col h-full bg-[#09090b] p-4">
     <div className="flex gap-2 mb-4">
@@ -393,7 +393,7 @@ const Documentation = () => {
         </div>
 
         {/* RIGHT COLUMN: Sticky Visuals (Desktop Only) */}
-        <div className="hidden lg:flex w-[55%] sticky top-16 h-[calc(100vh-4rem)] items-center justify-center bg-[#050505] border-l border-white/5 overflow-hidden">
+        <div className="hidden lg:flex w-[55%] sticky top-16 h-[calc(100vh-4rem)] items-center justify-center bg-[#050505] overflow-hidden">
           
           {/* Animated Background Mesh */}
           <div className="absolute inset-0 opacity-20 pointer-events-none">
