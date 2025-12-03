@@ -552,5 +552,4 @@ const Landing = () => {
   );
 };
 
-export default Landing;
-<ctrl46>
+export default Landing
