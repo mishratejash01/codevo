@@ -13,14 +13,15 @@ import Auth from "./pages/Auth";
 import DegreeSelection from "./pages/DegreeSelection";
 import QuestionSetSelection from "./pages/QuestionSetSelection";
 import Leaderboard from "./pages/Leaderboard";
-import Compiler from "./pages/Compiler"; // Import the new page
+import Compiler from "./pages/Compiler";
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
+import { Footer } from "@/components/Footer"; // Import Footer
 import { Home, Code2, Trophy, Terminal } from "lucide-react";
 
 const queryClient = new QueryClient();
 
-// Wrapper to handle Dock Visibility and Navigation Logic
+// Wrapper to handle Dock/Footer Visibility and Navigation Logic
 const AppContent = () => {
   const [showSplash, setShowSplash] = useState(true);
   const location = useLocation();
@@ -40,8 +41,12 @@ const AppContent = () => {
   if (showSplash) return <SplashScreen />;
 
   // Define routes where Dock should NOT appear
-  const hideDockRoutes = ['/', '/practice', '/exam', '/compiler']; // Hide dock on Compiler too as it has full layout
+  const hideDockRoutes = ['/', '/practice', '/exam', '/compiler']; 
   const showDock = !hideDockRoutes.some(path => location.pathname === path || location.pathname.startsWith('/practice') || location.pathname.startsWith('/exam') || location.pathname.startsWith('/compiler'));
+
+  // Define routes where Footer should NOT appear
+  const hideFooterRoutes = ['/practice', '/compiler', '/exam'];
+  const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
   const dockItems = [
     { 
@@ -50,22 +55,19 @@ const AppContent = () => {
       onClick: () => navigate('/') 
     },
     { 
-      // IITM Logo Block - Redirects to BS Degree Page
       icon: <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, 
       label: 'IITM BS', 
       onClick: () => navigate('/degree') 
     },
     { 
-      // Compiler Shortcut in Dock
       icon: <Terminal size={20} />, 
       label: 'Compiler', 
       onClick: () => navigate('/compiler') 
     },
     { 
-      // Upskill Block - Disabled for now
       icon: <Code2 size={20} className="opacity-50" />, 
       label: 'Upskill (Coming Soon)', 
-      onClick: undefined // Disabled
+      onClick: undefined 
     },
     { 
       icon: <Trophy size={20} />, 
@@ -79,26 +81,20 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
-        
-        {/* Learning Flow */}
         <Route path="/practice" element={<Practice />} />
-        
-        {/* Exam Flow */}
         <Route path="/exam" element={<Exam />} />
         <Route path="/exam/result" element={<ExamResult />} />
-        
-        {/* Selection Flow */}
         <Route path="/degree" element={<DegreeSelection />} />
         <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
-        
-        {/* Tools & Analytics */}
         <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/compiler" element={<Compiler />} /> {/* Added Route */}
-        
+        <Route path="/compiler" element={<Compiler />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
 
-      {/* Dock - Visible on Mobile and Desktop if showDock is true */}
+      {/* Global Footer */}
+      {showFooter && <Footer />}
+
+      {/* Dock */}
       {showDock && (
         <div>
           <Dock 
