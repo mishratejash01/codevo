@@ -548,21 +548,9 @@ const Landing = () => {
         </section>
 
       </main>
-
-      <footer className="border-t border-white/10 mt-0 bg-[#0c0c0e] relative z-10">
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-            <p>© 2024 IIT Madras. All rights reserved.</p>
-            <div className="flex gap-6">
-              <span className="hover:text-white transition-colors cursor-pointer">Privacy</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Terms</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Support</span>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
 
 export default Landing;
+<ctrl46>
