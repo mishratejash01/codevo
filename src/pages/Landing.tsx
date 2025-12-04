@@ -66,7 +66,7 @@ def start_journey():
     
     # 3. Get Hired
     if result.score > 90:
-        return "Success! 🚀"
+        return "SUCCESS!"
 
 print(start_journey())`
 };
