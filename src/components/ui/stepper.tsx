@@ -1,6 +1,10 @@
+{
+type: uploaded file
+fileName: mishratejash01/pycoder-playground/pycoder-playground-605e6c91abc38ad97cc337e45bbc6a57e65932d5/src/components/ui/stepper.tsx
+fullContent:
 import React, { useState, Children, HTMLAttributes, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import './stepper.css';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +23,7 @@ interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   nextButtonText?: string;
   disableStepIndicators?: boolean;
   isNextDisabled?: boolean;
+  extraLeftContent?: ReactNode; // New prop for "Ask me later"
 }
 
 export default function Stepper({
@@ -36,6 +41,7 @@ export default function Stepper({
   nextButtonText = 'Next',
   disableStepIndicators = false,
   isNextDisabled = false,
+  extraLeftContent,
   ...rest
 }: StepperProps) {
   const [currentStep, setCurrentStep] = useState<number>(initialStep);
@@ -118,7 +124,6 @@ export default function Stepper({
               initial="enter"
               animate="center"
               exit="exit"
-              // Updated to "tween" for a more formal, less bouncy slide
               transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
               className="w-full h-full"
             >
@@ -129,17 +134,25 @@ export default function Stepper({
 
         {/* Footer Actions */}
         <div className={`footer-container ${footerClassName}`}>
-          <div className={`footer-nav ${currentStep !== 1 ? 'spread' : 'end'}`}>
-            {currentStep !== 1 && (
-              <button
-                onClick={handleBack}
-                className="back-button group flex items-center gap-2"
-                {...backButtonProps}
-              >
-                {backButtonText}
-              </button>
-            )}
+          <div className="flex items-center justify-between w-full">
+            {/* Left Side: Ask Me Later or Back (if step > 1) */}
+            <div className="flex items-center gap-2">
+              {extraLeftContent && currentStep === 1 && (
+                <div>{extraLeftContent}</div>
+              )}
+              
+              {currentStep !== 1 && (
+                <button
+                  onClick={handleBack}
+                  className="back-button group flex items-center gap-2"
+                  {...backButtonProps}
+                >
+                  {backButtonText}
+                </button>
+              )}
+            </div>
             
+            {/* Right Side: Next */}
             <button 
               onClick={isLastStep ? handleComplete : handleNext} 
               className="next-button group gap-2" 
@@ -162,7 +175,7 @@ export default function Stepper({
 // --- Animation Variants ---
 const slideVariants = {
   enter: (direction: number) => ({
-    x: direction > 0 ? 20 : -20, // Reduced distance for subtle movement
+    x: direction > 0 ? 20 : -20,
     opacity: 0,
   }),
   center: {
@@ -229,4 +242,5 @@ function StepIndicator({ step, currentStep, onClickStep, disableStepIndicators }
       </motion.div>
     </motion.div>
   );
+}
 }
