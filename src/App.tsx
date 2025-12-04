@@ -14,11 +14,12 @@ import DegreeSelection from "./pages/DegreeSelection";
 import QuestionSetSelection from "./pages/QuestionSetSelection";
 import Leaderboard from "./pages/Leaderboard";
 import Compiler from "./pages/Compiler";
-import Documentation from "./pages/Documentation"; // Import Documentation
+import Documentation from "./pages/Documentation";
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
 import { Home, Code2, Trophy, Terminal } from "lucide-react";
+import { ProfileCompletion } from "@/components/ProfileCompletion"; // Imported
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,9 @@ const AppContent = () => {
 
   return (
     <>
+      {/* Profile Completion Modal Check - Runs globally */}
+      <ProfileCompletion />
+
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
@@ -89,7 +93,7 @@ const AppContent = () => {
         <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/compiler" element={<Compiler />} />
-        <Route path="/docs" element={<Documentation />} /> {/* Added Route */}
+        <Route path="/docs" element={<Documentation />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
 
