@@ -9,51 +9,9 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      // --- EXISTING TABLES ---
-      assignments: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          deadline: string | null
-          description: string
-          expected_time: number | null
-          id: string
-          instructions: string | null
-          max_score: number | null
-          starter_code: string | null
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          deadline?: string | null
-          description: string
-          expected_time?: number | null
-          id?: string
-          instructions?: string | null
-          max_score?: number | null
-          starter_code?: string | null
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          deadline?: string | null
-          description?: string
-          expected_time?: number | null
-          id?: string
-          instructions?: string | null
-          max_score?: number | null
-          starter_code?: string | null
-          title?: string
-          updated_at?: string | null
-        }
-      }
-      // ... (Keep your other existing tables: exam_sessions, profiles, submissions, etc. intact) ...
-      
-      // --- NEW PRACTICE ARENA TABLES ---
+      // ... (Keep existing tables: assignments, exam_sessions, etc.) ...
+
+      // --- PRACTICE ARENA TABLES ---
       practice_problems: {
         Row: {
           id: string
@@ -86,6 +44,30 @@ export type Database = {
           tags?: string[] | null
           starter_templates?: Json
           likes?: number
+          created_at?: string
+        }
+      }
+      // NEW TOPICS TABLE
+      practice_topics: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          description: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          description?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          description?: string | null
           created_at?: string
         }
       }
@@ -157,12 +139,7 @@ export type Database = {
         }
       }
     }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
+    // ... (Keep Views/Functions/Enums as is)
     Enums: {
       difficulty_level: 'Easy' | 'Medium' | 'Hard' | 'Expert'
     }
