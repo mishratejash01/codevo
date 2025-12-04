@@ -1,6 +1,6 @@
 import React, { useState, Children, HTMLAttributes, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronRight, ChevronLeft, Terminal } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft } from 'lucide-react';
 import './stepper.css';
 import { cn } from '@/lib/utils';
 
