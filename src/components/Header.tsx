@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, Info, Home, User, Code2, Trophy, Terminal } from 'lucide-react'; // Added Terminal icon
+import { LogIn, LogOut, Info, Home, User, Code2, Trophy, Terminal } from 'lucide-react'; 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,10 @@ export function Header({ session, onLogout }: HeaderProps) {
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
   // Hide header elements on practice/exam/compiler pages
+  // Note: This logic might hide header on /practice-arena if not adjusted, 
+  // but usually arenas have their own headers or use the global one.
+  // Ideally, 'practice-arena' shouldn't be in this list if you want the header there.
+  // For now, I'm keeping your existing logic which hides it for 'practice' paths.
   const isPracticeOrExam = location.pathname.includes('/practice') || location.pathname.includes('/exam') || location.pathname.includes('/compiler');
 
   useEffect(() => {
@@ -83,7 +87,13 @@ export function Header({ session, onLogout }: HeaderProps) {
                 /> 
                 IITM BS
               </Link>
-              {/* Added Compiler Button */}
+
+              {/* --- NEW PRACTICE LINK --- */}
+              <Link to="/practice-arena" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
+                <Code2 className="w-4 h-4" /> Practice
+              </Link>
+              {/* ------------------------- */}
+
               <Link to="/compiler" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-purple-400 transition-colors hover:bg-purple-500/10 px-3 py-2 rounded-md border border-transparent hover:border-purple-500/20">
                 <Terminal className="w-4 h-4" /> Compiler
               </Link>
@@ -128,6 +138,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         </div>
       </header>
 
+      {/* Mobile Bottom Bar - Keeping Upskill logic as generic practice for mobile */}
       <div className={cn(
         "fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform ease-in-out",
         (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
@@ -142,7 +153,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               </Link>
             </div>
             <div className="absolute left-1/2 -translate-x-1/2 bottom-3">
-               <NavItem to="/practice" icon={Code2} label="Upskill" active={location.pathname.startsWith("/practice")} size="large" />
+               <NavItem to="/practice-arena" icon={Code2} label="Practice" active={location.pathname.startsWith("/practice-arena")} size="large" />
             </div>
             <div className="flex gap-4">
               <NavItem to="/leaderboard" icon={Trophy} label="Rank" active={location.pathname === "/leaderboard"} />
