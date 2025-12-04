@@ -1,7 +1,3 @@
-{
-type: uploaded file
-fileName: mishratejash01/pycoder-playground/pycoder-playground-605e6c91abc38ad97cc337e45bbc6a57e65932d5/src/components/ui/stepper.tsx
-fullContent:
 import React, { useState, Children, HTMLAttributes, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight } from 'lucide-react';
@@ -242,5 +238,4 @@ function StepIndicator({ step, currentStep, onClickStep, disableStepIndicators }
       </motion.div>
     </motion.div>
   );
-}
 }
