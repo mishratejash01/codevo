@@ -242,7 +242,6 @@ export const ProfileCompletion = () => {
                   <Input 
                     value={formData.full_name}
                     onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                    placeholder=""
                     className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"
                   />
                 </div>
@@ -253,7 +252,6 @@ export const ProfileCompletion = () => {
                     <Input 
                       value={formData.username}
                       onChange={(e) => setFormData({...formData, username: e.target.value.toLowerCase().replace(/\s/g, '')})}
-                      placeholder=""
                       className={cn("bg-white/5 border-white/10 text-white h-11 pr-10 focus:border-white/30", 
                         usernameAvailable === false && "border-red-500/50",
                         usernameAvailable === true && "border-green-500/50"
@@ -284,7 +282,6 @@ export const ProfileCompletion = () => {
                       type="tel"
                       value={formData.contact_no}
                       onChange={(e) => setFormData({...formData, contact_no: e.target.value})}
-                      placeholder=""
                       className="bg-white/5 border-white/10 text-white h-11 flex-1 focus:border-white/30"
                     />
                   </div>
@@ -328,7 +325,6 @@ export const ProfileCompletion = () => {
                     <Input 
                       value={formData.institute_name}
                       onChange={(e) => setFormData({...formData, institute_name: e.target.value})}
-                      placeholder=""
                       className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"
                       autoFocus
                     />
@@ -352,7 +348,6 @@ export const ProfileCompletion = () => {
                     <Input 
                       value={formData.branch}
                       onChange={(e) => setFormData({...formData, branch: e.target.value})}
-                      placeholder=""
                       className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"
                     />
                   ) : (
@@ -371,26 +366,22 @@ export const ProfileCompletion = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Start Year</Label>
-                    <Select value={formData.start_year} onValueChange={(v) => setFormData({...formData, start_year: v})}>
-                      <SelectTrigger className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"><SelectValue placeholder="" /></SelectTrigger>
-                      <SelectContent className="bg-[#1a1a1c] border-white/10 text-white h-48">
-                        {Array.from({length: 10}, (_, i) => new Date().getFullYear() - i).map(y => (
-                          <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Enrollment Year</Label>
+                    <Input 
+                      type="number"
+                      value={formData.start_year}
+                      onChange={(e) => setFormData({...formData, start_year: e.target.value})}
+                      className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"
+                    />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">End Year (Estimated)</Label>
-                    <Select value={formData.end_year} onValueChange={(v) => setFormData({...formData, end_year: v})}>
-                      <SelectTrigger className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"><SelectValue placeholder="" /></SelectTrigger>
-                      <SelectContent className="bg-[#1a1a1c] border-white/10 text-white h-48">
-                        {Array.from({length: 8}, (_, i) => new Date().getFullYear() + i).map(y => (
-                          <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Anticipated Graduation Year</Label>
+                    <Input 
+                      type="number"
+                      value={formData.end_year}
+                      onChange={(e) => setFormData({...formData, end_year: e.target.value})}
+                      className="bg-white/5 border-white/10 text-white h-11 focus:border-white/30"
+                    />
                   </div>
                 </div>
               </div>
