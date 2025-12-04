@@ -9,85 +9,137 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      // ... existing tables ...
-      
-      practice_problems: {
+      assignments: {
         Row: {
           id: string
-          slug: string
           title: string
           description: string
-          difficulty: 'Easy' | 'Medium' | 'Hard' | 'Expert'
-          tags: string[] | null
-          starter_templates: Json
-          test_cases: Json // <--- The new column
-          likes: number
-          created_at: string
+          instructions: string | null
+          deadline: string | null
+          max_score: number | null
+          category: string | null
+          created_at: string | null
+          updated_at: string | null
+          starter_code: string | null
+          expected_time: number | null
         }
         Insert: {
           id?: string
-          slug: string
           title: string
           description: string
-          difficulty?: 'Easy' | 'Medium' | 'Hard' | 'Expert'
-          tags?: string[] | null
-          starter_templates?: Json
-          test_cases?: Json
-          likes?: number
-          created_at?: string
+          instructions?: string | null
+          deadline?: string | null
+          max_score?: number | null
+          category?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          starter_code?: string | null
+          expected_time?: number | null
         }
         Update: {
           id?: string
-          slug?: string
           title?: string
           description?: string
-          difficulty?: 'Easy' | 'Medium' | 'Hard' | 'Expert'
-          tags?: string[] | null
-          starter_templates?: Json
-          test_cases?: Json
-          likes?: number
-          created_at?: string
+          instructions?: string | null
+          deadline?: string | null
+          max_score?: number | null
+          category?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          starter_code?: string | null
+          expected_time?: number | null
         }
       }
-      practice_submissions: {
+      iitm_assignments: {
         Row: {
           id: string
-          problem_id: string
-          user_id: string
-          language: string
-          code: string
-          status: string
-          runtime_ms: number | null
-          passed_cases: number
-          total_cases: number
-          submitted_at: string
+          subject_id: string | null
+          title: string
+          description: string
+          instructions: string | null
+          deadline: string | null
+          max_score: number | null
+          expected_time: number | null
+          starter_code: string | null
+          created_at: string | null
+          exam_type: string | null
+          set_name: string | null
+          category: string | null
+          test_cases: Json | null // <--- NEW COLUMN
         }
         Insert: {
           id?: string
-          problem_id: string
-          user_id: string
-          language: string
-          code: string
-          status: string
-          runtime_ms?: number | null
-          passed_cases?: number
-          total_cases?: number
-          submitted_at?: string
+          subject_id?: string | null
+          title: string
+          description: string
+          instructions?: string | null
+          deadline?: string | null
+          max_score?: number | null
+          expected_time?: number | null
+          starter_code?: string | null
+          created_at?: string | null
+          exam_type?: string | null
+          set_name?: string | null
+          category?: string | null
+          test_cases?: Json | null // <--- NEW COLUMN
         }
         Update: {
           id?: string
-          problem_id?: string
-          user_id?: string
-          language?: string
-          code?: string
-          status?: string
-          runtime_ms?: number | null
-          passed_cases?: number
-          total_cases?: number
-          submitted_at?: string
+          subject_id?: string | null
+          title?: string
+          description?: string
+          instructions?: string | null
+          deadline?: string | null
+          max_score?: number | null
+          expected_time?: number | null
+          starter_code?: string | null
+          created_at?: string | null
+          exam_type?: string | null
+          set_name?: string | null
+          category?: string | null
+          test_cases?: Json | null // <--- NEW COLUMN
         }
       }
+      // ... keep your other tables (submissions, exam_sessions, etc.) as they were ...
+      submissions: {
+        Row: {
+          id: string
+          assignment_id: string
+          user_id: string
+          code: string
+          score: number | null
+          public_tests_passed: number | null
+          public_tests_total: number | null
+          private_tests_passed: number | null
+          private_tests_total: number | null
+          submitted_at: string | null
+        }
+        Insert: {
+          id?: string
+          assignment_id: string
+          user_id: string
+          code: string
+          score?: number | null
+          public_tests_passed?: number | null
+          public_tests_total?: number | null
+          private_tests_passed?: number | null
+          private_tests_total?: number | null
+          submitted_at?: string | null
+        }
+        Update: {
+          id?: string
+          assignment_id?: string
+          user_id?: string
+          code?: string
+          score?: number | null
+          public_tests_passed?: number | null
+          public_tests_total?: number | null
+          private_tests_passed?: number | null
+          private_tests_total?: number | null
+          submitted_at?: string | null
+        }
+      }
+      // ... Add iitm_submissions and other tables here as needed
     }
-    // ... Enums etc
   }
 }
