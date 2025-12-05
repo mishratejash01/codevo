@@ -31,12 +31,11 @@ export default function PracticeSolver() {
   const { data: problem, isLoading: problemLoading, error } = useQuery({
     queryKey: ['practice_problem', slug],
     queryFn: async () => {
-      // safe query that won't crash if rows are missing
       const { data, error } = await supabase
         .from('practice_problems')
         .select('*')
         .eq('slug', slug)
-        .maybeSingle(); 
+        .maybeSingle();
       
       if (error) throw error;
       return data;
@@ -71,14 +70,12 @@ export default function PracticeSolver() {
       return;
     }
 
-    // Python wrapper to handle "Solution" class style inputs
     let codeToRun = code;
+    // Inject Python driver code if needed
     if (activeLanguage === 'python' && sampleTest.input) {
-       // Simple regex to extract values from "nums = [1,2], target = 3" -> "[1,2], 3"
-       // This is a basic heuristic; for production, you'd want a more robust parser.
        const cleanInput = sampleTest.input.replace(/[a-zA-Z0-9_]+\s=\s/g, ''); 
        
-       codeToRun += `\n\n# --- Driver Code (Auto-Injected) ---\ntry:\n    if 'Solution' in locals():\n        sol = Solution()\n        # Find method that isn't __init__\n        methods = [m for m in dir(sol) if not m.startswith('__')]\n        if methods:\n            print(getattr(sol, methods[0])(${cleanInput}))\n        else:\n            print("No method found in Solution class.")\n    elif 'twoSum' in locals():\n         print(twoSum(${cleanInput}))\n    else:\n        print("Error: Could not find function/class.")\nexcept Exception as e:\n    print(f"Runtime Error: {e}")`;
+       codeToRun += `\n\n# --- Driver Code (Auto-Injected) ---\ntry:\n    if 'Solution' in locals():\n        sol = Solution()\n        methods = [m for m in dir(sol) if not m.startswith('__')]\n        if methods:\n            print(getattr(sol, methods[0])(${cleanInput}))\n        else:\n            print("No method found in Solution class.")\n    elif 'twoSum' in locals():\n         print(twoSum(${cleanInput}))\n    else:\n        print("Error: Could not find function/class.")\nexcept Exception as e:\n    print(f"Runtime Error: {e}")`;
     }
 
     const result = await executeCode(activeLanguage, codeToRun, "");
@@ -106,7 +103,7 @@ export default function PracticeSolver() {
     }
     setSubmitting(true);
     
-    // Simulate submission delay
+    // Simulate submission (Insert logic here for real submission)
     setTimeout(() => {
       setSubmitting(false);
       toast({ 
@@ -117,14 +114,15 @@ export default function PracticeSolver() {
     }, 1500);
   };
 
-  // --- Loading / Error Views ---
+  // --- SAFE LOADING STATE ---
   if (problemLoading) return (
     <div className="h-screen bg-[#09090b] flex flex-col items-center justify-center gap-4">
-      <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      <span className="text-muted-foreground text-sm font-mono">Initializing Environment...</span>
+      <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      <span className="text-muted-foreground text-sm font-mono tracking-widest">LOADING ENVIRONMENT...</span>
     </div>
   );
 
+  // --- SAFE ERROR STATE ---
   if (error || !problem) return (
     <div className="h-screen bg-[#09090b] flex flex-col items-center justify-center text-center p-6 gap-6">
       <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/20">
@@ -133,10 +131,12 @@ export default function PracticeSolver() {
       <div>
         <h1 className="text-2xl font-bold text-white mb-2">Problem Not Found</h1>
         <p className="text-muted-foreground max-w-md mx-auto">
-          The problem "{slug}" could not be loaded. This usually means the database record is missing or your network is offline.
+          The problem "{slug}" could not be loaded. Please ensure the URL is correct and your database is set up.
         </p>
       </div>
-      <Button variant="outline" onClick={() => navigate('/practice-arena')}>Back to Arena</Button>
+      <Button variant="outline" onClick={() => navigate('/practice-arena')} className="border-white/10 hover:bg-white/5">
+        Return to Arena
+      </Button>
     </div>
   );
 
@@ -256,7 +256,7 @@ export default function PracticeSolver() {
             </ScrollArea>
           </ResizablePanel>
 
-          <ResizableHandle withHandle className="bg-[#050505] w-1.5 border-l border-r border-white/5 hover:bg-primary/50 transition-colors" />
+          <ResizableHandle withHandle className="bg-[#050505] w-1.5 border-l border-r border-white/5 hover:bg-primary/30 transition-colors" />
 
           {/* RIGHT: Code Editor & Console */}
           <ResizablePanel defaultSize={60}>
@@ -287,12 +287,12 @@ export default function PracticeSolver() {
                   <Tabs value={consoleTab} onValueChange={setConsoleTab} className="w-full h-full">
                     <TabsList className="h-full bg-transparent p-0 gap-4">
                       <TabsTrigger value="testcases" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white text-xs font-medium text-muted-foreground flex items-center gap-2 px-2">
-                        <Layers className="w-3 h-3" /> Test Cases
+                        <Terminal className="w-3 h-3" /> Test Cases
                       </TabsTrigger>
                       <TabsTrigger value="output" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white text-xs font-medium text-muted-foreground flex items-center gap-2 px-2">
-                        <Terminal className="w-3 h-3" /> Run Result
+                        <Bug className="w-3 h-3" /> Run Result
                         {outputResult && (
-                          <div className={cn("w-1.5 h-1.5 rounded-full", outputResult.passed ? "bg-green-500 shadow-[0_0_5px_lime]" : "bg-red-500 shadow-[0_0_5px_red]")} />
+                          <div className={cn("w-1.5 h-1.5 rounded-full ml-1.5", outputResult.passed ? "bg-green-500 shadow-[0_0_5px_lime]" : "bg-red-500 shadow-[0_0_5px_red]")} />
                         )}
                       </TabsTrigger>
                     </TabsList>
@@ -302,15 +302,16 @@ export default function PracticeSolver() {
                 <div className="flex-1 overflow-auto p-4 bg-[#0c0c0e]">
                   {consoleTab === 'testcases' ? (
                     <div className="space-y-3">
-                      {testCases.map((tc: any, i: number) => (
+                      {testCases.length > 0 ? testCases.map((tc: any, i: number) => (
                         <div key={i} className="flex flex-col gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
                           <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Case {i + 1}</div>
                           <div className="bg-white/5 p-2 rounded border border-white/10 text-gray-300 font-mono text-xs truncate">
                             {tc.input}
                           </div>
                         </div>
-                      ))}
-                      {testCases.length === 0 && <div className="text-muted-foreground text-xs italic">No test cases available.</div>}
+                      )) : (
+                        <div className="text-muted-foreground text-xs italic opacity-50 text-center mt-10">No test cases available.</div>
+                      )}
                     </div>
                   ) : (
                     <div className="h-full">
