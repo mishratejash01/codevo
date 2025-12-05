@@ -86,7 +86,6 @@ export default function QuestionSetSelection() {
 
   const handleManualTimeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
-    // Allow any number input, odd or even
     if (!isNaN(val) && val >= 0) {
       setTimeLimit([val]);
     }
@@ -96,53 +95,55 @@ export default function QuestionSetSelection() {
     <div className="h-screen bg-[#09090b] text-white flex overflow-hidden font-sans">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
 
-      {/* --- LEFT SIDEBAR (TOPICS) --- */}
-      <div className="w-64 flex-shrink-0 border-r border-white/10 bg-[#0c0c0e] flex flex-col">
-        <div className="p-6 pb-4 border-b border-white/5">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-white pl-0 mb-6 -ml-2">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back
-          </Button>
-          
-          <h2 className="flex items-center gap-2 text-sm font-bold tracking-widest text-white/60 uppercase mb-4">
-            <Layers className="w-4 h-4 text-primary" />
-            Modules
-          </h2>
-          
-          <Button
-            variant="ghost"
-            onClick={() => setSelectedTopic(null)}
-            className={cn(
-              "w-full justify-start text-sm h-10 rounded-lg font-medium transition-all mb-2",
-              selectedTopic === null 
-                ? "bg-primary/10 text-primary border border-primary/20" 
-                : "text-gray-400 hover:text-white hover:bg-white/5"
-            )}
-          >
-            <Filter className="w-4 h-4 mr-3" />
-            All Modules
-          </Button>
-        </div>
-
-        <ScrollArea className="flex-1 px-4 py-4">
-          <div className="space-y-1">
-            {topics.map((topic) => (
-              <Button
-                key={topic}
-                variant="ghost"
-                onClick={() => setSelectedTopic(topic)}
-                className={cn(
-                  "w-full justify-start text-sm h-9 px-3 rounded-md transition-all truncate",
-                  selectedTopic === topic
-                    ? "text-white bg-white/10 font-medium" 
-                    : "text-muted-foreground hover:text-white hover:bg-white/5"
-                )}
-              >
-                # {topic}
-              </Button>
-            ))}
+      {/* --- LEFT SIDEBAR (TOPICS) - HIDDEN IN PROCTORED MODE --- */}
+      {!isProctored && (
+        <div className="w-64 flex-shrink-0 border-r border-white/10 bg-[#0c0c0e] flex flex-col">
+          <div className="p-6 pb-4 border-b border-white/5">
+            <Button variant="ghost" onClick={() => navigate(-1)} className="text-muted-foreground hover:text-white pl-0 mb-6 -ml-2">
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            </Button>
+            
+            <h2 className="flex items-center gap-2 text-sm font-bold tracking-widest text-white/60 uppercase mb-4">
+              <Layers className="w-4 h-4 text-primary" />
+              Modules
+            </h2>
+            
+            <Button
+              variant="ghost"
+              onClick={() => setSelectedTopic(null)}
+              className={cn(
+                "w-full justify-start text-sm h-10 rounded-lg font-medium transition-all mb-2",
+                selectedTopic === null 
+                  ? "bg-primary/10 text-primary border border-primary/20" 
+                  : "text-gray-400 hover:text-white hover:bg-white/5"
+              )}
+            >
+              <Filter className="w-4 h-4 mr-3" />
+              All Modules
+            </Button>
           </div>
-        </ScrollArea>
-      </div>
+
+          <ScrollArea className="flex-1 px-4 py-4">
+            <div className="space-y-1">
+              {topics.map((topic) => (
+                <Button
+                  key={topic}
+                  variant="ghost"
+                  onClick={() => setSelectedTopic(topic)}
+                  className={cn(
+                    "w-full justify-start text-sm h-9 px-3 rounded-md transition-all truncate",
+                    selectedTopic === topic
+                      ? "text-white bg-white/10 font-medium" 
+                      : "text-muted-foreground hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  # {topic}
+                </Button>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
 
       {/* --- RIGHT CONTENT (QUESTIONS) --- */}
       <div className="flex-1 flex flex-col min-w-0 bg-[#09090b] relative">
@@ -152,11 +153,16 @@ export default function QuestionSetSelection() {
         {/* Top Header */}
         <div className="h-16 border-b border-white/10 flex items-center justify-between px-8 bg-[#0c0c0e]/50 backdrop-blur-sm sticky top-0 z-20">
           <div className="flex items-center gap-4">
+             {isProctored && (
+               <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-2 text-muted-foreground hover:text-white">
+                 <ArrowLeft className="w-5 h-5" />
+               </Button>
+             )}
              <h1 className="text-lg font-bold font-neuropol text-white tracking-wide">
                {decodeURIComponent(subjectName || '')}
              </h1>
              <Badge variant="outline" className={cn("border-white/10 bg-white/5", isProctored ? "text-red-400" : "text-blue-400")}>
-               {isProctored ? 'Proctored' : 'Practice'}
+               {isProctored ? 'Proctored Set' : 'Practice'}
              </Badge>
           </div>
 
@@ -173,7 +179,6 @@ export default function QuestionSetSelection() {
 
         {/* List */}
         <ScrollArea className="flex-1 p-8 z-10">
-          {/* UPDATED: Increased max-width to allow better space usage */}
           <div className="max-w-[95%] mx-auto space-y-4">
             <div className="text-xs text-muted-foreground mb-4 font-mono uppercase tracking-wider">
               Available Problems ({filteredAssignments.length})
@@ -238,7 +243,6 @@ export default function QuestionSetSelection() {
 
                     {/* Expanded Content (Timer Config) */}
                     <CollapsibleContent>
-                      {/* UPDATED: Better visual container for the expanded content */}
                       <div className="border-t border-white/10 bg-[#08080a] p-6 animate-in slide-in-from-top-2">
                         {isProctored ? (
                            <div className="flex items-center justify-between">
@@ -262,17 +266,15 @@ export default function QuestionSetSelection() {
                                     Set Duration
                                   </label>
                                   
-                                  {/* UPDATED: Input Padding added (pr-5) for visual balance of arrows */}
+                                  {/* UPDATED: Input with pr-5 for native arrow spacing */}
                                   <div className={cn("flex items-center gap-3 transition-opacity", noTimeLimit && "opacity-30 pointer-events-none")}>
                                     <Input 
                                       type="number" 
                                       value={timeLimit[0]} 
                                       onChange={handleManualTimeInput}
-                                      // Added pr-5 to prevent number overlapping with the spinner arrows
                                       className="w-24 h-10 pr-5 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50"
                                       placeholder="Min"
                                     />
-                                    {/* Moved label outside to keep it clean */}
                                     <span className="text-sm font-medium text-muted-foreground">min</span>
                                   </div>
                                 </div>
@@ -287,7 +289,6 @@ export default function QuestionSetSelection() {
                               {/* Slider */}
                               <div className={cn("space-y-3 transition-opacity duration-200 px-1", noTimeLimit && "opacity-30 pointer-events-none")}>
                                 <Slider 
-                                  // Visual cap at 30, but logic supports higher via input
                                   value={[Math.min(timeLimit[0], 30)]} 
                                   onValueChange={(vals) => setTimeLimit(vals)} 
                                   min={2} 
