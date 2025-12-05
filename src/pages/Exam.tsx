@@ -14,9 +14,10 @@ import { cn } from "@/lib/utils";
 import { useProctoredExam } from '@/hooks/useProctoredExam';
 
 // --- TABLE CONFIGURATION ---
+// UPDATED: Pointing to the new Question Bank table
 const IITM_TABLES = { 
-  assignments: 'iitm_exams_questions', 
-  testCases: 'iitm_exams_questions',   
+  assignments: 'iitm_exam_question_bank', 
+  testCases: 'iitm_exam_question_bank', // Test cases are embedded in the same table now
   submissions: 'iitm_submissions' 
 };
 
