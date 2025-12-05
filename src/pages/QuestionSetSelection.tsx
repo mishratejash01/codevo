@@ -86,6 +86,7 @@ export default function QuestionSetSelection() {
 
   const handleManualTimeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
+    // Allow any number input, odd or even
     if (!isNaN(val) && val >= 0) {
       setTimeLimit([val]);
     }
@@ -261,16 +262,18 @@ export default function QuestionSetSelection() {
                                     Set Duration
                                   </label>
                                   
-                                  {/* UPDATED: Manual Input Field */}
+                                  {/* UPDATED: Manual Input Field & Icon Fix */}
                                   <div className={cn("relative transition-opacity", noTimeLimit && "opacity-30 pointer-events-none")}>
+                                    {/* The class [&::-webkit-inner-spin-button]:appearance-none removes default arrows */}
                                     <Input 
                                       type="number" 
                                       value={timeLimit[0]} 
                                       onChange={handleManualTimeInput}
-                                      className="w-24 h-9 bg-black/40 border-white/10 text-center font-mono font-bold text-white focus:border-primary/50"
+                                      className="w-24 h-10 pl-4 pr-10 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50 [&::-webkit-inner-spin-button]:appearance-none"
                                       placeholder="Min"
                                     />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">min</span>
+                                    {/* Positioned 'min' text absolutely to avoid layout shift */}
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground pointer-events-none">min</span>
                                   </div>
                                 </div>
 
@@ -284,6 +287,7 @@ export default function QuestionSetSelection() {
                               {/* Slider */}
                               <div className={cn("space-y-3 transition-opacity duration-200 px-1", noTimeLimit && "opacity-30 pointer-events-none")}>
                                 <Slider 
+                                  // Visual cap at 30, but logic supports higher via input
                                   value={[Math.min(timeLimit[0], 30)]} 
                                   onValueChange={(vals) => setTimeLimit(vals)} 
                                   min={2} 
