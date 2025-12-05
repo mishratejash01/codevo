@@ -37,7 +37,7 @@ const normalizeOutput = (str: string) => {
 };
 
 const detectInitialLanguage = (title: string, category: string): Language => {
-  const text = (title + category).toLowerCase();
+  const text = (title + (category || '')).toLowerCase();
   if (text.includes('bash') || text.includes('shell') || text.includes('system')) return 'bash';
   if (text.includes('sql') || text.includes('database')) return 'sql';
   if (text.includes('java')) return 'java';
@@ -100,7 +100,7 @@ export const AssignmentView = ({
     enabled: !!assignmentId
   });
 
-  // Consolidated Test Case Logic: Use embedded if present, otherwise fetch legacy
+  // Consolidated Test Case Logic
   const { data: fetchedTestCases = [] } = useQuery({
     queryKey: ['testCases', assignmentId, tables.testCases],
     queryFn: async () => {
@@ -108,14 +108,25 @@ export const AssignmentView = ({
       const { data } = await supabase.from(tables.testCases).select('*').eq('assignment_id', assignmentId).order('is_public', { ascending: false });
       return data || [];
     },
-    // Only fetch from table if assignment is loaded AND it DOESN'T have embedded test cases
+    // Only fetch if assignment is loaded and DOESN'T have embedded cases
     enabled: !!assignmentId && !!assignment && (!assignment.test_cases || assignment.test_cases.length === 0)
   });
 
-  // Merge sources: Prefer embedded, fallback to fetched
-  const testCases = (assignment?.test_cases && assignment.test_cases.length > 0) 
-    ? assignment.test_cases 
-    : fetchedTestCases;
+  // -- PARSE EMBEDDED TEST CASES --
+  let embeddedTestCases: any[] = [];
+  if (assignment?.test_cases) {
+    if (typeof assignment.test_cases === 'string') {
+        try {
+            embeddedTestCases = JSON.parse(assignment.test_cases);
+        } catch(e) {
+            console.error("Failed to parse test cases JSON", e);
+        }
+    } else if (Array.isArray(assignment.test_cases)) {
+        embeddedTestCases = assignment.test_cases;
+    }
+  }
+
+  const testCases = (embeddedTestCases.length > 0) ? embeddedTestCases : fetchedTestCases;
 
   const { data: latestSubmission } = useQuery({
     queryKey: ['submission', assignmentId, tables.submissions],
