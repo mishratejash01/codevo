@@ -40,29 +40,39 @@ const Practice = () => {
 
   // --- QUERY ---
   const { data: assignments = [] } = useQuery({
-    queryKey: [activeTables.assignments, iitmSubjectId, categoryParam, limitParam], 
+    // Added selectedAssignmentId to queryKey to trigger refetch if URL changes
+    queryKey: [activeTables.assignments, iitmSubjectId, categoryParam, limitParam, selectedAssignmentId], 
     queryFn: async () => {
       // @ts-ignore
       let query = supabase.from(activeTables.assignments).select('id, title, category, expected_time');
-      if (iitmSubjectId) {
+      
+      // STRICT FILTERING: 
+      // If a specific question ID is provided in the URL ('q'), 
+      // we ONLY fetch that single question. We ignore other category filters.
+      if (selectedAssignmentId) {
         // @ts-ignore
-        query = query.eq('subject_id', iitmSubjectId);
-        if (categoryParam) {
+        query = query.eq('id', selectedAssignmentId);
+      } else {
+        // Only apply broad filters if no specific question is selected
+        if (iitmSubjectId) {
           // @ts-ignore
-          query = query.eq('category', categoryParam);
+          query = query.eq('subject_id', iitmSubjectId);
+          if (categoryParam) {
+            // @ts-ignore
+            query = query.eq('category', categoryParam);
+          }
         }
       }
+
       const { data, error } = await query;
       if (error) throw error;
       
       let result = data || [];
-      // If a specific question ID 'q' was passed but no category, we might want to ensure it's in the list
-      // For now, standard logic applies.
       return result.sort((a, b) => a.title.localeCompare(b.title));
     },
   });
 
-  // Ensure 'q' param is set initially if list is loaded
+  // Ensure 'q' param is set initially if list is loaded (fallback logic)
   useEffect(() => {
     if (assignments.length > 0 && !selectedAssignmentId) {
       setSearchParams(prev => {
@@ -131,7 +141,8 @@ const Practice = () => {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
             <LayoutGrid className="w-4 h-4 text-primary" />
             <h1 className="text-sm font-bold tracking-tight text-primary hidden sm:block">
-              {categoryParam ? `${decodeURIComponent(categoryParam)} Practice` : 'Practice Session'}
+              {/* Show title of the single assignment if strictly filtered, otherwise generic */}
+              {assignments.length === 1 ? 'Practice Session' : (categoryParam ? `${decodeURIComponent(categoryParam)} Practice` : 'Practice Session')}
             </h1>
           </div>
         </div>
