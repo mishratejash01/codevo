@@ -101,18 +101,22 @@ export const AssignmentView = ({
   });
 
   // Consolidated Test Case Logic
+  // We only fetch from an external table if test_cases aren't already embedded in the assignment
   const { data: fetchedTestCases = [] } = useQuery({
     queryKey: ['testCases', assignmentId, tables.testCases],
     queryFn: async () => {
+      // Check if tables.testCases is actually the same table (i.e., we are in proctored mode)
+      // If so, we shouldn't fetch again because the column structure doesn't support assignment_id
+      if (tables.testCases === tables.assignments) return [];
+
       // @ts-ignore
       const { data } = await supabase.from(tables.testCases).select('*').eq('assignment_id', assignmentId).order('is_public', { ascending: false });
       return data || [];
     },
-    // Only fetch if assignment is loaded and DOESN'T have embedded cases
     enabled: !!assignmentId && !!assignment && (!assignment.test_cases || assignment.test_cases.length === 0)
   });
 
-  // -- PARSE EMBEDDED TEST CASES --
+  // Parse Embedded Test Cases
   let embeddedTestCases: any[] = [];
   if (assignment?.test_cases) {
     if (typeof assignment.test_cases === 'string') {
@@ -126,7 +130,12 @@ export const AssignmentView = ({
     }
   }
 
-  const testCases = (embeddedTestCases.length > 0) ? embeddedTestCases : fetchedTestCases;
+  // Map database format (expected_output) to runner format (output)
+  const allTestCases = [...((embeddedTestCases.length > 0) ? embeddedTestCases : fetchedTestCases)].map(tc => ({
+      ...tc,
+      output: tc.expected_output || tc.output, // Handle both formats
+      hidden: !tc.is_public // Handle both formats
+  }));
 
   const { data: latestSubmission } = useQuery({
     queryKey: ['submission', assignmentId, tables.submissions],
@@ -188,7 +197,7 @@ export const AssignmentView = ({
     let firstError = "";
 
     try {
-      for (const test of testCases) {
+      for (const test of allTestCases) {
         const codeToRun = prepareExecutionCode(code, test.input);
         const result = await executeCode(activeLanguage, codeToRun, test.input);
         
@@ -200,9 +209,9 @@ export const AssignmentView = ({
            if (!firstError) firstError = errorMsg;
         } else {
            const actual = normalizeOutput(result.output);
-           const expected = normalizeOutput(test.expected_output);
+           const expected = normalizeOutput(test.output); // Use normalized property
            isMatch = actual === expected || actual.includes(expected);
-           if (!isMatch) errorMsg = `Expected: ${test.expected_output}`;
+           if (!isMatch) errorMsg = `Expected: ${test.output}`;
         }
 
         newTestResults[test.id] = { 
@@ -226,14 +235,14 @@ export const AssignmentView = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Please log in');
       
-      const publicTests = testCases.filter((tc:any) => tc.is_public);
-      const privateTests = testCases.filter((tc:any) => !tc.is_public);
-      const allTests = [...publicTests, ...privateTests];
+      const publicTests = allTestCases.filter((tc:any) => !tc.hidden);
+      const privateTests = allTestCases.filter((tc:any) => tc.hidden);
+      const allRunTests = [...publicTests, ...privateTests];
       
       const newTestResults: Record<string, any> = {};
       let passedCount = 0;
 
-      for (const test of allTests) {
+      for (const test of allRunTests) {
         const codeToRun = prepareExecutionCode(code, test.input);
         const result = await executeCode(activeLanguage, codeToRun, test.input);
         
@@ -243,19 +252,19 @@ export const AssignmentView = ({
         }
 
         const actual = normalizeOutput(result.output);
-        const expected = normalizeOutput(test.expected_output);
+        const expected = normalizeOutput(test.output);
         const isMatch = actual === expected || actual.includes(expected);
         
         if (isMatch) passedCount++;
         newTestResults[test.id] = { 
           passed: isMatch, 
           output: result.output, 
-          error: isMatch ? null : `Expected: ${test.expected_output}` 
+          error: isMatch ? null : `Expected: ${test.output}` 
         };
       }
       
       setTestResults(newTestResults);
-      const total = allTests.length;
+      const total = allRunTests.length;
       const score = total > 0 ? (passedCount / total) * (assignment.max_score || 100) : 0;
       
       // @ts-ignore
@@ -285,17 +294,17 @@ export const AssignmentView = ({
     }
   });
 
-  const publicTests = testCases.filter((tc: any) => tc.is_public);
-  const privateTests = testCases.filter((tc: any) => !tc.is_public);
+  const publicTests = allTestCases.filter((tc: any) => !tc.hidden);
+  const privateTests = allTestCases.filter((tc: any) => tc.hidden);
   
   const hasRunTests = Object.keys(testResults).length > 0;
   
   const currentPubPassed = hasRunTests 
-    ? Object.values(testResults).filter((r:any, i) => testCases.find((t:any) => t.id === Object.keys(testResults)[i])?.is_public && r.passed).length 
+    ? Object.values(testResults).filter((r:any, i) => allTestCases.find((t:any) => t.id === Object.keys(testResults)[i])?.hidden === false && r.passed).length 
     : (latestSubmission?.public_tests_passed || 0);
     
   const currentPrivPassed = hasRunTests
-    ? Object.values(testResults).filter((r:any, i) => !testCases.find((t:any) => t.id === Object.keys(testResults)[i])?.is_public && r.passed).length
+    ? Object.values(testResults).filter((r:any, i) => allTestCases.find((t:any) => t.id === Object.keys(testResults)[i])?.hidden === true && r.passed).length
     : (latestSubmission?.private_tests_passed || 0);
 
   if (isLoading) return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-white"/></div>;
@@ -412,7 +421,7 @@ export const AssignmentView = ({
                   <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-white" onClick={() => setConsoleOutput('')}><RefreshCw className="w-3 h-3"/></Button>
                 </div>
                 <div className="flex-1 min-h-0 relative">
-                  <TabsContent value="testcases" className="h-full m-0 p-0"><TestCaseView testCases={testCases} testResults={testResults} /></TabsContent>
+                  <TabsContent value="testcases" className="h-full m-0 p-0"><TestCaseView testCases={allTestCases} testResults={testResults} /></TabsContent>
                   <TabsContent value="console" className="h-full m-0 p-0"><div className="h-full p-4 font-mono text-sm overflow-auto bg-[#0a0a0a]"><pre className={cn("whitespace-pre-wrap", consoleOutput.includes('Error') ? "text-red-400" : "text-blue-400")}>{consoleOutput || <span className="text-muted-foreground/40 italic"># No output</span>}</pre></div></TabsContent>
                 </div>
               </Tabs>
