@@ -319,10 +319,10 @@ const DegreeSelection = () => {
 
             {/* OPTION 2: PROCTORED - UPDATED */}
             <div 
-              className="relative h-64 md:h-full group overflow-hidden cursor-pointer bg-white"
+              className="relative h-64 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e]" 
               onClick={() => handleModeSelect('proctored')}
             >
-              {/* Background Image: Graphic */}
+              {/* Background Image: Graphic (Updated) */}
               <div className="absolute inset-0 flex items-center justify-center p-8 md:p-12">
                 <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image%20(9).png" 
@@ -331,13 +331,13 @@ const DegreeSelection = () => {
                 />
               </div>
 
-              {/* Content */}
+              {/* Content (Text/Tags removed, added spacing for graphic, colors reset for dark bg) */}
               <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center mb-2">
-                  <ShieldCheck className="w-6 h-6 text-red-600" />
+                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 backdrop-blur-md flex items-center justify-center mb-2">
+                  <ShieldCheck className="w-6 h-6 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 group-hover:text-red-600 transition-colors">Proctored Mode</h3>
+                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-1 group-hover:text-red-400 transition-colors">Proctored Mode</h3>
                 </div>
               </div>
             </div>
