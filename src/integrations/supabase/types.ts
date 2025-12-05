@@ -9,7 +9,7 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      iitm_exams_questions: {
+      iitm_exam_question_bank: {
         Row: {
           id: string
           subject_id: string | null
@@ -23,10 +23,8 @@ export interface Database {
           expected_time: number | null
           deadline: string | null
           starter_code: string | null
-          test_cases_config: Json | null
+          test_cases: Json | null
           created_at: string
-          updated_at: string
-          private_test_cases: Json | null
         }
         Insert: {
           id?: string
@@ -41,10 +39,8 @@ export interface Database {
           expected_time?: number | null
           deadline?: string | null
           starter_code?: string | null
-          test_cases_config?: Json | null
+          test_cases?: Json | null
           created_at?: string
-          updated_at?: string
-          private_test_cases?: Json | null
         }
         Update: {
           id?: string
@@ -59,10 +55,8 @@ export interface Database {
           expected_time?: number | null
           deadline?: string | null
           starter_code?: string | null
-          test_cases_config?: Json | null
+          test_cases?: Json | null
           created_at?: string
-          updated_at?: string
-          private_test_cases?: Json | null
         }
       }
       iitm_exam_sessions: {
@@ -118,7 +112,6 @@ export interface Database {
           created_at?: string
         }
       }
-      // ... keep your existing tables (profiles, etc.) here if they exist
     }
     Views: {
       [_ in never]: never
