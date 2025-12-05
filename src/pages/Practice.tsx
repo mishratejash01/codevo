@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,10 +6,11 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { Timer, LogOut, LayoutGrid, Home } from 'lucide-react';
+import { Timer, LogOut, LayoutGrid, Home, Infinity as InfinityIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { cn } from '@/lib/utils';
 
 export type QuestionStatus = 'not-visited' | 'visited' | 'attempted' | 'review';
 
@@ -25,12 +26,19 @@ const Practice = () => {
   const limitParam = searchParams.get('limit');
   const selectedAssignmentId = searchParams.get('q');
   
+  // Timer Params
+  const timerParam = parseInt(searchParams.get('timer') || '0');
+  const hasTimeLimit = timerParam > 0;
+  const timeLimitSeconds = timerParam * 60;
+
   const activeTables = iitmSubjectId ? IITM_TABLES : STANDARD_TABLES;
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, QuestionStatus>>({});
   const { toast } = useToast();
+  
   const [elapsedTime, setElapsedTime] = useState(0); 
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
 
+  // --- QUERY ---
   const { data: assignments = [] } = useQuery({
     queryKey: [activeTables.assignments, iitmSubjectId, categoryParam, limitParam], 
     queryFn: async () => {
@@ -48,19 +56,13 @@ const Practice = () => {
       if (error) throw error;
       
       let result = data || [];
-      if (limitParam) {
-        const limit = parseInt(limitParam);
-        // SAFETY: slice(0, 10) on array of length 5 returns 5. This prevents "disappearing" questions.
-        if (!isNaN(limit) && limit > 0) {
-          result = result.sort(() => 0.5 - Math.random()).slice(0, limit);
-        }
-      } else {
-        result = result.sort((a, b) => a.title.localeCompare(b.title));
-      }
-      return result;
+      // If a specific question ID 'q' was passed but no category, we might want to ensure it's in the list
+      // For now, standard logic applies.
+      return result.sort((a, b) => a.title.localeCompare(b.title));
     },
   });
 
+  // Ensure 'q' param is set initially if list is loaded
   useEffect(() => {
     if (assignments.length > 0 && !selectedAssignmentId) {
       setSearchParams(prev => {
@@ -72,20 +74,41 @@ const Practice = () => {
     }
   }, [assignments, selectedAssignmentId, setSearchParams]);
 
+  // --- TIMER LOGIC ---
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (selectedAssignmentId) {
-      interval = setInterval(() => setElapsedTime((prev) => prev + 1), 1000);
-    }
+    // Timer runs continuously for the session
+    const interval = setInterval(() => setElapsedTime((prev) => prev + 1), 1000);
     return () => clearInterval(interval);
-  }, [selectedAssignmentId]);
+  }, []);
 
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  const formatTimer = () => {
+    if (!hasTimeLimit) {
+      // Free Mode: Count Up
+      const m = Math.floor(elapsedTime / 60);
+      const s = elapsedTime % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // Timed Mode logic
+    const remaining = timeLimitSeconds - elapsedTime;
+    
+    if (remaining >= 0) {
+      // Normal Countdown
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    } else {
+      // Overtime: Count Up (Red)
+      const overtime = Math.abs(remaining);
+      const m = Math.floor(overtime / 60);
+      const s = overtime % 60;
+      return `+${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
   };
 
+  const isOvertime = hasTimeLimit && elapsedTime > timeLimitSeconds;
+
+  // --- HANDLERS ---
   const handleQuestionSelect = (id: string) => {
     setSearchParams(prev => {
         const newParams = new URLSearchParams(prev);
@@ -108,14 +131,24 @@ const Practice = () => {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
             <LayoutGrid className="w-4 h-4 text-primary" />
             <h1 className="text-sm font-bold tracking-tight text-primary hidden sm:block">
-              {categoryParam ? `${decodeURIComponent(categoryParam)} Practice` : 'Practice Arena'}
+              {categoryParam ? `${decodeURIComponent(categoryParam)} Practice` : 'Practice Session'}
             </h1>
           </div>
         </div>
+        
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-sm font-bold bg-black/40 border-white/10 text-muted-foreground">
-            <Timer className="w-4 h-4" /><span>{formatTime(elapsedTime)}</span>
+          {/* TIMER DISPLAY */}
+          <div className={cn(
+            "flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-sm font-bold transition-all duration-500",
+            isOvertime 
+              ? "bg-red-950/30 border-red-500/50 text-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.3)]" 
+              : "bg-black/40 border-white/10 text-muted-foreground"
+          )}>
+            {hasTimeLimit ? <Timer className="w-4 h-4" /> : <InfinityIcon className="w-4 h-4" />}
+            <span>{formatTimer()}</span>
+            {isOvertime && <span className="text-[10px] uppercase font-sans tracking-wide ml-1">Overtime</span>}
           </div>
+
           <Button variant="outline" size="sm" onClick={handleExitEnvironment} className="gap-2 border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/10"><LogOut className="w-4 h-4" /> Exit</Button>
         </div>
       </header>
