@@ -201,4 +201,148 @@ export default function PracticeSolver() {
         <ResizablePanelGroup direction="horizontal" className="h-full">
           
           {/* LEFT: DESCRIPTION */}
-          <ResizablePanel defaultSize={40} minSize={25} className="bg-[#0
+          <ResizablePanel defaultSize={40} minSize={25} className="bg-[#0a0a0a] flex flex-col border-r border-white/5">
+            <div className="h-10 border-b border-white/5 flex items-center px-1 bg-[#0f0f0f]">
+              <Tabs defaultValue="description" className="w-full h-full">
+                <TabsList className="h-full bg-transparent p-0 gap-0 w-full justify-start rounded-none">
+                  <TabsTrigger value="description" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-white/5 data-[state=active]:text-white text-xs font-medium text-muted-foreground w-auto px-4">
+                    <FileCode2 className="w-3.5 h-3.5 mr-2" /> Description
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            <ScrollArea className="flex-1">
+              <div className="p-6 pb-20">
+                <h2 className="text-xl font-bold text-white mb-4">{problem.title}</h2>
+                <div className="prose prose-invert prose-sm max-w-none text-gray-400 leading-relaxed font-sans mb-8">
+                  <p className="whitespace-pre-wrap">{problem.description}</p>
+                </div>
+
+                {testCases.length > 0 && (
+                  <div className="space-y-4 pt-6 border-t border-white/5">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Example Cases</h3>
+                    {testCases.filter((t: any) => t.is_public).map((t: any, i: number) => (
+                      <div key={i} className="bg-[#151515] border border-white/5 rounded-lg overflow-hidden">
+                        <div className="px-3 py-2 bg-white/5 border-b border-white/5 text-[10px] text-gray-400 font-mono">Case {i + 1}</div>
+                        <div className="p-3 space-y-2 font-mono text-xs">
+                          <div><span className="text-blue-400">Input:</span> <span className="text-gray-300 ml-2">{t.input}</span></div>
+                          <div><span className="text-green-400">Output:</span> <span className="text-gray-300 ml-2">{t.output}</span></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle className="bg-[#050505] w-1.5 border-l border-r border-white/5 hover:bg-white/10 transition-colors" />
+
+          {/* RIGHT: EDITOR & CONSOLE */}
+          <ResizablePanel defaultSize={60}>
+            <ResizablePanelGroup direction="vertical">
+              
+              {/* TOP: EDITOR */}
+              <ResizablePanel defaultSize={65} className="flex flex-col bg-[#1e1e1e] relative">
+                <div className="flex-1">
+                  <CodeEditor 
+                    value={code} 
+                    onChange={setCode} 
+                    language={activeLanguage}
+                  />
+                </div>
+              </ResizablePanel>
+
+              <ResizableHandle withHandle className="bg-[#0c0c0e] h-1.5 border-t border-b border-white/5 hover:bg-white/10 transition-colors" />
+
+              {/* BOTTOM: CONSOLE */}
+              <ResizablePanel defaultSize={35} className="bg-[#0c0c0e] flex flex-col">
+                <div className="h-9 border-b border-white/10 flex items-center px-2 bg-[#0a0a0a] shrink-0">
+                  <Tabs value={consoleTab} onValueChange={setConsoleTab} className="w-full h-full">
+                    <TabsList className="h-full bg-transparent p-0 gap-4">
+                      <TabsTrigger value="testcases" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white text-xs font-medium text-muted-foreground flex items-center gap-2 px-2">
+                        <Terminal className="w-3 h-3" /> Test Cases
+                      </TabsTrigger>
+                      <TabsTrigger value="output" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white text-xs font-medium text-muted-foreground flex items-center gap-2 px-2">
+                        <Bug className="w-3 h-3" /> Run Result
+                        {outputResult && (
+                          <div className={cn("w-1.5 h-1.5 rounded-full ml-1.5", outputResult.passed ? "bg-green-500" : "bg-red-500")} />
+                        )}
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+
+                <div className="flex-1 overflow-auto p-4 bg-[#0c0c0e]">
+                  {consoleTab === 'testcases' ? (
+                    <div className="space-y-3">
+                      {testCases.length > 0 ? testCases.map((tc: any, i: number) => (
+                        <div key={i} className="flex flex-col gap-1.5">
+                          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Case {i + 1}</div>
+                          <div className="bg-white/5 p-2 rounded border border-white/10 text-gray-300 font-mono text-xs truncate">
+                            {typeof tc.input === 'object' ? JSON.stringify(tc.input) : tc.input}
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="text-muted-foreground text-xs italic opacity-50 text-center mt-8">No test cases available.</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="h-full">
+                      {!outputResult ? (
+                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground space-y-2 opacity-40">
+                          <Terminal className="w-6 h-6" />
+                          <span className="text-xs">Run code to see results</span>
+                        </div>
+                      ) : outputResult.status === 'running' ? (
+                        <div className="flex flex-col items-center justify-center h-full text-yellow-500 space-y-2">
+                          <Loader2 className="w-5 h-5 animate-spin"/> 
+                          <span className="text-xs font-mono animate-pulse">EXECUTING...</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                          <div className={cn("flex items-center gap-3 p-3 rounded-lg border", outputResult.passed ? "bg-green-900/10 border-green-500/30" : "bg-red-900/10 border-red-500/30")}>
+                            {outputResult.passed ? <CheckCircle2 className="w-5 h-5 text-green-500"/> : <XCircle className="w-5 h-5 text-red-500"/>}
+                            <div>
+                              <div className={cn("text-sm font-bold", outputResult.passed ? "text-green-400" : "text-red-400")}>
+                                {outputResult.passed ? "Accepted" : "Wrong Answer"}
+                              </div>
+                            </div>
+                          </div>
+
+                          {outputResult.error ? (
+                             <div className="bg-red-950/20 p-3 rounded border border-red-500/20 text-red-300 font-mono text-xs whitespace-pre-wrap leading-relaxed">
+                               {outputResult.error}
+                             </div>
+                          ) : (
+                            <div className="grid grid-cols-1 gap-4 font-mono text-xs">
+                              <div>
+                                <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Your Output</div>
+                                <div className={cn("p-2.5 rounded border break-all", outputResult.passed ? "bg-[#1a1a1a] border-white/5 text-gray-300" : "bg-red-900/10 border-red-500/20 text-red-200")}>
+                                  {outputResult.userOutput || <span className="italic opacity-50">Empty</span>}
+                                </div>
+                              </div>
+                              {!outputResult.passed && (
+                                <div>
+                                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Expected</div>
+                                  <div className="bg-green-900/10 p-2.5 rounded text-green-200 border border-green-500/20 break-all">{outputResult.expected}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </ResizablePanel>
+
+            </ResizablePanelGroup>
+          </ResizablePanel>
+
+        </ResizablePanelGroup>
+      </div>
+    </div>
+  );
+}
