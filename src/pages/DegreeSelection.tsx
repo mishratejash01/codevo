@@ -288,57 +288,63 @@ const DegreeSelection = () => {
             
             {/* OPTION 1: PRACTICE */}
             <div 
-              className="relative h-64 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10 bg-[#0c0c0e]"
+              className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10 bg-[#0c0c0e] flex flex-col"
               onClick={() => handleModeSelect('learning')}
             >
-              {/* Background Image: Graphic (Centered, Padded, Object-Contain) */}
-              <div className="absolute inset-0 flex items-center justify-center p-12">
-                <img 
+              {/* Illustration Area - Centered & Padded */}
+              <div className="flex-1 flex items-center justify-center p-12 relative overflow-hidden">
+                 {/* Subtle Glow */}
+                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
+                 
+                 <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" 
                   alt="Practice Coding" 
-                  className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                  className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
 
-              {/* Content Overlay */}
-              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0e]/80 to-transparent">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 backdrop-blur-md flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-                  <Sparkles className="w-6 h-6 text-blue-400" />
+              {/* Text Content */}
+              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                    <Sparkles className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">Practice Mode</h3>
                 </div>
-                <div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">Practice Mode</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                    A chill space to experiment. No pressure, no timers—just you improving your craft one line at a time.
-                  </p>
-                </div>
+                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+                  A chill space to experiment. No pressure, no timers—just you improving your craft.
+                </p>
               </div>
             </div>
 
             {/* OPTION 2: PROCTORED */}
             <div 
-              className="relative h-64 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e]"
+              className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e] flex flex-col"
               onClick={() => handleModeSelect('proctored')}
             >
-              {/* Background Image: Graphic (Centered, Padded, Object-Contain) */}
-              <div className="absolute inset-0 flex items-center justify-center p-12">
+              {/* Illustration Area - Centered & Padded */}
+              <div className="flex-1 flex items-center justify-center p-12 relative overflow-hidden">
+                 {/* Subtle Glow */}
+                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-red-500/5 rounded-full blur-[60px] pointer-events-none" />
+
                 <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
                   alt="Proctored Exam" 
-                  className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-full object-contain relative z-10 transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
 
-              {/* Content Overlay */}
-              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0e]/80 to-transparent">
-                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 backdrop-blur-md flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-                  <ShieldCheck className="w-6 h-6 text-red-400" />
+              {/* Text Content */}
+              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.1)]">
+                    <ShieldCheck className="w-5 h-5 text-red-400" />
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-red-400 transition-colors">Proctored Mode</h3>
                 </div>
-                <div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 group-hover:text-red-400 transition-colors">Proctored Mode</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                    The serious zone. Strict monitoring and time limits to officially prove your skills.
-                  </p>
-                </div>
+                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
+                  The serious zone. Strict monitoring and time limits to officially prove your skills.
+                </p>
               </div>
             </div>
 
