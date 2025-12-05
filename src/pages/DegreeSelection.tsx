@@ -292,16 +292,16 @@ const DegreeSelection = () => {
               onClick={() => handleModeSelect('learning')}
             >
               {/* Background Image: Graphic */}
-              <div className="absolute inset-0 flex items-center justify-center p-12">
+              <div className="absolute inset-0">
                 <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" 
                   alt="Practice Coding" 
-                  className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
 
               {/* Content */}
-              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0e]/80 to-transparent">
+              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0e]/60 to-transparent">
                 <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 backdrop-blur-md flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
                   <Sparkles className="w-6 h-6 text-blue-400" />
                 </div>
@@ -320,16 +320,16 @@ const DegreeSelection = () => {
               onClick={() => handleModeSelect('proctored')}
             >
               {/* Background Image: Graphic */}
-              <div className="absolute inset-0 flex items-center justify-center p-8 md:p-12">
+              <div className="absolute inset-0">
                 <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
                   alt="Proctored Exam" 
-                  className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               </div>
 
               {/* Content */}
-              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0e]/80 to-transparent">
+              <div className="relative z-10 h-full flex flex-col justify-end p-6 md:p-8 space-y-3 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0e]/60 to-transparent">
                 <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 backdrop-blur-md flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
                   <ShieldCheck className="w-6 h-6 text-red-400" />
                 </div>
