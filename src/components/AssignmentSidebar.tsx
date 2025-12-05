@@ -33,7 +33,7 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
     return groups;
   }, [preLoadedAssignments]);
 
-  const [openItems, setOpenItems] = useState<string[]>([]);
+  const [openItem, setOpenItem] = useState<string>("");
 
   // Effect: When selectedId changes or loads, find its category and open ONLY that category
   useEffect(() => {
@@ -41,12 +41,8 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
       const assignment = preLoadedAssignments.find(a => a.id === selectedId);
       if (assignment) {
         const category = assignment.category || "General Questions";
-        // Check if already open to avoid redundant state updates (though React handles this well)
-        setOpenItems(prev => {
-          if (prev.includes(category)) return prev;
-          // Set ONLY this category to be open
-          return [category];
-        });
+        // Check if currently open item is different to avoid redundant updates
+        setOpenItem(prev => (prev !== category ? category : prev));
       }
     }
   }, [selectedId, preLoadedAssignments]);
@@ -89,8 +85,8 @@ export const AssignmentSidebar = ({ selectedId, onSelect, questionStatuses, preL
           <Accordion 
             type="single" 
             collapsible
-            value={openItems[0]} 
-            onValueChange={(val) => setOpenItems(val ? [val] : [])}
+            value={openItem}
+            onValueChange={setOpenItem}
             className="w-full space-y-2"
           >
             {Object.entries(groupedAssignments).map(([category, items]) => (
