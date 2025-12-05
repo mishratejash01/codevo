@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   ArrowLeft, Search, Layers, Filter, Clock, Play, 
-  Infinity as InfinityIcon, ChevronRight, FileCode2, Lock 
+  Infinity as InfinityIcon, ChevronRight, FileCode2, Lock, List 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { checkUserProfile, ProfileSheet } from '@/components/ProfileCompletion';
@@ -49,19 +49,38 @@ export default function QuestionSetSelection() {
   });
 
   // --- DERIVED DATA ---
+  
+  // 1. For Practice: Topics List
   const topics = useMemo(() => {
+    if (isProctored) return [];
     const uniqueTopics = new Set(assignments.map(a => a.category || 'General'));
     return Array.from(uniqueTopics).sort();
-  }, [assignments]);
+  }, [assignments, isProctored]);
 
-  const filteredAssignments = assignments.filter(a => {
-    const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTopic = selectedTopic ? (a.category || 'General') === selectedTopic : true;
-    return matchesSearch && matchesTopic;
-  });
+  // 2. For Proctored: Group by Set Name
+  const examSets = useMemo(() => {
+    if (!isProctored) return [];
+    const sets: Record<string, typeof assignments> = {};
+    assignments.forEach(a => {
+      const setName = a.set_name || 'Ungrouped Set';
+      if (!sets[setName]) sets[setName] = [];
+      sets[setName].push(a);
+    });
+    return Object.entries(sets).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [assignments, isProctored]);
+
+  // 3. For Practice: Filtered Questions
+  const filteredAssignments = useMemo(() => {
+    if (isProctored) return [];
+    return assignments.filter(a => {
+      const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesTopic = selectedTopic ? (a.category || 'General') === selectedTopic : true;
+      return matchesSearch && matchesTopic;
+    });
+  }, [assignments, searchTerm, selectedTopic, isProctored]);
 
   // --- HANDLERS ---
-  const handleStart = async (assignmentId: string) => {
+  const handleStart = async (targetId: string, isSet: boolean = false) => {
     const isProfileComplete = await checkUserProfile();
     if (!isProfileComplete) {
       setShowProfileSheet(true);
@@ -72,14 +91,17 @@ export default function QuestionSetSelection() {
       iitm_subject: subjectId || '',
       name: subjectName || '',
       type: examType || '',
-      q: assignmentId, // Load specific question
-      timer: noTimeLimit ? '0' : timeLimit[0].toString(), // Pass timer config
       mode: mode || 'learning'
     });
 
-    if (isProctored) {
+    if (isProctored && isSet) {
+        // Start Exam for a whole SET
+        params.set('set_name', targetId);
         navigate(`/exam?${params.toString()}`);
     } else {
+        // Start Practice for a single QUESTION
+        params.set('q', targetId);
+        params.set('timer', noTimeLimit ? '0' : timeLimit[0].toString());
         navigate(`/practice?${params.toString()}`);
     }
   };
@@ -145,9 +167,8 @@ export default function QuestionSetSelection() {
         </div>
       )}
 
-      {/* --- RIGHT CONTENT (QUESTIONS) --- */}
+      {/* --- RIGHT CONTENT --- */}
       <div className="flex-1 flex flex-col min-w-0 bg-[#09090b] relative">
-        {/* Decorative Background */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[120px] pointer-events-none" />
 
         {/* Top Header */}
@@ -162,165 +183,183 @@ export default function QuestionSetSelection() {
                {decodeURIComponent(subjectName || '')}
              </h1>
              <Badge variant="outline" className={cn("border-white/10 bg-white/5", isProctored ? "text-red-400" : "text-blue-400")}>
-               {isProctored ? 'Proctored Set' : 'Practice'}
+               {isProctored ? 'Proctored Exam' : 'Practice Arena'}
              </Badge>
           </div>
 
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search problems..." 
-              className="pl-9 bg-[#1a1a1c] border-white/10 text-white h-9 focus:ring-primary/50 rounded-full text-xs"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          {!isProctored && (
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search problems..." 
+                className="pl-9 bg-[#1a1a1c] border-white/10 text-white h-9 focus:ring-primary/50 rounded-full text-xs"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
-        {/* List */}
+        {/* --- MAIN CONTENT AREA --- */}
         <ScrollArea className="flex-1 p-8 z-10">
           <div className="max-w-[95%] mx-auto space-y-4">
-            <div className="text-xs text-muted-foreground mb-4 font-mono uppercase tracking-wider">
-              Available Problems ({filteredAssignments.length})
-            </div>
+            
+            {/* LOADING STATE */}
+            {isLoading && [1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-xl animate-pulse" />)}
 
-            {isLoading ? (
-              [1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-xl animate-pulse" />)
-            ) : filteredAssignments.length === 0 ? (
-              <div className="text-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl">
-                No problems found in this category.
+            {/* --- PROCTORED MODE: SHOW SETS --- */}
+            {isProctored && !isLoading && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {examSets.map(([setName, setQuestions]) => (
+                  <div key={setName} className="bg-[#121212] border border-white/10 rounded-xl p-6 hover:border-red-500/40 hover:bg-white/5 transition-all group flex flex-col gap-4">
+                    <div className="flex items-start justify-between">
+                      <div className="p-3 bg-red-950/20 rounded-lg border border-red-500/20 text-red-400">
+                        <Lock className="w-6 h-6" />
+                      </div>
+                      <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20">
+                        {setQuestions.length} Questions
+                      </Badge>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-bold text-white mb-1">{setName}</h3>
+                      <p className="text-sm text-muted-foreground">Comprehensive assessment covering all modules.</p>
+                    </div>
+
+                    <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>~{(setQuestions.reduce((acc, q) => acc + (q.expected_time || 20), 0))} min</span>
+                      </div>
+                      <Button onClick={() => handleStart(setName, true)} size="sm" className="bg-red-600 hover:bg-red-500 text-white">
+                        Start Exam
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {examSets.length === 0 && (
+                  <div className="col-span-full text-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl">
+                    No exam sets available at this moment.
+                  </div>
+                )}
               </div>
-            ) : (
-              filteredAssignments.map((assignment) => (
-                <div key={assignment.id} className="group">
-                  <Collapsible 
-                    open={expandedQuestion === assignment.id} 
-                    onOpenChange={(isOpen) => {
-                      setExpandedQuestion(isOpen ? assignment.id : null);
-                      if (isOpen) {
-                         // Reset timer defaults when opening a new card
-                         setTimeLimit([assignment.expected_time || 20]); 
-                         setNoTimeLimit(false);
-                      }
-                    }}
-                    className={cn(
-                      "bg-[#121212] border border-white/10 rounded-xl transition-all duration-300 overflow-hidden",
-                      expandedQuestion === assignment.id ? "border-primary/50 shadow-[0_0_30px_rgba(124,58,237,0.1)] ring-1 ring-primary/20" : "hover:border-white/20"
-                    )}
-                  >
-                    {/* Trigger Header */}
-                    <CollapsibleTrigger className="w-full text-left">
-                      <div className="p-5 flex items-center justify-between">
-                        <div className="flex items-center gap-5">
-                          <div className={cn(
-                            "w-10 h-10 rounded-lg flex items-center justify-center border transition-colors",
-                            expandedQuestion === assignment.id ? "bg-primary/20 border-primary/50 text-primary" : "bg-white/5 border-white/10 text-muted-foreground"
-                          )}>
-                            {isProctored ? <Lock className="w-5 h-5"/> : <FileCode2 className="w-5 h-5"/>}
-                          </div>
-                          <div>
-                            <h3 className="text-base font-bold text-gray-200 group-hover:text-white transition-colors">
-                              {assignment.title}
-                            </h3>
-                            <div className="flex items-center gap-3 mt-1.5">
-                               <Badge variant="outline" className="text-[10px] py-0 h-4 border-white/10 text-muted-foreground bg-black/40">
-                                 {assignment.category || 'General'}
-                               </Badge>
-                               {!isProctored && (
-                                 <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                   <Clock className="w-3 h-3" /> ~{assignment.expected_time || 20} min
-                                 </span>
-                               )}
+            )}
+
+            {/* --- PRACTICE MODE: SHOW QUESTIONS --- */}
+            {!isProctored && !isLoading && (
+              <>
+                <div className="text-xs text-muted-foreground mb-4 font-mono uppercase tracking-wider">
+                  Available Problems ({filteredAssignments.length})
+                </div>
+
+                {filteredAssignments.length === 0 ? (
+                  <div className="text-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl">
+                    No problems found in this category.
+                  </div>
+                ) : (
+                  filteredAssignments.map((assignment) => (
+                    <div key={assignment.id} className="group">
+                      <Collapsible 
+                        open={expandedQuestion === assignment.id} 
+                        onOpenChange={(isOpen) => {
+                          setExpandedQuestion(isOpen ? assignment.id : null);
+                          if (isOpen) {
+                             setTimeLimit([assignment.expected_time || 20]); 
+                             setNoTimeLimit(false);
+                          }
+                        }}
+                        className={cn(
+                          "bg-[#121212] border border-white/10 rounded-xl transition-all duration-300 overflow-hidden",
+                          expandedQuestion === assignment.id ? "border-primary/50 shadow-[0_0_30px_rgba(124,58,237,0.1)] ring-1 ring-primary/20" : "hover:border-white/20"
+                        )}
+                      >
+                        <CollapsibleTrigger className="w-full text-left">
+                          <div className="p-5 flex items-center justify-between">
+                            <div className="flex items-center gap-5">
+                              <div className={cn(
+                                "w-10 h-10 rounded-lg flex items-center justify-center border transition-colors",
+                                expandedQuestion === assignment.id ? "bg-primary/20 border-primary/50 text-primary" : "bg-white/5 border-white/10 text-muted-foreground"
+                              )}>
+                                <FileCode2 className="w-5 h-5"/>
+                              </div>
+                              <div>
+                                <h3 className="text-base font-bold text-gray-200 group-hover:text-white transition-colors">
+                                  {assignment.title}
+                                </h3>
+                                <div className="flex items-center gap-3 mt-1.5">
+                                   <Badge variant="outline" className="text-[10px] py-0 h-4 border-white/10 text-muted-foreground bg-black/40">
+                                     {assignment.category || 'General'}
+                                   </Badge>
+                                   <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                     <Clock className="w-3 h-3" /> ~{assignment.expected_time || 20} min
+                                   </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className={cn("transition-transform duration-300", expandedQuestion === assignment.id ? "rotate-90 text-primary" : "text-muted-foreground")}>
+                              <ChevronRight className="w-5 h-5" />
                             </div>
                           </div>
-                        </div>
-                        
-                        <div className={cn("transition-transform duration-300", expandedQuestion === assignment.id ? "rotate-90 text-primary" : "text-muted-foreground")}>
-                          <ChevronRight className="w-5 h-5" />
-                        </div>
-                      </div>
-                    </CollapsibleTrigger>
+                        </CollapsibleTrigger>
 
-                    {/* Expanded Content (Timer Config) */}
-                    <CollapsibleContent>
-                      <div className="border-t border-white/10 bg-[#08080a] p-6 animate-in slide-in-from-top-2">
-                        {isProctored ? (
-                           <div className="flex items-center justify-between">
-                              <div className="text-sm text-gray-400 flex items-center gap-2">
-                                <Lock className="w-4 h-4 text-red-400" />
-                                This is a proctored exam set. Timer is fixed by administration.
-                              </div>
-                              <Button onClick={() => handleStart(assignment.id)} className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20">
-                                Start Exam
-                              </Button>
-                           </div>
-                        ) : (
-                          <div className="flex flex-col lg:flex-row gap-8 items-center justify-between">
-                            
-                            {/* Controls Area */}
-                            <div className="flex-1 w-full space-y-6">
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                  <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-primary" /> 
-                                    Set Duration
-                                  </label>
-                                  
-                                  {/* UPDATED: Input with pr-5 for native arrow spacing */}
-                                  <div className={cn("flex items-center gap-3 transition-opacity", noTimeLimit && "opacity-30 pointer-events-none")}>
-                                    <Input 
-                                      type="number" 
-                                      value={timeLimit[0]} 
-                                      onChange={handleManualTimeInput}
-                                      className="w-24 h-10 pr-5 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50"
-                                      placeholder="Min"
-                                    />
-                                    <span className="text-sm font-medium text-muted-foreground">min</span>
+                        <CollapsibleContent>
+                          <div className="border-t border-white/10 bg-[#08080a] p-6 animate-in slide-in-from-top-2">
+                            <div className="flex flex-col lg:flex-row gap-8 items-center justify-between">
+                              <div className="flex-1 w-full space-y-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                  <div className="flex items-center gap-4">
+                                    <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                      <Clock className="w-4 h-4 text-primary" /> 
+                                      Set Duration
+                                    </label>
+                                    <div className={cn("flex items-center gap-3 transition-opacity", noTimeLimit && "opacity-30 pointer-events-none")}>
+                                      <Input 
+                                        type="number" 
+                                        value={timeLimit[0]} 
+                                        onChange={handleManualTimeInput}
+                                        className="w-24 h-10 pr-5 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50"
+                                        placeholder="Min"
+                                      />
+                                      <span className="text-sm font-medium text-muted-foreground">min</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 hover:border-white/10 transition-colors">
+                                    <span className={cn("text-xs font-medium cursor-pointer", noTimeLimit ? "text-white" : "text-muted-foreground")}>Free Mode</span>
+                                    <Switch checked={noTimeLimit} onCheckedChange={setNoTimeLimit} className="data-[state=checked]:bg-primary scale-75" />
                                   </div>
                                 </div>
-
-                                {/* Free Mode Toggle */}
-                                <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 hover:border-white/10 transition-colors">
-                                  <span className={cn("text-xs font-medium cursor-pointer", noTimeLimit ? "text-white" : "text-muted-foreground")}>Free Mode</span>
-                                  <Switch checked={noTimeLimit} onCheckedChange={setNoTimeLimit} className="data-[state=checked]:bg-primary scale-75" />
+                                <div className={cn("space-y-3 transition-opacity duration-200 px-1", noTimeLimit && "opacity-30 pointer-events-none")}>
+                                  <Slider 
+                                    value={[Math.min(timeLimit[0], 30)]} 
+                                    onValueChange={(vals) => setTimeLimit(vals)} 
+                                    min={2} max={30} step={2} 
+                                    className="[&>.relative>.absolute]:bg-primary cursor-pointer py-2"
+                                  />
+                                  <div className="flex justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
+                                    <span>2 min</span>
+                                    <span>15 min</span>
+                                    <span>30 min (Max Slider)</span>
+                                  </div>
                                 </div>
                               </div>
-
-                              {/* Slider */}
-                              <div className={cn("space-y-3 transition-opacity duration-200 px-1", noTimeLimit && "opacity-30 pointer-events-none")}>
-                                <Slider 
-                                  value={[Math.min(timeLimit[0], 30)]} 
-                                  onValueChange={(vals) => setTimeLimit(vals)} 
-                                  min={2} 
-                                  max={30} 
-                                  step={2} 
-                                  className="[&>.relative>.absolute]:bg-primary cursor-pointer py-2"
-                                />
-                                <div className="flex justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
-                                  <span>2 min</span>
-                                  <span>15 min</span>
-                                  <span>30 min (Max Slider)</span>
-                                </div>
+                              <div className="w-full lg:w-auto min-w-[200px]">
+                                 <Button 
+                                   onClick={() => handleStart(assignment.id)}
+                                   className="w-full h-12 bg-white text-black hover:bg-gray-200 font-bold text-base shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02] rounded-xl"
+                                 >
+                                   {noTimeLimit ? <InfinityIcon className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2 fill-current" />}
+                                   Start Practice
+                                 </Button>
                               </div>
-                            </div>
-
-                            {/* Action Button */}
-                            <div className="w-full lg:w-auto min-w-[200px]">
-                               <Button 
-                                 onClick={() => handleStart(assignment.id)}
-                                 className="w-full h-12 bg-white text-black hover:bg-gray-200 font-bold text-base shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02] rounded-xl"
-                               >
-                                 {noTimeLimit ? <InfinityIcon className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2 fill-current" />}
-                                 Start Practice
-                               </Button>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </div>
-              ))
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </div>
+                  ))
+                )}
+              </>
             )}
           </div>
         </ScrollArea>
