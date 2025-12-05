@@ -237,6 +237,7 @@ export default function QuestionSetSelection() {
 
                     {/* Expanded Content (Timer Config) */}
                     <CollapsibleContent>
+                      {/* UPDATED: Better visual container for the expanded content */}
                       <div className="border-t border-white/10 bg-[#08080a] p-6 animate-in slide-in-from-top-2">
                         {isProctored ? (
                            <div className="flex items-center justify-between">
@@ -270,6 +271,7 @@ export default function QuestionSetSelection() {
                                       className="w-24 h-10 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50"
                                       placeholder="Min"
                                     />
+                                    {/* Moved label outside */}
                                     <span className="text-sm font-medium text-muted-foreground">min</span>
                                   </div>
                                 </div>
