@@ -325,11 +325,11 @@ const DegreeSelection = () => {
               {/* Background Image: Exam/Focus */}
               <div className="absolute inset-0">
                 <img 
-                  src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=1000&auto=format&fit=crop" 
+                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image%20(9).png" 
                   alt="Proctored Exam" 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60 grayscale group-hover:grayscale-0"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
                 <div className="absolute inset-0 bg-red-900/10 group-hover:bg-red-900/20 transition-colors" />
               </div>
 
@@ -340,15 +340,6 @@ const DegreeSelection = () => {
                 </div>
                 <div>
                   <h3 className="text-2xl md:text-3xl font-bold text-white mb-1 group-hover:text-red-400 transition-colors">Proctored Mode</h3>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary" className="bg-red-500/10 text-red-400 border-red-500/20">Strict Environment</Badge>
-                    <span className="text-[10px] text-red-400/80 bg-red-950/40 px-2 py-0.5 rounded border border-red-500/20 flex items-center gap-1">
-                      <Laptop className="w-3 h-3" /> PC Only
-                    </span>
-                  </div>
-                  <p className="text-gray-300 text-sm leading-relaxed max-w-xs">
-                    Full-screen enforcement, activity monitoring, and strict timing for official assessment.
-                  </p>
                 </div>
               </div>
             </div>
