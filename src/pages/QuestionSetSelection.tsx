@@ -86,7 +86,6 @@ export default function QuestionSetSelection() {
 
   const handleManualTimeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
-    // Allow any number input, odd or even
     if (!isNaN(val) && val >= 0) {
       setTimeLimit([val]);
     }
@@ -238,7 +237,6 @@ export default function QuestionSetSelection() {
 
                     {/* Expanded Content (Timer Config) */}
                     <CollapsibleContent>
-                      {/* UPDATED: Better visual container for the expanded content */}
                       <div className="border-t border-white/10 bg-[#08080a] p-6 animate-in slide-in-from-top-2">
                         {isProctored ? (
                            <div className="flex items-center justify-between">
@@ -262,18 +260,17 @@ export default function QuestionSetSelection() {
                                     Set Duration
                                   </label>
                                   
-                                  {/* UPDATED: Manual Input Field & Icon Fix */}
-                                  <div className={cn("relative transition-opacity", noTimeLimit && "opacity-30 pointer-events-none")}>
-                                    {/* The class [&::-webkit-inner-spin-button]:appearance-none removes default arrows */}
+                                  {/* UPDATED: Input with separate "min" label to avoid overlap */}
+                                  <div className={cn("flex items-center gap-3 transition-opacity", noTimeLimit && "opacity-30 pointer-events-none")}>
                                     <Input 
                                       type="number" 
                                       value={timeLimit[0]} 
                                       onChange={handleManualTimeInput}
-                                      className="w-24 h-10 pl-4 pr-10 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50 [&::-webkit-inner-spin-button]:appearance-none"
+                                      // Removed no-spinner class to bring back arrows
+                                      className="w-24 h-10 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50"
                                       placeholder="Min"
                                     />
-                                    {/* Positioned 'min' text absolutely to avoid layout shift */}
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground pointer-events-none">min</span>
+                                    <span className="text-sm font-medium text-muted-foreground">min</span>
                                   </div>
                                 </div>
 
