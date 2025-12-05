@@ -1,6 +1,6 @@
 {
 type: "file_update",
-fileName: "mishratejash01/pycoder-playground/pycoder-playground-246de1f13327eb5028899b83aed146558b7d731b/src/pages/Exam.tsx",
+fileName: "mishratejash01/pycoder-playground/pycoder-playground-main/src/pages/Exam.tsx",
 fileContent: `import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -15,13 +15,19 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
-// Table Maps - UPDATED to use new questions table
+// --- TABLE CONFIGURATION ---
+// Updated to reflect actual DB structure from screenshot
 const IITM_TABLES = { 
-  assignments: 'iitm_exams_questions', 
-  testCases: 'iitm_test_cases', 
-  submissions: 'iitm_submissions' 
+  assignments: 'iitm_exams_questions', // Questions contain embedded test_cases JSON
+  testCases: 'iitm_exams_questions',   // Points to same table; Component logic will use embedded JSON
+  submissions: 'iitm_submissions'      // Individual problem submissions
 };
-const STANDARD_TABLES = { assignments: 'assignments', testCases: 'test_cases', submissions: 'submissions' };
+
+const STANDARD_TABLES = { 
+  assignments: 'assignments', 
+  testCases: 'test_cases', 
+  submissions: 'submissions' 
+};
 
 interface QuestionMetrics {
   attempts: number;
@@ -40,7 +46,10 @@ const Exam = () => {
   const examType = searchParams.get('type');
   const setName = searchParams.get('set_name');
   
+  // Determine which set of tables to use
   const activeTables = iitmSubjectId ? IITM_TABLES : STANDARD_TABLES;
+  
+  // Determine Session Table (Overall Exam Tracking)
   const SESSION_TABLE = iitmSubjectId ? 'iitm_exam_sessions' : 'exam_sessions';
 
   // --- State ---
@@ -79,12 +88,15 @@ const Exam = () => {
     queryFn: async () => {
       // @ts-ignore
       let query = supabase.from(activeTables.assignments).select('*').order('title', { ascending: true });
+      
       if (iitmSubjectId) {
         // @ts-ignore
         query = query.eq('subject_id', iitmSubjectId);
+        
         if (examType) query = query.eq('exam_type', decodeURIComponent(examType));
         if (setName) query = query.eq('set_name', setName);
       }
+      
       const { data, error } = await query;
       if (error) throw error;
       return data;
@@ -521,6 +533,5 @@ const Exam = () => {
   );
 };
 
-export default Exam;
-`
+export default Exam;`
 }
