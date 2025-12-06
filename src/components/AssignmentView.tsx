@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,7 +32,7 @@ const getTargetName = (code: string) => {
 };
 
 const normalizeOutput = (str: string) => {
-  if (str === undefined || str === null) return ''; // Handle null/undefined explicitly
+  if (str === undefined || str === null) return '';
   return String(str).trim().replace(/'/g, '"').replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
 };
 
@@ -100,7 +100,6 @@ export const AssignmentView = ({
     enabled: !!assignmentId
   });
 
-  // Consolidated Test Case Logic: Use embedded if present, otherwise fetch legacy
   const { data: fetchedTestCases = [] } = useQuery({
     queryKey: ['testCases', assignmentId, tables.testCases],
     queryFn: async () => {
@@ -108,30 +107,39 @@ export const AssignmentView = ({
       const { data } = await supabase.from(tables.testCases).select('*').eq('assignment_id', assignmentId).order('is_public', { ascending: false });
       return data || [];
     },
-    // Only fetch from table if assignment is loaded AND it DOESN'T have embedded test cases
     enabled: !!assignmentId && !!assignment && (!assignment.test_cases || assignment.test_cases.length === 0)
   });
 
-  // HELPER: Normalize Test Case Keys (output vs expected_output)
-  const normalizeTestCase = (tc: any, isPublicOverride?: boolean) => ({
-    ...tc,
-    id: tc.id || crypto.randomUUID(), // Ensure ID exists
-    is_public: isPublicOverride !== undefined ? isPublicOverride : tc.is_public,
-    input: tc.input || tc.stdin || '',
-    expected_output: tc.expected_output ?? tc.output ?? '' // Fallback to 'output' if expected_output missing
-  });
+  // --- STABLE TEST CASES LOGIC ---
+  const testCases = useMemo(() => {
+    const generateId = () => {
+      try {
+        return crypto.randomUUID();
+      } catch (e) {
+        return Math.random().toString(36).substring(2) + Date.now().toString(36);
+      }
+    };
 
-  // Merge sources: 
-  const existingMixed = (assignment?.test_cases && assignment.test_cases.length > 0) 
-    ? assignment.test_cases.map((tc: any) => normalizeTestCase(tc))
-    : fetchedTestCases.map((tc: any) => normalizeTestCase(tc));
+    const normalizeTestCase = (tc: any, isPublicOverride?: boolean) => ({
+      ...tc,
+      id: tc.id || generateId(),
+      is_public: isPublicOverride !== undefined ? isPublicOverride : tc.is_public,
+      input: tc.input || tc.stdin || '',
+      expected_output: tc.expected_output ?? tc.output ?? ''
+    });
 
-  const extraPrivate = (assignment?.private_testcases && Array.isArray(assignment.private_testcases))
-    ? assignment.private_testcases.map((tc: any) => normalizeTestCase(tc, false))
-    : [];
+    // 1. Prefer embedded (mixed) from 'test_cases' column, fallback to fetched legacy table
+    const existingMixed = (assignment?.test_cases && assignment.test_cases.length > 0) 
+      ? assignment.test_cases.map((tc: any) => normalizeTestCase(tc))
+      : fetchedTestCases.map((tc: any) => normalizeTestCase(tc));
 
-  // 3. Combine them into the final testCases array
-  const testCases = [...existingMixed, ...extraPrivate];
+    // 2. Process the new dedicated 'private_testcases' column
+    const extraPrivate = (assignment?.private_testcases && Array.isArray(assignment.private_testcases))
+      ? assignment.private_testcases.map((tc: any) => normalizeTestCase(tc, false))
+      : [];
+
+    return [...existingMixed, ...extraPrivate];
+  }, [assignment, fetchedTestCases]);
 
   const { data: latestSubmission } = useQuery({
     queryKey: ['submission', assignmentId, tables.submissions],
