@@ -12,13 +12,13 @@ import { useToast } from '@/hooks/use-toast';
 // --- Helper Functions (Reused from AssignmentView) ---
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
-    case 'java': return 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
-    case 'cpp': return '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}';
-    case 'c': return '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}';
+    case 'java': return 'import java.util.Scanner;\\n\\npublic class Main {\\n    public static void main(String[] args) {\\n        System.out.println("Hello, World!");\\n    }\\n}';
+    case 'cpp': return '#include <iostream>\\nusing namespace std;\\n\\nint main() {\\n    cout << "Hello, World!" << endl;\\n    return 0;\\n}';
+    case 'c': return '#include <stdio.h>\\n\\nint main() {\\n    printf("Hello, World!\\\\n");\\n    return 0;\\n}';
     case 'javascript': return 'console.log("Hello, World!");';
-    case 'sql': return '-- Write your SQL Query here\nCREATE TABLE demo (id INTEGER, message TEXT);\nINSERT INTO demo VALUES (1, "Hello World");\nSELECT * FROM demo;';
-    case 'bash': return '#!/bin/bash\necho "Hello, World!"';
-    default: return '# Python 3\nprint("Hello, World!")';
+    case 'sql': return '-- Write your SQL Query here\\nCREATE TABLE demo (id INTEGER, message TEXT);\\nINSERT INTO demo VALUES (1, "Hello World");\\nSELECT * FROM demo;';
+    case 'bash': return '#!/bin/bash\\necho "Hello, World!"';
+    default: return '# Python 3\\nprint("Hello, World!")';
   }
 };
 
@@ -174,7 +174,7 @@ const Compiler = () => {
           <ResizableHandle withHandle className="bg-black border-t border-b border-white/10 h-2 hover:bg-purple-500/20 transition-colors" />
 
           {/* Bottom Panel: Output */}
-          <ResizablePanel defaultSize={30} className="bg-[#0c0c0e] flex flex-col min-h-[100px]">
+          <ResizablePanel defaultSize={30} className="bg-[#0c0c0e] flex flex-col min-h-[100px] relative">
             <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/20 shrink-0">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Terminal className="w-3 h-3" /> Console Output
@@ -187,6 +187,15 @@ const Compiler = () => {
               <pre className={cn("whitespace-pre-wrap", output.includes('Error') ? "text-red-400" : "text-blue-300")}>
                 {output}
               </pre>
+            </div>
+
+            {/* WATERMARK */}
+            <div className="absolute bottom-2 right-3 pointer-events-none select-none z-50 flex items-center justify-end opacity-20">
+              <span className="font-neuropol text-[10px] font-bold tracking-widest text-white">
+                COD
+                <span className="text-[1.2em] lowercase relative top-[0.5px] mx-[0.5px] inline-block">é</span>
+                VO
+              </span>
             </div>
           </ResizablePanel>
 
