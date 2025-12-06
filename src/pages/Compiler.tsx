@@ -12,13 +12,13 @@ import { useToast } from '@/hooks/use-toast';
 // --- Helper Functions (Reused from AssignmentView) ---
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
-    case 'java': return 'import java.util.Scanner;\\n\\npublic class Main {\\n    public static void main(String[] args) {\\n        System.out.println("Hello, World!");\\n    }\\n}';
-    case 'cpp': return '#include <iostream>\\nusing namespace std;\\n\\nint main() {\\n    cout << "Hello, World!" << endl;\\n    return 0;\\n}';
-    case 'c': return '#include <stdio.h>\\n\\nint main() {\\n    printf("Hello, World!\\\\n");\\n    return 0;\\n}';
+    case 'java': return 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
+    case 'cpp': return '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}';
+    case 'c': return '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}';
     case 'javascript': return 'console.log("Hello, World!");';
-    case 'sql': return '-- Write your SQL Query here\\nCREATE TABLE demo (id INTEGER, message TEXT);\\nINSERT INTO demo VALUES (1, "Hello World");\\nSELECT * FROM demo;';
-    case 'bash': return '#!/bin/bash\\necho "Hello, World!"';
-    default: return '# Python 3\\nprint("Hello, World!")';
+    case 'sql': return '-- Write your SQL Query here\nCREATE TABLE demo (id INTEGER, message TEXT);\nINSERT INTO demo VALUES (1, "Hello World");\nSELECT * FROM demo;';
+    case 'bash': return '#!/bin/bash\necho "Hello, World!"';
+    default: return '# Python 3\nprint("Hello, World!")';
   }
 };
 
