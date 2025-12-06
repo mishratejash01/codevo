@@ -26,7 +26,7 @@ interface AssignmentViewProps {
 }
 
 const getTargetName = (code: string) => {
-  const funcMatch = code.match(/def\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(/);
+  const funcMatch = code.match(/def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/);
   if (funcMatch) return funcMatch[1];
   return null;
 };
@@ -36,11 +36,11 @@ const normalizeOutput = (str: any) => {
   // Convert to string and normalize whitespace/quotes for comparison
   return String(str).trim()
     .replace(/'/g, '"')
-    .replace(/\\s+/g, ' ')
-    .replace(/\\(\\s+/g, '(')
-    .replace(/\\s+\\)/g, ')')
-    .replace(/\\[\\s+/g, '[')
-    .replace(/\\s+\\]/g, ']');
+    .replace(/\s+/g, ' ')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    .replace(/\[\s+/g, '[')
+    .replace(/\s+\]/g, ']');
 };
 
 const detectInitialLanguage = (title: string, category: string): Language => {
@@ -56,13 +56,13 @@ const detectInitialLanguage = (title: string, category: string): Language => {
 
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
-    case 'java': return 'import java.util.Scanner;\\n\\npublic class Main {\\n    public static void main(String[] args) {\\n        Scanner sc = new Scanner(System.in);\\n        // Your code here\\n        \\n    }\\n}';
-    case 'cpp': return '#include <iostream>\\nusing namespace std;\\n\\nint main() {\\n    // Your code here\\n    return 0;\\n}';
-    case 'c': return '#include <stdio.h>\\n\\nint main() {\\n    // Your code here\\n    return 0;\\n}';
-    case 'javascript': return 'const fs = require("fs");\\nconst input = fs.readFileSync(0, "utf-8").trim();\\n\\n// Your code here';
-    case 'sql': return '-- Write your SQL Query here\\n-- Note: Tables must be created within this script for testing.\\n\\nCREATE TABLE students (id INTEGER, name TEXT, score INTEGER);\\nINSERT INTO students VALUES (1, "Alice", 90);\\nINSERT INTO students VALUES (2, "Bob", 85);\\n\\n-- Your SELECT query below:\\nSELECT * FROM students;';
-    case 'bash': return '#!/bin/bash\\n\\n# Read input from stdin\\nread input\\n\\n# Your script here\\necho "Received: $input"';
-    default: return '# Write your Python code here\\nimport sys\\n\\n# Read input from stdin\\ninput_data = sys.stdin.read().strip()\\n\\n# Your logic\\n';
+    case 'java': return 'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Your code here\n        \n    }\n}';
+    case 'cpp': return '#include <iostream>\nusing namespace std;\n\nint main() {\n    // Your code here\n    return 0;\n}';
+    case 'c': return '#include <stdio.h>\n\nint main() {\n    // Your code here\n    return 0;\n}';
+    case 'javascript': return 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf-8").trim();\n\n// Your code here';
+    case 'sql': return '-- Write your SQL Query here\n-- Note: Tables must be created within this script for testing.\n\nCREATE TABLE students (id INTEGER, name TEXT, score INTEGER);\nINSERT INTO students VALUES (1, "Alice", 90);\nINSERT INTO students VALUES (2, "Bob", 85);\n\n-- Your SELECT query below:\nSELECT * FROM students;';
+    case 'bash': return '#!/bin/bash\n\n# Read input from stdin\nread input\n\n# Your script here\necho "Received: $input"';
+    default: return '# Write your Python code here\nimport sys\n\n# Read input from stdin\ninput_data = sys.stdin.read().strip()\n\n# Your logic\n';
   }
 };
 
@@ -211,7 +211,7 @@ export const AssignmentView = ({
       const targetName = getTargetName(rawCode);
       // Only wrap if we found a function AND there is input to pass
       if (targetName && input) {
-        return `${rawCode}\\n\\n# Auto-generated runner\\ntry:\\n    print(${targetName}(${input}))\\nexcept Exception as e:\\n    print(f"Error: {e}")`;
+        return `${rawCode}\n\n# Auto-generated runner\ntry:\n    print(${targetName}(${input}))\nexcept Exception as e:\n    print(f"Error: {e}")`;
       }
     }
     return rawCode;
@@ -266,7 +266,7 @@ export const AssignmentView = ({
         ...newTestResults
       }));
       
-      if (firstError) setConsoleOutput(`Run finished with errors.\\n${firstError}`);
+      if (firstError) setConsoleOutput(`Run finished with errors.\n${firstError}`);
       else setConsoleOutput("Public tests executed successfully.");
 
     } catch (err: any) {
@@ -329,8 +329,12 @@ export const AssignmentView = ({
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['submission', assignmentId] });
+      // Calculate percentage based on passed tests count vs total tests count
       const percentage = data.total > 0 ? Math.round((data.passedCount / data.total) * 100) : 0;
-      toast({ title: 'Submission Complete', description: `Score: ${percentage}% (${data.score.toFixed(1)} / ${(assignment.max_score || 100)})` });
+      toast({ 
+        title: 'Submission Complete', 
+        description: `Score: ${percentage}% (${data.score.toFixed(1)} / ${(assignment.max_score || 100)})` 
+      });
       onStatusUpdate('attempted');
       setBottomTab('testcases');
       if (onAttempt) onAttempt(data.passedCount === data.total, data.score);
@@ -487,6 +491,3 @@ export const AssignmentView = ({
     </div>
   );
 };
-"""
-with open(file_path, 'w') as f:
-    f.write(content)
