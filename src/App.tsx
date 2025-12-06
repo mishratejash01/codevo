@@ -17,10 +17,10 @@ import Compiler from "./pages/Compiler";
 import Documentation from "./pages/Documentation";
 import PracticeArena from "./pages/PracticeArena";
 import PracticeSolver from "./pages/PracticeSolver";
-// --- NEW IMPORTS ---
+// --- IMPORTS FOR SELECTION FLOW ---
 import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
 import SubjectModeSelection from "./pages/SubjectModeSelection";
-// -------------------
+// ----------------------------------
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
@@ -69,18 +69,18 @@ const AppContent = () => {
         <Route path="/exam" element={<Exam />} />
         <Route path="/exam/result" element={<ExamResult />} />
         
+        {/* --- DEGREE & EXAM FLOW --- */}
         <Route path="/degree" element={<DegreeSelection />} />
         
-        {/* --- FIXED ROUTES --- */}
-        {/* 1. Select OPPE 1 or OPPE 2 */}
+        {/* 1. Select OPPE 1 vs OPPE 2 */}
         <Route path="/degree/oppe/:subjectId/:subjectName" element={<SubjectOppeSelection />} />
         
-        {/* 2. Select Mode (Proctored/Practice) */}
+        {/* 2. Select Mode (Proctored vs Practice) - MUST HAVE :examType */}
         <Route path="/degree/mode/:subjectId/:subjectName/:examType" element={<SubjectModeSelection />} />
         
-        {/* 3. Select Set (Proctored) or Questions (Practice) */}
+        {/* 3. Select Set (Proctored) or Question (Practice) */}
         <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
-        {/* ------------------- */}
+        {/* --------------------------- */}
 
         <Route path="/practice-arena" element={<PracticeArena />} />
         <Route path="/practice-arena/:slug" element={<PracticeSolver />} />
