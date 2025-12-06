@@ -65,7 +65,8 @@ export type Database = {
           exam_type: string | null
           set_name: string | null
           category: string | null
-          test_cases: Json | null // <--- NEW COLUMN
+          test_cases: Json | null
+          private_testcases: Json | null
         }
         Insert: {
           id?: string
@@ -81,7 +82,8 @@ export type Database = {
           exam_type?: string | null
           set_name?: string | null
           category?: string | null
-          test_cases?: Json | null // <--- NEW COLUMN
+          test_cases?: Json | null
+          private_testcases?: Json | null
         }
         Update: {
           id?: string
@@ -97,10 +99,10 @@ export type Database = {
           exam_type?: string | null
           set_name?: string | null
           category?: string | null
-          test_cases?: Json | null // <--- NEW COLUMN
+          test_cases?: Json | null
+          private_testcases?: Json | null
         }
       }
-      // ... keep your other tables (submissions, exam_sessions, etc.) as they were ...
       submissions: {
         Row: {
           id: string
@@ -139,7 +141,6 @@ export type Database = {
           submitted_at?: string | null
         }
       }
-      // ... Add iitm_submissions and other tables here as needed
     }
   }
 }
