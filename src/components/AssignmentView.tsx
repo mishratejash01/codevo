@@ -486,7 +486,7 @@ export const AssignmentView = ({
               </Tabs>
 
               {/* WATERMARK */}
-              <div className="absolute bottom-2 right-3 pointer-events-none select-none z-50 flex items-center justify-end opacity-20">
+              <div className="absolute bottom-2 right-3 pointer-events-none select-none z-50 flex items-center justify-end opacity-40">
                 <span className="font-neuropol text-[10px] font-bold tracking-widest text-white">
                   COD
                   <span className="text-[1.2em] lowercase relative top-[0.5px] mx-[0.5px] inline-block">é</span>
