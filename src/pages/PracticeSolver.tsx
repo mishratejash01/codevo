@@ -353,7 +353,7 @@ export default function PracticeSolver() {
               <ResizableHandle withHandle className="bg-[#0c0c0e] h-1.5 border-t border-b border-white/5 hover:bg-white/10 transition-colors" />
 
               {/* BOTTOM: CONSOLE */}
-              <ResizablePanel defaultSize={35} className="bg-[#0c0c0e] flex flex-col">
+              <ResizablePanel defaultSize={35} className="bg-[#0c0c0e] flex flex-col relative">
                 <div className="h-9 border-b border-white/10 flex items-center px-2 bg-[#0a0a0a] shrink-0">
                   <Tabs value={consoleTab} onValueChange={setConsoleTab} className="w-full h-full">
                     <TabsList className="h-full bg-transparent p-0 gap-4">
@@ -431,6 +431,15 @@ export default function PracticeSolver() {
                       )}
                     </div>
                   )}
+                </div>
+
+                {/* WATERMARK */}
+                <div className="absolute bottom-2 right-3 pointer-events-none select-none z-50 flex items-center justify-end opacity-20">
+                  <span className="font-neuropol text-[10px] font-bold tracking-widest text-white">
+                    COD
+                    <span className="text-[1.2em] lowercase relative top-[0.5px] mx-[0.5px] inline-block">é</span>
+                    VO
+                  </span>
                 </div>
               </ResizablePanel>
 
