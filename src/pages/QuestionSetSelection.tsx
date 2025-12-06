@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   ArrowLeft, Search, Layers, Filter, Clock, Play, 
-  Infinity as InfinityIcon, ChevronRight, FileCode2, Lock, AlertTriangle 
+  Infinity as InfinityIcon, ChevronRight, FileCode2, Lock 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { checkUserProfile, ProfileSheet } from '@/components/ProfileCompletion';
@@ -31,24 +31,24 @@ export default function QuestionSetSelection() {
   const [showProfileSheet, setShowProfileSheet] = useState(false);
 
   // --- DATA FETCHING ---
-  const { data: fetchedData = [], isLoading, error } = useQuery({
+  const { data: fetchedData = [], isLoading } = useQuery({
     queryKey: ['selection_data', subjectId, examType, mode],
     queryFn: async () => {
       const currentExamType = decodeURIComponent(examType || '');
 
       if (isProctored) {
         // --- PROCTORED MODE ---
-        // Query 'iitm_exam_question_bank'
-        console.log(`Fetching Proctored Sets for Subject: ${subjectId}, Exam: ${currentExamType}`);
+        // Fetch sets from 'iitm_exam_question_bank'
+        // Using .ilike for case-insensitive matching to prevent "No sets found" errors
         
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
           .select('set_name')
           .eq('subject_id', subjectId) 
-          .eq('exam_type', currentExamType);
+          .ilike('exam_type', currentExamType); 
         
         if (error) {
-          console.error("Supabase Error:", error);
+          console.error("Error fetching proctored sets:", error);
           throw error;
         }
         
@@ -57,12 +57,12 @@ export default function QuestionSetSelection() {
         return sets.sort();
       } else {
         // --- PRACTICE MODE ---
-        // Query 'iitm_assignments'
+        // Fetch assignments from 'iitm_assignments'
         const { data, error } = await supabase
           .from('iitm_assignments')
           .select('*')
           .eq('subject_id', subjectId)
-          .eq('exam_type', currentExamType)
+          .ilike('exam_type', currentExamType)
           .order('title');
         
         if (error) throw error;
@@ -81,10 +81,12 @@ export default function QuestionSetSelection() {
 
   const filteredData = useMemo(() => {
     if (isProctored) {
+      // Filter Sets based on search
       return (fetchedData as string[]).filter(set => 
         set.toLowerCase().includes(searchTerm.toLowerCase())
       );
     } else {
+      // Filter Assignments based on search & topic
       return (fetchedData as any[]).filter(a => {
         const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesTopic = selectedTopic ? (a.category || 'General') === selectedTopic : true;
@@ -115,7 +117,14 @@ export default function QuestionSetSelection() {
       params.set('q', targetId);
     }
 
-    navigate(`/exam?${params.toString()}`);
+    // --- FIX: Conditional Navigation based on Mode ---
+    if (isProctored) {
+      // Proctored mode must go to the Exam interface (camera, strict security)
+      navigate(`/exam?${params.toString()}`);
+    } else {
+      // Practice mode must go to the Practice Arena (learning features, instant feedback)
+      navigate(`/practice?${params.toString()}`);
+    }
   };
 
   const handleManualTimeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,22 +229,10 @@ export default function QuestionSetSelection() {
             {isLoading ? (
               [1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-xl animate-pulse" />)
             ) : filteredData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl space-y-4">
-                <p>No results found.</p>
-                {isProctored && (
-                  <div className="bg-red-950/20 border border-red-500/20 p-4 rounded-lg text-xs font-mono text-left max-w-lg">
-                    <p className="font-bold text-red-400 mb-2 flex items-center gap-2">
-                      <AlertTriangle className="w-3 h-3" /> Debug Info
-                    </p>
-                    <p>Fetching from: <span className="text-white">iitm_exam_question_bank</span></p>
-                    <p>Looking for Subject ID: <span className="text-white break-all">{subjectId}</span></p>
-                    <p>Looking for Exam Type: <span className="text-white">{decodeURIComponent(examType || '')}</span></p>
-                    <div className="mt-2 text-white/50">
-                      1. Check if 'subject_id' in your database matches the Subject ID above.<br/>
-                      2. Ensure RLS policies are enabled for 'select' on the table.
-                    </div>
-                  </div>
-                )}
+              <div className="text-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl">
+                {isProctored 
+                  ? `No sets found for ${decodeURIComponent(examType || '')}. (Check that your database has rows for this Subject + Exam Type)` 
+                  : "No problems found."}
               </div>
             ) : isProctored ? (
               /* --- PROCTORED VIEW (SETS) --- */
