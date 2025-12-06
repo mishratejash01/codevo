@@ -103,6 +103,7 @@ export type Database = {
           private_testcases?: Json | null
         }
       }
+      // --- NEW TABLE FOR PROCTORED EXAMS ---
       iitm_exam_question_bank: {
         Row: {
           id: string
