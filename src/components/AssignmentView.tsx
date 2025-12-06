@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -88,6 +88,9 @@ export const AssignmentView = ({
   const { executeCode, loading: runnerLoading } = useCodeRunner();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Track initialization to prevent re-renders wiping state
+  const codeInitialized = useRef<string | null>(null);
 
   const { data: assignment, isLoading, error, refetch } = useQuery({
     queryKey: ['assignment', assignmentId, tables.assignments],
@@ -131,7 +134,7 @@ export const AssignmentView = ({
     return [...existingMixed, ...extraPrivate];
   }, [assignment, fetchedTestCases]);
 
-  const { data: latestSubmission } = useQuery({
+  const { data: latestSubmission, isLoading: isSubmissionLoading } = useQuery({
     queryKey: ['submission', assignmentId, tables.submissions],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -143,23 +146,38 @@ export const AssignmentView = ({
     enabled: !!assignmentId
   });
 
+  // 1. Reset State on Assignment Change
   useEffect(() => {
-    if (assignment) {
+    if (codeInitialized.current !== assignmentId) {
+      setTestResults({});
+      setConsoleOutput('');
+      setBottomTab('testcases');
+    }
+  }, [assignmentId]);
+
+  // 2. Initialize Code (Only Once per Assignment)
+  useEffect(() => {
+    // Wait for assignment and submission load status to resolve
+    if (assignment && !isSubmissionLoading && codeInitialized.current !== assignmentId) {
       const detected = detectInitialLanguage(assignment.title, assignment.category || '');
       setActiveLanguage(detected);
       
       const sessionKey = `exam_draft_${assignmentId}`;
       const savedDraft = sessionStorage.getItem(sessionKey);
       
-      if (savedDraft) setCode(savedDraft);
-      else if (latestSubmission?.code) setCode(latestSubmission.code);
-      else if (assignment.starter_code) setCode(assignment.starter_code);
-      else setCode(getStarterTemplate(detected));
+      if (savedDraft) {
+        setCode(savedDraft);
+      } else if (latestSubmission?.code) {
+        setCode(latestSubmission.code);
+      } else if (assignment.starter_code) {
+        setCode(assignment.starter_code);
+      } else {
+        setCode(getStarterTemplate(detected));
+      }
       
-      setTestResults({});
-      setConsoleOutput('');
+      codeInitialized.current = assignmentId;
     }
-  }, [assignmentId, latestSubmission, assignment]);
+  }, [assignmentId, assignment, latestSubmission, isSubmissionLoading]);
 
   const handleLanguageChange = (val: string) => {
     const newLang = val as Language;
@@ -185,17 +203,17 @@ export const AssignmentView = ({
   const handleRun = async () => {
     if (runnerLoading) return;
     setBottomTab('testcases');
-    setTestResults({}); 
+    setTestResults({}); // Clear previous results before run
     
     const newTestResults: Record<string, any> = {};
     let firstError = "";
 
     try {
-      // FIX: Only run PUBLIC test cases when user clicks "Run"
+      // Filter ONLY public tests for Run button
       const publicOnlyTests = testCases.filter(t => t.is_public);
 
       if (publicOnlyTests.length === 0) {
-        setConsoleOutput("No public test cases available to run.");
+        setConsoleOutput("No public test cases available.");
         return;
       }
 
@@ -222,9 +240,11 @@ export const AssignmentView = ({
           error: errorMsg
         };
       }
-      setTestResults(newTestResults);
+      
+      setTestResults(newTestResults); // Update state to trigger meter refresh
+      
       if (firstError) setConsoleOutput(firstError);
-      else setConsoleOutput("Public execution complete. Check Test Cases tab.");
+      else setConsoleOutput("Public tests execution complete.");
 
     } catch (err: any) {
       setConsoleOutput(err.message);
@@ -301,16 +321,13 @@ export const AssignmentView = ({
   
   const hasRunTests = Object.keys(testResults).length > 0;
   
-  // LOGIC:
-  // 1. If we have active results (hasRunTests), calculate based on CURRENT execution
-  // 2. If NO active results, show stats from LATEST submission
+  // Logic: 
+  // - Public meter: Updated immediately after "Run" using testResults
+  // - Private meter: Updated only if private tests exist in testResults (i.e., after Submit), otherwise fallback to last submission
   const currentPubPassed = hasRunTests 
     ? publicTests.filter(t => testResults[t.id]?.passed).length
     : (latestSubmission?.public_tests_passed || 0);
     
-  // FIXED: Private tests ONLY show from latestSubmission unless we just ran a SUBMIT (which runs all)
-  // If we just clicked "Run" (which only runs public), private passed should fallback to latestSubmission or 0.
-  // We check if ANY private test key exists in testResults to determine if a full submit happened.
   const hasRunPrivate = hasRunTests && privateTests.some(t => testResults.hasOwnProperty(t.id));
 
   const currentPrivPassed = hasRunPrivate
