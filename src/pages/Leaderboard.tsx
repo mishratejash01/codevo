@@ -90,10 +90,11 @@ const Leaderboard = () => {
   return (
     <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-20 px-4 relative overflow-hidden">
       
-      {/* Background Ambience */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-96 bg-primary/20 blur-[120px] pointer-events-none rounded-full" />
+      {/* Background Ambience - Widened */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-primary/20 blur-[120px] pointer-events-none rounded-full" />
 
-      <div className="max-w-4xl mx-auto relative z-10 space-y-8">
+      {/* Main Container - Full Width */}
+      <div className="w-full px-6 md:px-12 mx-auto relative z-10 space-y-8">
         
         {/* Header Section */}
         <div className="text-center space-y-4">
@@ -120,8 +121,8 @@ const Leaderboard = () => {
           </Tabs>
         </div>
 
-        {/* Leaderboard Card */}
-        <Card className="bg-[#0c0c0e]/80 border-white/10 backdrop-blur-xl shadow-2xl overflow-hidden">
+        {/* Leaderboard Card - Expanded */}
+        <Card className="bg-[#0c0c0e]/80 border-white/10 backdrop-blur-xl shadow-2xl overflow-hidden w-full">
           <CardHeader className="border-b border-white/5 pb-4">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -145,36 +146,38 @@ const Leaderboard = () => {
                     key={index} 
                     className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors group"
                   >
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-6">
                       {/* Rank Indicator */}
-                      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border bg-gradient-to-br", getRankStyle(index))}>
+                      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border bg-gradient-to-br shrink-0", getRankStyle(index))}>
                         {getMedalIcon(index)}
                       </div>
                       
                       {/* User Info */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-4">
                         <Avatar className="w-10 h-10 border border-white/10">
                           <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.user_id}`} />
                           <AvatarFallback className="bg-white/10 text-xs">{user.full_name?.slice(0,2) || 'VN'}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-medium text-white flex items-center gap-2">
+                          <div className="font-medium text-white flex items-center gap-2 text-lg">
                             {user.full_name || user.user_email?.split('@')[0] || 'Anonymous'}
                             {index === 0 && <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded border border-yellow-500/30">KING</span>}
                           </div>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            {user.duration_seconds ? `${Math.floor(user.duration_seconds/60)}m ${user.duration_seconds%60}s` : 'N/A'}
+                          <div className="text-sm text-muted-foreground font-mono flex gap-4">
+                             <span>Time: {user.duration_seconds ? `${Math.floor(user.duration_seconds/60)}m ${user.duration_seconds%60}s` : 'N/A'}</span>
+                             <span className="text-white/20">|</span>
+                             <span>{new Date(user.end_time).toLocaleDateString()}</span>
                           </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Score */}
-                    <div className="text-right">
-                      <div className="text-xl font-bold font-mono text-white group-hover:text-primary transition-colors">
+                    <div className="text-right pr-4">
+                      <div className="text-2xl font-bold font-mono text-white group-hover:text-primary transition-colors">
                         {user.total_score}
                       </div>
-                      <div className="text-[10px] text-muted-foreground uppercase">PTS</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Points</div>
                     </div>
                   </div>
                 ))}
