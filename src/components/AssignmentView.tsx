@@ -112,10 +112,19 @@ export const AssignmentView = ({
     enabled: !!assignmentId && !!assignment && (!assignment.test_cases || assignment.test_cases.length === 0)
   });
 
-  // Merge sources: Prefer embedded, fallback to fetched
-  const testCases = (assignment?.test_cases && assignment.test_cases.length > 0) 
+  // Merge sources: 
+  // 1. Prefer embedded (mixed) from 'test_cases' column, fallback to fetched legacy table
+  const existingMixed = (assignment?.test_cases && assignment.test_cases.length > 0) 
     ? assignment.test_cases 
     : fetchedTestCases;
+
+  // 2. Process the new dedicated 'private_testcases' column (Force is_public = false)
+  const extraPrivate = (assignment?.private_testcases && Array.isArray(assignment.private_testcases))
+    ? assignment.private_testcases.map((tc: any) => ({ ...tc, is_public: false }))
+    : [];
+
+  // 3. Combine them into the final testCases array
+  const testCases = [...existingMixed, ...extraPrivate];
 
   const { data: latestSubmission } = useQuery({
     queryKey: ['submission', assignmentId, tables.submissions],
