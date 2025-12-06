@@ -37,13 +37,13 @@ export default function QuestionSetSelection() {
   const { data: fetchedData = [], isLoading } = useQuery({
     queryKey: ['selection_data', subjectId, examType, mode],
     queryFn: async () => {
-      // Decode exam type (e.g., "OPPE%201" -> "OPPE 1")
+      // Decode URL param to get "OPPE 1", "OPPE 2", etc.
       const currentExamType = decodeURIComponent(examType || '');
 
       if (isProctored) {
-        // --- PROCTORED MODE (ALL EXAM TYPES) ---
-        // Fetch Sets from iitm_exam_question_bank for the SPECIFIC exam type (OPPE 1, OPPE 2, etc.)
-        console.log(`Fetching sets for Proctored ${currentExamType}...`);
+        // --- PROCTORED MODE: Fetch Sets for ANY Exam Type ---
+        // Queries 'iitm_exam_question_bank' for set_name based on the exam type
+        console.log(`Fetching sets for Proctored Exam: ${currentExamType}`);
         
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
@@ -55,11 +55,11 @@ export default function QuestionSetSelection() {
           throw error;
         }
         
-        // Extract unique sets
+        // Extract and sort unique set names
         const sets = Array.from(new Set(data?.map(item => item.set_name).filter(Boolean)));
         return sets.sort();
       } else {
-        // --- PRACTICE MODE ---
+        // --- PRACTICE MODE: Fetch Questions ---
         const { data, error } = await supabase
           .from('iitm_assignments')
           .select('*')
@@ -114,10 +114,10 @@ export default function QuestionSetSelection() {
     });
 
     if (isSetSelection) {
-      // For Proctored Mode: Pass set_name (e.g., "Set 1")
+      // PROCTORED: Pass 'set_name' (e.g., "Set 1")
       params.set('set_name', targetId);
     } else {
-      // For Practice Mode: Pass specific question ID
+      // PRACTICE: Pass 'q' (Question ID)
       params.set('q', targetId);
     }
 
@@ -227,7 +227,9 @@ export default function QuestionSetSelection() {
               [1,2,3].map(i => <div key={i} className="h-20 bg-white/5 rounded-xl animate-pulse" />)
             ) : filteredData.length === 0 ? (
               <div className="text-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl">
-                {isProctored ? `No sets found for ${decodeURIComponent(examType || '')}.` : "No problems found."}
+                {isProctored 
+                  ? `No sets found for ${decodeURIComponent(examType || '')}. (Check DB exam_type)` 
+                  : "No problems found."}
               </div>
             ) : isProctored ? (
               /* --- PROCTORED VIEW (SETS) --- */
@@ -273,7 +275,6 @@ export default function QuestionSetSelection() {
                       expandedQuestion === assignment.id ? "border-primary/50 shadow-[0_0_30px_rgba(124,58,237,0.1)] ring-1 ring-primary/20" : "hover:border-white/20"
                     )}
                   >
-                    {/* ... Existing Practice Mode UI ... */}
                     <CollapsibleTrigger className="w-full text-left">
                       <div className="p-5 flex items-center justify-between">
                         <div className="flex items-center gap-5">
