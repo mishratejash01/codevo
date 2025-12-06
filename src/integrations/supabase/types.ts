@@ -103,6 +103,56 @@ export type Database = {
           private_testcases?: Json | null
         }
       }
+      iitm_exam_question_bank: {
+        Row: {
+          id: string
+          subject_id: string | null
+          title: string
+          description: string
+          instructions: string | null
+          deadline: string | null
+          max_score: number | null
+          expected_time: number | null
+          starter_code: string | null
+          created_at: string | null
+          exam_type: string | null
+          set_name: string | null
+          category: string | null
+          test_cases: Json | null
+        }
+        Insert: {
+          id?: string
+          subject_id?: string | null
+          title: string
+          description: string
+          instructions?: string | null
+          deadline?: string | null
+          max_score?: number | null
+          expected_time?: number | null
+          starter_code?: string | null
+          created_at?: string | null
+          exam_type?: string | null
+          set_name?: string | null
+          category?: string | null
+          test_cases?: Json | null
+        }
+        Update: {
+          id?: string
+          subject_id?: string | null
+          title?: string
+          description?: string
+          instructions?: string | null
+          deadline?: string | null
+          max_score?: number | null
+          expected_time?: number | null
+          starter_code?: string | null
+          created_at?: string | null
+          exam_type?: string | null
+          set_name?: string | null
+          category?: string | null
+          test_cases?: Json | null
+        }
+      }
       submissions: {
         Row: {
           id: string
