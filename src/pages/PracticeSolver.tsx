@@ -6,14 +6,13 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
 import { CodeEditor } from '@/components/CodeEditor';
-import { Play, Send, ChevronLeft, Loader2, Bug, Terminal, FileCode2, Timer, Home, RefreshCw } from 'lucide-react';
+import { Play, Send, ChevronLeft, Loader2, Bug, Terminal, FileCode2, Timer, Home, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScoreDisplay } from '@/components/ScoreDisplay';
 
 export default function PracticeSolver() {
@@ -33,7 +32,6 @@ export default function PracticeSolver() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Result State
-  const [showResult, setShowResult] = useState(false);
   const [submissionStats, setSubmissionStats] = useState<{ passed: number; total: number; time: number } | null>(null);
 
   // 1. Fetch Problem Data
@@ -100,6 +98,7 @@ export default function PracticeSolver() {
     if (!problem) return;
     setConsoleTab('output');
     setOutputResult({ status: 'running' });
+    setSubmissionStats(null); // Clear previous results on new run
     
     const sampleTest = testCases.find((t: any) => t.is_public) || testCases[0];
     
@@ -135,6 +134,7 @@ export default function PracticeSolver() {
     }
 
     setSubmitting(true);
+    setSubmissionStats(null);
     
     let passedCount = 0;
     const totalCount = testCases.length;
@@ -161,7 +161,6 @@ export default function PracticeSolver() {
     });
     
     setSubmitting(false);
-    setShowResult(true);
   };
 
   // --- LOADING STATE ---
@@ -292,6 +291,46 @@ export default function PracticeSolver() {
                 )}
               </div>
             </ScrollArea>
+
+            {/* RESULTS SECTION (Bottom of Left Panel) */}
+            {submissionStats && (
+              <div className="border-t border-white/10 bg-[#0c0c0e] p-6 animate-in slide-in-from-bottom-4 fade-in duration-500 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-10">
+                <div className="flex items-center justify-between gap-6">
+                  
+                  {/* Score Meter */}
+                  <div className="shrink-0 scale-75 origin-left -my-4">
+                    <ScoreDisplay score={submissionStats.passed} maxScore={submissionStats.total} />
+                  </div>
+
+                  {/* Stats & Actions */}
+                  <div className="flex-1 flex flex-col gap-4">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-bold text-white font-neuropol tracking-wide">Submission Result</h3>
+                      <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <Timer className="w-3.5 h-3.5 text-primary" /> 
+                          {formatTime(submissionStats.time)}
+                        </span>
+                        <span className="w-px h-3 bg-white/10" />
+                        <span className={cn("flex items-center gap-1.5", submissionStats.passed === submissionStats.total ? "text-green-400" : "text-red-400")}>
+                          {submissionStats.passed === submissionStats.total ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Bug className="w-3.5 h-3.5" />}
+                          {submissionStats.passed === submissionStats.total ? "All Passed" : `${submissionStats.total - submissionStats.passed} Failed`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-auto">
+                      <Button variant="outline" size="sm" onClick={() => setSubmissionStats(null)} className="h-8 text-xs border-white/10 bg-white/5 hover:bg-white/10 hover:text-white">
+                        <RefreshCw className="w-3.5 h-3.5 mr-2" /> Retry
+                      </Button>
+                      <Button size="sm" onClick={() => navigate('/practice-arena')} className="h-8 text-xs bg-white text-black hover:bg-gray-200">
+                        <Home className="w-3.5 h-3.5 mr-2" /> Arena
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </ResizablePanel>
 
           <ResizableHandle withHandle className="bg-[#050505] w-1.5 border-l border-r border-white/5 hover:bg-white/10 transition-colors" />
@@ -400,51 +439,6 @@ export default function PracticeSolver() {
 
         </ResizablePanelGroup>
       </div>
-
-      {/* 3. RESULT DIALOG */}
-      <Dialog open={showResult} onOpenChange={setShowResult}>
-        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl font-neuropol">Result</DialogTitle>
-            <DialogDescription className="text-center text-muted-foreground">
-              Performance Summary
-            </DialogDescription>
-          </DialogHeader>
-          
-          {submissionStats && (
-            <div className="flex flex-col items-center py-6 gap-6">
-              <ScoreDisplay 
-                score={submissionStats.passed} 
-                maxScore={submissionStats.total} 
-              />
-              
-              <div className="flex flex-col items-center gap-1">
-                <div className="text-sm text-muted-foreground uppercase tracking-widest font-mono">Time Taken</div>
-                <div className="text-2xl font-bold font-mono text-white flex items-center gap-2">
-                  <Timer className="w-5 h-5 text-primary" />
-                  {formatTime(submissionStats.time)}
-                </div>
-              </div>
-
-              {submissionStats.passed === submissionStats.total && (
-                <div className="text-green-400 font-bold flex items-center gap-2 animate-bounce mt-2">
-                  All Test Cases Passed! 🎉
-                </div>
-              )}
-            </div>
-          )}
-
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setShowResult(false)} className="w-full sm:w-auto border-white/10">
-              <RefreshCw className="w-4 h-4 mr-2" /> Retry
-            </Button>
-            <Button onClick={() => navigate('/practice-arena')} className="w-full sm:w-auto bg-primary text-white hover:bg-primary/90">
-              <Home className="w-4 h-4 mr-2" /> Back to Arena
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
     </div>
   );
 }
