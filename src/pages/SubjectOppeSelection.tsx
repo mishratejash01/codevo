@@ -8,12 +8,14 @@ const SubjectOppeSelection = () => {
   const decodedSubject = decodeURIComponent(subjectName || 'Subject');
 
   const handleSelection = (type: string) => {
-    // Navigate to the Mode Selection page passing the specific EXAM TYPE (OPPE 1 or OPPE 2)
+    // Navigate to Mode Selection, passing the exam type in the URL
     navigate(`/degree/mode/${subjectId}/${encodeURIComponent(decodedSubject)}/${encodeURIComponent(type)}`);
   };
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      
+      {/* Background Decor */}
       <div className="absolute bottom-0 right-0 w-full h-1/2 bg-blue-500/5 blur-[120px] pointer-events-none" />
 
       <div className="z-10 w-full max-w-4xl space-y-12">
