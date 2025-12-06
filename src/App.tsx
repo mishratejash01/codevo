@@ -17,14 +17,14 @@ import Compiler from "./pages/Compiler";
 import Documentation from "./pages/Documentation";
 import PracticeArena from "./pages/PracticeArena";
 import PracticeSolver from "./pages/PracticeSolver";
+// --- NEW IMPORTS ---
+import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
+import SubjectModeSelection from "./pages/SubjectModeSelection";
+// -------------------
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
 import { Home, Code2, Trophy, Terminal } from "lucide-react";
-
-// --- IMPORT THE SELECTION PAGES ---
-import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
-import SubjectModeSelection from "./pages/SubjectModeSelection";
 
 const queryClient = new QueryClient();
 
@@ -65,27 +65,25 @@ const AppContent = () => {
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
         
-        {/* Basic Routes */}
         <Route path="/practice" element={<Practice />} />
         <Route path="/exam" element={<Exam />} />
         <Route path="/exam/result" element={<ExamResult />} />
         
-        {/* --- DEGREE & EXAM FLOW ROUTES --- */}
         <Route path="/degree" element={<DegreeSelection />} />
         
+        {/* --- FIXED ROUTES --- */}
         {/* 1. Select OPPE 1 or OPPE 2 */}
         <Route path="/degree/oppe/:subjectId/:subjectName" element={<SubjectOppeSelection />} />
         
-        {/* 2. Select Mode (Proctored/Practice) - NOTE THE :examType param */}
+        {/* 2. Select Mode (Proctored/Practice) */}
         <Route path="/degree/mode/:subjectId/:subjectName/:examType" element={<SubjectModeSelection />} />
         
         {/* 3. Select Set (Proctored) or Questions (Practice) */}
         <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
-        
-        {/* Practice Arena */}
+        {/* ------------------- */}
+
         <Route path="/practice-arena" element={<PracticeArena />} />
         <Route path="/practice-arena/:slug" element={<PracticeSolver />} />
-
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/compiler" element={<Compiler />} />
         <Route path="/docs" element={<Documentation />} />
