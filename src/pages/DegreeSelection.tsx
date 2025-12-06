@@ -160,7 +160,7 @@ const DegreeSelection = () => {
               Explore Curriculum
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
-              Access official course materials, practice environments, and proctored assessments for the IIT Madras BS Degree.
+              Discover a premium learning platform that delivers curated content, real-time exam simulations, and a robust library of practice sets to support excellence.
             </p>
           </div>
 
