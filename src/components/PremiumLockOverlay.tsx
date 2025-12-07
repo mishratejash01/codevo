@@ -1,8 +1,11 @@
 import { LockKeyhole, ShieldAlert, Binary } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export const PremiumLockOverlay = () => {
   return (
     <div className="absolute inset-0 z-50 overflow-hidden rounded-xl cursor-not-allowed group/lock select-none">
+      
+      {/* --- BACKGROUND LAYERS --- */}
       
       {/* 1. Deep Space Glass Background (Heavy Blur) */}
       <div className="absolute inset-0 bg-[#050505]/60 backdrop-blur-[8px] transition-all duration-700 group-hover/lock:bg-[#050505]/80 group-hover/lock:backdrop-blur-[12px]" />
@@ -16,7 +19,7 @@ export const PremiumLockOverlay = () => {
       {/* 4. Moving Scanline (Red laser effect) */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-500/10 to-transparent h-[20%] w-full animate-scanline pointer-events-none opacity-0 group-hover/lock:opacity-100 transition-opacity duration-500" />
 
-      {/* 5. Center Lock Assembly */}
+      {/* --- CENTER CONTENT --- */}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 z-10">
         
         {/* The "Vault" Circle */}
@@ -70,7 +73,7 @@ export const PremiumLockOverlay = () => {
         </div>
       </div>
 
-      {/* 6. High-Tech Corner Brackets (SVG) */}
+      {/* --- DECORATIVE CORNERS (High-Tech Feel) --- */}
       {/* Top Left */}
       <svg className="absolute top-3 left-3 w-6 h-6 text-white/10 group-hover/lock:text-red-500/40 transition-colors duration-500 pointer-events-none" viewBox="0 0 24 24">
          <path fill="currentColor" d="M2 2v7h2V4h5V2H2z" />
