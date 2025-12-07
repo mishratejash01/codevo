@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-// Import the new component
+// --- IMPORT THE NEW LOCK ---
 import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
 
 const getSubjectIcon = (name: string) => {
@@ -235,7 +235,7 @@ const DegreeSelection = () => {
               const availableExams = Array.from(subjectExamMap[subject.id] || []).sort();
               const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Unknown Level';
               
-              // Lock Status
+              // --- LOCK LOGIC ---
               const isLocked = subject.is_unlocked === false; 
 
               return (
@@ -335,7 +335,6 @@ const DegreeSelection = () => {
       {/* --- MODE SELECTION DIALOG --- */}
       <Dialog open={isModeOpen} onOpenChange={setIsModeOpen}>
         <DialogContent className="bg-[#0c0c0e] border-white/10 text-white max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden gap-0 rounded-2xl shadow-2xl">
-          {/* Dialog Content Implementation (Same as before) */}
           <div className="flex flex-col md:grid md:grid-cols-2 md:h-[550px] relative">
             
             {/* OPTION 1: PRACTICE */}
