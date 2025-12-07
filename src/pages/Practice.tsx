@@ -44,7 +44,8 @@ const Practice = () => {
     queryKey: [activeTables.assignments, iitmSubjectId, categoryParam, limitParam, selectedAssignmentId], 
     queryFn: async () => {
       // @ts-ignore
-      let query = supabase.from(activeTables.assignments).select('id, title, category, expected_time');
+      // UPDATED: Added 'is_unlocked' to the select query
+      let query = supabase.from(activeTables.assignments).select('id, title, category, expected_time, is_unlocked');
       
       // STRICT FILTERING: 
       // If a specific question ID is provided in the URL ('q'), 
@@ -78,7 +79,11 @@ const Practice = () => {
       setSearchParams(prev => {
         const p = new URLSearchParams(prev);
         // @ts-ignore
-        p.set('q', assignments[0].id);
+        // Only auto-select if it's unlocked
+        const firstUnlocked = assignments.find((a: any) => a.is_unlocked !== false) || assignments[0];
+        if (firstUnlocked) {
+           p.set('q', firstUnlocked.id);
+        }
         return p;
       });
     }
