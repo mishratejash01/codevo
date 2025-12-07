@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
-import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, GraduationCap, LockKeyhole } from 'lucide-react'; // Added LockKeyhole
+import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils'; // Make sure to import cn
+import { cn } from '@/lib/utils';
+// Import the new component
+import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
 
 const getSubjectIcon = (name: string) => {
   const n = name.toLowerCase();
@@ -37,7 +39,7 @@ const DegreeSelection = () => {
   const { data: degrees = [] } = useQuery({
     queryKey: ['iitm_degrees'],
     queryFn: async () => {
-      // @ts-ignore - Table created in migration
+      // @ts-ignore
       const { data, error } = await supabase.from('iitm_degrees').select('*').order('name');
       if (error) {
         console.error('Error fetching degrees:', error);
@@ -63,7 +65,7 @@ const DegreeSelection = () => {
       const { data, error } = await supabase
         .from('iitm_levels')
         .select('*')
-        .eq('degree_id', selectedDegree) // Filter by parent
+        .eq('degree_id', selectedDegree)
         .order('sequence');
       
       if (error) throw error;
@@ -80,7 +82,7 @@ const DegreeSelection = () => {
 
       const { data, error } = await supabase
         .from('iitm_subjects')
-        .select('*, iitm_levels!inner(degree_id)') // Inner join to filter by degree
+        .select('*, iitm_levels!inner(degree_id)')
         // @ts-ignore
         .eq('iitm_levels.degree_id', selectedDegree)
         .order('name');
@@ -148,7 +150,7 @@ const DegreeSelection = () => {
   return (
     <div className="min-h-screen bg-[#09090b] text-white font-sans selection:bg-primary/20">
       
-      {/* Header Section - SCROLLABLE (Natural Flow) */}
+      {/* Header Section */}
       <div className="relative z-40 bg-[#09090b] border-b border-white/5 pt-16 md:pt-24 pb-8 px-4 md:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
           
@@ -233,7 +235,7 @@ const DegreeSelection = () => {
               const availableExams = Array.from(subjectExamMap[subject.id] || []).sort();
               const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Unknown Level';
               
-              // --- LOCK LOGIC: Default to true if column is missing, otherwise use value ---
+              // Lock Status
               const isLocked = subject.is_unlocked === false; 
 
               return (
@@ -241,22 +243,15 @@ const DegreeSelection = () => {
                   key={subject.id} 
                   className={cn(
                     "group relative bg-[#0c0c0e] rounded-xl border border-white/10 transition-all duration-300 flex flex-col overflow-hidden",
-                    // Apply visual disabled state if locked
+                    // NOTE: Removed opacity reduction for locked state so the overlay shines through
                     isLocked 
-                      ? "opacity-60 pointer-events-none grayscale-[0.8]" 
+                      ? "pointer-events-none" 
                       : "hover:border-white/20 hover:shadow-[0_0_30px_rgba(0,0,0,0.6)]"
                   )}
                 >
                   
-                  {/* --- LOCK OVERLAY --- */}
-                  {isLocked && (
-                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-[2px] pointer-events-auto cursor-not-allowed">
-                      <div className="p-4 bg-black/80 rounded-full border border-white/10 mb-2">
-                        <LockKeyhole className="w-8 h-8 text-white/50" />
-                      </div>
-                      <span className="text-xs font-mono font-bold text-white/50 uppercase tracking-widest">Locked</span>
-                    </div>
-                  )}
+                  {/* --- PREMIUM LOCK OVERLAY --- */}
+                  {isLocked && <PremiumLockOverlay />}
 
                   {/* Premium Hover Glow (Only for Unlocked) */}
                   {!isLocked && (
@@ -337,10 +332,10 @@ const DegreeSelection = () => {
         </div>
       </div>
 
-      {/* --- RESPONSIVE MODE SELECTION DIALOG --- */}
+      {/* --- MODE SELECTION DIALOG --- */}
       <Dialog open={isModeOpen} onOpenChange={setIsModeOpen}>
         <DialogContent className="bg-[#0c0c0e] border-white/10 text-white max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden gap-0 rounded-2xl shadow-2xl">
-          
+          {/* Dialog Content Implementation (Same as before) */}
           <div className="flex flex-col md:grid md:grid-cols-2 md:h-[550px] relative">
             
             {/* OPTION 1: PRACTICE */}
