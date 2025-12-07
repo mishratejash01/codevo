@@ -2,8 +2,11 @@ import { Lock } from 'lucide-react';
 
 export const PremiumLockOverlay = () => {
   return (
-    <div className="animate-in fade-in zoom-in duration-300 select-none" title="Locked">
-      <Lock className="w-4 h-4 text-red-500" />
+    <div className="flex items-center gap-1.5 select-none animate-in fade-in zoom-in duration-300">
+      <Lock className="w-3 h-3 text-red-500" />
+      <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest font-mono">
+        LOCKED
+      </span>
     </div>
   );
 };
