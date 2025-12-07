@@ -39,8 +39,6 @@ export default function QuestionSetSelection() {
       if (isProctored) {
         // --- PROCTORED MODE ---
         // Fetch sets from 'iitm_exam_question_bank'
-        // Using .ilike for case-insensitive matching to prevent "No sets found" errors
-        
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
           .select('set_name')
@@ -58,6 +56,7 @@ export default function QuestionSetSelection() {
       } else {
         // --- PRACTICE MODE ---
         // Fetch assignments from 'iitm_assignments'
+        // Also fetch 'is_unlocked'
         const { data, error } = await supabase
           .from('iitm_assignments')
           .select('*')
@@ -262,109 +261,120 @@ export default function QuestionSetSelection() {
               </div>
             ) : (
               /* --- PRACTICE VIEW (QUESTIONS) --- */
-              (filteredData as any[]).map((assignment) => (
-                <div key={assignment.id} className="group">
-                  <Collapsible 
-                    open={expandedQuestion === assignment.id} 
-                    onOpenChange={(isOpen) => {
-                      setExpandedQuestion(isOpen ? assignment.id : null);
-                      if (isOpen) {
-                         setTimeLimit([assignment.expected_time || 20]); 
-                         setNoTimeLimit(false);
-                      }
-                    }}
-                    className={cn(
-                      "bg-[#121212] border border-white/10 rounded-xl transition-all duration-300 overflow-hidden",
-                      expandedQuestion === assignment.id ? "border-primary/50 shadow-[0_0_30px_rgba(124,58,237,0.1)] ring-1 ring-primary/20" : "hover:border-white/20"
-                    )}
-                  >
-                    <CollapsibleTrigger className="w-full text-left">
-                      <div className="p-5 flex items-center justify-between">
-                        <div className="flex items-center gap-5">
-                          <div className={cn(
-                            "w-10 h-10 rounded-lg flex items-center justify-center border transition-colors",
-                            expandedQuestion === assignment.id ? "bg-primary/20 border-primary/50 text-primary" : "bg-white/5 border-white/10 text-muted-foreground"
-                          )}>
-                            <FileCode2 className="w-5 h-5"/>
-                          </div>
-                          <div>
-                            <h3 className="text-base font-bold text-gray-200 group-hover:text-white transition-colors">
-                              {assignment.title}
-                            </h3>
-                            <div className="flex items-center gap-3 mt-1.5">
-                               <Badge variant="outline" className="text-[10px] py-0 h-4 border-white/10 text-muted-foreground bg-black/40">
-                                 {assignment.category || 'General'}
-                               </Badge>
-                               <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                 <Clock className="w-3 h-3" /> ~{assignment.expected_time || 20} min
-                               </span>
+              (filteredData as any[]).map((assignment) => {
+                const isLocked = assignment.is_unlocked === false;
+
+                return (
+                  <div key={assignment.id} className={cn("group", isLocked && "opacity-60 grayscale")}>
+                    <Collapsible 
+                      disabled={isLocked}
+                      open={!isLocked && expandedQuestion === assignment.id} 
+                      onOpenChange={(isOpen) => {
+                        if (isLocked) return;
+                        setExpandedQuestion(isOpen ? assignment.id : null);
+                        if (isOpen) {
+                           setTimeLimit([assignment.expected_time || 20]); 
+                           setNoTimeLimit(false);
+                        }
+                      }}
+                      className={cn(
+                        "bg-[#121212] border border-white/10 rounded-xl transition-all duration-300 overflow-hidden",
+                        !isLocked && expandedQuestion === assignment.id ? "border-primary/50 shadow-[0_0_30px_rgba(124,58,237,0.1)] ring-1 ring-primary/20" : "hover:border-white/20"
+                      )}
+                    >
+                      <CollapsibleTrigger className={cn("w-full text-left", isLocked && "cursor-not-allowed")}>
+                        <div className="p-5 flex items-center justify-between">
+                          <div className="flex items-center gap-5">
+                            <div className={cn(
+                              "w-10 h-10 rounded-lg flex items-center justify-center border transition-colors",
+                              isLocked ? "bg-white/5 border-white/10 text-muted-foreground" : 
+                              (expandedQuestion === assignment.id ? "bg-primary/20 border-primary/50 text-primary" : "bg-white/5 border-white/10 text-muted-foreground")
+                            )}>
+                              {isLocked ? <Lock className="w-5 h-5" /> : <FileCode2 className="w-5 h-5"/>}
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-gray-200 group-hover:text-white transition-colors">
+                                {assignment.title}
+                              </h3>
+                              <div className="flex items-center gap-3 mt-1.5">
+                                 <Badge variant="outline" className="text-[10px] py-0 h-4 border-white/10 text-muted-foreground bg-black/40">
+                                   {assignment.category || 'General'}
+                                 </Badge>
+                                 {!isLocked && (
+                                   <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                     <Clock className="w-3 h-3" /> ~{assignment.expected_time || 20} min
+                                   </span>
+                                 )}
+                              </div>
                             </div>
                           </div>
+                          
+                          {!isLocked && (
+                            <div className={cn("transition-transform duration-300", expandedQuestion === assignment.id ? "rotate-90 text-primary" : "text-muted-foreground")}>
+                              <ChevronRight className="w-5 h-5" />
+                            </div>
+                          )}
                         </div>
-                        
-                        <div className={cn("transition-transform duration-300", expandedQuestion === assignment.id ? "rotate-90 text-primary" : "text-muted-foreground")}>
-                          <ChevronRight className="w-5 h-5" />
-                        </div>
-                      </div>
-                    </CollapsibleTrigger>
+                      </CollapsibleTrigger>
 
-                    <CollapsibleContent>
-                      <div className="border-t border-white/10 bg-[#08080a] p-6 animate-in slide-in-from-top-2">
-                          <div className="flex flex-col lg:flex-row gap-8 items-center justify-between">
-                            <div className="flex-1 w-full space-y-6">
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                  <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-primary" /> 
-                                    Set Duration
-                                  </label>
-                                  <div className={cn("flex items-center gap-3 transition-opacity", noTimeLimit && "opacity-30 pointer-events-none")}>
-                                    <Input 
-                                      type="number" 
-                                      value={timeLimit[0]} 
-                                      onChange={handleManualTimeInput}
-                                      className="w-24 h-10 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50 pr-2"
-                                      placeholder="Min"
-                                    />
-                                    <span className="text-sm font-medium text-muted-foreground">min</span>
+                      <CollapsibleContent>
+                        <div className="border-t border-white/10 bg-[#08080a] p-6 animate-in slide-in-from-top-2">
+                            <div className="flex flex-col lg:flex-row gap-8 items-center justify-between">
+                              <div className="flex-1 w-full space-y-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                  <div className="flex items-center gap-4">
+                                    <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                      <Clock className="w-4 h-4 text-primary" /> 
+                                      Set Duration
+                                    </label>
+                                    <div className={cn("flex items-center gap-3 transition-opacity", noTimeLimit && "opacity-30 pointer-events-none")}>
+                                      <Input 
+                                        type="number" 
+                                        value={timeLimit[0]} 
+                                        onChange={handleManualTimeInput}
+                                        className="w-24 h-10 bg-black/40 border-white/10 text-center font-mono font-bold text-lg text-white focus:border-primary/50 pr-2"
+                                        placeholder="Min"
+                                      />
+                                      <span className="text-sm font-medium text-muted-foreground">min</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 hover:border-white/10 transition-colors">
+                                    <span className={cn("text-xs font-medium cursor-pointer", noTimeLimit ? "text-white" : "text-muted-foreground")}>Free Mode</span>
+                                    <Switch checked={noTimeLimit} onCheckedChange={setNoTimeLimit} className="data-[state=checked]:bg-primary scale-75" />
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 hover:border-white/10 transition-colors">
-                                  <span className={cn("text-xs font-medium cursor-pointer", noTimeLimit ? "text-white" : "text-muted-foreground")}>Free Mode</span>
-                                  <Switch checked={noTimeLimit} onCheckedChange={setNoTimeLimit} className="data-[state=checked]:bg-primary scale-75" />
+                                <div className={cn("space-y-3 transition-opacity duration-200 px-1", noTimeLimit && "opacity-30 pointer-events-none")}>
+                                  <Slider 
+                                    value={[Math.min(timeLimit[0], 30)]} 
+                                    onValueChange={(vals) => setTimeLimit(vals)} 
+                                    min={2} 
+                                    max={30} 
+                                    step={2} 
+                                    className="[&>.relative>.absolute]:bg-primary cursor-pointer py-2"
+                                  />
+                                  <div className="flex justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
+                                    <span>2 min</span>
+                                    <span>15 min</span>
+                                    <span>30 min (Max Slider)</span>
+                                  </div>
                                 </div>
                               </div>
-                              <div className={cn("space-y-3 transition-opacity duration-200 px-1", noTimeLimit && "opacity-30 pointer-events-none")}>
-                                <Slider 
-                                  value={[Math.min(timeLimit[0], 30)]} 
-                                  onValueChange={(vals) => setTimeLimit(vals)} 
-                                  min={2} 
-                                  max={30} 
-                                  step={2} 
-                                  className="[&>.relative>.absolute]:bg-primary cursor-pointer py-2"
-                                />
-                                <div className="flex justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
-                                  <span>2 min</span>
-                                  <span>15 min</span>
-                                  <span>30 min (Max Slider)</span>
-                                </div>
+                              <div className="w-full lg:w-auto min-w-[200px]">
+                                 <Button 
+                                   onClick={() => handleStart(assignment.id, false)}
+                                   className="w-full h-12 bg-white text-black hover:bg-gray-200 font-bold text-base shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02] rounded-xl"
+                                 >
+                                   {noTimeLimit ? <InfinityIcon className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2 fill-current" />}
+                                   Start Practice
+                                 </Button>
                               </div>
                             </div>
-                            <div className="w-full lg:w-auto min-w-[200px]">
-                               <Button 
-                                 onClick={() => handleStart(assignment.id, false)}
-                                 className="w-full h-12 bg-white text-black hover:bg-gray-200 font-bold text-base shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.02] rounded-xl"
-                               >
-                                 {noTimeLimit ? <InfinityIcon className="w-5 h-5 mr-2" /> : <Play className="w-5 h-5 mr-2 fill-current" />}
-                                 Start Practice
-                               </Button>
-                            </div>
-                          </div>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </div>
-              ))
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+                );
+              })
             )}
           </div>
         </ScrollArea>
