@@ -14,9 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        // Use a premium font like Inter or Geist Sans in your index.html import
         sans: ["Inter", "sans-serif"], 
-        mono: ["JetBrains Mono", "monospace"], // Crucial for coding apps
+        mono: ["JetBrains Mono", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -52,7 +51,6 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Premium specific colors
         obsidian: "#050505",
         charcoal: "#0F0F11",
         glass: "rgba(15, 15, 17, 0.6)",
@@ -82,6 +80,15 @@ export default {
         "pulse-glow": {
           "0%, 100%": { boxShadow: "0 0 10px rgba(168, 85, 247, 0.2)" },
           "50%": { boxShadow: "0 0 20px rgba(168, 85, 247, 0.6)" },
+        },
+        // --- NEW KEYFRAMES ---
+        "scanline": {
+          "0%": { transform: "translateY(-100%)" },
+          "100%": { transform: "translateY(500%)" },
+        },
+        "spin-slow": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
         }
       },
       animation: {
@@ -89,6 +96,9 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "shimmer": "shimmer 3s linear infinite",
         "pulse-glow": "pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        // --- NEW ANIMATIONS ---
+        "scanline": "scanline 3s linear infinite",
+        "spin-slow": "spin-slow 10s linear infinite",
       },
     },
   },
