@@ -12,6 +12,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetDescription
+} from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -24,9 +32,12 @@ import {
   GraduationCap, 
   Check,
   Loader2,
-  User as UserIcon
+  User as UserIcon,
+  MessageSquareText,
+  Mail,
+  ExternalLink
 } from "lucide-react";
-import { toast } from "sonner"; // Assuming you use sonner, based on your App.tsx
+import { toast } from "sonner";
 
 // Interface matching your provided Schema exactly
 interface ProfileData {
@@ -39,11 +50,12 @@ interface ProfileData {
   start_year: number;
   end_year: number;
   country: string;
-  github_handle: string; // From schema
-  linkedin_url: string;  // From schema
-  portfolio_url?: string; // Newly added
-  bio?: string;           // Newly added
+  github_handle: string;
+  linkedin_url: string;
+  portfolio_url?: string;
+  bio?: string;
   avatar_url?: string;
+  contact_no?: string;
 }
 
 const Profile = () => {
@@ -67,7 +79,6 @@ const Profile = () => {
       setLoading(true);
       const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-      // Logic: If accessing /profile (no username), redirect to own profile or login
       if (!username) {
         if (!currentUser) {
           navigate("/auth");
@@ -85,7 +96,6 @@ const Profile = () => {
         return;
       }
 
-      // Fetch profile data
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -101,7 +111,6 @@ const Profile = () => {
       setProfile(data as ProfileData);
       setEditForm(data as ProfileData);
       
-      // Check if the viewer is the owner
       if (currentUser && data.id === currentUser.id) {
         setIsOwner(true);
       }
@@ -124,7 +133,6 @@ const Profile = () => {
           github_handle: editForm.github_handle,
           linkedin_url: editForm.linkedin_url,
           portfolio_url: editForm.portfolio_url,
-          // Users can also fix basic details if needed
           full_name: editForm.full_name,
         })
         .eq("id", profile.id);
@@ -147,6 +155,58 @@ const Profile = () => {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
+  const SocialLinkItem = ({ 
+    icon: Icon, 
+    label, 
+    value, 
+    href, 
+    isOwner, 
+    placeholder 
+  }: { 
+    icon: any, 
+    label: string, 
+    value?: string, 
+    href?: string, 
+    isOwner: boolean, 
+    placeholder: string 
+  }) => {
+    if (value) {
+      return (
+        <a 
+          href={href} 
+          target="_blank" 
+          rel="noreferrer" 
+          className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all group"
+        >
+          <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-colors text-white">
+            <Icon className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-white text-sm">{label}</div>
+            <div className="text-xs text-muted-foreground truncate">{value}</div>
+          </div>
+          <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        </a>
+      );
+    }
+    if (isOwner) {
+      return (
+        <div 
+          onClick={() => setIsEditing(true)}
+          className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-white/10 hover:border-white/20 hover:bg-white/5 transition-all cursor-pointer group"
+        >
+          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-muted-foreground group-hover:text-white">
+            <Icon className="w-5 h-5" />
+          </div>
+          <div className="text-sm text-muted-foreground group-hover:text-white transition-colors">
+            {placeholder}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -159,6 +219,106 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-black text-white pt-24 pb-12 px-4 relative overflow-hidden">
+      
+      {/* --- DESKTOP 'HIT ME UP' POP-OUT --- */}
+      <div className="hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-50">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              className="h-auto py-8 rounded-l-xl rounded-r-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(37,99,235,0.3)] border-y border-l border-white/20 transition-all hover:pr-4"
+              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            >
+              <div className="flex items-center gap-3 py-1 rotate-180">
+                <MessageSquareText className="w-5 h-5 -rotate-90" />
+                <span className="text-xs font-bold tracking-[0.2em] whitespace-nowrap">HIT ME UP</span>
+              </div>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="bg-[#0c0c0e] border-l border-white/10 text-white w-[400px] p-0">
+             <div className="h-full flex flex-col">
+               <div className="p-6 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
+                 <SheetHeader className="text-left space-y-4">
+                   <div className="flex items-center gap-4">
+                     <Avatar className="w-16 h-16 border-2 border-white/10">
+                       <AvatarImage src={profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.full_name}&background=random`} />
+                       <AvatarFallback className="bg-primary">{profile.full_name?.charAt(0)}</AvatarFallback>
+                     </Avatar>
+                     <div>
+                       <SheetTitle className="text-xl text-white">Connect with {profile.full_name?.split(' ')[0]}</SheetTitle>
+                       <SheetDescription className="text-gray-400">
+                         @{profile.username}
+                       </SheetDescription>
+                     </div>
+                   </div>
+                 </SheetHeader>
+               </div>
+
+               <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Socials</h4>
+                    <SocialLinkItem 
+                      icon={Github} 
+                      label="GitHub" 
+                      value={profile.github_handle} 
+                      href={`https://github.com/${profile.github_handle?.replace(/^@/, '')}`} 
+                      isOwner={isOwner}
+                      placeholder="Add GitHub"
+                    />
+                    <SocialLinkItem 
+                      icon={Linkedin} 
+                      label="LinkedIn" 
+                      value={profile.linkedin_url ? "View Profile" : undefined} 
+                      href={profile.linkedin_url} 
+                      isOwner={isOwner}
+                      placeholder="Add LinkedIn"
+                    />
+                    <SocialLinkItem 
+                      icon={Globe} 
+                      label="Portfolio" 
+                      value={profile.portfolio_url ? "View Website" : undefined} 
+                      href={profile.portfolio_url} 
+                      isOwner={isOwner}
+                      placeholder="Add Portfolio"
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                     <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Direct Contact</h4>
+                     {profile.contact_no && (
+                       <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                           <MessageSquareText className="w-4 h-4" />
+                         </div>
+                         <div>
+                           <div className="text-xs text-primary/80 font-medium">Mobile / WhatsApp</div>
+                           <div className="text-sm font-bold text-white">{profile.contact_no}</div>
+                         </div>
+                       </div>
+                     )}
+                     <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3 cursor-not-allowed opacity-70">
+                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                         <Mail className="w-4 h-4" />
+                       </div>
+                       <div>
+                         <div className="text-xs text-muted-foreground">Email</div>
+                         <div className="text-sm font-medium text-white">Hidden</div>
+                       </div>
+                     </div>
+                  </div>
+               </div>
+
+               <div className="p-6 border-t border-white/10 bg-black/20">
+                 <Button onClick={copyToClipboard} className="w-full bg-white text-black hover:bg-gray-200">
+                   {isCopied ? <Check className="w-4 h-4 mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
+                   {isCopied ? "Link Copied!" : "Share Profile"}
+                 </Button>
+               </div>
+             </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+      {/* ------------------------------------- */}
+
       {/* Aesthetic Background Elements */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[128px] pointer-events-none" />
@@ -309,48 +469,35 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Right Column: Socials */}
+              {/* Right Column: Socials (Mobile/Desktop Card View) */}
               <div className="space-y-6">
                 <div className="bg-white/5 rounded-xl p-5 border border-white/5">
                   <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Connect</h3>
                   <div className="space-y-3">
-                    {/* GitHub */}
-                    {profile.github_handle ? (
-                       <a 
-                         href={`https://github.com/${profile.github_handle.replace(/^@/, '')}`} 
-                         target="_blank" 
-                         rel="noreferrer" 
-                         className="flex items-center gap-3 text-sm text-gray-300 hover:text-white transition-all p-2 hover:bg-white/5 rounded-lg -mx-2 group"
-                       >
-                         <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-colors">
-                           <Github className="w-4 h-4" />
-                         </div>
-                         <div className="flex flex-col">
-                           <span className="font-medium">GitHub</span>
-                           <span className="text-xs text-muted-foreground truncate max-w-[150px]">{profile.github_handle}</span>
-                         </div>
-                       </a>
-                    ) : ( isOwner && <div className="text-xs text-muted-foreground italic pl-2 py-1">Add GitHub handle</div>)}
-
-                    {/* LinkedIn */}
-                    {profile.linkedin_url ? (
-                       <a href={profile.linkedin_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-gray-300 hover:text-white transition-all p-2 hover:bg-white/5 rounded-lg -mx-2 group">
-                         <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center border border-white/10 group-hover:border-blue-500/50 transition-colors">
-                           <Linkedin className="w-4 h-4" />
-                         </div>
-                         <span className="font-medium">LinkedIn</span>
-                       </a>
-                    ) : ( isOwner && <div className="text-xs text-muted-foreground italic pl-2 py-1">Add LinkedIn URL</div>)}
-
-                    {/* Portfolio */}
-                    {profile.portfolio_url ? (
-                       <a href={profile.portfolio_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm text-gray-300 hover:text-white transition-all p-2 hover:bg-white/5 rounded-lg -mx-2 group">
-                         <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center border border-white/10 group-hover:border-green-500/50 transition-colors">
-                           <Globe className="w-4 h-4" />
-                         </div>
-                         <span className="font-medium">Portfolio</span>
-                       </a>
-                    ) : ( isOwner && <div className="text-xs text-muted-foreground italic pl-2 py-1">Add Portfolio URL</div>)}
+                     <SocialLinkItem 
+                        icon={Github} 
+                        label="GitHub" 
+                        value={profile.github_handle} 
+                        href={`https://github.com/${profile.github_handle?.replace(/^@/, '')}`} 
+                        isOwner={isOwner}
+                        placeholder="Add GitHub"
+                      />
+                      <SocialLinkItem 
+                        icon={Linkedin} 
+                        label="LinkedIn" 
+                        value={profile.linkedin_url ? "LinkedIn Profile" : undefined} 
+                        href={profile.linkedin_url} 
+                        isOwner={isOwner}
+                        placeholder="Add LinkedIn"
+                      />
+                      <SocialLinkItem 
+                        icon={Globe} 
+                        label="Portfolio" 
+                        value={profile.portfolio_url ? "Personal Site" : undefined} 
+                        href={profile.portfolio_url} 
+                        isOwner={isOwner}
+                        placeholder="Add Portfolio"
+                      />
                   </div>
                 </div>
               </div>
