@@ -25,7 +25,7 @@ export const useCodeRunner = () => {
           language,
           version,
           files: [{ content: code }],
-          stdin,
+          stdin, // Piston handles stdin here
         }),
       });
       const data = await response.json();
@@ -43,15 +43,23 @@ export const useCodeRunner = () => {
     }
   };
 
-  const executeCode = async (language: Language, code: string, input: string = ""): Promise<ExecutionResult> => {
+  // Added onOutput callback for streaming support
+  const executeCode = async (
+    language: Language, 
+    code: string, 
+    input: string = "",
+    onOutput?: (text: string) => void
+  ): Promise<ExecutionResult> => {
     setLoading(true);
     let result: ExecutionResult = { success: false, output: "" };
 
     try {
       switch (language) {
         case 'python':
-          const pyResult = await runPython(code); 
-          result = { success: pyResult.success, output: pyResult.output || pyResult.error || "" };
+          // Pass input and the streaming callback
+          const pyResult = await runPython(code, input, onOutput); 
+          // Python output is handled via streaming, so we return empty string here unless error
+          result = { success: pyResult.success, output: "", error: pyResult.error };
           break;
 
         case 'javascript':
@@ -75,7 +83,6 @@ export const useCodeRunner = () => {
           break;
 
         case 'bash':
-          // Bash execution
           result = await runPiston('bash', '5.0.0', code, input);
           break;
 
