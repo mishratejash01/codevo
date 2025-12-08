@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+
+// Page Imports
 import Landing from "./pages/Landing";
 import Practice from "./pages/Practice";
 import Exam from "./pages/Exam";
@@ -17,10 +19,12 @@ import Compiler from "./pages/Compiler";
 import Documentation from "./pages/Documentation";
 import PracticeArena from "./pages/PracticeArena";
 import PracticeSolver from "./pages/PracticeSolver";
-// --- NEW IMPORTS ---
 import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
 import SubjectModeSelection from "./pages/SubjectModeSelection";
+// --- NEW IMPORT ---
+import Profile from "./pages/Profile";
 // -------------------
+
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
@@ -87,6 +91,15 @@ const AppContent = () => {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/compiler" element={<Compiler />} />
         <Route path="/docs" element={<Documentation />} />
+
+        {/* --- PROFILE ROUTES --- */}
+        {/* Public Profile View (Shareable Link) */}
+        <Route path="/u/:username" element={<Profile />} />
+        
+        {/* Private Redirect (User clicks 'Profile' in nav) */}
+        <Route path="/profile" element={<Profile />} />
+        {/* ---------------------- */}
+
         <Route path="*" element={<NotFound />} />
       </Routes>
 
