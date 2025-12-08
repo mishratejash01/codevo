@@ -49,7 +49,8 @@ const Compiler = () => {
 
   const [inputData, setInputData] = useState<string>(""); 
   const [output, setOutput] = useState<string>('// Output will appear here...');
-  const [activeTab, setActiveTab] = useState("output"); 
+  const [activeTab, setActiveTab] = useState("output");
+  const [isError, setIsError] = useState(false); // New state to explicitly track error status
   
   const { executeCode, loading } = useCodeRunner();
 
@@ -63,54 +64,41 @@ const Compiler = () => {
     setActiveLanguage(newLang);
     setCode(getStarterTemplate(newLang));
     setOutput('// Language changed. Output cleared.');
+    setIsError(false);
   };
 
   const handleRun = async () => {
     if (loading) return;
     
-    // 1. Switch to Output Tab
     setActiveTab("output"); 
-    
-    // 2. Clear Output Immediately
     setOutput(""); 
+    setIsError(false); // Reset error state before run
     
-    // 3. Define Streaming Handler
     const handleStreamOutput = (text: string) => {
         setOutput((prev) => prev + text);
     };
 
-    // 4. Run Code
     const result = await executeCode(activeLanguage, code, inputData, handleStreamOutput);
     
-    // 5. Handle Final Result / Errors
+    // Explicitly set error state based on result.success
+    if (!result.success) {
+        setIsError(true);
+    }
+
     if (activeLanguage !== 'python') {
-        // Piston (Non-streaming)
+        // For Piston, we just dump the output (which contains errors)
         if (result.success) {
             setOutput(result.output);
         } else {
-            // FIX: Show the error message (captured from stderr in useCodeRunner)
-            setOutput(result.error || "An unknown error occurred.");
+            // If failed, show the error (which is also in output, but we ensure we grab it)
+            setOutput(result.error || result.output || "Unknown Error");
         }
     } else {
         // Python (Streaming)
-        // If there was an error (like SyntaxError), append it
         if (!result.success) {
             setOutput((prev) => prev + "\n" + (result.error || ""));
         }
     }
-  };
-
-  // Improved Error Detection Regex
-  const isError = (text: string) => {
-     if (!text) return false;
-     const lower = text.toLowerCase();
-     return (
-        lower.includes('error:') || 
-        lower.includes('exception') || 
-        lower.includes('traceback') || 
-        lower.includes('failed') ||
-        lower.includes('syntaxerror')
-     );
   };
 
   const handleDownload = () => {
@@ -240,7 +228,7 @@ const Compiler = () => {
                             </div>
                         )}
                         
-                        <pre className={cn("whitespace-pre-wrap font-mono", isError(output) ? "text-red-400" : "text-blue-300")}>
+                        <pre className={cn("whitespace-pre-wrap font-mono", isError ? "text-red-400" : "text-blue-300")}>
                             {output || (!loading && <span className="text-white/20 italic">Run code to see output...</span>)}
                         </pre>
                      </div>
