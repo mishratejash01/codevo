@@ -1,90 +1,111 @@
-import { useState } from "react";
-import { toast } from "sonner"; 
+import { useState } from 'react';
+import { usePyodide } from './usePyodide';
 
-// Mapping internal language names to Piston API versions
-// You can add more languages here if needed
-const LANGUAGE_MAP: Record<string, { language: string; version: string }> = {
-  javascript: { language: "javascript", version: "18.15.0" },
-  typescript: { language: "typescript", version: "5.0.3" },
-  python: { language: "python", version: "3.10.0" },
-  java: { language: "java", version: "15.0.2" },
-  c: { language: "c", version: "10.2.0" },
-  cpp: { language: "c++", version: "10.2.0" },
-  go: { language: "go", version: "1.16.2" },
-  rust: { language: "rust", version: "1.68.2" },
-};
+// Piston API
+const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
+
+export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript' | 'sql' | 'bash';
+
+interface ExecutionResult {
+  success: boolean;
+  output: string;
+  error?: string;
+}
 
 export const useCodeRunner = () => {
-  const [isRunning, setIsRunning] = useState(false);
-  const [output, setOutput] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
+  const { runCode: runPython, loading: pythonLoading } = usePyodide();
+  const [loading, setLoading] = useState(false);
 
-  const runCode = async (language: string, sourceCode: string, stdin: string = "") => {
-    if (!sourceCode.trim()) {
-      toast.error("Please write some code first.");
-      return;
-    }
-
-    setIsRunning(true);
-    setOutput("");
-    setError(null);
-
-    const config = LANGUAGE_MAP[language.toLowerCase()];
-
-    if (!config) {
-      setError(`Language "${language}" is not supported yet.`);
-      setIsRunning(false);
-      return;
-    }
-
+  const runPiston = async (language: string, version: string, code: string, stdin: string = "") => {
     try {
-      const response = await fetch("https://emkc.org/api/v2/piston/execute", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const response = await fetch(PISTON_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          language: config.language,
-          version: config.version,
-          files: [{ content: sourceCode }],
-          stdin: stdin, 
+          language,
+          version,
+          files: [{ content: code }],
+          stdin,
         }),
       });
-
       const data = await response.json();
+      
+      if (data.run) {
+        const stdout = data.run.stdout || "";
+        const stderr = data.run.stderr || "";
+        const output = data.run.output || ""; // Piston's attempt to combine them
+        
+        // Fallback: If output is empty but we have stderr, use stderr
+        // This fixes cases where Piston separates them strictly
+        const finalOutput = output ? output : (stdout + "\n" + stderr);
 
-      if (data.message) {
-        throw new Error(data.message);
+        return {
+          success: data.run.code === 0,
+          output: finalOutput,
+          error: data.run.code !== 0 ? finalOutput : undefined 
+        };
       }
-
-      const { stdout, stderr, code } = data.run;
-
-      // Handle output
-      if (stderr) {
-        setError(stderr);
-        // If there is also stdout (e.g. partial run), append it
-        if (stdout) setOutput(stdout);
-      } else {
-        setOutput(stdout);
-      }
-
-      // Handle non-zero exit codes that might not have stderr
-      if (code !== 0 && !stderr) {
-        setError(`Process exited with status code ${code}`);
-      }
-
-      if (code === 0 && !stdout && !stderr) {
-        setOutput("Program finished with no output.");
-      }
-
-    } catch (err: any) {
-      console.error("Execution error:", err);
-      setError(err.message || "Failed to execute code.");
-      toast.error("Execution failed");
-    } finally {
-      setIsRunning(false);
+      return { success: false, output: "Execution failed to start.", error: "Execution failed" };
+    } catch (e: any) {
+      return { success: false, output: `Network Error: ${e.message}`, error: e.message };
     }
   };
 
-  return { runCode, isRunning, output, error };
+  const executeCode = async (
+    language: Language, 
+    code: string, 
+    input: string = "",
+    onOutput?: (text: string) => void
+  ): Promise<ExecutionResult> => {
+    setLoading(true);
+    let result: ExecutionResult = { success: false, output: "" };
+
+    try {
+      switch (language) {
+        case 'python':
+          // Python now handles errors via the stream (onOutput), so we just await it
+          const pyResult = await runPython(code, input, onOutput); 
+          result = { success: pyResult.success, output: "", error: pyResult.error };
+          break;
+
+        case 'javascript':
+          result = await runPiston('javascript', '18.15.0', code, input);
+          break;
+
+        case 'java':
+          result = await runPiston('java', '15.0.2', code, input);
+          break;
+
+        case 'cpp':
+          result = await runPiston('cpp', '10.2.0', code, input);
+          break;
+          
+        case 'c':
+          result = await runPiston('c', '10.2.0', code, input);
+          break;
+
+        case 'sql':
+          result = await runPiston('sqlite3', '3.36.0', code, input);
+          break;
+
+        case 'bash':
+          result = await runPiston('bash', '5.0.0', code, input);
+          break;
+
+        default:
+          result = { success: false, output: "Language not supported", error: "Unsupported language" };
+      }
+    } catch (err: any) {
+      result = { success: false, output: err.message, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+
+    return result;
+  };
+
+  return {
+    executeCode,
+    loading: loading || pythonLoading,
+  };
 };
