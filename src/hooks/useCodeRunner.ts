@@ -31,12 +31,19 @@ export const useCodeRunner = () => {
       const data = await response.json();
       
       if (data.run) {
-        // FIX: Piston v2 often puts compilation errors in 'output' not just 'stderr'
-        // So we use 'output' as the source of truth for the error message too.
+        // ROBUST ERROR HANDLING:
+        // Piston returns stdout and stderr separately. 
+        // If the code failed (code != 0), the error is usually in stderr.
+        const output = data.run.output || "";
+        const stderr = data.run.stderr || "";
+        
+        // If explicit error exists in stderr, prioritize showing it
+        const finalOutput = (data.run.code !== 0 && stderr) ? stderr : output;
+
         return {
           success: data.run.code === 0,
-          output: data.run.output,
-          error: data.run.code !== 0 ? data.run.output : undefined 
+          output: finalOutput,
+          error: data.run.code !== 0 ? finalOutput : undefined 
         };
       }
       return { success: false, output: "", error: "Execution failed to start." };
