@@ -7,7 +7,7 @@ import io
 import js
 import traceback
 
-# Class to redirect stdout to Javascript callback
+# 1. Class to redirect stdout to Javascript callback
 class JSWriter:
     def write(self, string):
         try:
@@ -17,31 +17,61 @@ class JSWriter:
     def flush(self):
         pass
 
+# 2. Class to handle Input Interactively (VS Code Style)
+class InteractiveStdin:
+    def __init__(self, initial_input):
+        # Store initial batch input (from the Input tab)
+        self.buffer = io.StringIO(initial_input)
+
+    def readline(self, size=-1):
+        # First, try to read from the "Standard Input" tab
+        line = self.buffer.readline(size)
+        if line:
+            return line
+        
+        # If that's empty/exhausted, pause and ask the user via Browser Prompt
+        try:
+            # prompt() blocks the main thread, effectively "pausing" Python
+            user_input = js.prompt("Python Requesting Input:")
+            
+            if user_input is None: # User clicked Cancel
+                return "" # Return EOF (End of File)
+            
+            # ECHO: Print what the user typed so it shows in the Output tab
+            # This mimics a real terminal experience
+            print(user_input)
+            
+            return str(user_input) + "\\n"
+        except:
+            return ""
+
+    def read(self, size=-1):
+        return self.buffer.read(size)
+
 def _run_code_with_streams(user_code, input_str):
     # Imports inside to ensure availability
     import sys
     import io
     import traceback
 
-    # 1. Setup Stdin
-    sys.stdin = io.StringIO(input_str)
+    # 1. Setup Interactive Stdin
+    # This wrapper handles both "Batch Input" and "Popup Input"
+    sys.stdin = InteractiveStdin(input_str)
     
     # 2. Setup Stdout & Stderr (Both Redirected to JS)
-    # This ensures warnings and errors print to the terminal too
     old_stdout = sys.stdout
     old_stderr = sys.stderr
     
     writer = JSWriter()
     sys.stdout = writer
-    sys.stderr = writer # Redirect stderr to the same place!
+    sys.stderr = writer 
     
     try:
         # Execute with clean globals
         exec(user_code, {})
         return {"success": True}
     except BaseException:
-        # CRITICAL FIX: Print the error directly to the stream!
-        # This ensures it shows up in the UI immediately.
+        # Print error to stream so it appears in the UI
         print(traceback.format_exc())
         return {"success": False}
     finally:
@@ -87,6 +117,8 @@ export const usePyodide = () => {
 
     try {
       const runner = pyodideRef.current.globals.get("_run_code_with_streams");
+      // Note: We pass the 'stdin' string here. 
+      // Our new Python class will use this string first, then fallback to prompt().
       const resultProxy = runner(code, stdin);
       const result = resultProxy.toJs();
       resultProxy.destroy();
@@ -94,7 +126,6 @@ export const usePyodide = () => {
       // @ts-ignore
       delete window.handlePythonOutput;
 
-      // Error is already printed to stream, so we don't need to return it
       return { success: result.success, output: "" }; 
     } catch (err: any) {
       // @ts-ignore
