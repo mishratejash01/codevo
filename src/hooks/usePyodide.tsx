@@ -3,9 +3,9 @@ import { useState, useEffect, useRef } from 'react';
 // INTELLIGENT PYTHON RUNNER SCRIPT
 const PYTHON_TEST_RUNNER_SCRIPT = `
 import sys
-import traceback
 import io
 import js
+import traceback
 
 class JSWriter:
     def write(self, string):
@@ -17,16 +17,21 @@ class JSWriter:
         pass
 
 def _run_code_with_streams(user_code, input_str):
+    # Imports inside to ensure availability
+    import sys
+    import io
+    import traceback
+
     sys.stdin = io.StringIO(input_str)
     old_stdout = sys.stdout
     sys.stdout = JSWriter()
     
     try:
-        # Execute with clean globals to prevent state persistence
+        # Execute with clean globals
         exec(user_code, {})
         return {"success": True}
-    except Exception:
-        # FIX: Capture the full traceback for SyntaxErrors and RuntimeErrors
+    except BaseException:
+        # Catch ALL errors including SyntaxError, NameError, SystemExit
         error_msg = traceback.format_exc()
         return {"success": False, "error": error_msg}
     finally:
@@ -80,7 +85,7 @@ export const usePyodide = () => {
       if (!result.success) {
         return { success: false, error: result.error };
       }
-      return { success: true, output: "" };
+      return { success: true, output: "" }; 
     } catch (err: any) {
       // @ts-ignore
       delete window.handlePythonOutput;
