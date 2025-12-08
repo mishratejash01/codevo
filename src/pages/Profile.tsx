@@ -15,13 +15,10 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
-  SheetDescription
+  SheetClose
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { 
   Github, 
   Linkedin, 
@@ -29,18 +26,17 @@ import {
   Edit2, 
   Share2, 
   MapPin, 
-  GraduationCap, 
   Check,
   Loader2,
   User as UserIcon,
   MessageSquareText,
-  Mail,
-  ExternalLink,
-  Phone
+  Phone,
+  ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-// Interface matching your Supabase Schema
+// --- Types ---
 interface ProfileData {
   id: string;
   username: string;
@@ -59,53 +55,229 @@ interface ProfileData {
   contact_no?: string;
 }
 
+// --- Shared Components ---
+
+const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData, isOwner: boolean, onEdit?: () => void }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const navigate = useNavigate();
+
+  const copyProfileLink = () => {
+    const url = `${window.location.origin}/u/${profile.username}`;
+    navigator.clipboard.writeText(url);
+    setIsCopied(true);
+    toast.success("Link copied!");
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-[#0c0c0e] text-white overflow-hidden rounded-xl border border-white/10 shadow-2xl relative">
+      {/* Banner */}
+      <div className="h-32 md:h-40 bg-gradient-to-tr from-blue-900/40 via-purple-900/40 to-black relative shrink-0">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
+        <div className="absolute top-4 right-4 flex gap-2">
+          {isOwner && onEdit && (
+            <Button size="icon" variant="ghost" className="text-white/50 hover:text-white hover:bg-white/10 rounded-full" onClick={onEdit}>
+              <Edit2 className="w-4 h-4" />
+            </Button>
+          )}
+          <Button size="icon" variant="ghost" className="text-white/50 hover:text-white hover:bg-white/10 rounded-full" onClick={copyProfileLink}>
+            {isCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+          </Button>
+        </div>
+      </div>
+
+      <div className="px-6 md:px-8 pb-8 flex-1 flex flex-col relative overflow-y-auto">
+        {/* Avatar */}
+        <div className="-mt-14 mb-4 relative z-10">
+          <Avatar className="w-24 h-24 md:w-28 md:h-28 border-4 border-[#0c0c0e] shadow-2xl ring-2 ring-white/5 bg-[#1a1a1c]">
+            <AvatarImage src={profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.full_name}&background=random`} />
+            <AvatarFallback className="bg-primary text-2xl font-bold">{profile.full_name?.charAt(0)}</AvatarFallback>
+          </Avatar>
+        </div>
+
+        {/* Identity */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-white tracking-tight">{profile.full_name}</h2>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm mt-1">
+            <span className="text-primary font-medium">@{profile.username}</span>
+            {profile.country && (
+              <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                <MapPin className="w-3 h-3" />
+                {profile.country}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bio */}
+        <div className="mb-8">
+          {profile.bio ? (
+            <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground italic p-3 border border-dashed border-white/10 rounded-lg">
+              {isOwner ? "Add a bio to introduce yourself." : "No bio available."}
+            </p>
+          )}
+        </div>
+
+        {/* Socials Row */}
+        <div className="flex flex-wrap items-center gap-3 mb-8">
+          {profile.github_handle && (
+            <a href={`https://github.com/${profile.github_handle.replace(/^@/, '')}`} target="_blank" rel="noreferrer">
+              <Button variant="outline" size="icon" className="rounded-full w-10 h-10 border-white/10 bg-white/5 hover:bg-white/10 hover:text-white hover:border-primary/50 transition-all">
+                <Github className="w-5 h-5" />
+              </Button>
+            </a>
+          )}
+          {profile.linkedin_url && (
+            <a href={profile.linkedin_url} target="_blank" rel="noreferrer">
+              <Button variant="outline" size="icon" className="rounded-full w-10 h-10 border-white/10 bg-white/5 hover:bg-white/10 hover:text-white hover:border-blue-500/50 transition-all">
+                <Linkedin className="w-5 h-5" />
+              </Button>
+            </a>
+          )}
+          {profile.portfolio_url && (
+            <a href={profile.portfolio_url} target="_blank" rel="noreferrer">
+              <Button variant="outline" size="icon" className="rounded-full w-10 h-10 border-white/10 bg-white/5 hover:bg-white/10 hover:text-white hover:border-green-500/50 transition-all">
+                <Globe className="w-5 h-5" />
+              </Button>
+            </a>
+          )}
+          {profile.contact_no && (
+             <Button variant="outline" size="icon" className="rounded-full w-10 h-10 border-white/10 bg-white/5 hover:bg-white/10 hover:text-white cursor-default" title={profile.contact_no}>
+               <Phone className="w-5 h-5" />
+             </Button>
+          )}
+        </div>
+
+        {/* Education (Compact) */}
+        {profile.institute_name && (
+          <div className="mt-auto pt-6 border-t border-white/10 text-xs text-muted-foreground">
+            <div className="uppercase tracking-widest font-bold mb-2 text-white/40">Education</div>
+            <p className="text-white mb-0.5 font-medium">{profile.institute_name}</p>
+            <p>{profile.degree} • {profile.branch}</p>
+          </div>
+        )}
+        
+        {/* View Full Profile Button (Only if NOT on the main profile page) */}
+        {window.location.pathname !== `/u/${profile.username}` && window.location.pathname !== `/profile` && (
+           <div className="mt-6">
+             <SheetClose asChild>
+               <Button onClick={() => navigate(`/u/${profile.username}`)} className="w-full bg-white text-black hover:bg-gray-200 font-bold">
+                 View Full Profile <ArrowRight className="w-4 h-4 ml-2" />
+               </Button>
+             </SheetClose>
+           </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// --- Widget Component (Exported for Landing.tsx) ---
+
+export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [session, setSession] = useState<any>(null);
+
+  // 1. Check Session
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+  }, []);
+
+  // 2. Fetch User (Logged In User OR Default Admin)
+  useEffect(() => {
+    const fetchProfile = async () => {
+      let query = supabase.from("profiles").select("*");
+      
+      if (session?.user?.id) {
+        // If logged in, show THEIR profile
+        query = query.eq("id", session.user.id);
+      } else {
+        // If not logged in, show Admin/Default profile
+        query = query.eq("username", defaultUsername);
+      }
+
+      const { data } = await query.single();
+      if (data) setProfile(data as ProfileData);
+    };
+    fetchProfile();
+  }, [session, defaultUsername]);
+
+  // 3. Scroll Listener
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show after scrolling past 60% of viewport
+      setIsVisible(window.scrollY > window.innerHeight * 0.6);
+    };
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  if (!profile) return null;
+
+  return (
+    <div 
+      className={cn(
+        "hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-[9999] font-sans transition-all duration-500 ease-in-out transform",
+        isVisible ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
+      )}
+    >
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            className="h-auto py-8 pl-1 pr-1 rounded-l-2xl rounded-r-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_25px_rgba(37,99,235,0.4)] border-y border-l border-white/20 transition-all hover:pr-3"
+            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+          >
+            <div className="flex items-center justify-center gap-3 py-2 rotate-180">
+              <MessageSquareText className="w-5 h-5 -rotate-90" />
+              <span className="text-sm font-bold tracking-[0.15em] whitespace-nowrap">HIT ME UP</span>
+            </div>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="bg-transparent border-none shadow-none w-[400px] p-0 z-[10000] flex items-center h-full mr-2">
+           <div className="w-full h-[90vh]"> {/* Constrain height for card look */}
+             <ProfileCardContent profile={profile} isOwner={false} /> 
+           </div>
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+};
+
+// --- Page Component (Default Export) ---
+
 const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isOwner, setIsOwner] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  
-  // Edit Form State
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<ProfileData>>({});
 
   useEffect(() => {
-    fetchProfile();
-  }, [username]);
-
-  const fetchProfile = async () => {
-    try {
+    const init = async () => {
       setLoading(true);
       const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-      // Handle /profile route (no username param)
+      // Handle /profile route (no param)
       if (!username) {
         if (!currentUser) {
           navigate("/auth");
           return;
         }
-        // Fetch own username to redirect
-        const { data: myProfile } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("id", currentUser.id)
-          .single();
-          
-        if (myProfile?.username) {
-          navigate(`/u/${myProfile.username}`, { replace: true });
-        }
+        // Redirect to /u/username
+        const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", currentUser.id).single();
+        if (myProfile?.username) navigate(`/u/${myProfile.username}`, { replace: true });
         return;
       }
 
-      // Fetch profile data by username
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("username", username)
-        .single();
-
+      // Fetch Profile
+      const { data, error } = await supabase.from("profiles").select("*").eq("username", username).single();
+      
       if (error || !data) {
         toast.error("Profile not found");
         navigate("/");
@@ -114,436 +286,67 @@ const Profile = () => {
 
       setProfile(data as ProfileData);
       setEditForm(data as ProfileData);
-      
-      // Check ownership
-      if (currentUser && data.id === currentUser.id) {
-        setIsOwner(true);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Error loading profile");
-    } finally {
+      if (currentUser && data.id === currentUser.id) setIsOwner(true);
       setLoading(false);
-    }
-  };
+    };
+    init();
+  }, [username, navigate]);
 
   const handleSave = async () => {
     if (!profile) return;
-
     try {
       const { error } = await supabase
         .from("profiles")
         .update({
+          full_name: editForm.full_name,
           bio: editForm.bio,
           github_handle: editForm.github_handle,
           linkedin_url: editForm.linkedin_url,
           portfolio_url: editForm.portfolio_url,
-          full_name: editForm.full_name,
         })
         .eq("id", profile.id);
 
       if (error) throw error;
-
       setProfile({ ...profile, ...editForm } as ProfileData);
       setIsEditing(false);
-      toast.success("Profile updated successfully");
-    } catch (error) {
-      toast.error("Failed to update profile");
+      toast.success("Profile updated!");
+    } catch (err) {
+      toast.error("Update failed");
     }
   };
 
-  const copyToClipboard = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url);
-    setIsCopied(true);
-    toast.success("Profile link copied!");
-    setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  // Helper component for Social Links
-  const SocialLinkItem = ({ 
-    icon: Icon, 
-    label, 
-    value, 
-    href, 
-    isOwner, 
-    placeholder,
-    displayValue 
-  }: { 
-    icon: any, 
-    label: string, 
-    value?: string, 
-    href?: string, 
-    isOwner: boolean, 
-    placeholder: string,
-    displayValue?: string
-  }) => {
-    if (value) {
-      return (
-        <a 
-          href={href} 
-          target="_blank" 
-          rel="noreferrer" 
-          className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all group"
-        >
-          <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-colors text-white">
-            <Icon className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-white text-sm">{label}</div>
-            <div className="text-xs text-muted-foreground truncate">
-              {displayValue || value}
-            </div>
-          </div>
-          <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-        </a>
-      );
-    }
-    if (isOwner) {
-      return (
-        <div 
-          onClick={() => setIsEditing(true)}
-          className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-white/10 hover:border-white/20 hover:bg-white/5 transition-all cursor-pointer group"
-        >
-          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-muted-foreground group-hover:text-white">
-            <Icon className="w-5 h-5" />
-          </div>
-          <div className="text-sm text-muted-foreground group-hover:text-white transition-colors">
-            {placeholder}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
-    );
-  }
-
+  if (loading) return <div className="min-h-screen bg-[#09090b] flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white pt-24 pb-12 px-4 relative overflow-hidden">
-      
-      {/* ========================================================= */}
-      {/* DESKTOP SIDE TAB: "HIT ME UP" */}
-      {/* Visible only on Desktop (md:block), Hidden on Mobile (hidden) */}
-      {/* ========================================================= */}
-      <div className="hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-50 font-sans">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              className="h-auto py-8 pl-1 pr-1 rounded-l-2xl rounded-r-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_25px_rgba(37,99,235,0.4)] border-y border-l border-white/20 transition-all hover:pr-3"
-              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-            >
-              <div className="flex items-center justify-center gap-3 py-2 rotate-180">
-                <MessageSquareText className="w-5 h-5 -rotate-90" />
-                <span className="text-sm font-bold tracking-[0.15em] whitespace-nowrap">HIT ME UP</span>
-              </div>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="bg-[#0c0c0e] border-l border-white/10 text-white w-[400px] p-0 z-[100]">
-             <div className="h-full flex flex-col">
-               {/* Sheet Header */}
-               <div className="p-6 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
-                 <SheetHeader className="text-left space-y-4">
-                   <div className="flex items-center gap-4">
-                     <Avatar className="w-16 h-16 border-2 border-white/10 shadow-lg">
-                       <AvatarImage src={profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.full_name}&background=random`} />
-                       <AvatarFallback className="bg-primary">{profile.full_name?.charAt(0)}</AvatarFallback>
-                     </Avatar>
-                     <div>
-                       <SheetTitle className="text-xl text-white">Connect</SheetTitle>
-                       <SheetDescription className="text-gray-400">
-                         Get in touch with {profile.full_name?.split(' ')[0]}
-                       </SheetDescription>
-                     </div>
-                   </div>
-                 </SheetHeader>
-               </div>
+    <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-12 px-4 relative flex items-center justify-center">
+        {/* Background Decor */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px] pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[128px] pointer-events-none" />
 
-               {/* Sheet Body */}
-               <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Social Profiles</h4>
-                    <div className="grid gap-3">
-                      <SocialLinkItem 
-                        icon={Github} 
-                        label="GitHub" 
-                        value={profile.github_handle} 
-                        href={`https://github.com/${profile.github_handle?.replace(/^@/, '')}`} 
-                        isOwner={isOwner}
-                        placeholder="Link GitHub"
-                      />
-                      <SocialLinkItem 
-                        icon={Linkedin} 
-                        label="LinkedIn" 
-                        value={profile.linkedin_url}
-                        displayValue="View Profile"
-                        href={profile.linkedin_url} 
-                        isOwner={isOwner}
-                        placeholder="Link LinkedIn"
-                      />
-                      <SocialLinkItem 
-                        icon={Globe} 
-                        label="Portfolio" 
-                        value={profile.portfolio_url}
-                        displayValue="View Website" 
-                        href={profile.portfolio_url} 
-                        isOwner={isOwner}
-                        placeholder="Link Portfolio"
-                      />
-                    </div>
-                  </div>
+        {/* Profile Card Container */}
+        <div className="w-full max-w-md h-[800px] max-h-[85vh] relative z-10">
+           <ProfileCardContent 
+             profile={profile} 
+             isOwner={isOwner} 
+             onEdit={() => setIsEditing(true)} 
+           />
+        </div>
 
-                  <div className="space-y-4">
-                     <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Contact Info</h4>
-                     
-                     {/* Phone / Contact No */}
-                     {profile.contact_no ? (
-                       <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-4 group hover:bg-primary/15 transition-colors">
-                         <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                           <Phone className="w-5 h-5" />
-                         </div>
-                         <div>
-                           <div className="text-xs text-primary/80 font-medium uppercase">Mobile</div>
-                           <div className="text-sm font-bold text-white tracking-wide">{profile.contact_no}</div>
-                         </div>
-                       </div>
-                     ) : (
-                       isOwner && (
-                         <div className="p-4 rounded-xl border border-dashed border-white/10 flex items-center gap-3 cursor-pointer hover:bg-white/5" onClick={() => navigate('/degree')}>
-                            <Phone className="w-5 h-5 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">Add Contact Number in Profile Settings</span>
-                         </div>
-                       )
-                     )}
-
-                     {/* Email (Placeholder/Hidden logic based on your needs) */}
-                     <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4 opacity-70">
-                       <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-gray-400">
-                         <Mail className="w-5 h-5" />
-                       </div>
-                       <div>
-                         <div className="text-xs text-muted-foreground uppercase">Email</div>
-                         <div className="text-sm font-medium text-white italic">Hidden</div>
-                       </div>
-                     </div>
-                  </div>
-               </div>
-
-               {/* Sheet Footer */}
-               <div className="p-6 border-t border-white/10 bg-black/20">
-                 <Button onClick={copyToClipboard} className="w-full bg-white text-black hover:bg-gray-200 font-bold">
-                   {isCopied ? <Check className="w-4 h-4 mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
-                   {isCopied ? "LINK COPIED" : "SHARE PROFILE"}
-                 </Button>
-               </div>
-             </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-
-      {/* ========================================================= */}
-      {/* MAIN CONTENT AREA */}
-      {/* ========================================================= */}
-
-      {/* Background Decor */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[128px] pointer-events-none" />
-
-      <div className="max-w-4xl mx-auto relative z-10">
-        <Card className="bg-[#0c0c0e] border-white/10 shadow-2xl overflow-hidden backdrop-blur-xl min-h-[600px]">
-          
-          {/* Banner */}
-          <div className="h-40 bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-blue-900/20 border-b border-white/5 relative">
-            <div className="absolute top-4 right-4 flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-black/50 border-white/10 hover:bg-white/10 text-white backdrop-blur-md transition-all"
-                onClick={copyToClipboard}
-              >
-                {isCopied ? <Check className="w-4 h-4 mr-2 text-green-500" /> : <Share2 className="w-4 h-4 mr-2" />}
-                {isCopied ? "Copied" : "Share"}
-              </Button>
-
-              {isOwner && (
-                <Dialog open={isEditing} onOpenChange={setIsEditing}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      size="sm" 
-                      className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
-                    >
-                      <Edit2 className="w-4 h-4 mr-2" /> Edit Profile
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Edit Profile Details</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground uppercase">Display Name</label>
-                        <Input 
-                          value={editForm.full_name || ""} 
-                          onChange={e => setEditForm({...editForm, full_name: e.target.value})}
-                          className="bg-white/5 border-white/10 text-white"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground uppercase">Bio / Summary</label>
-                        <Textarea 
-                          value={editForm.bio || ""} 
-                          onChange={e => setEditForm({...editForm, bio: e.target.value})}
-                          className="bg-white/5 border-white/10 text-white min-h-[80px]"
-                          placeholder="Passionate developer experienced in..."
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground uppercase flex items-center gap-2">
-                          <Github className="w-3 h-3" /> GitHub Handle
-                        </label>
-                        <Input 
-                          value={editForm.github_handle || ""} 
-                          onChange={e => setEditForm({...editForm, github_handle: e.target.value})}
-                          className="bg-white/5 border-white/10 text-white"
-                          placeholder="e.g. mishratejash01"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground uppercase flex items-center gap-2">
-                          <Linkedin className="w-3 h-3" /> LinkedIn URL
-                        </label>
-                        <Input 
-                          value={editForm.linkedin_url || ""} 
-                          onChange={e => setEditForm({...editForm, linkedin_url: e.target.value})}
-                          className="bg-white/5 border-white/10 text-white"
-                          placeholder="https://linkedin.com/in/..."
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground uppercase flex items-center gap-2">
-                          <Globe className="w-3 h-3" /> Portfolio URL
-                        </label>
-                        <Input 
-                          value={editForm.portfolio_url || ""} 
-                          onChange={e => setEditForm({...editForm, portfolio_url: e.target.value})}
-                          className="bg-white/5 border-white/10 text-white"
-                          placeholder="https://mywebsite.com"
-                        />
-                      </div>
-                      <Button onClick={handleSave} className="w-full mt-4 bg-primary text-white hover:bg-primary/90">Save Changes</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
+        {/* Edit Dialog */}
+        <Dialog open={isEditing} onOpenChange={setIsEditing}>
+          <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md">
+            <DialogHeader><DialogTitle>Edit Profile</DialogTitle></DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2"><label className="text-xs uppercase text-muted-foreground">Name</label><Input value={editForm.full_name} onChange={e => setEditForm({...editForm, full_name: e.target.value})} className="bg-white/5 border-white/10 text-white" /></div>
+              <div className="space-y-2"><label className="text-xs uppercase text-muted-foreground">Bio</label><Textarea value={editForm.bio || ''} onChange={e => setEditForm({...editForm, bio: e.target.value})} className="bg-white/5 border-white/10 text-white" /></div>
+              <div className="space-y-2"><label className="text-xs uppercase text-muted-foreground">GitHub</label><Input value={editForm.github_handle || ''} onChange={e => setEditForm({...editForm, github_handle: e.target.value})} className="bg-white/5 border-white/10 text-white" /></div>
+              <div className="space-y-2"><label className="text-xs uppercase text-muted-foreground">LinkedIn</label><Input value={editForm.linkedin_url || ''} onChange={e => setEditForm({...editForm, linkedin_url: e.target.value})} className="bg-white/5 border-white/10 text-white" /></div>
+              <div className="space-y-2"><label className="text-xs uppercase text-muted-foreground">Portfolio</label><Input value={editForm.portfolio_url || ''} onChange={e => setEditForm({...editForm, portfolio_url: e.target.value})} className="bg-white/5 border-white/10 text-white" /></div>
+              <Button onClick={handleSave} className="w-full mt-2">Save Changes</Button>
             </div>
-          </div>
-
-          <CardContent className="pt-0 relative px-6 md:px-10 pb-10">
-            {/* Avatar & Name Section */}
-            <div className="relative -mt-16 mb-8 flex flex-col md:flex-row items-center md:items-end gap-6">
-              <Avatar className="w-32 h-32 border-4 border-[#0c0c0e] shadow-2xl ring-2 ring-white/10 bg-[#1a1a1c]">
-                <AvatarImage src={profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.full_name}&background=random`} />
-                <AvatarFallback className="bg-primary text-2xl font-bold">{profile.full_name?.charAt(0)}</AvatarFallback>
-              </Avatar>
-              
-              <div className="flex-1 text-center md:text-left mb-2 space-y-1">
-                <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">{profile.full_name}</h1>
-                <div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground font-medium">
-                  <UserIcon className="w-4 h-4" /> 
-                  @{profile.username}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              
-              {/* Left Column: Bio & Education */}
-              <div className="md:col-span-2 space-y-8">
-                {/* Bio Section */}
-                <div className="prose prose-invert max-w-none">
-                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2 border-b border-white/10 pb-2">
-                    About
-                  </h3>
-                  {profile.bio ? (
-                    <p className="text-gray-400 text-sm leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
-                  ) : (
-                    <p className="text-gray-600 text-sm italic">No bio added yet.</p>
-                  )}
-                </div>
-
-                {/* Education Section */}
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2 border-b border-white/10 pb-2">
-                    <GraduationCap className="w-5 h-5 text-primary" /> Education
-                  </h3>
-                  
-                  <div className="relative pl-6 border-l-2 border-white/10 pb-2 ml-2">
-                    <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[#0c0c0e] border-2 border-primary" />
-                    <div className="bg-white/5 rounded-lg p-4 border border-white/5 hover:border-white/10 transition-colors">
-                      <div className="flex justify-between items-start mb-1">
-                        <h4 className="font-medium text-white text-base">{profile.institute_name || "Institute Not Added"}</h4>
-                        <Badge variant="secondary" className="bg-white/10 hover:bg-white/20 text-xs">
-                          {profile.start_year || "20XX"} - {profile.end_year || "20XX"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-primary/80 font-medium mb-2">{profile.degree} • {profile.branch}</p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        {profile.country && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {profile.country}</span>}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Socials (Inline Card View) */}
-              {/* This ensures links are available even on mobile or if side tab is missed */}
-              <div className="space-y-6">
-                <div className="bg-white/5 rounded-xl p-5 border border-white/5">
-                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Connect</h3>
-                  <div className="space-y-3">
-                     <SocialLinkItem 
-                        icon={Github} 
-                        label="GitHub" 
-                        value={profile.github_handle} 
-                        href={`https://github.com/${profile.github_handle?.replace(/^@/, '')}`} 
-                        isOwner={isOwner}
-                        placeholder="Add GitHub"
-                      />
-                      <SocialLinkItem 
-                        icon={Linkedin} 
-                        label="LinkedIn" 
-                        value={profile.linkedin_url}
-                        displayValue="LinkedIn Profile" 
-                        href={profile.linkedin_url} 
-                        isOwner={isOwner}
-                        placeholder="Add LinkedIn"
-                      />
-                      <SocialLinkItem 
-                        icon={Globe} 
-                        label="Portfolio" 
-                        value={profile.portfolio_url}
-                        displayValue="Personal Site" 
-                        href={profile.portfolio_url} 
-                        isOwner={isOwner}
-                        placeholder="Add Portfolio"
-                      />
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 };
