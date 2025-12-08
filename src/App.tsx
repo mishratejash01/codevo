@@ -21,8 +21,10 @@ import PracticeArena from "./pages/PracticeArena";
 import PracticeSolver from "./pages/PracticeSolver";
 import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
 import SubjectModeSelection from "./pages/SubjectModeSelection";
-// --- NEW IMPORT ---
 import Profile from "./pages/Profile";
+
+// --- NEW IMPORT ---
+import { HitMeUpWidget } from "@/components/HitMeUpWidget";
 // -------------------
 
 import { SplashScreen } from "@/components/SplashScreen";
@@ -65,6 +67,11 @@ const AppContent = () => {
 
   return (
     <>
+      {/* --- ADD GLOBAL WIDGET HERE --- */}
+      {/* This will appear on Landing page (and others) but hide on Profile page automatically */}
+      <HitMeUpWidget defaultUsername="mishratejash01" />
+      {/* ----------------------------- */}
+
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
@@ -74,17 +81,9 @@ const AppContent = () => {
         <Route path="/exam/result" element={<ExamResult />} />
         
         <Route path="/degree" element={<DegreeSelection />} />
-        
-        {/* --- FIXED ROUTES --- */}
-        {/* 1. Select OPPE 1 or OPPE 2 */}
         <Route path="/degree/oppe/:subjectId/:subjectName" element={<SubjectOppeSelection />} />
-        
-        {/* 2. Select Mode (Proctored/Practice) */}
         <Route path="/degree/mode/:subjectId/:subjectName/:examType" element={<SubjectModeSelection />} />
-        
-        {/* 3. Select Set (Proctored) or Questions (Practice) */}
         <Route path="/degree/sets/:subjectId/:subjectName/:examType/:mode" element={<QuestionSetSelection />} />
-        {/* ------------------- */}
 
         <Route path="/practice-arena" element={<PracticeArena />} />
         <Route path="/practice-arena/:slug" element={<PracticeSolver />} />
@@ -92,13 +91,9 @@ const AppContent = () => {
         <Route path="/compiler" element={<Compiler />} />
         <Route path="/docs" element={<Documentation />} />
 
-        {/* --- PROFILE ROUTES --- */}
-        {/* Public Profile View (Shareable Link) */}
+        {/* Profile Routes */}
         <Route path="/u/:username" element={<Profile />} />
-        
-        {/* Private Redirect (User clicks 'Profile' in nav) */}
         <Route path="/profile" element={<Profile />} />
-        {/* ---------------------- */}
 
         <Route path="*" element={<NotFound />} />
       </Routes>
