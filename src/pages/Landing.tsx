@@ -94,7 +94,7 @@ const Landing = () => {
   // --- HIT ME UP STATES ---
   const [ownerProfile, setOwnerProfile] = useState<any>(null);
   const [isCopied, setIsCopied] = useState(false);
-  const [showHitMeUp, setShowHitMeUp] = useState(false); // NEW: Controls visibility
+  const [showHitMeUp, setShowHitMeUp] = useState(false); 
   // ------------------------
 
   // Typewriter states
@@ -108,25 +108,18 @@ const Landing = () => {
 
   // Framer Motion Scroll Logic
   const { scrollY } = useScroll();
-  
-  // Animate scale from 1 down to 0.90 over the first 500px of scroll
   const rawScale = useTransform(scrollY, [0, 500], [1, 0.90]);
   const smoothScale = useSpring(rawScale, { stiffness: 50, damping: 15, mass: 0.2 });
-
-  // Animate border radius from 0 to 32px over the first 500px
   const rawRadius = useTransform(scrollY, [0, 500], [0, 32]);
   const smoothRadius = useSpring(rawRadius, { stiffness: 50, damping: 15, mass: 0.2 });
 
-  // Animation Loop
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     let charIndex = 0;
-
     const animate = () => {
       setShowcasePhase('question');
       setTypedCode('');
       setActiveKey(null);
-
       timeoutId = setTimeout(() => {
         setShowcasePhase('terminal');
         const typeChar = () => {
@@ -148,7 +141,6 @@ const Landing = () => {
         timeoutId = setTimeout(typeChar, 800);
       }, 3500);
     };
-
     animate();
     return () => clearTimeout(timeoutId);
   }, []);
@@ -172,36 +164,44 @@ const Landing = () => {
     return () => subscription.unsubscribe();
   }, [toast]);
 
-  // --- SCROLL LISTENER FOR HIT ME UP ---
+  // --- 1. SCROLL LISTENER FOR HIT ME UP ---
   useEffect(() => {
     const handleScroll = () => {
-      // Show when scrolled past 80% of the viewport height (Hero section exit)
-      if (window.scrollY > window.innerHeight * 0.8) {
+      // Show when scrolled past 60% of viewport (Earlier trigger to be safe)
+      if (window.scrollY > window.innerHeight * 0.6) {
         setShowHitMeUp(true);
       } else {
         setShowHitMeUp(false);
       }
     };
-
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Check initially
+    handleScroll(); 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  // -------------------------------------
 
-  // --- FETCH OWNER PROFILE FOR HIT ME UP ---
+  // --- 2. FETCH PROFILE (WITH FALLBACK) ---
   useEffect(() => {
     const fetchOwner = async () => {
       const { data } = await supabase
         .from("profiles")
         .select("*")
-        .eq("username", "mishratejash01") // Replace with your admin username
+        .eq("username", "mishratejash01")
         .single();
-      if (data) setOwnerProfile(data);
+      
+      if (data) {
+        setOwnerProfile(data);
+      } else {
+        // FALLBACK DATA: Ensures button appears even if DB fetch fails
+        setOwnerProfile({
+          username: 'mishratejash01',
+          full_name: 'Admin User',
+          github_handle: 'mishratejash01',
+          // Add other defaults as needed
+        });
+      }
     };
     fetchOwner();
   }, []);
-  // ----------------------------------------
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -232,6 +232,9 @@ const Landing = () => {
     toast({ title: "Profile link copied!" });
     setTimeout(() => setIsCopied(false), 2000);
   };
+
+  // Helper variable to use safe data
+  const activeProfile = ownerProfile || { username: 'mishratejash01', full_name: 'Tejash Mishra' };
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-primary/20 flex flex-col relative overflow-hidden">
@@ -267,110 +270,111 @@ const Landing = () => {
         }
       `}</style>
 
-      {/* --- HIT ME UP WIDGET (DESKTOP ONLY + SCROLL TRIGGERED) --- */}
-      {ownerProfile && (
-        <div 
-          className={cn(
-            "hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-[100] font-sans transition-all duration-500 ease-in-out transform",
-            showHitMeUp ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
-          )}
-        >
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                className="h-auto py-8 pl-1 pr-1 rounded-l-2xl rounded-r-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_25px_rgba(37,99,235,0.4)] border-y border-l border-white/20 transition-all hover:pr-3"
-                style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-              >
-                <div className="flex items-center justify-center gap-3 py-2 rotate-180">
-                  <MessageSquareText className="w-5 h-5 -rotate-90" />
-                  <span className="text-sm font-bold tracking-[0.15em] whitespace-nowrap">HIT ME UP</span>
+      {/* --- HIT ME UP WIDGET --- */}
+      {/* Removed the conditional {ownerProfile &&} check so it always renders if showHitMeUp is true */}
+      <div 
+        className={cn(
+          "hidden md:block fixed right-0 top-1/2 -translate-y-1/2 z-[9999] font-sans transition-all duration-500 ease-in-out transform",
+          showHitMeUp ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
+        )}
+      >
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              className="h-auto py-8 pl-1 pr-1 rounded-l-2xl rounded-r-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_25px_rgba(37,99,235,0.4)] border-y border-l border-white/20 transition-all hover:pr-3"
+              style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            >
+              <div className="flex items-center justify-center gap-3 py-2 rotate-180">
+                <MessageSquareText className="w-5 h-5 -rotate-90" />
+                <span className="text-sm font-bold tracking-[0.15em] whitespace-nowrap">HIT ME UP</span>
+              </div>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="bg-[#0c0c0e] border-l border-white/10 text-white w-[400px] p-0 z-[10000]">
+              <div className="h-full flex flex-col">
+                {/* Header */}
+                <div className="p-6 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
+                  <SheetHeader className="text-left space-y-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-16 h-16 border-2 border-white/10 shadow-lg">
+                        <AvatarImage src={activeProfile.avatar_url || `https://ui-avatars.com/api/?name=${activeProfile.full_name}&background=random`} />
+                        <AvatarFallback className="bg-primary">{activeProfile.full_name?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <SheetTitle className="text-xl text-white">Connect</SheetTitle>
+                        <SheetDescription className="text-gray-400">
+                          Get in touch with {activeProfile.full_name?.split(' ')[0]}
+                        </SheetDescription>
+                      </div>
+                    </div>
+                  </SheetHeader>
                 </div>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="bg-[#0c0c0e] border-l border-white/10 text-white w-[400px] p-0 z-[101]">
-                <div className="h-full flex flex-col">
-                  {/* Header */}
-                  <div className="p-6 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
-                    <SheetHeader className="text-left space-y-4">
-                      <div className="flex items-center gap-4">
-                        <Avatar className="w-16 h-16 border-2 border-white/10 shadow-lg">
-                          <AvatarImage src={ownerProfile.avatar_url || `https://ui-avatars.com/api/?name=${ownerProfile.full_name}&background=random`} />
-                          <AvatarFallback className="bg-primary">{ownerProfile.full_name?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <SheetTitle className="text-xl text-white">Connect</SheetTitle>
-                          <SheetDescription className="text-gray-400">
-                            Get in touch with {ownerProfile.full_name?.split(' ')[0]}
-                          </SheetDescription>
+
+                {/* Body */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Social Profiles</h4>
+                    <div className="grid gap-3">
+                      {activeProfile.github_handle ? (
+                        <a href={`https://github.com/${activeProfile.github_handle.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
+                          <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center border border-white/10 text-white"><Github className="w-5 h-5" /></div>
+                          <div className="flex-1 text-sm font-medium text-white">GitHub</div>
+                          <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                        </a>
+                      ) : (
+                        <div className="text-sm text-gray-500 italic">No GitHub Linked</div>
+                      )}
+
+                      {activeProfile.linkedin_url && (
+                        <a href={activeProfile.linkedin_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
+                          <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center border border-white/10 text-white"><Linkedin className="w-5 h-5" /></div>
+                          <div className="flex-1 text-sm font-medium text-white">LinkedIn</div>
+                          <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                        </a>
+                      )}
+                      {activeProfile.portfolio_url && (
+                        <a href={activeProfile.portfolio_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
+                          <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center border border-white/10 text-white"><Globe className="w-5 h-5" /></div>
+                          <div className="flex-1 text-sm font-medium text-white">Portfolio</div>
+                          <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Contact</h4>
+                      {activeProfile.contact_no ? (
+                        <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary"><Phone className="w-5 h-5" /></div>
+                          <div>
+                            <div className="text-xs text-primary/80 font-medium uppercase">Mobile</div>
+                            <div className="text-sm font-bold text-white tracking-wide">{activeProfile.contact_no}</div>
+                          </div>
                         </div>
-                      </div>
-                    </SheetHeader>
-                  </div>
-
-                  {/* Body */}
-                  <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Social Profiles</h4>
-                      <div className="grid gap-3">
-                        {ownerProfile.github_handle && (
-                          <a href={`https://github.com/${ownerProfile.github_handle.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
-                            <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center border border-white/10 text-white"><Github className="w-5 h-5" /></div>
-                            <div className="flex-1 text-sm font-medium text-white">GitHub</div>
-                            <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
-                          </a>
-                        )}
-                        {ownerProfile.linkedin_url && (
-                          <a href={ownerProfile.linkedin_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
-                            <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center border border-white/10 text-white"><Linkedin className="w-5 h-5" /></div>
-                            <div className="flex-1 text-sm font-medium text-white">LinkedIn</div>
-                            <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
-                          </a>
-                        )}
-                        {ownerProfile.portfolio_url && (
-                          <a href={ownerProfile.portfolio_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all group">
-                            <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center border border-white/10 text-white"><Globe className="w-5 h-5" /></div>
-                            <div className="flex-1 text-sm font-medium text-white">Portfolio</div>
-                            <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Contact</h4>
-                        {ownerProfile.contact_no ? (
-                          <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary"><Phone className="w-5 h-5" /></div>
-                            <div>
-                              <div className="text-xs text-primary/80 font-medium uppercase">Mobile</div>
-                              <div className="text-sm font-bold text-white tracking-wide">{ownerProfile.contact_no}</div>
-                            </div>
+                      ) : (
+                        <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4 opacity-70">
+                          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-gray-400"><Mail className="w-5 h-5" /></div>
+                          <div>
+                            <div className="text-xs text-muted-foreground uppercase">Email</div>
+                            <div className="text-sm font-medium text-white italic">Hidden</div>
                           </div>
-                        ) : (
-                          <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4 opacity-70">
-                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-gray-400"><Mail className="w-5 h-5" /></div>
-                            <div>
-                              <div className="text-xs text-muted-foreground uppercase">Email</div>
-                              <div className="text-sm font-medium text-white italic">Hidden</div>
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="p-6 border-t border-white/10 bg-black/20">
-                    <Button onClick={copyProfileLink} className="w-full bg-white text-black hover:bg-gray-200 font-bold">
-                      {isCopied ? <Check className="w-4 h-4 mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
-                      {isCopied ? "LINK COPIED" : "SHARE PROFILE"}
-                    </Button>
+                        </div>
+                      )}
                   </div>
                 </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      )}
-      {/* ------------------------------------- */}
+
+                {/* Footer */}
+                <div className="p-6 border-t border-white/10 bg-black/20">
+                  <Button onClick={copyProfileLink} className="w-full bg-white text-black hover:bg-gray-200 font-bold">
+                    {isCopied ? <Check className="w-4 h-4 mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
+                    {isCopied ? "LINK COPIED" : "SHARE PROFILE"}
+                  </Button>
+                </div>
+              </div>
+          </SheetContent>
+        </Sheet>
+      </div>
 
       {/* Page Transition Overlay */}
       <AnimatePresence>
@@ -397,7 +401,6 @@ const Landing = () => {
       <main className="flex-1 w-full bg-[#09090b]">
         
         {/* --- HERO SECTION --- */}
-        {/* Height is slightly > 100vh to allow scroll, but white background is properly contained */}
         <div className="relative w-full h-[115vh] bg-white"> 
           <div className="sticky top-0 h-screen w-full flex items-start justify-center overflow-hidden">
             <motion.div 
@@ -456,7 +459,6 @@ const Landing = () => {
         </div>
 
         {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
-        {/* Negative top margin pulls this section UP over the hero container's white background */}
         <section id="laptop-section" className="w-full bg-[#09090b] py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
