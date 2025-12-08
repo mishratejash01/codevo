@@ -31,14 +31,18 @@ export const useCodeRunner = () => {
       const data = await response.json();
       
       if (data.run) {
-        // FIX: Always use 'output'. It combines stdout and stderr.
-        // This prevents swallowing errors if they appear in one but not the other.
-        const combinedOutput = data.run.output || "";
+        const stdout = data.run.stdout || "";
+        const stderr = data.run.stderr || "";
+        const output = data.run.output || ""; // Piston's attempt to combine them
         
+        // Fallback: If output is empty but we have stderr, use stderr
+        // This fixes cases where Piston separates them strictly
+        const finalOutput = output ? output : (stdout + "\n" + stderr);
+
         return {
           success: data.run.code === 0,
-          output: combinedOutput,
-          error: data.run.code !== 0 ? combinedOutput : undefined 
+          output: finalOutput,
+          error: data.run.code !== 0 ? finalOutput : undefined 
         };
       }
       return { success: false, output: "Execution failed to start.", error: "Execution failed" };
@@ -59,6 +63,7 @@ export const useCodeRunner = () => {
     try {
       switch (language) {
         case 'python':
+          // Python now handles errors via the stream (onOutput), so we just await it
           const pyResult = await runPython(code, input, onOutput); 
           result = { success: pyResult.success, output: "", error: pyResult.error };
           break;
