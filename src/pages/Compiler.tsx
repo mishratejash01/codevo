@@ -92,7 +92,7 @@ const Compiler = () => {
         if (result.success) {
             setOutput(result.output);
         } else {
-            // Show Piston Error
+            // FIX: Show the error message (which we now get from data.run.output)
             setOutput(result.error || "An unknown error occurred.");
         }
     } else {
@@ -102,6 +102,12 @@ const Compiler = () => {
             setOutput((prev) => prev + "\n" + (result.error || ""));
         }
     }
+  };
+
+  // Helper to determine if output is an error
+  const isError = (text: string) => {
+     const lower = text.toLowerCase();
+     return lower.includes('error') || lower.includes('exception') || lower.includes('traceback') || lower.includes('failed');
   };
 
   const handleDownload = () => {
@@ -221,7 +227,7 @@ const Compiler = () => {
 
                 <TabsContent value="output" className="flex-1 p-0 m-0 overflow-hidden relative group">
                      <div className="absolute inset-0 p-4 font-mono text-sm overflow-auto custom-scrollbar">
-                        <pre className={cn("whitespace-pre-wrap font-mono", (output.includes('Error') || output.includes('Exception')) ? "text-red-400" : "text-blue-300")}>
+                        <pre className={cn("whitespace-pre-wrap font-mono", isError(output) ? "text-red-400" : "text-blue-300")}>
                             {output || <span className="text-white/20 italic">Run code to see output...</span>}
                         </pre>
                      </div>
