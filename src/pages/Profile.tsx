@@ -56,15 +56,11 @@ interface ProfileData {
 // --- Helper: Extract LinkedIn Username ---
 const getLinkedInUsername = (url?: string) => {
   if (!url) return null;
-  // Regex handles:
-  // linkedin.com/in/username
-  // linkedin.com/in/username/
-  // linkedin.com/in/username?params...
-  const match = url.match(/linkedin\.com\/in\/([^/?]+)/);
+  const match = url.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/);
   return match ? match[1] : null;
 };
 
-// --- Shared Component: Profile Card ---
+// --- Shared Component: Profile Card (New Design) ---
 
 const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData, isOwner: boolean, onEdit?: () => void }) => {
   const [isCopied, setIsCopied] = useState(false);
@@ -78,147 +74,138 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  // Avatar Logic with Fallback Chain
   const linkedInUser = getLinkedInUsername(profile.linkedin_url);
   const avatarSources = [
-    profile.avatar_url, // 1. Custom Upload
-    linkedInUser ? `https://unavatar.io/linkedin/${linkedInUser}` : null, // 2. LinkedIn Sync
-    `https://unavatar.io/${profile.username}`, // 3. Username Fallback
-    `https://ui-avatars.com/api/?name=${profile.full_name}&background=random` // 4. Initials Fallback
+    profile.avatar_url,
+    linkedInUser ? `https://unavatar.io/linkedin/${linkedInUser}` : null,
+    `https://unavatar.io/${profile.username}`,
+    `https://ui-avatars.com/api/?name=${profile.full_name}&background=random`
   ].filter(Boolean) as string[];
 
   return (
-    <div className="h-full flex flex-col bg-[#0c0c0e] text-white overflow-hidden rounded-xl border border-white/10 shadow-2xl relative font-sans">
+    <div className="h-full w-full bg-[#0c0c0e] text-white rounded-2xl shadow-2xl overflow-hidden flex flex-col font-sans border border-white/10 relative">
       
-      {/* SCROLL CONTAINER: 
-         Both Banner and Content are inside here to prevent Avatar clipping 
-      */}
+      {/* Scrollable Area */}
       <div className="flex-1 overflow-y-auto relative">
         
         {/* --- BANNER --- */}
-        <div className="h-36 md:h-44 bg-gradient-to-tr from-[#0f172a] via-[#1e1b4b] to-black relative">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        <div className="relative h-48 bg-cover bg-center shrink-0" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2070&auto=format&fit=crop')" }}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
           
-          {/* BRANDING: CODéVO */}
-          <div className="absolute top-4 right-5 z-10 pointer-events-none select-none">
-            <span className="font-neuropol text-lg font-bold tracking-wider text-white/30 transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">
-              COD
-              <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
-              VO
-            </span>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="absolute top-12 right-4 flex gap-2 z-20">
-            {isOwner && onEdit && (
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-white/60 hover:text-white hover:bg-black/40 rounded-full transition-colors" onClick={onEdit}>
-                <Edit2 className="w-4 h-4" />
-              </Button>
-            )}
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-white/60 hover:text-white hover:bg-black/40 rounded-full transition-colors" onClick={copyProfileLink}>
-              {isCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-            </Button>
+          {/* Header Actions (Inside Banner) */}
+          <div className="absolute inset-x-0 top-0 p-6 flex justify-between items-center text-white z-10">
+            <div className="flex items-center">
+              <span className="font-neuropol font-bold text-lg tracking-widest text-white/80">CODÉVO</span>
+            </div>
+            <div className="flex gap-2">
+              {isOwner && onEdit && (
+                <button onClick={onEdit} className="p-2 rounded-full hover:bg-white/20 transition-colors bg-black/20 backdrop-blur-md">
+                  <Edit2 className="w-5 h-5 text-white" />
+                </button>
+              )}
+              <button onClick={copyProfileLink} className="p-2 rounded-full hover:bg-white/20 transition-colors bg-black/20 backdrop-blur-md">
+                {isCopied ? <Check className="w-5 h-5 text-green-400" /> : <Share2 className="w-5 h-5 text-white" />}
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* --- CONTENT --- */}
-        <div className="px-6 md:px-8 pb-8 relative">
-          
-          {/* --- AVATAR --- */}
-          {/* Negative margin pulls it up over the banner. z-20 ensures it's on top. */}
-          <div className="-mt-16 mb-4 relative z-20 inline-block">
-            <Avatar className="w-28 h-28 md:w-32 md:h-32 border-[4px] border-[#0c0c0e] shadow-2xl ring-1 ring-white/10 bg-[#1a1a1c]">
+        {/* --- AVATAR (Overlapping) --- */}
+        <div className="absolute top-28 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full border-4 border-[#0c0c0e] bg-[#1a1a1c] flex items-center justify-center z-20 shadow-xl">
+           <Avatar className="w-full h-full rounded-full">
               {avatarSources.map((src) => (
                 <AvatarImage key={src} src={src} className="object-cover" />
               ))}
-              <AvatarFallback className="bg-[#1a1a1c] text-3xl font-bold text-white/40">
+              <AvatarFallback className="bg-[#1a1a1c] text-4xl font-bold text-white/50">
                 {profile.full_name?.charAt(0).toUpperCase()}
               </AvatarFallback>
-            </Avatar>
+           </Avatar>
+        </div>
+
+        {/* --- MAIN CONTENT --- */}
+        <div className="pt-20 pb-6 px-6 text-center">
+          
+          {/* Name & Handle */}
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">{profile.full_name}</h1>
+          <div className="mt-2 flex items-center justify-center gap-2">
+            <LinkIcon className="w-4 h-4 text-primary" />
+            <a className="text-primary font-semibold text-lg hover:underline" href={`/u/${profile.username}`}>@{profile.username}</a>
           </div>
 
-          {/* --- IDENTITY --- */}
-          <div className="mb-6 space-y-1">
-            <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight leading-tight">
-              {profile.full_name}
-            </h2>
-            
-            <div className="flex flex-col gap-1.5 mt-1">
-              <a 
-                href={`/u/${profile.username}`} 
-                className="text-primary/90 hover:text-primary font-medium text-sm flex items-center gap-1.5 transition-colors w-fit"
-              >
-                <LinkIcon className="w-3 h-3" />
-                @{profile.username}
-              </a>
-              
-              {profile.country && (
-                <div className="flex items-center gap-1.5 text-muted-foreground text-xs font-medium">
-                  <MapPin className="w-3 h-3" />
-                  {profile.country}
-                </div>
-              )}
+          {/* Location */}
+          {profile.country && (
+            <div className="mt-2 flex items-center justify-center gap-2 text-gray-400">
+              <MapPin className="w-4 h-4" />
+              <span className="text-base">{profile.country}</span>
             </div>
-          </div>
+          )}
 
-          {/* --- BIO --- */}
-          {profile.bio ? (
-            <div className="mb-8">
-              <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
+          {/* Bio */}
+          {profile.bio && (
+            <div className="mt-4 text-gray-400 text-sm leading-relaxed text-center px-2">
+              <p>{profile.bio}</p>
             </div>
-          ) : null}
+          )}
 
-          {/* --- SOCIALS ROW --- */}
-          <div className="flex flex-wrap items-center gap-3 mb-8">
+          {/* Social Icons Row */}
+          <div className="mt-6 flex justify-center gap-4">
             {profile.github_handle && (
-              <a href={`https://github.com/${profile.github_handle.replace(/^@/, '')}`} target="_blank" rel="noreferrer">
-                <Button variant="outline" size="icon" className="rounded-full w-10 h-10 border-white/10 bg-white/5 hover:bg-[#24292e] hover:text-white hover:border-transparent transition-all group shadow-md">
-                  <Github className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                </Button>
+              <a href={`https://github.com/${profile.github_handle.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 hover:bg-gray-800 hover:text-white hover:border-gray-500 transition-all">
+                <Github className="w-6 h-6" />
               </a>
             )}
             {profile.linkedin_url && (
-              <a href={profile.linkedin_url} target="_blank" rel="noreferrer">
-                <Button variant="outline" size="icon" className="rounded-full w-10 h-10 border-white/10 bg-white/5 hover:bg-[#0077b5] hover:text-white hover:border-transparent transition-all group shadow-md">
-                  <Linkedin className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                </Button>
+              <a href={profile.linkedin_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 hover:bg-[#0077b5] hover:text-white hover:border-transparent transition-all">
+                <Linkedin className="w-6 h-6" />
               </a>
             )}
             {profile.portfolio_url && (
-              <a href={profile.portfolio_url} target="_blank" rel="noreferrer">
-                <Button variant="outline" size="icon" className="rounded-full w-10 h-10 border-white/10 bg-white/5 hover:bg-emerald-600 hover:text-white hover:border-transparent transition-all group shadow-md">
-                  <Globe className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                </Button>
+              <a href={profile.portfolio_url} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 hover:bg-emerald-600 hover:text-white hover:border-transparent transition-all">
+                <Globe className="w-6 h-6" />
               </a>
             )}
             {profile.contact_no && (
-               <Button variant="outline" size="icon" className="rounded-full w-10 h-10 border-white/10 bg-white/5 hover:bg-primary hover:text-white hover:border-transparent transition-all group cursor-default shadow-md" title={profile.contact_no}>
-                 <Phone className="w-5 h-5 group-hover:scale-110 transition-transform" />
-               </Button>
+              <div className="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 hover:bg-primary hover:text-white hover:border-transparent transition-all cursor-default" title={profile.contact_no}>
+                <Phone className="w-6 h-6" />
+              </div>
             )}
           </div>
-
-          {/* --- EDUCATION --- */}
-          {profile.institute_name && (
-            <div className="mt-auto pt-6 border-t border-white/10 text-xs text-muted-foreground">
-              <div className="uppercase tracking-widest font-bold mb-2 text-white/30 text-[10px]">Education</div>
-              <p className="text-white mb-0.5 font-medium text-sm">{profile.institute_name}</p>
-              <p>{profile.degree} • {profile.branch}</p>
-            </div>
-          )}
-          
-          {/* --- VIEW FULL PROFILE LINK --- */}
-          {window.location.pathname !== `/u/${profile.username}` && window.location.pathname !== `/profile` && (
-             <div className="mt-6">
-               <SheetClose asChild>
-                 <Button onClick={() => navigate(`/u/${profile.username}`)} className="w-full bg-white text-black hover:bg-gray-200 font-bold transition-all">
-                   View Full Profile <ArrowRight className="w-4 h-4 ml-2" />
-                 </Button>
-               </SheetClose>
-             </div>
-          )}
         </div>
+
+        {/* Divider */}
+        <div className="px-6">
+          <hr className="border-gray-800" />
+        </div>
+
+        {/* Education Section */}
+        {profile.institute_name && (
+          <div className="p-6 text-center md:text-left">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 text-center">Education</h2>
+            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+              <p className="font-bold text-white text-lg leading-tight">{profile.institute_name}</p>
+              <p className="text-sm text-gray-400 mt-1">{profile.degree} • {profile.branch}</p>
+              <p className="text-xs text-gray-500 mt-2">{profile.start_year} - {profile.end_year}</p>
+            </div>
+          </div>
+        )}
+
       </div>
+
+      {/* --- FOOTER ACTION --- */}
+      {/* Only show if we are NOT on the main profile page (i.e., we are in the widget/popup) */}
+      {window.location.pathname !== `/u/${profile.username}` && window.location.pathname !== `/profile` && (
+        <div className="p-6 pt-0 mt-auto bg-[#0c0c0e]">
+          <SheetClose asChild>
+            <button 
+              onClick={() => navigate(`/u/${profile.username}`)}
+              className="w-full h-14 flex items-center justify-center gap-3 bg-white text-black font-bold rounded-xl hover:opacity-90 transition-opacity"
+            >
+              <span>View Full Profile</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </SheetClose>
+        </div>
+      )}
     </div>
   );
 };
@@ -241,10 +228,8 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
       let query = supabase.from("profiles").select("*");
       
       if (session?.user?.id) {
-        // If logged in, show THEIR profile
         query = query.eq("id", session.user.id);
       } else {
-        // If not logged in, show Admin/Default profile
         query = query.eq("username", defaultUsername);
       }
 
@@ -257,7 +242,6 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
   // 3. Scroll Listener
   useEffect(() => {
     const handleScroll = () => {
-      // Show after scrolling past 60% of viewport
       setIsVisible(window.scrollY > window.innerHeight * 0.6);
     };
     window.addEventListener("scroll", handleScroll);
@@ -290,6 +274,7 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
           side="right" 
           className="bg-transparent border-none shadow-none w-[400px] p-0 z-[10000] flex items-center h-full mr-2 [&>button]:hidden focus:outline-none" 
         >
+           {/* Height constrained to match the design card look */}
            <div className="w-full h-[85vh]"> 
              <ProfileCardContent profile={profile} isOwner={false} /> 
            </div>
@@ -369,11 +354,9 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-12 px-4 relative flex items-center justify-center">
-        {/* Background Decor */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px] pointer-events-none" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[128px] pointer-events-none" />
 
-        {/* Profile Card Container */}
         <div className="w-full max-w-md h-[800px] max-h-[85vh] relative z-10">
            <ProfileCardContent 
              profile={profile} 
@@ -382,7 +365,6 @@ const Profile = () => {
            />
         </div>
 
-        {/* Edit Dialog */}
         <Dialog open={isEditing} onOpenChange={setIsEditing}>
           <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md">
             <DialogHeader><DialogTitle>Edit Profile</DialogTitle></DialogHeader>
