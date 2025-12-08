@@ -7,6 +7,7 @@ import io
 import js
 import traceback
 
+# Class to redirect stdout to Javascript callback
 class JSWriter:
     def write(self, string):
         try:
@@ -22,20 +23,31 @@ def _run_code_with_streams(user_code, input_str):
     import io
     import traceback
 
+    # 1. Setup Stdin
     sys.stdin = io.StringIO(input_str)
+    
+    # 2. Setup Stdout & Stderr (Both Redirected to JS)
+    # This ensures warnings and errors print to the terminal too
     old_stdout = sys.stdout
-    sys.stdout = JSWriter()
+    old_stderr = sys.stderr
+    
+    writer = JSWriter()
+    sys.stdout = writer
+    sys.stderr = writer # Redirect stderr to the same place!
     
     try:
         # Execute with clean globals
         exec(user_code, {})
         return {"success": True}
     except BaseException:
-        # Catch ALL errors including SyntaxError, NameError, SystemExit
-        error_msg = traceback.format_exc()
-        return {"success": False, "error": error_msg}
+        # CRITICAL FIX: Print the error directly to the stream!
+        # This ensures it shows up in the UI immediately.
+        print(traceback.format_exc())
+        return {"success": False}
     finally:
+        # Restore original streams
         sys.stdout = old_stdout
+        sys.stderr = old_stderr
 `;
 
 export const usePyodide = () => {
@@ -82,10 +94,8 @@ export const usePyodide = () => {
       // @ts-ignore
       delete window.handlePythonOutput;
 
-      if (!result.success) {
-        return { success: false, error: result.error };
-      }
-      return { success: true, output: "" }; 
+      // Error is already printed to stream, so we don't need to return it
+      return { success: result.success, output: "" }; 
     } catch (err: any) {
       // @ts-ignore
       delete window.handlePythonOutput;
