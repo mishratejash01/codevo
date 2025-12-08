@@ -31,24 +31,19 @@ export const useCodeRunner = () => {
       const data = await response.json();
       
       if (data.run) {
-        // ROBUST ERROR HANDLING:
-        // Piston returns stdout and stderr separately. 
-        // If the code failed (code != 0), the error is usually in stderr.
-        const output = data.run.output || "";
-        const stderr = data.run.stderr || "";
+        // FIX: Always use 'output'. It combines stdout and stderr.
+        // This prevents swallowing errors if they appear in one but not the other.
+        const combinedOutput = data.run.output || "";
         
-        // If explicit error exists in stderr, prioritize showing it
-        const finalOutput = (data.run.code !== 0 && stderr) ? stderr : output;
-
         return {
           success: data.run.code === 0,
-          output: finalOutput,
-          error: data.run.code !== 0 ? finalOutput : undefined 
+          output: combinedOutput,
+          error: data.run.code !== 0 ? combinedOutput : undefined 
         };
       }
-      return { success: false, output: "", error: "Execution failed to start." };
+      return { success: false, output: "Execution failed to start.", error: "Execution failed" };
     } catch (e: any) {
-      return { success: false, output: "", error: `Network Error: ${e.message}` };
+      return { success: false, output: `Network Error: ${e.message}`, error: e.message };
     }
   };
 
@@ -96,7 +91,7 @@ export const useCodeRunner = () => {
           result = { success: false, output: "Language not supported", error: "Unsupported language" };
       }
     } catch (err: any) {
-      result = { success: false, output: "", error: err.message };
+      result = { success: false, output: err.message, error: err.message };
     } finally {
       setLoading(false);
     }
