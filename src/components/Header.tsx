@@ -76,8 +76,9 @@ export function Header({ session, onLogout }: HeaderProps) {
 
             <div className="hidden md:flex flex-1 justify-center gap-4">
               <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
+                {/* --- RESTORED ORIGINAL IITM LOGO --- */}
                 <img 
-                  src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" 
+                  src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" 
                   alt="IITM" 
                   className="w-4 h-4 object-contain opacity-80" 
                 /> 
@@ -134,7 +135,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         </div>
       </header>
 
-      {/* Mobile Bottom Bar - Keeping Upskill logic as generic practice for mobile */}
+      {/* Mobile Bottom Bar */}
       <div className={cn(
         "fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform ease-in-out",
         (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
