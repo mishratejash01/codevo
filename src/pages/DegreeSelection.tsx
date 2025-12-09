@@ -338,8 +338,9 @@ const DegreeSelection = () => {
             >
               <div className="flex-1 flex items-center justify-center p-0 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
+                 {/* --- RESTORED ORIGINAL PRACTICE IMAGE --- */}
                  <img 
-                  src="https://images.unsplash.com/photo-1555099962-4199c345e5dd?q=80&w=1000&auto=format&fit=crop" 
+                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" 
                   alt="Practice Coding" 
                   className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
                 />
@@ -365,8 +366,9 @@ const DegreeSelection = () => {
             >
               <div className="flex-1 flex items-center justify-center p-0 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-red-500/5 rounded-full blur-[60px] pointer-events-none" />
+                {/* --- RESTORED ORIGINAL PROCTORED IMAGE --- */}
                 <img 
-                  src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop" 
+                  src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
                   alt="Proctored Exam" 
                   className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
                 />
