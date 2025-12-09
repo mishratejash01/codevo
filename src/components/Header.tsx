@@ -26,10 +26,6 @@ export function Header({ session, onLogout }: HeaderProps) {
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
   // Hide header elements on practice/exam/compiler pages
-  // Note: This logic might hide header on /practice-arena if not adjusted, 
-  // but usually arenas have their own headers or use the global one.
-  // Ideally, 'practice-arena' shouldn't be in this list if you want the header there.
-  // For now, I'm keeping your existing logic which hides it for 'practice' paths.
   const isPracticeOrExam = location.pathname.includes('/practice') || location.pathname.includes('/exam') || location.pathname.includes('/compiler');
 
   useEffect(() => {
@@ -81,7 +77,7 @@ export function Header({ session, onLogout }: HeaderProps) {
             <div className="hidden md:flex flex-1 justify-center gap-4">
               <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
                 <img 
-                  src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" 
+                  src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" 
                   alt="IITM" 
                   className="w-4 h-4 object-contain opacity-80" 
                 /> 
