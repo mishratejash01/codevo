@@ -63,7 +63,8 @@ const AppContent = () => {
   const dockItems = [
     { icon: <Home size={20} />, label: 'Home', onClick: () => navigate('/') },
     { 
-      icon: <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, 
+      // --- RESTORED ORIGINAL IITM LOGO ---
+      icon: <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, 
       label: 'IITM BS', 
       onClick: () => navigate('/degree') 
     },
