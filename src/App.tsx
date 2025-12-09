@@ -21,7 +21,7 @@ import PracticeArena from "./pages/PracticeArena";
 import PracticeSolver from "./pages/PracticeSolver";
 import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
 import SubjectModeSelection from "./pages/SubjectModeSelection";
-import Profile from "./pages/Profile"; // <--- RESTORED THIS IMPORT
+import Profile from "./pages/Profile"; 
 
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
@@ -48,7 +48,6 @@ const AppContent = () => {
 
   if (showSplash) return <SplashScreen />;
 
-  // Hide Dock/Footer on specific routes
   const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth']; 
   const showDock = !hideDockRoutes.some(path => 
     location.pathname === path || 
@@ -60,12 +59,42 @@ const AppContent = () => {
   const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth'];
   const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
+  // --- CUSTOM ICON COMPONENT FOR IITM ---
+  // This wrapper ensures the Dock can render the image as an icon component
+  const IitmIcon = (props: any) => (
+    <img 
+      src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" 
+      alt="IITM" 
+      className={`object-contain opacity-80 grayscale hover:grayscale-0 transition-all ${props.className || "w-6 h-6"}`}
+    />
+  );
+
   const dockItems = [
-    { icon: <Home size={20} />, label: 'Home', onClick: () => navigate('/') },
-    { icon: <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, label: 'IITM BS', onClick: () => navigate('/degree') },
-    { icon: <Code2 size={20} />, label: 'Practice', onClick: () => navigate('/practice-arena') },
-    { icon: <Terminal size={20} />, label: 'Compiler', onClick: () => navigate('/compiler') },
-    { icon: <Trophy size={20} />, label: 'Ranks', onClick: () => navigate('/leaderboard') },
+    { 
+      icon: Home, 
+      label: 'Home', 
+      onClick: () => navigate('/') 
+    },
+    { 
+      icon: IitmIcon, // Pass the component, not the element
+      label: 'IITM BS', 
+      onClick: () => navigate('/degree') 
+    },
+    { 
+      icon: Code2, 
+      label: 'Practice', 
+      onClick: () => navigate('/practice-arena') 
+    },
+    { 
+      icon: Terminal, 
+      label: 'Compiler', 
+      onClick: () => navigate('/compiler') 
+    },
+    { 
+      icon: Trophy, 
+      label: 'Ranks', 
+      onClick: () => navigate('/leaderboard') 
+    },
   ];
 
   return (
@@ -89,10 +118,8 @@ const AppContent = () => {
         <Route path="/compiler" element={<Compiler />} />
         <Route path="/docs" element={<Documentation />} />
 
-        {/* --- RESTORED PROFILE ROUTES --- */}
         <Route path="/u/:username" element={<Profile />} />
         <Route path="/profile" element={<Profile />} />
-        {/* ------------------------------- */}
 
         <Route path="*" element={<NotFound />} />
       </Routes>
