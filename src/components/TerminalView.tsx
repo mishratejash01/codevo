@@ -28,7 +28,7 @@ export const TerminalView = ({ output, onInput }: TerminalViewProps) => {
         cursor: '#f8f8f2',
         selectionBackground: 'rgba(255, 255, 255, 0.3)',
       },
-      convertEol: true, // Important for proper line breaks
+      convertEol: true, 
     });
 
     const fitAddon = new FitAddon();
@@ -37,16 +37,14 @@ export const TerminalView = ({ output, onInput }: TerminalViewProps) => {
     term.open(containerRef.current);
     fitAddon.fit();
 
-    // 2. Handle User Typing
+    // 2. Handle User Typing (Ignored in Safe Mode, but kept for compatibility)
     term.onData((data) => {
-      onInput(data); // Send to Python Worker
-      term.write(data); // Echo to screen
+      onInput(data);
     });
 
     terminalRef.current = term;
     fitAddonRef.current = fitAddon;
 
-    // 3. Handle Resize
     const handleResize = () => fitAddon.fit();
     window.addEventListener('resize', handleResize);
 
@@ -56,11 +54,17 @@ export const TerminalView = ({ output, onInput }: TerminalViewProps) => {
     };
   }, []);
 
-  // 4. Handle Output from Python
+  // 3. Handle Output from Python (THE FIX IS HERE)
   useEffect(() => {
     if (!terminalRef.current) return;
     
-    // Write only the new part of the output string
+    // DETECT RESET: If the new output is shorter than what we wrote, it means "Run" was clicked again.
+    if (output.length < writtenCharsRef.current) {
+        terminalRef.current.reset(); // clear() just wipes screen, reset() wipes scrollback too
+        writtenCharsRef.current = 0;
+    }
+
+    // Write only the NEW content
     const newText = output.slice(writtenCharsRef.current);
     if (newText.length > 0) {
       terminalRef.current.write(newText);
