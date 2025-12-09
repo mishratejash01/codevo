@@ -336,13 +336,14 @@ const DegreeSelection = () => {
               className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10 bg-[#0c0c0e] flex flex-col"
               onClick={() => handleModeSelect('learning')}
             >
-              <div className="flex-1 flex items-center justify-center p-0 relative overflow-hidden">
+              {/* UPDATED: Added more padding (p-8 md:p-12) to fix "too much zoomed" feel */}
+              <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
-                 {/* --- RESTORED ORIGINAL PRACTICE IMAGE --- */}
+                 {/* UPDATED: Changed object-cover to object-contain so image is not cropped */}
                  <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" 
                   alt="Practice Coding" 
-                  className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
+                  className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-transparent to-transparent" />
               </div>
@@ -364,13 +365,14 @@ const DegreeSelection = () => {
               className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e] flex flex-col"
               onClick={() => handleModeSelect('proctored')}
             >
-              <div className="flex-1 flex items-center justify-center p-0 relative overflow-hidden">
+               {/* UPDATED: Added more padding (p-8 md:p-12) */}
+              <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-red-500/5 rounded-full blur-[60px] pointer-events-none" />
-                {/* --- RESTORED ORIGINAL PROCTORED IMAGE --- */}
+                {/* UPDATED: Changed object-cover to object-contain */}
                 <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
                   alt="Proctored Exam" 
-                  className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
+                  className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-transparent to-transparent" />
               </div>
