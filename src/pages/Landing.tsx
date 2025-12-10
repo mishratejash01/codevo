@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
@@ -90,6 +90,9 @@ const Landing = () => {
   const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
   const [typedCode, setTypedCode] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  
+  // Ref for auto-scrolling the terminal
+  const codeScrollRef = useRef<HTMLDivElement>(null);
 
   // Framer Motion Scroll Logic
   const { scrollY } = useScroll();
@@ -140,6 +143,13 @@ const Landing = () => {
       return () => clearTimeout(t);
     }
   }, [activeKey, typedCode]);
+
+  // Auto-scroll effect for terminal
+  useEffect(() => {
+    if (codeScrollRef.current) {
+      codeScrollRef.current.scrollTop = codeScrollRef.current.scrollHeight;
+    }
+  }, [typedCode]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -429,11 +439,14 @@ const Landing = () => {
                   </div>
 
                   <div className={cn("absolute inset-0 p-6 md:p-8 bg-[#0c0c0e] transition-all duration-500 ease-in-out flex flex-col", showcasePhase === 'terminal' ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none")}>
-                    <div className="flex items-center gap-2 text-muted-foreground mb-4 opacity-50 text-xs">
+                    <div className="flex items-center gap-2 text-muted-foreground mb-4 opacity-50 text-xs shrink-0">
                       <Terminal className="w-4 h-4" />
                       <span>user@codevo:~/workspace $ code main.py</span>
                     </div>
-                    <div className="font-mono text-blue-400 whitespace-pre-wrap leading-relaxed text-xs md:text-sm">
+                    <div 
+                      ref={codeScrollRef}
+                      className="font-mono text-blue-400 whitespace-pre-wrap leading-relaxed text-xs md:text-sm overflow-y-auto flex-1 pr-2 no-scrollbar"
+                    >
                       {typedCode}<span className="cursor-blink" />
                     </div>
                   </div>
