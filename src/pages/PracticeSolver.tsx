@@ -53,7 +53,7 @@ export default function PracticeSolver() {
   });
 
   // 2. Safe Data Extraction
-  const testCases = Array.isArray(problem?.test_cases) ? problem.test_cases : [];
+  const testCases = Array.isArray(problem?.test_cases) ? problem.test_cases as any[] : [];
   
   // 3. Initialize Editor & Timer
   useEffect(() => {
