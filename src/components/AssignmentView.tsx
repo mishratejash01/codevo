@@ -102,10 +102,9 @@ export const AssignmentView = ({
   const { data: assignment, isLoading, error, refetch } = useQuery({
     queryKey: ['assignment', assignmentId, tables.assignments],
     queryFn: async () => {
-      // @ts-ignore
-      const { data, error } = await supabase.from(tables.assignments).select('*').eq('id', assignmentId).single();
+      const { data, error } = await supabase.from(tables.assignments as any).select('*').eq('id', assignmentId).single();
       if (error) throw error;
-      return data;
+      return data as any;
     },
     enabled: !!assignmentId
   });
@@ -113,11 +112,10 @@ export const AssignmentView = ({
   const { data: fetchedTestCases = [] } = useQuery({
     queryKey: ['testCases', assignmentId, tables.testCases],
     queryFn: async () => {
-      // @ts-ignore
-      const { data } = await supabase.from(tables.testCases).select('*').eq('assignment_id', assignmentId).order('is_public', { ascending: false });
-      return data || [];
+      const { data } = await supabase.from(tables.testCases as any).select('*').eq('assignment_id', assignmentId).order('is_public', { ascending: false });
+      return (data || []) as any[];
     },
-    enabled: !!assignmentId && !!assignment && (!assignment.test_cases || assignment.test_cases.length === 0)
+    enabled: !!assignmentId && !!assignment && (!(assignment as any).test_cases || (assignment as any).test_cases.length === 0)
   });
 
   // --- STABLE TEST CASES LOGIC ---
@@ -156,9 +154,8 @@ export const AssignmentView = ({
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
-      // @ts-ignore
-      const { data } = await supabase.from(tables.submissions).select('code, score, public_tests_passed, private_tests_passed').eq('assignment_id', assignmentId).eq('user_id', user.id).order('submitted_at', { ascending: false }).limit(1).maybeSingle();
-      return data;
+      const { data } = await supabase.from(tables.submissions as any).select('code, score, public_tests_passed, private_tests_passed').eq('assignment_id', assignmentId).eq('user_id', user.id).order('submitted_at', { ascending: false }).limit(1).maybeSingle();
+      return data as any;
     },
     enabled: !!assignmentId
   });
@@ -312,10 +309,9 @@ export const AssignmentView = ({
       setTestResults(newTestResults);
       
       const total = allTests.length;
-      const score = total > 0 ? (passedCount / total) * (assignment.max_score || 100) : 0;
+      const score = total > 0 ? (passedCount / total) * ((assignment as any).max_score || 100) : 0;
       
-      // @ts-ignore
-      await supabase.from(tables.submissions).insert({
+      await supabase.from(tables.submissions as any).insert({
         assignment_id: assignmentId,
         user_id: user.id,
         code,

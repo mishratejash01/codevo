@@ -390,8 +390,8 @@ const useProfileLogic = (onComplete: () => void) => {
         branch: profile.branch || '',
         institute_type: profile.institute_type || '',
         institute_name: profile.institute_name || '',
-        start_year: profile.start_year || '',
-        end_year: profile.end_year || '',
+        start_year: String(profile.start_year || ''),
+        end_year: String(profile.end_year || ''),
         country: profile.country || 'India',
       }));
       
