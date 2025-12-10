@@ -461,10 +461,10 @@ const Profile = () => {
                   <AvatarFallback className="bg-[#1a1a1c] text-3xl font-bold">{profile.full_name?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 
-                {/* --- UPDATED: High Visibility Text Box --- */}
-                <div className="mb-4 bg-black/60 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10 shadow-lg">
-                   <h2 className="text-2xl font-bold text-white shadow-black drop-shadow-md leading-none mb-1">{profile.full_name}</h2>
-                   <p className="text-primary font-bold drop-shadow-md text-sm">@{profile.username || 'username'}</p>
+                {/* --- UPDATED: High Visibility Text Box with better username color --- */}
+                <div className="mb-4 bg-black/70 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10 shadow-2xl">
+                   <h2 className="text-3xl font-bold text-white tracking-tight mb-0.5">{profile.full_name}</h2>
+                   <p className="text-gray-300 font-medium text-sm tracking-wide">@{profile.username || 'username'}</p>
                 </div>
               </div>
             </div>
