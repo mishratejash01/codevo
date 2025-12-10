@@ -37,8 +37,9 @@ const Exam = () => {
   const mode = searchParams.get('mode');
   const isProctored = mode === 'proctored';
   
+  // Logic to determine which table to use
   const activeTables = isProctored 
-    ? { ...IITM_TABLES, assignments: PROCTORED_TABLE }
+    ? { ...IITM_TABLES, assignments: PROCTORED_TABLE } // Override assignments source
     : (iitmSubjectId ? IITM_TABLES : STANDARD_TABLES);
 
   const SESSION_TABLE = iitmSubjectId ? 'iitm_exam_sessions' : 'exam_sessions';
@@ -47,11 +48,12 @@ const Exam = () => {
   const [isExamStarted, setIsExamStarted] = useState(false);
   const [violationCount, setViolationCount] = useState(0);
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, any>>({});
+  
   const [isContentObscured, setIsContentObscured] = useState(false);
   
-  // Changed from elapsedTime (0 -> up) to timeRemaining (Duration -> 0)
+  // Countdown Timer State
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null); 
-  const [totalDuration, setTotalDuration] = useState(0); // To store initial duration for calculation
+  const [totalDuration, setTotalDuration] = useState(0);
 
   const [questionMetrics, setQuestionMetrics] = useState<Record<string, QuestionMetrics>>({});
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -80,11 +82,13 @@ const Exam = () => {
       const currentExamType = decodeURIComponent(examType || '');
 
       if (isProctored && setName) {
+        // --- PROCTORED FETCH LOGIC ---
         // @ts-ignore
         query = query.eq('subject_id', iitmSubjectId)
                      .eq('exam_type', currentExamType)
                      .eq('set_name', setName);
       } else if (iitmSubjectId) {
+        // --- PRACTICE FETCH LOGIC ---
         // @ts-ignore
         query = query.eq('subject_id', iitmSubjectId);
         if (examType) query = query.eq('exam_type', currentExamType);
@@ -100,7 +104,6 @@ const Exam = () => {
   useEffect(() => {
     if (assignments.length > 0 && timeRemaining === null) {
       // Calculate total duration from fetched questions (sum of expected_time)
-      // If expected_time is missing, default to 20 mins per question
       const totalMinutes = assignments.reduce((acc: number, curr: any) => acc + (curr.expected_time || 20), 0);
       const totalSeconds = totalMinutes * 60;
       
@@ -113,7 +116,6 @@ const Exam = () => {
     currentQuestionRef.current = selectedAssignmentId;
   }, [selectedAssignmentId]);
 
-  // ... (Media Stream & Violation Logic remains same) ...
   const startMediaStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, frameRate: 15 }, audio: true });
@@ -240,7 +242,15 @@ const Exam = () => {
 
     const resultsPayload = {
       stats: { score: totalScore, totalScore: totalMaxScore || (assignments.length * 100), accuracy: qIds.length > 0 ? Math.round((correctCount / qIds.length) * 100) : 0, correct: correctCount, totalQuestions: assignments.length, attempted: qIds.length },
-      questionDetails: assignments.map((a: any) => ({ id: a.id, title: a.title, status: (questionMetrics[a.id]?.attempts || 0) === 0 ? 'Skipped' : (questionMetrics[a.id]?.isCorrect ? 'Correct' : 'Incorrect'), timeSpent: questionMetrics[a.id]?.timeSpent || 0, score: questionMetrics[a.id]?.score, attempts: questionMetrics[a.id]?.attempts })),
+      questionDetails: assignments.map((a: any) => ({ 
+        id: a.id, 
+        title: a.title, 
+        description: a.description, // ADDED: Description
+        status: (questionMetrics[a.id]?.attempts || 0) === 0 ? 'Skipped' : (questionMetrics[a.id]?.isCorrect ? 'Correct' : 'Incorrect'), 
+        timeSpent: questionMetrics[a.id]?.timeSpent || 0, 
+        score: questionMetrics[a.id]?.score, 
+        attempts: questionMetrics[a.id]?.attempts 
+      })),
       terminationReason: statusReason?.includes("TERMINATED") ? statusReason : (statusReason === "TIME_UP" ? "Time Limit Reached" : null), isError: statusReason?.includes("TERMINATED"), totalTime: spentTime, examMetadata: { subjectId: iitmSubjectId, examType, setName }
     };
     if (sessionId) { 
