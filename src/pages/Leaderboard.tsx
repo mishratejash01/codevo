@@ -4,16 +4,40 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trophy, Medal, Clock, Calendar, Globe } from 'lucide-react';
+import { Trophy, Medal, Clock, Calendar, Globe, Target, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Leaderboard = () => {
+  const [viewMode, setViewMode] = useState<'global' | 'exam'>('global');
   const [timeframe, setTimeframe] = useState<'all_time' | 'current_month'>('all_time');
+  const [selectedExam, setSelectedExam] = useState<string>('all');
 
-  // Fetch Leaderboard Data (Global Only)
+  // 1. Fetch Available Exam Sets for the Dropdown
+  const { data: examSets = [] } = useQuery({
+    queryKey: ['available_exam_sets'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('iitm_exam_question_bank')
+        .select('set_name, title')
+        .not('set_name', 'is', null);
+      
+      // Unique sets
+      const map = new Map();
+      data?.forEach(item => {
+        if (!map.has(item.set_name)) {
+          map.set(item.set_name, item.title || item.set_name);
+        }
+      });
+      
+      return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
+    }
+  });
+
+  // 2. Fetch Leaderboard Data
   const { data: leaderboardData = [], isLoading } = useQuery({
-    queryKey: ['leaderboard', 'global', timeframe],
+    queryKey: ['leaderboard', viewMode, timeframe, selectedExam],
     queryFn: async () => {
       let query = supabase
         .from('iitm_exam_sessions')
@@ -23,16 +47,22 @@ const Leaderboard = () => {
           duration_seconds,
           end_time,
           full_name,
-          user_email
+          user_email,
+          set_name
         `)
-        .eq('status', 'completed')
-        .gt('total_score', 0);
+        .eq('status', 'completed');
+        // Removed .gt('total_score', 0) to include 0 scores if needed based on your data
 
       // Date Filtering
       if (timeframe === 'current_month') {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
         query = query.gte('end_time', startOfMonth);
+      }
+
+      // Exam Filtering (Only applies if in Exam Mode)
+      if (viewMode === 'exam' && selectedExam !== 'all') {
+        query = query.eq('set_name', selectedExam);
       }
 
       const { data, error } = await query;
@@ -42,31 +72,62 @@ const Leaderboard = () => {
         return [];
       }
 
-      // --- GLOBAL MODE: Aggregate User Scores ---
-      const userMap = new Map();
+      if (viewMode === 'global') {
+        // --- GLOBAL MODE: Aggregate User Scores ---
+        const userMap = new Map();
 
-      data.forEach((session: any) => {
-        if (!userMap.has(session.user_id)) {
-          userMap.set(session.user_id, {
-            user_id: session.user_id,
-            full_name: session.full_name,
-            user_email: session.user_email,
-            total_score: 0,
-            exams_taken: 0,
-            last_active: session.end_time
-          });
-        }
-        const user = userMap.get(session.user_id);
-        user.total_score += (session.total_score || 0);
-        user.exams_taken += 1;
-        if (new Date(session.end_time) > new Date(user.last_active)) {
-          user.last_active = session.end_time;
-        }
-      });
+        data.forEach((session: any) => {
+          if (!userMap.has(session.user_id)) {
+            userMap.set(session.user_id, {
+              user_id: session.user_id,
+              full_name: session.full_name,
+              user_email: session.user_email,
+              total_score: 0,
+              exams_taken: 0,
+              last_active: session.end_time
+            });
+          }
+          const user = userMap.get(session.user_id);
+          user.total_score += (session.total_score || 0);
+          user.exams_taken += 1;
+          if (new Date(session.end_time) > new Date(user.last_active)) {
+            user.last_active = session.end_time;
+          }
+        });
 
-      return Array.from(userMap.values())
-        .sort((a, b) => b.total_score - a.total_score)
-        .slice(0, 50);
+        return Array.from(userMap.values())
+          .sort((a, b) => b.total_score - a.total_score)
+          .slice(0, 50);
+
+      } else {
+        // --- EXAM SPECIFIC MODE: Best Score per User per Exam ---
+        // Logic: Higher Score > Lower Time > Later Date
+        const bestAttempts = new Map();
+
+        data.forEach((session: any) => {
+          const key = `${session.user_id}_${session.set_name}`;
+          const existing = bestAttempts.get(key);
+
+          if (!existing) {
+            bestAttempts.set(key, session);
+          } else {
+            const scoreImprovement = session.total_score > existing.total_score;
+            // Tie-breaker: If scores are equal, lower duration wins
+            const timeImprovement = session.total_score === existing.total_score && session.duration_seconds < existing.duration_seconds;
+            
+            if (scoreImprovement || timeImprovement) {
+              bestAttempts.set(key, session);
+            }
+          }
+        });
+
+        return Array.from(bestAttempts.values())
+          .sort((a: any, b: any) => {
+            if (b.total_score !== a.total_score) return b.total_score - a.total_score; // Higher score first
+            return a.duration_seconds - b.duration_seconds; // Lower time second
+          })
+          .slice(0, 50);
+      }
     }
   });
 
@@ -92,24 +153,45 @@ const Leaderboard = () => {
       {/* Background Ambience */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-primary/10 blur-[150px] pointer-events-none rounded-full" />
 
-      <div className="w-full max-w-5xl mx-auto relative z-10 space-y-8">
+      <div className="w-full max-w-6xl mx-auto relative z-10 space-y-8">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-white/10 pb-8">
           <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-bold font-neuropol tracking-wide text-white flex items-center gap-3">
-              <Globe className="w-8 h-8 md:w-10 md:h-10 text-primary" />
-              Global Leaderboard
+            <h1 className="text-4xl md:text-5xl font-bold font-neuropol tracking-wide text-white">
+              Leaderboard
             </h1>
             <p className="text-muted-foreground max-w-lg">
-              The hall of fame. Rankings are calculated based on the total points accumulated across all proctored exams.
+              Compete with the best. Rankings are updated in real-time based on exam performance.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-             <div className="text-sm font-medium text-muted-foreground hidden md:block">Timeframe:</div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+             {/* View Mode Toggle */}
+             <div className="bg-[#121212] p-1 rounded-lg border border-white/10 flex">
+                <button
+                  onClick={() => setViewMode('global')}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+                    viewMode === 'global' ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+                  )}
+                >
+                  <Globe className="w-4 h-4" /> Global
+                </button>
+                <button
+                  onClick={() => setViewMode('exam')}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+                    viewMode === 'exam' ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white"
+                  )}
+                >
+                  <Target className="w-4 h-4" /> Exam Specific
+                </button>
+             </div>
+
+             {/* Timeframe Filter */}
              <Select value={timeframe} onValueChange={(v: any) => setTimeframe(v)}>
-                <SelectTrigger className="w-[160px] bg-[#121212] border-white/10 text-white h-11 focus:ring-0">
+                <SelectTrigger className="w-[160px] bg-[#121212] border-white/10 text-white h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1a1a1c] border-white/10 text-white">
@@ -120,14 +202,37 @@ const Leaderboard = () => {
           </div>
         </div>
 
+        {/* Filters Row (Only for Exam Mode) */}
+        {viewMode === 'exam' && (
+          <div className="flex items-center gap-4 bg-[#121212] p-4 rounded-xl border border-white/10 animate-in fade-in slide-in-from-top-2">
+             <Search className="w-5 h-5 text-muted-foreground" />
+             <div className="flex-1">
+               <Select value={selectedExam} onValueChange={setSelectedExam}>
+                  <SelectTrigger className="w-full md:w-[300px] bg-transparent border-none text-white h-auto p-0 focus:ring-0 text-base">
+                    <SelectValue placeholder="Select an Exam Set" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1a1a1c] border-white/10 text-white max-h-[300px]">
+                    <SelectItem value="all">All Exams (Mixed)</SelectItem>
+                    {examSets.map((set: any) => (
+                      <SelectItem key={set.id} value={set.id}>{set.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+               </Select>
+             </div>
+             <div className="text-xs text-muted-foreground uppercase tracking-widest font-mono hidden md:block">
+               Filtering by Set
+             </div>
+          </div>
+        )}
+
         {/* Leaderboard Table */}
         <Card className="bg-[#0c0c0e]/80 border-white/10 backdrop-blur-sm shadow-2xl overflow-hidden min-h-[500px]">
           <CardHeader className="border-b border-white/5 py-4 px-6 bg-white/[0.02]">
             <div className="grid grid-cols-12 text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
               <div className="col-span-2 md:col-span-1 text-center">Rank</div>
               <div className="col-span-6 md:col-span-5">User</div>
-              <div className="col-span-4 md:col-span-3 text-right">Total Score</div>
-              <div className="hidden md:block col-span-3 text-right">Last Active</div>
+              <div className="col-span-4 md:col-span-3 text-right">Score</div>
+              <div className="hidden md:block col-span-3 text-right">Details</div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -144,7 +249,7 @@ const Leaderboard = () => {
                   >
                     {/* Rank */}
                     <div className="col-span-2 md:col-span-1 flex justify-center">
-                      <div className={cn("w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center border transition-transform group-hover:scale-110", getRankStyle(index))}>
+                      <div className={cn("w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center border transition-transform group-hover:scale-110", getRankStyle(index))}>
                         {getMedalIcon(index)}
                       </div>
                     </div>
@@ -161,7 +266,7 @@ const Leaderboard = () => {
                           {index === 0 && <span className="hidden sm:inline-flex text-[9px] bg-yellow-500/20 text-yellow-500 px-1.5 rounded border border-yellow-500/30">KING</span>}
                         </div>
                         <div className="text-xs text-muted-foreground truncate hidden sm:block">
-                          {user.exams_taken} Exams Completed
+                          {viewMode === 'global' ? `${user.exams_taken} Exams Taken` : (user.set_name || 'Proctored Exam')}
                         </div>
                       </div>
                     </div>
@@ -176,10 +281,17 @@ const Leaderboard = () => {
 
                     {/* Details (Desktop Only) */}
                     <div className="hidden md:block col-span-3 text-right text-sm text-gray-400 font-mono">
-                      <div className="flex items-center justify-end gap-2">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(user.last_active).toLocaleDateString()}
-                      </div>
+                      {viewMode === 'exam' ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <Clock className="w-3 h-3" />
+                          {user.duration_seconds ? `${Math.floor(user.duration_seconds/60)}m ${user.duration_seconds%60}s` : '--'}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end gap-2">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(user.last_active).toLocaleDateString()}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -191,7 +303,7 @@ const Leaderboard = () => {
                 </div>
                 <p className="text-lg font-medium text-white/50">No champions found.</p>
                 <p className="text-sm opacity-50 max-w-xs mx-auto mt-1">
-                  Start completing proctored exams to rank up!
+                  Be the first to complete an exam in this category to claim the throne!
                 </p>
               </div>
             )}
