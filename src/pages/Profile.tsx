@@ -24,7 +24,7 @@ import {
   Linkedin, 
   Globe, 
   Edit2, 
-  Share2, 
+  Share, // Changed from Share2
   MapPin, 
   Check,
   Loader2,
@@ -150,16 +150,28 @@ const SocialEditBlock = ({
 
 // --- SUB-COMPONENT: Profile Card (The Preview) ---
 const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData, isOwner: boolean, onEdit?: () => void }) => {
-  const [isCopied, setIsCopied] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
   const navigate = useNavigate();
 
-  const copyProfileLink = () => {
+  // Updated Share Logic
+  const handleShare = async () => {
     const url = `${window.location.origin}/u/${profile.username}`;
-    navigator.clipboard.writeText(url);
-    setIsCopied(true);
-    toast.success("Profile link copied!");
-    setTimeout(() => setIsCopied(false), 2000);
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${profile.full_name} | Codevo Profile`,
+          text: `Check out ${profile.full_name}'s developer profile on Codevo.`,
+          url: url
+        });
+      } catch (err) {
+        console.error("Error sharing:", err);
+      }
+    } else {
+      // Fallback
+      navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
+    }
   };
 
   const handleLinkClick = () => {
@@ -196,8 +208,8 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
                   <Edit2 className="w-4 h-4 text-white" />
                 </button>
               )}
-              <button onClick={copyProfileLink} className="p-2 rounded-full hover:bg-white/20 transition-colors bg-black/20 backdrop-blur-md border border-white/10">
-                {isCopied ? <Check className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4 text-white" />}
+              <button onClick={handleShare} className="p-2 rounded-full hover:bg-white/20 transition-colors bg-black/20 backdrop-blur-md border border-white/10">
+                <Share className="w-4 h-4 text-white" />
               </button>
             </div>
           </div>
