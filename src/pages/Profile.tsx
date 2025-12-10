@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -35,10 +35,14 @@ import {
   Copy,
   LayoutTemplate,
   X,
-  UserCog
+  UserCog,
+  ChevronLeft,
+  ChevronRight,
+  User
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
 
 // --- Types ---
 interface ProfileData {
@@ -286,7 +290,6 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
           </Button>
         </SheetTrigger>
         <SheetContent side="right" className="bg-transparent border-none shadow-none w-[380px] p-0 z-[10000] flex items-center h-full mr-4 [&>button]:hidden focus:outline-none">
-           {/* Added invisible Title and Description for Accessibility */}
            <SheetTitle className="sr-only">Profile Preview</SheetTitle>
            <SheetDescription className="sr-only">
              Profile details for {profile.full_name || 'User'}
@@ -321,6 +324,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const sliderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -333,7 +337,6 @@ const Profile = () => {
         
         const { data: myProfile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single();
         
-        // If no profile exists, create a default local state to allow creation
         const defaultProfile: ProfileData = {
             id: currentUser.id,
             username: myProfile?.username || "", 
@@ -363,9 +366,7 @@ const Profile = () => {
       const { data, error } = await supabase.from("profiles").select("*").eq("username", username).single();
       
       if (error || !data) { 
-        // If profile not found in DB, check if it is the current user (fallback) or show error
         if (currentUser) {
-            // If I am logged in but clicked a bad link, just take me to my editor
              navigate("/profile"); 
              return;
         }
@@ -385,7 +386,6 @@ const Profile = () => {
     if (!profile) return;
     setProfile({ ...profile, [field]: value });
     try { 
-        // Use UPSERT to handle cases where the row might not exist yet (if user just signed up)
         await supabase.from("profiles").upsert({ 
             id: profile.id, 
             [field]: value,
@@ -395,6 +395,13 @@ const Profile = () => {
     } catch (error) { 
         console.error(error);
         toast.error("Failed to save"); 
+    }
+  };
+
+  const scrollSlider = (direction: 'left' | 'right') => {
+    if (sliderRef.current) {
+      const scrollAmount = direction === 'left' ? -300 : 300;
+      sliderRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   };
 
@@ -418,19 +425,77 @@ const Profile = () => {
           <div><h1 className="text-3xl font-bold text-white mb-2">Edit Profile</h1><p className="text-muted-foreground">Customize your public presence. Changes save automatically.</p></div>
           
           <div className="space-y-6">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2"><User className="w-4 h-4" /> Identity</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+               <div className="grid gap-2">
+                 <Label className="text-xs text-muted-foreground uppercase tracking-wider">Full Name</Label>
+                 <Input 
+                   value={profile.full_name} 
+                   onChange={(e) => updateProfile('full_name', e.target.value)} 
+                   className="bg-white/5 border-white/10"
+                 />
+               </div>
+               <div className="grid gap-2">
+                 <Label className="text-xs text-muted-foreground uppercase tracking-wider">Username</Label>
+                 <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-muted-foreground">@</span>
+                    <Input 
+                      value={profile.username} 
+                      onChange={(e) => updateProfile('username', e.target.value)} 
+                      className="bg-white/5 border-white/10 pl-8"
+                    />
+                 </div>
+               </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Visuals</h2>
             <div className="relative rounded-2xl overflow-hidden border border-white/10 group">
               <div className="h-64 w-full bg-cover bg-center transition-all duration-500" style={{ backgroundImage: `url('${profile.cover_url || COVER_TEMPLATES[0]}')` }}>
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
               </div>
-              <div className="absolute bottom-6 left-8 flex items-end gap-6">
+              <div className="absolute bottom-6 left-8 flex items-end gap-6 z-20">
                 <Avatar className="w-32 h-32 border-4 border-[#09090b] shadow-2xl">
                   <AvatarImage src={profile.avatar_url} className="object-cover" />
                   <AvatarFallback className="bg-[#1a1a1c] text-3xl font-bold">{profile.full_name?.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className="mb-4"><h2 className="text-2xl font-bold text-white">{profile.full_name}</h2><p className="text-primary font-medium">@{profile.username || "username"}</p></div>
+                
+                {/* --- UPDATED: High Visibility Text Box --- */}
+                <div className="mb-4 bg-black/60 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10 shadow-lg">
+                   <h2 className="text-2xl font-bold text-white shadow-black drop-shadow-md leading-none mb-1">{profile.full_name}</h2>
+                   <p className="text-primary font-bold drop-shadow-md text-sm">@{profile.username || 'username'}</p>
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* --- UPDATED: Cover Slider Section (Moved Up & Horizontal) --- */}
+          <div className="space-y-6">
+             <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2"><LayoutTemplate className="w-4 h-4" /> Cover Templates</h2>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="icon" onClick={() => scrollSlider('left')} className="h-8 w-8 rounded-full border-white/10 hover:bg-white/10"><ChevronLeft className="w-4 h-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={() => scrollSlider('right')} className="h-8 w-8 rounded-full border-white/10 hover:bg-white/10"><ChevronRight className="w-4 h-4" /></Button>
+                </div>
+             </div>
+             
+             <div 
+               ref={sliderRef}
+               className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-2"
+             >
+                {COVER_TEMPLATES.map((url, i) => (
+                  <div 
+                    key={i} 
+                    onClick={() => updateProfile('cover_url', url)} 
+                    className={cn(
+                        "flex-shrink-0 w-64 aspect-video rounded-lg bg-cover bg-center cursor-pointer border-2 transition-all hover:scale-105", 
+                        profile.cover_url === url ? "border-primary shadow-lg ring-2 ring-primary/20" : "border-transparent opacity-70 hover:opacity-100"
+                    )} 
+                    style={{ backgroundImage: `url('${url}')` }} 
+                  />
+                ))}
+             </div>
           </div>
 
           <div className="space-y-6">
@@ -442,19 +507,11 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6 pb-20">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">About You</h2>
             <div className="relative"><Textarea value={profile.bio || ''} onChange={(e) => updateProfile('bio', e.target.value)} className="min-h-[150px] bg-[#121214] border-white/5 focus:border-primary/50 text-base leading-relaxed p-6 rounded-2xl resize-none" placeholder="Tell the world who you are..." /></div>
           </div>
           
-          <div className="space-y-6 pb-20">
-             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2"><LayoutTemplate className="w-4 h-4" /> Cover Templates</h2>
-             <div className="grid grid-cols-3 gap-3">
-                {COVER_TEMPLATES.map((url, i) => (
-                  <div key={i} onClick={() => updateProfile('cover_url', url)} className={cn("aspect-video rounded-lg bg-cover bg-center cursor-pointer border-2 transition-all hover:scale-105", profile.cover_url === url ? "border-primary shadow-lg" : "border-transparent opacity-70 hover:opacity-100")} style={{ backgroundImage: `url('${url}')` }} />
-                ))}
-             </div>
-          </div>
         </div>
 
         {/* RIGHT: Live Preview (Sticky) */}
