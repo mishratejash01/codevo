@@ -15,8 +15,8 @@ import {
   SheetContent,
   SheetTrigger,
   SheetClose,
-  SheetTitle,        // Added import
-  SheetDescription   // Added import
+  SheetTitle,
+  SheetDescription
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -162,7 +162,6 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
   const displayUrl = `${window.location.host}/u/${profile.username}`;
   const linkedInUser = getLinkedInUsername(profile.linkedin_url);
   
-  // REMOVED unavatar.io/username to fix "Twitch" issue
   const avatarSources = [
     profile.avatar_url,
     linkedInUser ? `https://unavatar.io/linkedin/${linkedInUser}` : null,
@@ -299,7 +298,7 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
              {/* Dynamic Button Action */}
              <div className="mt-4">
                {isOwner && !isProfileComplete ? (
-                 <Button onClick={() => navigate('/profile')} className="w-full h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold shadow-lg hover:shadow-orange-500/20">
+                 <Button onClick={() => navigate(`/u/${profile.username}`)} className="w-full h-12 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-bold shadow-lg hover:shadow-orange-500/20">
                    <UserCog className="w-4 h-4 mr-2" /> Complete Profile
                  </Button>
                ) : (
