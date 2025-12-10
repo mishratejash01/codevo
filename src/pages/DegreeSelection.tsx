@@ -336,7 +336,7 @@ const DegreeSelection = () => {
               className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10 bg-[#0c0c0e] flex flex-col"
               onClick={() => handleModeSelect('learning')}
             >
-              <div className="flex-1 flex items-center justify-center p-10 md:p-14 relative overflow-hidden">
+              <div className="flex-1 flex items-center justify-center p-4 md:p-14 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
                  {/* --- RESTORED ORIGINAL PRACTICE IMAGE --- */}
                  <img 
@@ -364,7 +364,7 @@ const DegreeSelection = () => {
               className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e] flex flex-col"
               onClick={() => handleModeSelect('proctored')}
             >
-              <div className="flex-1 flex items-center justify-center p-10 md:p-14 relative overflow-hidden">
+              <div className="flex-1 flex items-center justify-center p-4 md:p-14 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-red-500/5 rounded-full blur-[60px] pointer-events-none" />
                 {/* --- RESTORED ORIGINAL PROCTORED IMAGE --- */}
                 <img 
