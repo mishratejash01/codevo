@@ -8,20 +8,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
-import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, GraduationCap } from 'lucide-react';
+import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, GraduationCap, Lock, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
 
 const getSubjectIcon = (name: string) => {
   const n = name.toLowerCase();
-  if (n.includes('python')) return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" className="w-8 h-8" alt="Python" />;
-  if (n.includes('java')) return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" className="w-8 h-8" alt="Java" />;
-  if (n.includes('database') || n.includes('sql')) return <Database className="w-8 h-8 text-blue-400" />;
-  if (n.includes('web') || n.includes('dev')) return <Globe className="w-8 h-8 text-cyan-400" />;
-  if (n.includes('system') || n.includes('linux')) return <Terminal className="w-8 h-8 text-gray-400" />;
-  if (n.includes('compute') || n.includes('machine')) return <Cpu className="w-8 h-8 text-purple-400" />;
-  return <Code2 className="w-8 h-8 text-primary" />;
+  if (n.includes('python')) return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" className="w-6 h-6" alt="Python" />;
+  if (n.includes('java')) return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" className="w-6 h-6" alt="Java" />;
+  if (n.includes('database') || n.includes('sql')) return <Database className="w-6 h-6 text-blue-400" />;
+  if (n.includes('web') || n.includes('dev')) return <Globe className="w-6 h-6 text-cyan-400" />;
+  if (n.includes('system') || n.includes('linux')) return <Terminal className="w-6 h-6 text-gray-400" />;
+  if (n.includes('compute') || n.includes('machine')) return <Cpu className="w-6 h-6 text-purple-400" />;
+  return <Code2 className="w-6 h-6 text-primary" />;
 };
 
 const DegreeSelection = () => {
@@ -218,7 +218,7 @@ const DegreeSelection = () => {
 
       {/* Subjects Grid */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredSubjects.length === 0 ? (
             <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
               <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -237,87 +237,108 @@ const DegreeSelection = () => {
               const isLocked = subject.is_unlocked === false; 
 
               return (
-                <div 
-                  key={subject.id} 
-                  className={cn(
-                    "group relative bg-[#0c0c0e] rounded-xl border border-white/10 transition-all duration-300 flex flex-col overflow-hidden",
+                <div key={subject.id} className="relative group">
+                  {/* Glow effect backing */}
+                  <div className={cn(
+                    "absolute -inset-0.5 bg-gradient-to-r rounded-3xl blur transition duration-1000 group-hover:duration-200",
                     isLocked 
-                      ? "opacity-90" 
-                      : "hover:border-white/20 hover:shadow-[0_0_30px_rgba(0,0,0,0.6)]"
-                  )}
-                >
+                      ? "from-zinc-800 to-zinc-900 opacity-10 group-hover:opacity-20" 
+                      : "from-zinc-700 to-zinc-800 opacity-20 group-hover:opacity-40"
+                  )} />
                   
-                  {!isLocked && (
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-500" />
-                  )}
-                  
-                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-white/20 rounded-tl-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-white/20 rounded-tr-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-white/20 rounded-bl-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-white/20 rounded-br-sm opacity-50 group-hover:opacity-100 transition-opacity" />
-
-                  <div className="p-6 flex flex-col h-full relative z-10">
+                  {/* Card Container */}
+                  <div className="relative w-full bg-[#09090b] rounded-2xl border border-[#27272a]/60 p-7 shadow-2xl flex flex-col gap-7 transition-transform duration-300 hover:-translate-y-1">
                     
-                    <div className="flex items-start justify-between mb-5">
-                        <div className="p-2.5 rounded-lg bg-[#151515] border border-white/10 group-hover:border-primary/30 group-hover:bg-primary/10 transition-all duration-300 shadow-lg">
-                            {getSubjectIcon(subject.name)}
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                           {isLocked && <PremiumLockOverlay />}
-                           
-                           <Badge variant="outline" className="border-white/10 bg-white/5 text-[10px] uppercase tracking-wider font-mono text-muted-foreground group-hover:text-white transition-colors">
-                               {levelName}
-                           </Badge>
-                        </div>
+                    {/* Top Right Status Badge */}
+                    <div className="absolute top-7 right-7">
+                      {isLocked ? (
+                         <div className="w-8 h-8 rounded-full bg-[#18181b] border border-[#27272a] flex items-center justify-center">
+                           <Lock className="w-3.5 h-3.5 text-[#52525b]" />
+                         </div>
+                      ) : (
+                         <div className="w-8 h-8 rounded-full bg-[#18181b]/50 border border-[#27272a]/50 flex items-center justify-center">
+                           <div className="w-2 h-2 rounded-full bg-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]" />
+                         </div>
+                      )}
                     </div>
 
-                    <div className="mb-8 flex-1">
-                        <h3 className="text-lg font-bold text-white mb-2 line-clamp-1 group-hover:text-primary transition-colors tracking-tight" title={subject.name}>
-                            {subject.name}
-                        </h3>
-                        <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">
-                            Comprehensive resource center for {subject.name}. Access practice labs and evaluations.
+                    {/* Header Section */}
+                    <div className={cn("flex flex-row items-start gap-5", isLocked && "opacity-50")}>
+                      <div className="shrink-0 w-14 h-14 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center group-hover:border-[#3f3f46]/50 transition-colors">
+                         {getSubjectIcon(subject.name)}
+                      </div>
+
+                      <div className="flex flex-col gap-1 w-full pt-1">
+                        <h3 className="text-lg font-bold text-[#f4f4f5] leading-tight line-clamp-1">{subject.name}</h3>
+                        <p className="text-xs text-[#71717a] font-medium line-clamp-2 leading-relaxed">
+                          Comprehensive resource center for {subject.name}. Access practice labs and evaluations.
                         </p>
+                      </div>
                     </div>
 
-                    <div className="space-y-4 mt-auto">
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
-                            <span>Select Module</span>
-                            <span className="w-1/2 h-px bg-white/10" />
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                            {availableExams.length > 0 ? (
-                                availableExams.map((examType: any) => (
-                                    <Button
-                                        key={examType}
-                                        size="sm"
-                                        variant="outline"
-                                        className="w-full border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-xs h-9 font-normal transition-all"
-                                        onClick={() => !isLocked && handleExamClick(subject.id, subject.name, examType)}
-                                        disabled={isLocked}
-                                    >
-                                        {examType}
-                                    </Button>
-                                ))
-                            ) : (
-                                <div className="col-span-2 py-2 text-center text-[10px] text-muted-foreground/50 italic border border-dashed border-white/10 rounded bg-white/[0.02]">
-                                    No active exams
-                                </div>
-                            )}
-                        </div>
-                        
-                        <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="w-full h-8 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-white hover:bg-transparent group/share"
-                            onClick={() => !isLocked && handleShare(subject.name)}
-                            disabled={isLocked}
-                        >
-                            <Share2 className="w-3 h-3 mr-2 group-hover/share:text-primary transition-colors" /> Share Resource
-                        </Button>
+                    {/* Tags Section */}
+                    <div className={cn("flex flex-wrap gap-2", isLocked && "opacity-40 grayscale")}>
+                      <Badge variant="outline" className="h-6 rounded-md border-[#27272a] bg-[#18181b]/50 text-[#a1a1aa] font-normal hover:bg-[#18181b]">
+                        {levelName}
+                      </Badge>
+                      <Badge variant="outline" className="h-6 rounded-md border-[#27272a] bg-[#18181b]/50 text-[#71717a] font-normal hover:bg-[#18181b]">
+                        4 Credits
+                      </Badge>
                     </div>
+
+                    {/* Main Content Area */}
+                    <div className="flex flex-col gap-3 pt-1">
+                      <div className="flex justify-between items-center pb-1">
+                         <span className="text-[10px] font-bold uppercase tracking-wider text-[#52525b]">Select Module</span>
+                         <div className="h-px w-1/2 bg-[#18181b]" />
+                      </div>
+
+                      {availableExams.length > 0 ? (
+                        <div className="flex flex-col gap-2">
+                          {availableExams.map((examType: any) => (
+                            <button
+                              key={examType}
+                              onClick={() => !isLocked && handleExamClick(subject.id, subject.name, examType)}
+                              disabled={isLocked}
+                              className="relative w-full h-14 rounded-xl border border-[#27272a] bg-[#18181b]/40 flex items-center px-4 justify-between hover:bg-[#18181b]/60 hover:border-[#3f3f46] transition-all group/btn disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <div className="flex flex-col items-start gap-0.5">
+                                <div className="flex items-center gap-2">
+                                  <div className={cn("w-1.5 h-1.5 rounded-full", isLocked ? "bg-[#3f3f46]" : "bg-emerald-500/50")} />
+                                  <span className="text-sm font-medium text-[#d4d4d8] group-hover/btn:text-white transition-colors">{examType}</span>
+                                </div>
+                                <span className="text-[10px] text-[#52525b] ml-3.5">Standard Assessment</span>
+                              </div>
+                              <div className="w-8 h-8 rounded-full bg-[#27272a]/50 flex items-center justify-center group-hover/btn:bg-[#27272a] transition-colors">
+                                <ChevronRight className="w-4 h-4 text-[#71717a] group-hover/btn:text-[#d4d4d8]" />
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                         <div className="w-full h-14 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center text-xs text-[#52525b]">
+                           No active exams
+                         </div>
+                      )}
+                    </div>
+
+                    {/* Footer/Share Section */}
+                    <div className={cn("flex items-center justify-center gap-3 pt-2", isLocked && "opacity-40")}>
+                      <button 
+                        onClick={() => !isLocked && handleShare(subject.name)}
+                        disabled={isLocked}
+                        className="group/share flex items-center gap-3 hover:opacity-80 transition-opacity w-full justify-center"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-[#18181b] border border-[#27272a] flex items-center justify-center group-hover/share:border-[#3f3f46] transition-colors">
+                           <Share2 className="w-4 h-4 text-[#71717a] group-hover/share:text-[#a1a1aa]" />
+                        </div>
+                        <div className="flex flex-col items-start">
+                          <span className="text-xs font-medium text-[#71717a] group-hover/share:text-[#a1a1aa]">Share Resource</span>
+                          <div className="h-0.5 w-0 bg-[#3f3f46] group-hover/share:w-full transition-all duration-300 rounded-full" />
+                        </div>
+                      </button>
+                    </div>
+
                   </div>
                 </div>
               );
