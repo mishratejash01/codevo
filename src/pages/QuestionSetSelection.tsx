@@ -8,8 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-// Removed unused Card imports since we are using custom design
-// import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   ArrowLeft, Search, Layers, Filter, Clock, Play, 
@@ -41,9 +39,10 @@ export default function QuestionSetSelection() {
       if (isProctored) {
         // --- PROCTORED MODE ---
         // Fetch sets from 'iitm_exam_question_bank'
+        // UPDATED: Added 'description' to the query
         const { data, error } = await supabase
           .from('iitm_exam_question_bank')
-          .select('set_name, expected_time, title, sequence_number')
+          .select('set_name, expected_time, title, sequence_number, description')
           .eq('subject_id', subjectId) 
           .ilike('exam_type', currentExamType); 
         
@@ -52,16 +51,17 @@ export default function QuestionSetSelection() {
           throw error;
         }
         
-        // Aggregate: Sum expected_time for each set and capture Title & Sequence
-        const setMap: Record<string, { totalTime: number; title: string; sequence_number: number }> = {};
+        // Aggregate: Sum expected_time for each set and capture Title, Description & Sequence
+        const setMap: Record<string, { totalTime: number; title: string; sequence_number: number; description: string }> = {};
         
         data?.forEach(item => {
            if (item.set_name) {
              if (!setMap[item.set_name]) {
-               // Initialize with the first title/sequence found for this set
+               // Initialize with the first title/sequence/description found for this set
                setMap[item.set_name] = { 
                  totalTime: 0, 
                  title: item.title || item.set_name,
+                 description: item.description || '',
                  // Use sequence_number from DB, default to 9999 if null
                  sequence_number: item.sequence_number ?? 9999 
                };
@@ -75,6 +75,7 @@ export default function QuestionSetSelection() {
           name, 
           totalTime: val.totalTime,
           title: val.title,
+          description: val.description,
           sequence_number: val.sequence_number
         }));
         
@@ -259,17 +260,17 @@ export default function QuestionSetSelection() {
             ) : isProctored ? (
               /* --- PROCTORED VIEW (SETS) - NEW CUSTOM CARD DESIGN --- */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(filteredData as { name: string, title: string, totalTime: number, sequence_number: number }[]).map((set) => (
+                {(filteredData as { name: string, title: string, totalTime: number, sequence_number: number, description: string }[]).map((set) => (
                   <div 
                     key={set.name} 
                     className="relative w-full bg-[#111111] rounded-2xl border border-white/10 shadow-[inset_0px_1px_0px_0px_rgba(255,255,255,0.08)] hover:border-white/20 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ease-out group flex flex-col"
                   >
-                    <div className="p-8 flex flex-col h-full">
+                    <div className="p-4 md:p-8 flex flex-col h-full">
                        
                        {/* HEADER: Eyebrow + Lock */}
                        <div className="flex justify-between items-start mb-6">
                          <span className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase">
-                           Proctored Exam
+                           {decodeURIComponent(examType || '')} — {set.name}
                          </span>
                          
                          <div className="flex items-center gap-1.5 text-zinc-600 bg-white/5 px-2 py-1 rounded-full border border-white/5">
@@ -283,8 +284,9 @@ export default function QuestionSetSelection() {
                          <h2 className="text-xl font-medium text-zinc-100 tracking-tight line-clamp-1" title={set.title}>
                            {set.title}
                          </h2>
-                         <p className="text-sm text-zinc-500 font-normal">
-                           {decodeURIComponent(examType || '')} — {set.name}
+                         {/* Description from DB */}
+                         <p className="text-sm text-zinc-500 font-normal line-clamp-2 leading-relaxed">
+                           {set.description || "No description available for this set."}
                          </p>
                        </div>
 
