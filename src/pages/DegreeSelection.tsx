@@ -329,7 +329,7 @@ const DegreeSelection = () => {
       {/* --- MODE SELECTION DIALOG --- */}
       <Dialog open={isModeOpen} onOpenChange={setIsModeOpen}>
         <DialogContent className="bg-[#0c0c0e] border-white/10 text-white max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden gap-0 rounded-2xl shadow-2xl">
-          <div className="flex flex-col md:grid md:grid-cols-2 md:h-[550px] relative">
+          <div className="flex flex-col md:grid md:grid-cols-2 h-[80vh] md:h-[550px] relative">
             
             {/* OPTION 1: PRACTICE */}
             <div 
