@@ -57,7 +57,8 @@ const AppContent = () => {
     location.pathname.startsWith('/compiler')
   );
   
-  const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth'];
+  // UPDATED: Added /u/ and /profile to hidden routes
+  const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth', '/u/', '/profile'];
   const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
   const dockItems = [
