@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ShieldAlert, AlertTriangle, Monitor, UserCheck, FileText } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Monitor, UserCheck, FileText, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProctoredInstructionsProps {
