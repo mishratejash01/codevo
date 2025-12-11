@@ -7,11 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
-import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, Lock, ChevronRight, GraduationCap } from 'lucide-react';
+import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, Lock, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
 
 const getSubjectIcon = (name: string) => {
   const n = name.toLowerCase();
@@ -33,7 +31,6 @@ const DegreeSelection = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModeOpen, setIsModeOpen] = useState(false);
   const [selectedExamData, setSelectedExamData] = useState<{id: string, name: string, type: string} | null>(null);
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // 1. Fetch Degrees
   const { data: degrees = [] } = useQuery({
@@ -150,111 +147,60 @@ const DegreeSelection = () => {
   return (
     <div className="min-h-screen bg-[#121212] text-[#f0f0f0] font-sans selection:bg-orange-500/30">
       
-      {/* --- SWISS ARCHITECTURAL HEADER --- */}
-      <header className="border-b border-white/10 pt-16">
-        <div className="max-w-[1600px] mx-auto px-4 md:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-10 min-h-[220px]">
-                
-                {/* LEFT COLUMN (30%) - TITLE */}
-                <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-white/10 py-8 lg:pr-12 flex flex-col justify-center">
-                    <div>
-                        <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[1.1] text-white tracking-tight">
-                            Curriculum <br />
-                            <span className="text-white/40 italic">Explorer</span>
-                        </h1>
-                    </div>
-                </div>
+      {/* --- STANDARD CONTROL BAR (Moved Degree Selection Here) --- */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-8">
+        <h1 className="text-3xl md:text-4xl font-serif text-white mb-8">Curriculum Explorer</h1>
 
-                {/* RIGHT COLUMN (70%) - SWISS STYLE TABS */}
-                <div className="lg:col-span-7 flex flex-col">
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
-                        {degrees.map((degree: any, index: number) => {
-                            const isActive = selectedDegree === degree.id;
-                            return (
-                                <button
-                                    key={degree.id}
-                                    onClick={() => setSelectedDegree(degree.id)}
-                                    className={cn(
-                                        "relative group text-left p-8 lg:p-12 border-b md:border-b-0 border-white/10 transition-all duration-300 ease-out",
-                                        "md:border-r last:border-r-0 hover:bg-white/[0.02]",
-                                        isActive ? "bg-white/[0.03]" : "opacity-60 hover:opacity-100"
-                                    )}
-                                >
-                                    {isActive && (
-                                        <div className="absolute top-0 left-0 w-1 md:w-full h-full md:h-1 bg-orange-600" />
-                                    )}
-                                    <div className="flex flex-col h-full justify-between gap-6 md:gap-8">
-                                        <div className="space-y-2">
-                                            <span className="font-mono text-xs text-orange-500/80 uppercase tracking-widest">
-                                                0{index + 1}
-                                            </span>
-                                            <h3 className={cn(
-                                                "font-serif text-2xl md:text-3xl transition-colors",
-                                                isActive ? "text-white" : "text-white/60 group-hover:text-white"
-                                            )}>
-                                                {degree.name.replace("BS in ", "")}
-                                            </h3>
-                                        </div>
-                                        <div className="flex items-center justify-between mt-auto">
-                                            <span className="text-[10px] md:text-xs font-mono text-white/40 uppercase tracking-wider group-hover:text-white/60 transition-colors">
-                                                View Modules
-                                            </span>
-                                            <ChevronRight className={cn(
-                                                "w-5 h-5 transition-transform duration-300",
-                                                isActive ? "text-orange-500 translate-x-2" : "text-white/20 group-hover:text-white"
-                                            )} />
-                                        </div>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
+        <div className="flex flex-col md:flex-row gap-4 p-1">
+            {/* Search Input */}
+            <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <Input 
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search for subjects, codes, or keywords..."
+                    className="pl-11 h-12 bg-white/[0.03] border-white/10 text-white placeholder:text-white/20 focus:bg-white/[0.05]"
+                />
             </div>
 
-            {/* INTEGRATED SEARCH BAR (SWISS STYLE) */}
-            <div className="border-t border-white/10 flex flex-col md:flex-row">
-                {/* Search Label Block */}
-                <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-white/10 p-4 md:p-6 flex items-center gap-4 bg-white/[0.02]">
-                    <Search className="w-4 h-4 text-white/40" />
-                    <span className="font-mono text-xs uppercase tracking-widest text-white/40">
-                        Query_Database
-                    </span>
-                </div>
-                
-                {/* Search Input & Filter */}
-                <div className="flex-1 flex flex-col md:flex-row relative">
-                    <input 
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search for subjects, codes, or keywords..."
-                        className="flex-1 bg-transparent p-4 md:px-8 text-sm md:text-base font-mono text-white placeholder:text-white/20 focus:outline-none focus:bg-white/[0.02] transition-colors h-14 md:h-auto"
-                    />
-                    
-                    {/* Level Filter Integrated */}
-                    <div className="h-14 md:h-full border-t md:border-t-0 md:border-l border-white/10 flex items-center bg-white/[0.01]">
-                        <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                            <SelectTrigger className="h-full border-none bg-transparent rounded-none px-6 gap-3 focus:ring-0 text-xs font-mono uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/[0.02] w-full md:w-[220px] justify-between">
-                                <SelectValue placeholder="FILTER: ALL" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#121212] border-white/10 text-white/80 rounded-none min-w-[200px]">
-                                <SelectItem value="all" className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">Filter: All Levels</SelectItem>
-                                {levels.map((level: any) => (
-                                    <SelectItem key={level.id} value={level.id} className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">
-                                        {level.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
+            {/* Degree Selector */}
+            <div className="w-full md:w-[280px]">
+                <Select value={selectedDegree} onValueChange={setSelectedDegree}>
+                    <SelectTrigger className="h-12 bg-white/[0.03] border-white/10 text-white">
+                        <SelectValue placeholder="Select Degree" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#121212] border-white/10 text-white">
+                        {degrees.map((degree: any) => (
+                            <SelectItem key={degree.id} value={degree.id}>
+                                {degree.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            
+            {/* Level Filter */}
+            <div className="w-full md:w-[220px]">
+                <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+                    <SelectTrigger className="h-12 bg-white/[0.03] border-white/10 text-white">
+                        <SelectValue placeholder="Filter: All Levels" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#121212] border-white/10 text-white">
+                        <SelectItem value="all">All Levels</SelectItem>
+                        {levels.map((level: any) => (
+                            <SelectItem key={level.id} value={level.id}>
+                                {level.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
         </div>
-      </header>
+      </div>
 
-      {/* --- SUBJECTS GRID (RESTORED ORIGINAL CARD DESIGN) --- */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-16">
+      {/* --- SUBJECTS GRID --- */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredSubjects.length === 0 ? (
             <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
@@ -283,7 +229,7 @@ const DegreeSelection = () => {
                       : "from-zinc-700 to-zinc-800 opacity-20 group-hover:opacity-40"
                   )} />
                   
-                  {/* Card Container (RESTORED ORIGINAL STYLE) */}
+                  {/* Card Container */}
                   <div className="relative w-full bg-[#09090b] rounded-2xl border border-[#27272a]/60 p-7 shadow-2xl flex flex-col gap-7 transition-transform duration-300 hover:-translate-y-1">
                     
                     {/* Top Right Status Badge */}
@@ -392,7 +338,7 @@ const DegreeSelection = () => {
         </div>
       </div>
 
-      {/* --- MODE SELECTION DIALOG (Standard Dark) --- */}
+      {/* --- MODE SELECTION DIALOG --- */}
       <Dialog open={isModeOpen} onOpenChange={setIsModeOpen}>
         <DialogContent className="bg-[#0c0c0e] border-white/10 text-white max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden gap-0 rounded-2xl shadow-2xl">
           <div className="flex flex-col md:grid md:grid-cols-2 h-[80vh] md:h-[550px] relative">
