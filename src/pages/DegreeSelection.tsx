@@ -147,134 +147,134 @@ const DegreeSelection = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#121212] font-sans selection:bg-orange-500/30 p-2 md:p-6 flex items-center justify-center">
+    // --- GLOBAL BACKGROUND (Applied to full page) ---
+    <div className="min-h-screen bg-[#09090b] font-sans selection:bg-orange-500/30 relative overflow-x-hidden">
       
-      {/* --- UNIFIED MAIN CONTAINER --- */}
-      {/* Acts as the "Background Section" to cover floating elements */}
-      <div className="w-full max-w-[1800px] min-h-[95vh] bg-[#09090b] border border-white/10 rounded-3xl relative overflow-hidden flex flex-col shadow-2xl">
+      {/* 1. BACKGROUND GRID PATTERN (Fixed to entire screen) */}
+      <div className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none" 
+           style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} 
+      />
+      
+      {/* 2. LARGE WATERMARK TYPOGRAPHY (Fixed to entire screen) */}
+      <div className="fixed right-0 top-0 h-screen w-1/3 overflow-hidden opacity-[0.02] pointer-events-none z-0">
+          <span className="font-serif text-[20vw] leading-none text-white absolute -right-20 -top-20 rotate-12 select-none">IITM</span>
+      </div>
+
+      {/* --- CONTENT WRAPPER --- */}
+      <div className="relative z-10 w-full max-w-[1920px] mx-auto flex flex-col min-h-screen">
         
-        {/* Subtle Background Pattern (Grid) */}
-        <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 
-             style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} 
-        />
-        
-        {/* LARGE WATERMARK */}
-        <div className="absolute right-0 top-0 h-full w-1/3 overflow-hidden opacity-[0.02] pointer-events-none">
-            <span className="font-serif text-[150px] leading-none text-white absolute -right-10 top-10 rotate-12">IITM</span>
-        </div>
-
-        {/* --- 1. HEADER SECTION --- */}
-        <div className="relative z-10 border-b border-white/10 bg-[#09090b]/50 backdrop-blur-sm">
-            <div className="grid grid-cols-1 lg:grid-cols-10 min-h-[240px]">
-                
-                {/* LEFT COLUMN (30%) */}
-                <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-white/10 p-8 flex flex-col justify-between">
-                    <button 
-                        onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-white/40 hover:text-white hover:translate-x-[-4px] transition-all w-fit"
-                    >
-                        <ArrowLeft className="w-3 h-3" />
-                        Return
-                    </button>
-
-                    <div className="mt-6">
-                        {/* Orange Accent Bar */}
-                        <div className="w-12 h-1 bg-orange-600 mb-6" />
-                        <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[0.95] text-white tracking-tight">
-                            Curriculum <br />
-                            <span className="text-white/40 italic">Explorer</span>
-                        </h1>
-                    </div>
-                </div>
-
-                {/* RIGHT COLUMN (70%) - TABS */}
-                <div className="lg:col-span-7 flex flex-col">
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
-                        {degrees.map((degree: any, index: number) => {
-                            const isActive = selectedDegree === degree.id;
-                            return (
-                                <button
-                                    key={degree.id}
-                                    onClick={() => setSelectedDegree(degree.id)}
-                                    className={cn(
-                                        "relative group text-left p-8 lg:p-12 border-b md:border-b-0 border-white/10 transition-all duration-300 ease-out",
-                                        "md:border-r last:border-r-0 hover:bg-white/[0.02]",
-                                        isActive ? "bg-white/[0.03]" : "opacity-60 hover:opacity-100"
-                                    )}
-                                >
-                                    {isActive && (
-                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-600" />
-                                    )}
-                                    <div className="flex flex-col h-full justify-between gap-6 md:gap-8">
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-3">
-                                                <span className="font-mono text-xs text-orange-500/80 uppercase tracking-widest border border-orange-500/20 px-1.5 py-0.5 rounded-sm">
-                                                    0{index + 1}
-                                                </span>
-                                            </div>
-                                            <h3 className={cn(
-                                                "font-serif text-2xl md:text-3xl transition-colors",
-                                                isActive ? "text-white" : "text-white/60 group-hover:text-white"
-                                            )}>
-                                                {degree.name.replace("BS in ", "")}
-                                            </h3>
-                                        </div>
-                                        <div className="flex items-center justify-between mt-auto">
-                                            <span className="text-[10px] md:text-xs font-mono text-white/40 uppercase tracking-wider group-hover:text-white/60 transition-colors">
-                                                View Modules
-                                            </span>
-                                            <div className={cn("w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all duration-300", isActive ? "bg-white text-black border-white" : "text-white/20 group-hover:border-white/40")}>
-                                                 <ChevronRight className={cn("w-4 h-4 transition-transform", isActive && "translate-x-0.5")} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
-
-            {/* INTEGRATED SEARCH & FILTER BAR */}
-            <div className="border-t border-white/10 flex flex-col md:flex-row relative z-10 bg-[#09090b]/80 backdrop-blur-md">
-                <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-white/10 p-4 md:p-6 flex items-center gap-4 bg-white/[0.02]">
-                    <Search className="w-4 h-4 text-white/40" />
-                    <span className="font-mono text-xs uppercase tracking-widest text-white/40">
-                        Query_Database
-                    </span>
-                </div>
-                
-                <div className="flex-1 flex flex-col md:flex-row relative">
-                    <input 
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search for subjects..."
-                        className="flex-1 bg-transparent p-4 md:px-8 text-sm md:text-base font-mono text-white placeholder:text-white/20 focus:outline-none focus:bg-white/[0.02] transition-colors h-14 md:h-auto"
-                    />
+        {/* --- HEADER SECTION (Full Width, No Box) --- */}
+        <div className="border-b border-white/10 bg-[#09090b]/80 backdrop-blur-xl">
+            <div className="max-w-[1600px] mx-auto px-4 md:px-8">
+                <div className="grid grid-cols-1 lg:grid-cols-10 min-h-[200px]">
                     
-                    <div className="h-14 md:h-full border-t md:border-t-0 md:border-l border-white/10 flex items-center bg-white/[0.01]">
-                        <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                            <SelectTrigger className="h-full border-none bg-transparent rounded-none px-6 gap-3 focus:ring-0 text-xs font-mono uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/[0.02] w-full md:w-[220px] justify-between">
-                                <SelectValue placeholder="FILTER: ALL" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-[#09090b] border-white/10 text-white rounded-none min-w-[200px]">
-                                <SelectItem value="all" className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">Filter: All Levels</SelectItem>
-                                {levels.map((level: any) => (
-                                    <SelectItem key={level.id} value={level.id} className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">
-                                        {level.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    {/* LEFT COLUMN (Title & Back) */}
+                    <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-white/10 py-8 lg:pr-12 flex flex-col justify-between">
+                        <button 
+                            onClick={() => navigate(-1)}
+                            className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-white/40 hover:text-white hover:translate-x-[-4px] transition-all w-fit"
+                        >
+                            <ArrowLeft className="w-3 h-3" />
+                            Return
+                        </button>
+
+                        <div className="mt-6">
+                            <div className="w-12 h-1 bg-orange-600 mb-6" />
+                            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[0.95] text-white tracking-tight">
+                                Curriculum <br />
+                                <span className="text-white/40 italic">Explorer</span>
+                            </h1>
+                        </div>
+                    </div>
+
+                    {/* RIGHT COLUMN (Degree Tabs) */}
+                    <div className="lg:col-span-7 flex flex-col">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
+                            {degrees.map((degree: any, index: number) => {
+                                const isActive = selectedDegree === degree.id;
+                                return (
+                                    <button
+                                        key={degree.id}
+                                        onClick={() => setSelectedDegree(degree.id)}
+                                        className={cn(
+                                            "relative group text-left p-8 lg:p-12 border-b md:border-b-0 border-white/10 transition-all duration-300 ease-out",
+                                            "md:border-r last:border-r-0 hover:bg-white/[0.02]",
+                                            isActive ? "bg-white/[0.03]" : "opacity-60 hover:opacity-100"
+                                        )}
+                                    >
+                                        {isActive && (
+                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-600" />
+                                        )}
+                                        <div className="flex flex-col h-full justify-between gap-6 md:gap-8">
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-mono text-xs text-orange-500/80 uppercase tracking-widest border border-orange-500/20 px-1.5 py-0.5 rounded-sm">
+                                                        0{index + 1}
+                                                    </span>
+                                                </div>
+                                                <h3 className={cn(
+                                                    "font-serif text-2xl md:text-3xl transition-colors",
+                                                    isActive ? "text-white" : "text-white/60 group-hover:text-white"
+                                                )}>
+                                                    {degree.name.replace("BS in ", "")}
+                                                </h3>
+                                            </div>
+                                            <div className="flex items-center justify-between mt-auto">
+                                                <span className="text-[10px] md:text-xs font-mono text-white/40 uppercase tracking-wider group-hover:text-white/60 transition-colors">
+                                                    View Modules
+                                                </span>
+                                                <div className={cn("w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all duration-300", isActive ? "bg-white text-black border-white" : "text-white/20 group-hover:border-white/40")}>
+                                                     <ChevronRight className={cn("w-4 h-4 transition-transform", isActive && "translate-x-0.5")} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+
+                {/* SEARCH BAR (Full Width Strip) */}
+                <div className="border-t border-white/10 flex flex-col md:flex-row">
+                    <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-white/10 p-4 md:p-6 flex items-center gap-4 bg-white/[0.02]">
+                        <Search className="w-4 h-4 text-white/40" />
+                        <span className="font-mono text-xs uppercase tracking-widest text-white/40">
+                            Query_Database
+                        </span>
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col md:flex-row relative">
+                        <input 
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search for subjects, codes, or keywords..."
+                            className="flex-1 bg-transparent p-4 md:px-8 text-sm md:text-base font-mono text-white placeholder:text-white/20 focus:outline-none focus:bg-white/[0.02] transition-colors h-14 md:h-auto"
+                        />
+                        
+                        <div className="h-14 md:h-full border-t md:border-t-0 md:border-l border-white/10 flex items-center bg-white/[0.01]">
+                            <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+                                <SelectTrigger className="h-full border-none bg-transparent rounded-none px-6 gap-3 focus:ring-0 text-xs font-mono uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/[0.02] w-full md:w-[220px] justify-between">
+                                    <SelectValue placeholder="FILTER: ALL" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#09090b] border-white/10 text-white rounded-none min-w-[200px]">
+                                    <SelectItem value="all" className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">Filter: All Levels</SelectItem>
+                                    {levels.map((level: any) => (
+                                        <SelectItem key={level.id} value={level.id} className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">
+                                            {level.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        {/* --- 2. MAIN CONTENT AREA (SCROLLABLE) --- */}
-        <div className="flex-1 overflow-y-auto relative z-10 bg-transparent">
-          <div className="p-4 md:p-12 pb-32">
+        {/* --- MAIN GRID CONTENT --- */}
+        <div className="flex-1 p-4 md:p-12 pb-32 max-w-[1600px] mx-auto w-full">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredSubjects.length === 0 ? (
                 <div className="col-span-full py-24 text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
@@ -295,7 +295,7 @@ const DegreeSelection = () => {
 
                   return (
                     <div key={subject.id} className="relative group">
-                      {/* Glow effect backing (Restored Original) */}
+                      {/* Glow effect backing */}
                       <div className={cn(
                         "absolute -inset-0.5 bg-gradient-to-r rounded-3xl blur transition duration-1000 group-hover:duration-200",
                         isLocked 
@@ -303,7 +303,7 @@ const DegreeSelection = () => {
                           : "from-zinc-700 to-zinc-800 opacity-20 group-hover:opacity-40"
                       )} />
                       
-                      {/* Card Container (STRICTLY RESTORED ORIGINAL DESIGN) */}
+                      {/* Card Container (Original Style Preserved) */}
                       <div className="relative w-full bg-[#09090b] rounded-2xl border border-[#27272a]/60 p-7 shadow-2xl flex flex-col gap-7 transition-transform duration-300 hover:-translate-y-1">
                         
                         {/* Top Right Status Badge */}
@@ -410,7 +410,6 @@ const DegreeSelection = () => {
                 })
               )}
             </div>
-          </div>
         </div>
       </div>
 
