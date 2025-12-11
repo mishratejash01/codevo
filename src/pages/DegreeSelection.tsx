@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
-import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, GraduationCap, Lock, ChevronRight } from 'lucide-react';
+import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, Lock, ChevronRight, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
@@ -147,77 +146,135 @@ const DegreeSelection = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white font-sans selection:bg-primary/20">
+    <div className="min-h-screen bg-[#121212] text-[#f0f0f0] font-sans selection:bg-orange-500/30">
       
-      {/* Header Section */}
-      <div className="relative z-40 bg-[#09090b] border-b border-white/5 pt-16 md:pt-24 pb-8 px-4 md:px-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-          
-          <div className="text-center space-y-3">
-            <Badge variant="outline" className="border-white/10 bg-white/5 text-muted-foreground uppercase tracking-widest px-3 py-1 text-[10px]">
-              Academic Portal
-            </Badge>
-            <h1 className="text-4xl md:text-5xl font-bold font-neuropol tracking-wide text-white">
-              Explore Curriculum
-            </h1>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
-              Discover a premium learning platform that delivers curated content, real-time exam simulations, and a robust library of practice sets to support excellence.
-            </p>
-          </div>
+      {/* --- SWISS ARCHITECTURAL HEADER --- */}
+      <header className="border-b border-white/10 pt-16">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-10 min-h-[320px]">
+                
+                {/* LEFT COLUMN (30%) */}
+                <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-white/10 py-8 lg:pr-12 flex flex-col justify-between">
+                    <div>
+                        <div className="inline-block border border-white/20 px-3 py-1 mb-6">
+                            <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-white/60">
+                                Academic_Portal
+                            </span>
+                        </div>
+                        <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[1.1] text-white tracking-tight">
+                            Curriculum <br />
+                            <span className="text-white/40 italic">Explorer</span>
+                        </h1>
+                    </div>
+                    <div className="hidden lg:block mt-12">
+                        <div className="w-12 h-1 bg-orange-600 mb-4"></div>
+                        <p className="font-mono text-[10px] text-white/40 max-w-[200px] leading-relaxed">
+                            EST. 2024 — IIT MADRAS <br/>
+                            DEGREE PROGRAM
+                        </p>
+                    </div>
+                </div>
 
-          {/* Degree Selector (Tabs) */}
-          <div className="flex justify-center">
-            {degrees.length > 0 && (
-              <Tabs value={selectedDegree} onValueChange={setSelectedDegree} className="w-full max-w-md">
-                <TabsList className="grid w-full grid-cols-2 bg-black/40 border border-white/10 h-11 p-1 rounded-lg">
-                  {degrees.map((degree: any) => (
-                    <TabsTrigger 
-                      key={degree.id} 
-                      value={degree.id}
-                      className="data-[state=active]:bg-white/10 data-[state=active]:text-white h-full text-xs font-medium uppercase tracking-wide rounded-md transition-all"
-                    >
-                      <GraduationCap className="w-3.5 h-3.5 mr-2 opacity-70" />
-                      {degree.name.replace('BS in ', '')}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            )}
-          </div>
+                {/* RIGHT COLUMN (70%) */}
+                <div className="lg:col-span-7 flex flex-col">
+                    
+                    {/* Top Description Area */}
+                    <div className="py-8 lg:pl-12 lg:pb-8 border-b border-white/10">
+                        <p className="text-base md:text-lg lg:text-xl text-white/70 max-w-3xl leading-relaxed font-light">
+                            Select a discipline to view the structured academic path. 
+                            Our curriculum is designed for precision, rigor, and industry alignment.
+                        </p>
+                    </div>
 
-          {/* Filters Bar */}
-          <div className="bg-[#0c0c0e] border border-white/10 p-2 md:p-3 rounded-xl flex flex-col md:flex-row gap-3 items-center justify-between shadow-lg">
-            <div className="w-full md:w-1/3">
-              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                <SelectTrigger className="bg-white/5 border-white/5 text-white h-10 text-sm focus:ring-0 focus:border-white/20">
-                  <SelectValue placeholder="Filter by Level" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1a1a1c] border-white/10 text-white">
-                  <SelectItem value="all">All Levels</SelectItem>
-                  {levels.map((level: any) => (
-                    <SelectItem key={level.id} value={level.id}>{level.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    {/* Degree Selection "Cards" */}
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
+                        {degrees.map((degree: any, index: number) => {
+                            const isActive = selectedDegree === degree.id;
+                            return (
+                                <button
+                                    key={degree.id}
+                                    onClick={() => setSelectedDegree(degree.id)}
+                                    className={cn(
+                                        "relative group text-left p-8 lg:p-12 border-b md:border-b-0 border-white/10 transition-all duration-300 ease-out",
+                                        "md:border-r last:border-r-0 hover:bg-white/[0.02]",
+                                        isActive ? "bg-white/[0.03]" : "opacity-60 hover:opacity-100"
+                                    )}
+                                >
+                                    {isActive && (
+                                        <div className="absolute top-0 left-0 w-1 md:w-full h-full md:h-1 bg-orange-600" />
+                                    )}
+                                    <div className="flex flex-col h-full justify-between gap-6 md:gap-8">
+                                        <div className="space-y-2">
+                                            <span className="font-mono text-xs text-orange-500/80 uppercase tracking-widest">
+                                                0{index + 1}
+                                            </span>
+                                            <h3 className={cn(
+                                                "font-serif text-2xl md:text-3xl transition-colors",
+                                                isActive ? "text-white" : "text-white/60 group-hover:text-white"
+                                            )}>
+                                                {degree.name.replace("BS in ", "")}
+                                            </h3>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-auto">
+                                            <span className="text-[10px] md:text-xs font-mono text-white/40 uppercase tracking-wider group-hover:text-white/60 transition-colors">
+                                                View Modules
+                                            </span>
+                                            <ChevronRight className={cn(
+                                                "w-5 h-5 transition-transform duration-300",
+                                                isActive ? "text-orange-500 translate-x-2" : "text-white/20 group-hover:text-white"
+                                            )} />
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
             </div>
-            <div className="w-full md:w-1/3 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search subjects..." 
-                className="pl-9 bg-white/5 border-white/5 text-white h-10 text-sm focus-visible:ring-0 focus-visible:border-white/20 placeholder:text-muted-foreground/50"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+
+            {/* Search & Filter Bar (Grid Line Integrated) */}
+            <div className="border-t border-white/10 flex flex-col md:flex-row">
+                {/* Search Label Block */}
+                <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-white/10 p-4 md:p-6 flex items-center gap-4 bg-white/[0.02]">
+                    <Search className="w-4 h-4 text-white/40" />
+                    <span className="font-mono text-xs uppercase tracking-widest text-white/40">
+                        Query_Database
+                    </span>
+                </div>
+                
+                {/* Search Input & Filter */}
+                <div className="flex-1 flex flex-col md:flex-row relative">
+                    <input 
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search for subjects, codes, or keywords..."
+                        className="flex-1 bg-transparent p-4 md:px-8 text-sm md:text-base font-mono text-white placeholder:text-white/20 focus:outline-none focus:bg-white/[0.02] transition-colors h-14 md:h-auto"
+                    />
+                    
+                    {/* Level Filter Integrated */}
+                    <div className="h-14 md:h-full border-t md:border-t-0 md:border-l border-white/10 flex items-center bg-white/[0.01]">
+                        <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+                            <SelectTrigger className="h-full border-none bg-transparent rounded-none px-6 gap-3 focus:ring-0 text-xs font-mono uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/[0.02] w-full md:w-[220px] justify-between">
+                                <SelectValue placeholder="FILTER: ALL" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-[#121212] border-white/10 text-white/80 rounded-none min-w-[200px]">
+                                <SelectItem value="all" className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">Filter: All Levels</SelectItem>
+                                {levels.map((level: any) => (
+                                    <SelectItem key={level.id} value={level.id} className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">
+                                        {level.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
             </div>
-            <div className="w-full md:w-auto text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap px-4 font-mono">
-              <span className="text-white font-bold mr-1">{filteredSubjects.length}</span> Subjects Found
-            </div>
-          </div>
         </div>
-      </div>
+      </header>
 
       {/* Subjects Grid */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredSubjects.length === 0 ? (
             <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
@@ -249,7 +306,7 @@ const DegreeSelection = () => {
                   {/* Card Container */}
                   <div className="relative w-full bg-[#09090b] rounded-2xl border border-[#27272a]/60 p-7 shadow-2xl flex flex-col gap-7 transition-transform duration-300 hover:-translate-y-1">
                     
-                    {/* Top Right Status Badge (Reduced Size) */}
+                    {/* Top Right Status Badge (Signal Symbol) */}
                     <div className="absolute top-7 right-7">
                       <div className="w-6 h-6 rounded-full bg-[#18181b]/50 border border-[#27272a]/50 flex items-center justify-center">
                         <div className={cn(
@@ -295,7 +352,6 @@ const DegreeSelection = () => {
                       {/* --- LOCKED STATE UI --- */}
                       {isLocked ? (
                         <div className="w-full h-16 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center gap-3">
-                           {/* Reduced lock icon container size */}
                            <div className="w-6 h-6 rounded-full bg-[#18181b]/50 flex items-center justify-center border border-[#27272a]">
                              <Lock className="w-3 h-3 text-[#52525b]" />
                            </div>
@@ -368,7 +424,6 @@ const DegreeSelection = () => {
             >
               <div className="flex-1 flex items-center justify-center p-4 md:p-14 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
-                 {/* --- RESTORED ORIGINAL PRACTICE IMAGE --- */}
                  <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" 
                   alt="Practice Coding" 
@@ -396,7 +451,6 @@ const DegreeSelection = () => {
             >
               <div className="flex-1 flex items-center justify-center p-4 md:p-14 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-red-500/5 rounded-full blur-[60px] pointer-events-none" />
-                {/* --- RESTORED ORIGINAL PROCTORED IMAGE --- */}
                 <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
                   alt="Proctored Exam" 
