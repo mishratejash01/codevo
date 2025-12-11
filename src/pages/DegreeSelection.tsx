@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
 import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, Lock, ChevronRight, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -16,11 +17,11 @@ const getSubjectIcon = (name: string) => {
   const n = name.toLowerCase();
   if (n.includes('python')) return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" className="w-6 h-6" alt="Python" />;
   if (n.includes('java')) return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" className="w-6 h-6" alt="Java" />;
-  if (n.includes('database') || n.includes('sql')) return <Database className="w-6 h-6 text-blue-400" />;
-  if (n.includes('web') || n.includes('dev')) return <Globe className="w-6 h-6 text-cyan-400" />;
-  if (n.includes('system') || n.includes('linux')) return <Terminal className="w-6 h-6 text-gray-400" />;
-  if (n.includes('compute') || n.includes('machine')) return <Cpu className="w-6 h-6 text-purple-400" />;
-  return <Code2 className="w-6 h-6 text-primary" />;
+  if (n.includes('database') || n.includes('sql')) return <Database className="w-6 h-6 text-blue-600" />;
+  if (n.includes('web') || n.includes('dev')) return <Globe className="w-6 h-6 text-cyan-600" />;
+  if (n.includes('system') || n.includes('linux')) return <Terminal className="w-6 h-6 text-gray-600" />;
+  if (n.includes('compute') || n.includes('machine')) return <Cpu className="w-6 h-6 text-purple-600" />;
+  return <Code2 className="w-6 h-6 text-emerald-600" />;
 };
 
 const DegreeSelection = () => {
@@ -32,6 +33,7 @@ const DegreeSelection = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModeOpen, setIsModeOpen] = useState(false);
   const [selectedExamData, setSelectedExamData] = useState<{id: string, name: string, type: string} | null>(null);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // 1. Fetch Degrees
   const { data: degrees = [] } = useQuery({
@@ -146,265 +148,197 @@ const DegreeSelection = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#121212] text-[#f0f0f0] font-sans selection:bg-orange-500/30">
+    <div className="min-h-screen bg-[#F9F7F2] text-[#1a1a1a] font-sans selection:bg-black/10">
       
-      {/* --- SWISS ARCHITECTURAL HEADER --- */}
-      <header className="border-b border-white/10 pt-16">
-        <div className="max-w-[1600px] mx-auto px-4 md:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-10 min-h-[320px]">
-                
-                {/* LEFT COLUMN (30%) */}
-                <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-white/10 py-8 lg:pr-12 flex flex-col justify-between">
-                    <div>
-                        <div className="inline-block border border-white/20 px-3 py-1 mb-6">
-                            <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-white/60">
-                                Academic_Portal
-                            </span>
-                        </div>
-                        <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[1.1] text-white tracking-tight">
-                            Curriculum <br />
-                            <span className="text-white/40 italic">Explorer</span>
-                        </h1>
-                    </div>
-                    <div className="hidden lg:block mt-12">
-                        <div className="w-12 h-1 bg-orange-600 mb-4"></div>
-                        <p className="font-mono text-[10px] text-white/40 max-w-[200px] leading-relaxed">
-                            EST. 2024 — IIT MADRAS <br/>
-                            DEGREE PROGRAM
-                        </p>
-                    </div>
-                </div>
+      {/* Background Texture (Noise) */}
+      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}></div>
 
-                {/* RIGHT COLUMN (70%) */}
-                <div className="lg:col-span-7 flex flex-col">
-                    
-                    {/* Top Description Area */}
-                    <div className="py-8 lg:pl-12 lg:pb-8 border-b border-white/10">
-                        <p className="text-base md:text-lg lg:text-xl text-white/70 max-w-3xl leading-relaxed font-light">
-                            Select a discipline to view the structured academic path. 
-                            Our curriculum is designed for precision, rigor, and industry alignment.
-                        </p>
-                    </div>
-
-                    {/* Degree Selection "Cards" */}
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
-                        {degrees.map((degree: any, index: number) => {
-                            const isActive = selectedDegree === degree.id;
-                            return (
-                                <button
-                                    key={degree.id}
-                                    onClick={() => setSelectedDegree(degree.id)}
-                                    className={cn(
-                                        "relative group text-left p-8 lg:p-12 border-b md:border-b-0 border-white/10 transition-all duration-300 ease-out",
-                                        "md:border-r last:border-r-0 hover:bg-white/[0.02]",
-                                        isActive ? "bg-white/[0.03]" : "opacity-60 hover:opacity-100"
-                                    )}
-                                >
-                                    {isActive && (
-                                        <div className="absolute top-0 left-0 w-1 md:w-full h-full md:h-1 bg-orange-600" />
-                                    )}
-                                    <div className="flex flex-col h-full justify-between gap-6 md:gap-8">
-                                        <div className="space-y-2">
-                                            <span className="font-mono text-xs text-orange-500/80 uppercase tracking-widest">
-                                                0{index + 1}
-                                            </span>
-                                            <h3 className={cn(
-                                                "font-serif text-2xl md:text-3xl transition-colors",
-                                                isActive ? "text-white" : "text-white/60 group-hover:text-white"
-                                            )}>
-                                                {degree.name.replace("BS in ", "")}
-                                            </h3>
-                                        </div>
-                                        <div className="flex items-center justify-between mt-auto">
-                                            <span className="text-[10px] md:text-xs font-mono text-white/40 uppercase tracking-wider group-hover:text-white/60 transition-colors">
-                                                View Modules
-                                            </span>
-                                            <ChevronRight className={cn(
-                                                "w-5 h-5 transition-transform duration-300",
-                                                isActive ? "text-orange-500 translate-x-2" : "text-white/20 group-hover:text-white"
-                                            )} />
-                                        </div>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
-
-            {/* Search & Filter Bar (Grid Line Integrated) */}
-            <div className="border-t border-white/10 flex flex-col md:flex-row">
-                {/* Search Label Block */}
-                <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-white/10 p-4 md:p-6 flex items-center gap-4 bg-white/[0.02]">
-                    <Search className="w-4 h-4 text-white/40" />
-                    <span className="font-mono text-xs uppercase tracking-widest text-white/40">
-                        Query_Database
+      {/* --- IVY LEAGUE HEADER --- */}
+      <header className="relative pt-24 pb-12 px-6 md:px-16 lg:px-24 z-10 border-b border-black/5">
+        <div className="max-w-[1800px] mx-auto">
+            
+            {/* Top Row: Tag & Filters */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+                <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full border border-black/10 bg-white/50 backdrop-blur-sm">
+                    <span className="w-2 h-2 rounded-full bg-black"></span>
+                    <span className="font-mono text-xs uppercase tracking-widest text-black/60">
+                        Academic Portal 2024
                     </span>
                 </div>
-                
-                {/* Search Input & Filter */}
-                <div className="flex-1 flex flex-col md:flex-row relative">
-                    <input 
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search for subjects, codes, or keywords..."
-                        className="flex-1 bg-transparent p-4 md:px-8 text-sm md:text-base font-mono text-white placeholder:text-white/20 focus:outline-none focus:bg-white/[0.02] transition-colors h-14 md:h-auto"
-                    />
-                    
-                    {/* Level Filter Integrated */}
-                    <div className="h-14 md:h-full border-t md:border-t-0 md:border-l border-white/10 flex items-center bg-white/[0.01]">
+
+                <div className="flex items-center gap-8 self-end md:self-auto">
+                    {/* Level Filter (Moved to Top Right) */}
+                    <div className="relative z-20">
                         <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                            <SelectTrigger className="h-full border-none bg-transparent rounded-none px-6 gap-3 focus:ring-0 text-xs font-mono uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/[0.02] w-full md:w-[220px] justify-between">
-                                <SelectValue placeholder="FILTER: ALL" />
+                            <SelectTrigger className="w-[180px] border-none bg-transparent text-black/60 hover:text-black font-serif text-lg p-0 h-auto focus:ring-0 gap-2 justify-end">
+                                <SelectValue placeholder="All Levels" />
                             </SelectTrigger>
-                            <SelectContent className="bg-[#121212] border-white/10 text-white/80 rounded-none min-w-[200px]">
-                                <SelectItem value="all" className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">Filter: All Levels</SelectItem>
+                            <SelectContent className="bg-[#F9F7F2] border-black/5 text-black shadow-xl">
+                                <SelectItem value="all" className="font-serif">All Levels</SelectItem>
                                 {levels.map((level: any) => (
-                                    <SelectItem key={level.id} value={level.id} className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">
+                                    <SelectItem key={level.id} value={level.id} className="font-serif">
                                         {level.name}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                     </div>
+
+                    {/* Minimalist Search */}
+                    <div className={cn("flex items-center border-b border-black/20 transition-all duration-300", isSearchExpanded ? "w-64 border-black" : "w-8 border-transparent")}>
+                        <input 
+                            type="text" 
+                            className={cn("bg-transparent outline-none text-black placeholder:text-black/30 font-serif text-base w-full", isSearchExpanded ? "opacity-100 px-2" : "opacity-0 w-0 px-0")}
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onBlur={() => !searchQuery && setIsSearchExpanded(false)}
+                        />
+                        <button onClick={() => setIsSearchExpanded(true)} className="p-1">
+                            <Search className="w-5 h-5 text-black/60 hover:text-black transition-colors" />
+                        </button>
+                    </div>
                 </div>
+            </div>
+
+            <div className="flex flex-col lg:flex-row justify-between items-end gap-12 mb-20">
+                {/* Massive Typography */}
+                <div className="relative">
+                    <h1 className="font-serif text-6xl md:text-8xl lg:text-[7rem] leading-[0.9] tracking-tighter text-[#1a1a1a]">
+                        Explore <br />
+                        <span className="italic text-black/80 ml-12 md:ml-24">Curriculum</span>
+                    </h1>
+                </div>
+
+                {/* Formal Professional Description */}
+                <div className="lg:max-w-md text-right lg:text-left lg:mb-4">
+                    <p className="font-serif text-lg md:text-xl text-[#1a1a1a] leading-relaxed">
+                        Designed for academic rigor and professional <span className="italic font-bold">excellence</span>.
+                    </p>
+                    <p className="font-mono text-xs md:text-sm text-black/50 mt-2 uppercase tracking-widest">
+                        Select a discipline to explore the structured curriculum.
+                    </p>
+                </div>
+            </div>
+
+            {/* Underline Tab System */}
+            <div className="flex border-b border-black/10 relative overflow-x-auto no-scrollbar">
+                {degrees.map((degree: any) => {
+                    const isActive = selectedDegree === degree.id;
+                    return (
+                        <button
+                            key={degree.id}
+                            onClick={() => setSelectedDegree(degree.id)}
+                            className={cn(
+                                "pb-6 pr-12 md:pr-24 text-sm md:text-base tracking-widest uppercase transition-all duration-500 relative shrink-0",
+                                isActive ? "font-bold text-black" : "font-medium text-black/30 hover:text-black/60"
+                            )}
+                        >
+                            {degree.name.replace("BS in ", "")}
+                            {isActive && (
+                                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-black animate-in slide-in-from-left-4 duration-500" />
+                            )}
+                        </button>
+                    );
+                })}
             </div>
         </div>
       </header>
 
       {/* Subjects Grid */}
-      <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="max-w-[1800px] mx-auto px-6 md:px-16 lg:px-24 py-20 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
           {filteredSubjects.length === 0 ? (
-            <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
-              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground">No subjects found matching your criteria.</p>
-              <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedLevel('all'); }} className="text-primary mt-2">
-                Clear Filters
+            <div className="col-span-full py-32 text-center border-y border-black/5">
+              <p className="font-serif text-2xl text-black/40 italic">No curriculum found matching your criteria.</p>
+              <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedLevel('all'); }} className="text-black mt-4 underline decoration-black/20 hover:decoration-black">
+                Reset Filters
               </Button>
             </div>
           ) : (
             filteredSubjects.map((subject: any) => {
               const availableExams = Array.from(subjectExamMap[subject.id] || []).sort();
-              const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Unknown Level';
-              
+              const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Level';
               const isLocked = subject.is_unlocked === false; 
 
               return (
-                <div key={subject.id} className="relative group">
-                  {/* Glow effect backing */}
-                  <div className={cn(
-                    "absolute -inset-0.5 bg-gradient-to-r rounded-3xl blur transition duration-1000 group-hover:duration-200",
-                    isLocked 
-                      ? "from-zinc-800 to-zinc-900 opacity-10 group-hover:opacity-20" 
-                      : "from-zinc-700 to-zinc-800 opacity-20 group-hover:opacity-40"
-                  )} />
-                  
-                  {/* Card Container */}
-                  <div className="relative w-full bg-[#09090b] rounded-2xl border border-[#27272a]/60 p-7 shadow-2xl flex flex-col gap-7 transition-transform duration-300 hover:-translate-y-1">
-                    
-                    {/* Top Right Status Badge (Signal Symbol) */}
-                    <div className="absolute top-7 right-7">
-                      <div className="w-6 h-6 rounded-full bg-[#18181b]/50 border border-[#27272a]/50 flex items-center justify-center">
-                        <div className={cn(
-                          "w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]",
-                          isLocked 
-                            ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" 
-                            : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
-                        )} />
+                <div key={subject.id} className="group flex flex-col gap-6">
+                  {/* Minimalist Card Header */}
+                  <div className="flex justify-between items-start border-b border-black/10 pb-6 group-hover:border-black/30 transition-colors">
+                      <div className="flex gap-4 items-center">
+                          <div className={cn("p-3 rounded-xl bg-white border border-black/5 shadow-sm transition-transform duration-500 group-hover:scale-110", isLocked && "grayscale opacity-50")}>
+                              {getSubjectIcon(subject.name)}
+                          </div>
+                          <div>
+                              <span className="font-mono text-[10px] uppercase tracking-widest text-black/40 block mb-1">
+                                  {levelName}
+                              </span>
+                              <h3 className={cn("font-serif text-2xl text-[#1a1a1a] leading-tight group-hover:text-black transition-colors", isLocked && "text-black/40")}>
+                                  {subject.name}
+                              </h3>
+                          </div>
                       </div>
-                    </div>
-
-                    {/* Header Section */}
-                    <div className={cn("flex flex-row items-start gap-5", isLocked && "opacity-50")}>
-                      <div className="shrink-0 w-14 h-14 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center group-hover:border-[#3f3f46]/50 transition-colors">
-                         {getSubjectIcon(subject.name)}
+                      
+                      {/* Status Indicator */}
+                      <div className="pt-1">
+                          <div className="w-6 h-6 rounded-full bg-[#18181b]/5 border border-[#27272a]/10 flex items-center justify-center">
+                            <div className={cn(
+                              "w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.2)]",
+                              isLocked 
+                                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]" 
+                                : "bg-emerald-600 shadow-[0_0_8px_rgba(5,150,105,0.4)]"
+                            )} />
+                          </div>
                       </div>
-
-                      <div className="flex flex-col gap-1 w-full pt-1">
-                        <h3 className="text-lg font-bold text-[#f4f4f5] leading-tight line-clamp-1">{subject.name}</h3>
-                        <p className="text-xs text-[#71717a] font-medium line-clamp-2 leading-relaxed">
-                          Comprehensive resource center for {subject.name}. Access practice labs and evaluations.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Tags Section */}
-                    <div className={cn("flex flex-wrap gap-2", isLocked && "opacity-40 grayscale")}>
-                      <Badge variant="outline" className="h-6 rounded-md border-[#27272a] bg-[#18181b]/50 text-[#a1a1aa] font-normal hover:bg-[#18181b]">
-                        {levelName}
-                      </Badge>
-                      <Badge variant="outline" className="h-6 rounded-md border-[#27272a] bg-[#18181b]/50 text-[#71717a] font-normal hover:bg-[#18181b]">
-                        4 Credits
-                      </Badge>
-                    </div>
-
-                    {/* Main Content Area */}
-                    <div className="flex flex-col gap-3 pt-1">
-                      <div className="flex justify-between items-center pb-1">
-                         <span className="text-[10px] font-bold uppercase tracking-wider text-[#52525b]">Select Module</span>
-                         <div className="h-px w-1/2 bg-[#18181b]" />
-                      </div>
-
-                      {/* --- LOCKED STATE UI --- */}
-                      {isLocked ? (
-                        <div className="w-full h-16 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center gap-3">
-                           <div className="w-6 h-6 rounded-full bg-[#18181b]/50 flex items-center justify-center border border-[#27272a]">
-                             <Lock className="w-3 h-3 text-[#52525b]" />
-                           </div>
-                           <div className="flex flex-col justify-center">
-                             <span className="text-xs font-medium text-[#71717a]">Subject Locked</span>
-                           </div>
-                        </div>
-                      ) : availableExams.length > 0 ? (
-                        <div className="flex flex-col gap-2">
-                          {availableExams.map((examType: any) => (
-                            <button
-                              key={examType}
-                              onClick={() => handleExamClick(subject.id, subject.name, examType)}
-                              className="relative w-full h-14 rounded-xl border border-[#27272a] bg-[#18181b]/40 flex items-center px-4 justify-between hover:bg-[#18181b]/60 hover:border-[#3f3f46] transition-all group/btn"
-                            >
-                              <div className="flex flex-col items-start gap-0.5">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
-                                  <span className="text-sm font-medium text-[#d4d4d8] group-hover/btn:text-white transition-colors">{examType}</span>
-                                </div>
-                                <span className="text-[10px] text-[#52525b] ml-3.5">Standard Assessment</span>
-                              </div>
-                              <div className="w-8 h-8 rounded-full bg-[#27272a]/50 flex items-center justify-center group-hover/btn:bg-[#27272a] transition-colors">
-                                <ChevronRight className="w-4 h-4 text-[#71717a] group-hover/btn:text-[#d4d4d8]" />
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                         <div className="w-full h-14 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center text-xs text-[#52525b]">
-                           No active exams
-                         </div>
-                      )}
-                    </div>
-
-                    {/* Footer/Share Section */}
-                    <div className={cn("flex items-center justify-center gap-3 pt-2", isLocked && "opacity-40")}>
-                      <button 
-                        onClick={() => !isLocked && handleShare(subject.name)}
-                        disabled={isLocked}
-                        className="group/share flex items-center gap-3 hover:opacity-80 transition-opacity w-full justify-center"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-[#18181b] border border-[#27272a] flex items-center justify-center group-hover/share:border-[#3f3f46] transition-colors">
-                           <Share2 className="w-4 h-4 text-[#71717a] group-hover/share:text-[#a1a1aa]" />
-                        </div>
-                        <div className="flex flex-col items-start">
-                          <span className="text-xs font-medium text-[#71717a] group-hover/share:text-[#a1a1aa]">Share Resource</span>
-                          <div className="h-0.5 w-0 bg-[#3f3f46] group-hover/share:w-full transition-all duration-300 rounded-full" />
-                        </div>
-                      </button>
-                    </div>
-
                   </div>
+
+                  {/* Action Area */}
+                  <div className="space-y-3">
+                      {isLocked ? (
+                          <div className="w-full h-16 rounded-xl border border-dashed border-[#27272a]/20 bg-black/[0.02] flex items-center justify-center gap-3">
+                             <div className="w-6 h-6 rounded-full bg-black/5 flex items-center justify-center border border-black/10">
+                               <Lock className="w-3 h-3 text-black/40" />
+                             </div>
+                             <div className="flex flex-col justify-center">
+                               <span className="text-xs font-medium text-black/50">Subject Locked</span>
+                             </div>
+                          </div>
+                      ) : availableExams.length > 0 ? (
+                          <div className="grid grid-cols-1 gap-2">
+                              {availableExams.map((examType: any) => (
+                                  <button
+                                      key={examType}
+                                      onClick={() => handleExamClick(subject.id, subject.name, examType)}
+                                      className="flex items-center justify-between w-full p-4 bg-white border border-black/5 hover:border-black/20 hover:shadow-lg transition-all duration-300 group/btn rounded-lg"
+                                  >
+                                      <div className="flex items-center gap-3">
+                                          <div className="w-1.5 h-1.5 bg-black/20 rounded-full group-hover/btn:bg-black transition-colors" />
+                                          <span className="font-sans text-sm font-medium text-black/70 group-hover/btn:text-black tracking-wide">
+                                              {examType}
+                                          </span>
+                                      </div>
+                                      <ChevronRight className="w-4 h-4 text-black/20 group-hover/btn:text-black transition-colors transform group-hover/btn:translate-x-1" />
+                                  </button>
+                              ))}
+                          </div>
+                      ) : (
+                          <div className="py-6 text-center text-xs font-mono text-black/30 uppercase tracking-widest">
+                              No Modules Active
+                          </div>
+                      )}
+                  </div>
+
+                  {/* Footer Link */}
+                  {!isLocked && (
+                      <div className="flex justify-end pt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                          <button 
+                              onClick={() => handleShare(subject.name)}
+                              className="text-xs font-bold uppercase tracking-widest text-black/40 hover:text-black flex items-center gap-2"
+                          >
+                              Share <Share2 className="w-3 h-3" />
+                          </button>
+                      </div>
+                  )}
                 </div>
               );
             })
@@ -412,10 +346,10 @@ const DegreeSelection = () => {
         </div>
       </div>
 
-      {/* --- MODE SELECTION DIALOG --- */}
+      {/* --- MODE SELECTION DIALOG (Dark Mode Preserved for Contrast) --- */}
       <Dialog open={isModeOpen} onOpenChange={setIsModeOpen}>
         <DialogContent className="bg-[#0c0c0e] border-white/10 text-white max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden gap-0 rounded-2xl shadow-2xl">
-          <div className="flex flex-col md:grid md:grid-cols-2 h-[80vh] md:h-[550px] relative">
+          <div className="flex flex-col md:grid md:grid-cols-2 md:h-[550px] relative">
             
             {/* OPTION 1: PRACTICE */}
             <div 
@@ -424,6 +358,7 @@ const DegreeSelection = () => {
             >
               <div className="flex-1 flex items-center justify-center p-4 md:p-14 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
+                 {/* --- RESTORED ORIGINAL PRACTICE IMAGE --- */}
                  <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" 
                   alt="Practice Coding" 
@@ -451,6 +386,7 @@ const DegreeSelection = () => {
             >
               <div className="flex-1 flex items-center justify-center p-4 md:p-14 relative overflow-hidden">
                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-red-500/5 rounded-full blur-[60px] pointer-events-none" />
+                {/* --- RESTORED ORIGINAL PROCTORED IMAGE --- */}
                 <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
                   alt="Proctored Exam" 
