@@ -148,47 +148,53 @@ const DegreeSelection = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#121212] text-[#f0f0f0] font-sans selection:bg-orange-500/30">
+    <div className="min-h-screen bg-black font-sans selection:bg-emerald-500/30 p-2 md:p-6 flex items-center justify-center">
       
-      {/* --- SWISS ARCHITECTURAL HEADER (FILLED BACK SPACE) --- */}
-      <div className="pt-24 pb-8 px-4 md:px-8 max-w-[1600px] mx-auto">
-        <Card className="relative bg-[#09090b] border-white/10 overflow-hidden shadow-2xl group/header">
+      {/* --- UNIFIED MAIN "GREENISH-BLACK" SECTION --- */}
+      {/* This container wraps everything, covers the floating look, and adds the greenish border/bg */}
+      <div className="w-full max-w-[1800px] min-h-[95vh] bg-[#020804] border border-[#1a2e1a] rounded-3xl relative overflow-hidden flex flex-col shadow-2xl">
+        
+        {/* Subtle Background Pattern for the Section */}
+        <div className="absolute inset-0 z-0 opacity-[0.15] pointer-events-none" 
+             style={{ 
+               backgroundImage: 'radial-gradient(circle at 50% 0%, #10b981 0%, transparent 25%), radial-gradient(circle at 100% 100%, #064e3b 0%, transparent 20%)',
+             }} 
+        />
+        <div className="absolute inset-0 z-0 opacity-[0.05] pointer-events-none" 
+             style={{ backgroundImage: 'linear-gradient(#10b981 1px, transparent 1px), linear-gradient(90deg, #10b981 1px, transparent 1px)', backgroundSize: '60px 60px' }} 
+        />
+
+        {/* --- 1. INTEGRATED SWISS HEADER --- */}
+        <div className="relative z-10 border-b border-[#1a2e1a] bg-[#020804]/50 backdrop-blur-sm">
             
-            {/* 1. BACKGROUND GRID PATTERN (Fills blank space) */}
-            <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 
-                 style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} 
-            />
-            
-            {/* 2. LARGE WATERMARK TYPOGRAPHY (Visual Interest) */}
-            <div className="absolute -right-20 -top-20 font-serif text-[200px] text-white/[0.02] z-0 select-none pointer-events-none rotate-12">
-                IITM
+            {/* LARGE WATERMARK (Retained but subtle) */}
+            <div className="absolute right-0 top-0 h-full w-1/3 overflow-hidden opacity-[0.03] pointer-events-none">
+                <span className="font-serif text-[150px] leading-none text-emerald-500 absolute -right-10 top-10 rotate-12">IITM</span>
             </div>
 
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-10 min-h-[260px]">
+            <div className="grid grid-cols-1 lg:grid-cols-10 min-h-[240px]">
                 
-                {/* LEFT COLUMN (30%) - TITLE & NAV */}
-                <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-white/10 p-8 flex flex-col justify-between bg-gradient-to-br from-white/[0.02] to-transparent">
-                    
-                    {/* Back Navigation (Using the back space) */}
+                {/* LEFT COLUMN (30%) */}
+                <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-[#1a2e1a] p-8 flex flex-col justify-between">
                     <button 
                         onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-white/40 hover:text-white hover:translate-x-[-4px] transition-all w-fit"
+                        className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-500/60 hover:text-emerald-400 hover:translate-x-[-4px] transition-all w-fit"
                     >
                         <ArrowLeft className="w-3 h-3" />
                         Return
                     </button>
 
-                    <div className="mt-8">
-                        <div className="w-12 h-1 bg-orange-600 mb-6" />
+                    <div className="mt-6">
+                        <div className="w-12 h-1 bg-emerald-600 mb-6 shadow-[0_0_15px_rgba(5,150,105,0.5)]" />
                         <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[0.95] text-white tracking-tight">
                             Curriculum <br />
-                            <span className="text-white/40 italic">Explorer</span>
+                            <span className="text-emerald-500/40 italic">Explorer</span>
                         </h1>
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN (70%) - SWISS STYLE TABS */}
-                <div className="lg:col-span-7 flex flex-col backdrop-blur-sm">
+                {/* RIGHT COLUMN (70%) - TABS */}
+                <div className="lg:col-span-7 flex flex-col">
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
                         {degrees.map((degree: any, index: number) => {
                             const isActive = selectedDegree === degree.id;
@@ -197,34 +203,33 @@ const DegreeSelection = () => {
                                     key={degree.id}
                                     onClick={() => setSelectedDegree(degree.id)}
                                     className={cn(
-                                        "relative group text-left p-8 lg:p-12 border-b md:border-b-0 border-white/10 transition-all duration-300 ease-out",
-                                        "md:border-r last:border-r-0 hover:bg-white/[0.02]",
-                                        isActive ? "bg-white/[0.03]" : "opacity-60 hover:opacity-100"
+                                        "relative group text-left p-8 lg:p-12 border-b md:border-b-0 border-[#1a2e1a] transition-all duration-300 ease-out",
+                                        "md:border-r last:border-r-0 hover:bg-emerald-950/20",
+                                        isActive ? "bg-emerald-950/30" : "opacity-60 hover:opacity-100"
                                     )}
                                 >
-                                    {/* Active Indicator Bar */}
-                                    <div className={cn("absolute left-0 top-0 bottom-0 w-1 bg-orange-600 transition-transform duration-300 origin-bottom", isActive ? "scale-y-100" : "scale-y-0")} />
-
+                                    {isActive && (
+                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                                    )}
                                     <div className="flex flex-col h-full justify-between gap-6 md:gap-8">
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-3">
-                                                <span className="font-mono text-xs text-orange-500/80 uppercase tracking-widest border border-orange-500/20 px-1.5 py-0.5 rounded-sm">
+                                                <span className="font-mono text-xs text-emerald-500/80 uppercase tracking-widest border border-emerald-500/20 px-1.5 py-0.5 rounded-sm">
                                                     0{index + 1}
                                                 </span>
-                                                {isActive && <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />}
                                             </div>
                                             <h3 className={cn(
                                                 "font-serif text-2xl md:text-3xl transition-colors",
-                                                isActive ? "text-white" : "text-white/60 group-hover:text-white"
+                                                isActive ? "text-emerald-50" : "text-emerald-100/60 group-hover:text-emerald-50"
                                             )}>
                                                 {degree.name.replace("BS in ", "")}
                                             </h3>
                                         </div>
                                         <div className="flex items-center justify-between mt-auto">
-                                            <span className="text-[10px] md:text-xs font-mono text-white/40 uppercase tracking-wider group-hover:text-white/60 transition-colors">
+                                            <span className="text-[10px] md:text-xs font-mono text-emerald-500/40 uppercase tracking-wider group-hover:text-emerald-400/80 transition-colors">
                                                 View Modules
                                             </span>
-                                            <div className={cn("w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all duration-300", isActive ? "bg-white text-black border-white" : "text-white/20 group-hover:border-white/40")}>
+                                            <div className={cn("w-8 h-8 rounded-full border border-emerald-500/20 flex items-center justify-center transition-all duration-300", isActive ? "bg-emerald-500 text-black border-emerald-500" : "text-emerald-500/20 group-hover:border-emerald-500/40")}>
                                                  <ChevronRight className={cn("w-4 h-4 transition-transform", isActive && "translate-x-0.5")} />
                                             </div>
                                         </div>
@@ -236,36 +241,33 @@ const DegreeSelection = () => {
                 </div>
             </div>
 
-            {/* INTEGRATED SEARCH BAR (SWISS STYLE) */}
-            <div className="border-t border-white/10 flex flex-col md:flex-row relative z-10 bg-[#09090b]/50 backdrop-blur-md">
-                {/* Search Label Block */}
-                <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-white/10 p-4 md:p-6 flex items-center gap-4 bg-white/[0.02]">
-                    <Search className="w-4 h-4 text-white/40" />
-                    <span className="font-mono text-xs uppercase tracking-widest text-white/40">
+            {/* INTEGRATED SEARCH & FILTER BAR */}
+            <div className="border-t border-[#1a2e1a] flex flex-col md:flex-row relative z-10 bg-[#020804]/80 backdrop-blur-md">
+                <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-[#1a2e1a] p-4 md:p-6 flex items-center gap-4 bg-[#05100a]">
+                    <Search className="w-4 h-4 text-emerald-500/40" />
+                    <span className="font-mono text-xs uppercase tracking-widest text-emerald-500/40">
                         Query_Database
                     </span>
                 </div>
                 
-                {/* Search Input & Filter */}
                 <div className="flex-1 flex flex-col md:flex-row relative">
                     <input 
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search for subjects, codes, or keywords..."
-                        className="flex-1 bg-transparent p-4 md:px-8 text-sm md:text-base font-mono text-white placeholder:text-white/20 focus:outline-none focus:bg-white/[0.02] transition-colors h-14 md:h-auto"
+                        placeholder="Search for subjects..."
+                        className="flex-1 bg-transparent p-4 md:px-8 text-sm md:text-base font-mono text-emerald-100 placeholder:text-emerald-500/20 focus:outline-none focus:bg-emerald-500/5 transition-colors h-14 md:h-auto"
                     />
                     
-                    {/* Level Filter Integrated */}
-                    <div className="h-14 md:h-full border-t md:border-t-0 md:border-l border-white/10 flex items-center bg-white/[0.01]">
+                    <div className="h-14 md:h-full border-t md:border-t-0 md:border-l border-[#1a2e1a] flex items-center bg-[#05100a]/50">
                         <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                            <SelectTrigger className="h-full border-none bg-transparent rounded-none px-6 gap-3 focus:ring-0 text-xs font-mono uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/[0.02] w-full md:w-[220px] justify-between">
+                            <SelectTrigger className="h-full border-none bg-transparent rounded-none px-6 gap-3 focus:ring-0 text-xs font-mono uppercase tracking-widest text-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/5 w-full md:w-[220px] justify-between">
                                 <SelectValue placeholder="FILTER: ALL" />
                             </SelectTrigger>
-                            <SelectContent className="bg-[#121212] border-white/10 text-white/80 rounded-none min-w-[200px]">
-                                <SelectItem value="all" className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">Filter: All Levels</SelectItem>
+                            <SelectContent className="bg-[#020804] border-[#1a2e1a] text-emerald-100 rounded-none min-w-[200px]">
+                                <SelectItem value="all" className="font-mono text-xs uppercase focus:bg-emerald-900/30 focus:text-emerald-400 cursor-pointer">Filter: All Levels</SelectItem>
                                 {levels.map((level: any) => (
-                                    <SelectItem key={level.id} value={level.id} className="font-mono text-xs uppercase focus:bg-white/10 focus:text-white cursor-pointer">
+                                    <SelectItem key={level.id} value={level.id} className="font-mono text-xs uppercase focus:bg-emerald-900/30 focus:text-emerald-400 cursor-pointer">
                                         {level.name}
                                     </SelectItem>
                                 ))}
@@ -274,156 +276,102 @@ const DegreeSelection = () => {
                     </div>
                 </div>
             </div>
-        </Card>
-      </div>
+        </div>
 
-      {/* --- SUBJECTS GRID (RESTORED ORIGINAL CARD DESIGN) --- */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredSubjects.length === 0 ? (
-            <div className="col-span-full py-20 text-center border border-dashed border-white/10 rounded-2xl bg-white/5">
-              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground">No subjects found matching your criteria.</p>
-              <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedLevel('all'); }} className="text-primary mt-2">
-                Clear Filters
-              </Button>
-            </div>
-          ) : (
-            filteredSubjects.map((subject: any) => {
-              const availableExams = Array.from(subjectExamMap[subject.id] || []).sort();
-              const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Unknown Level';
-              
-              const isLocked = subject.is_unlocked === false; 
-
-              return (
-                <div key={subject.id} className="relative group">
-                  {/* Glow effect backing */}
-                  <div className={cn(
-                    "absolute -inset-0.5 bg-gradient-to-r rounded-3xl blur transition duration-1000 group-hover:duration-200",
-                    isLocked 
-                      ? "from-zinc-800 to-zinc-900 opacity-10 group-hover:opacity-20" 
-                      : "from-zinc-700 to-zinc-800 opacity-20 group-hover:opacity-40"
-                  )} />
-                  
-                  {/* Card Container (RESTORED ORIGINAL STYLE) */}
-                  <div className="relative w-full bg-[#09090b] rounded-2xl border border-[#27272a]/60 p-7 shadow-2xl flex flex-col gap-7 transition-transform duration-300 hover:-translate-y-1">
-                    
-                    {/* Top Right Status Badge */}
-                    <div className="absolute top-7 right-7">
-                      <div className="w-6 h-6 rounded-full bg-[#18181b]/50 border border-[#27272a]/50 flex items-center justify-center">
-                        <div className={cn(
-                          "w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]",
-                          isLocked 
-                            ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" 
-                            : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
-                        )} />
-                      </div>
-                    </div>
-
-                    {/* Header Section */}
-                    <div className={cn("flex flex-row items-start gap-5", isLocked && "opacity-50")}>
-                      <div className="shrink-0 w-14 h-14 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center group-hover:border-[#3f3f46]/50 transition-colors">
-                         {getSubjectIcon(subject.name)}
-                      </div>
-
-                      <div className="flex flex-col gap-1 w-full pt-1">
-                        <h3 className="text-lg font-bold text-[#f4f4f5] leading-tight line-clamp-1">{subject.name}</h3>
-                        <p className="text-xs text-[#71717a] font-medium line-clamp-2 leading-relaxed">
-                          Comprehensive resource center for {subject.name}. Access practice labs and evaluations.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Tags Section */}
-                    <div className={cn("flex flex-wrap gap-2", isLocked && "opacity-40 grayscale")}>
-                      <Badge variant="outline" className="h-6 rounded-md border-[#27272a] bg-[#18181b]/50 text-[#a1a1aa] font-normal hover:bg-[#18181b]">
-                        {levelName}
-                      </Badge>
-                      <Badge variant="outline" className="h-6 rounded-md border-[#27272a] bg-[#18181b]/50 text-[#71717a] font-normal hover:bg-[#18181b]">
-                        4 Credits
-                      </Badge>
-                    </div>
-
-                    {/* Main Content Area */}
-                    <div className="flex flex-col gap-3 pt-1">
-                      <div className="flex justify-between items-center pb-1">
-                         <span className="text-[10px] font-bold uppercase tracking-wider text-[#52525b]">Select Module</span>
-                         <div className="h-px w-1/2 bg-[#18181b]" />
-                      </div>
-
-                      {/* --- LOCKED STATE UI --- */}
-                      {isLocked ? (
-                        <div className="w-full h-16 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center gap-3">
-                           <div className="w-6 h-6 rounded-full bg-[#18181b]/50 flex items-center justify-center border border-[#27272a]">
-                             <Lock className="w-3 h-3 text-[#52525b]" />
-                           </div>
-                           <div className="flex flex-col justify-center">
-                             <span className="text-xs font-medium text-[#71717a]">Subject Locked</span>
-                           </div>
-                        </div>
-                      ) : availableExams.length > 0 ? (
-                        <div className="flex flex-col gap-2">
-                          {availableExams.map((examType: any) => (
-                            <button
-                              key={examType}
-                              onClick={() => handleExamClick(subject.id, subject.name, examType)}
-                              className="relative w-full h-14 rounded-xl border border-[#27272a] bg-[#18181b]/40 flex items-center px-4 justify-between hover:bg-[#18181b]/60 hover:border-[#3f3f46] transition-all group/btn"
-                            >
-                              <div className="flex flex-col items-start gap-0.5">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
-                                  <span className="text-sm font-medium text-[#d4d4d8] group-hover/btn:text-white transition-colors">{examType}</span>
-                                </div>
-                                <span className="text-[10px] text-[#52525b] ml-3.5">Standard Assessment</span>
-                              </div>
-                              <div className="w-8 h-8 rounded-full bg-[#27272a]/50 flex items-center justify-center group-hover/btn:bg-[#27272a] transition-colors">
-                                <ChevronRight className="w-4 h-4 text-[#71717a] group-hover/btn:text-[#d4d4d8]" />
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                         <div className="w-full h-14 rounded-xl border border-dashed border-[#27272a] bg-[#18181b]/20 flex items-center justify-center text-xs text-[#52525b]">
-                           No active exams
-                         </div>
-                      )}
-                    </div>
-
-                    {/* Footer/Share Section */}
-                    <div className={cn("flex items-center justify-center gap-3 pt-2", isLocked && "opacity-40")}>
-                      <button 
-                        onClick={() => !isLocked && handleShare(subject.name)}
-                        disabled={isLocked}
-                        className="group/share flex items-center gap-3 hover:opacity-80 transition-opacity w-full justify-center"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-[#18181b] border border-[#27272a] flex items-center justify-center group-hover/share:border-[#3f3f46] transition-colors">
-                           <Share2 className="w-4 h-4 text-[#71717a] group-hover/share:text-[#a1a1aa]" />
-                        </div>
-                        <div className="flex flex-col items-start">
-                          <span className="text-xs font-medium text-[#71717a] group-hover/share:text-[#a1a1aa]">Share Resource</span>
-                          <div className="h-0.5 w-0 bg-[#3f3f46] group-hover/share:w-full transition-all duration-300 rounded-full" />
-                        </div>
-                      </button>
-                    </div>
-
+        {/* --- 2. MAIN CONTENT AREA (SCROLLABLE) --- */}
+        <div className="flex-1 overflow-y-auto relative z-10 bg-transparent">
+          <div className="p-4 md:p-12 pb-32">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredSubjects.length === 0 ? (
+                <div className="col-span-full py-24 text-center border border-dashed border-[#1a2e1a] rounded-2xl bg-[#05100a]">
+                  <div className="w-16 h-16 bg-[#0a1f14] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#1a2e1a]">
+                    <Search className="w-6 h-6 text-emerald-500/40" />
                   </div>
+                  <p className="text-emerald-500/40 font-mono text-sm uppercase tracking-widest">No matching modules found</p>
+                  <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedLevel('all'); }} className="text-emerald-400 mt-2">
+                    Reset Query
+                  </Button>
                 </div>
-              );
-            })
-          )}
+              ) : (
+                filteredSubjects.map((subject: any) => {
+                  const availableExams = Array.from(subjectExamMap[subject.id] || []).sort();
+                  const levelName = levels.find((l: any) => l.id === subject.level_id)?.name || 'Unknown';
+                  const isLocked = subject.is_unlocked === false; 
+
+                  return (
+                    <div key={subject.id} className="relative group">
+                      <div className={cn(
+                        "absolute -inset-0.5 bg-gradient-to-r rounded-2xl blur opacity-0 group-hover:opacity-40 transition duration-500",
+                        isLocked ? "from-red-900 to-red-950" : "from-emerald-800 to-teal-900"
+                      )} />
+                      
+                      <div className="relative w-full h-full bg-[#030a05] rounded-xl border border-[#1a2e1a] p-6 shadow-lg flex flex-col gap-6 transition-all duration-300 hover:border-emerald-500/30 hover:bg-[#05100a]">
+                        
+                        {/* Header Section */}
+                        <div className={cn("flex flex-row items-start gap-4", isLocked && "opacity-50 grayscale")}>
+                          <div className="shrink-0 w-12 h-12 rounded-lg bg-[#0a1610] border border-[#1a2e1a] flex items-center justify-center group-hover:border-emerald-500/20 transition-colors">
+                             {getSubjectIcon(subject.name)}
+                          </div>
+
+                          <div className="flex flex-col gap-1 w-full pt-0.5">
+                            <h3 className="text-base font-bold text-emerald-50 leading-tight line-clamp-1">{subject.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="h-5 rounded px-1.5 border-[#1a2e1a] bg-[#0a1610] text-[10px] text-emerald-500/60 font-mono uppercase tracking-wider">
+                                    {levelName}
+                                </Badge>
+                                <span className="text-[10px] text-emerald-500/30 font-mono">|</span>
+                                <span className="text-[10px] text-emerald-500/40 font-mono">4 Credits</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Main Content Area */}
+                        <div className="flex flex-col gap-3 pt-1 mt-auto">
+                          {isLocked ? (
+                            <div className="w-full h-12 rounded-lg border border-dashed border-[#1a2e1a] bg-[#0a1610]/50 flex items-center justify-center gap-2">
+                               <Lock className="w-3 h-3 text-emerald-500/30" />
+                               <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-500/30">Locked</span>
+                            </div>
+                          ) : availableExams.length > 0 ? (
+                            <div className="flex flex-col gap-2">
+                              {availableExams.map((examType: any) => (
+                                <button
+                                  key={examType}
+                                  onClick={() => handleExamClick(subject.id, subject.name, examType)}
+                                  className="relative w-full h-12 rounded-lg border border-[#1a2e1a] bg-[#0a1610] flex items-center px-4 justify-between hover:bg-emerald-950/40 hover:border-emerald-500/30 transition-all group/btn"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    <span className="text-xs font-medium text-emerald-100/80 group-hover/btn:text-emerald-50">{examType}</span>
+                                  </div>
+                                  <ChevronRight className="w-3.5 h-3.5 text-emerald-500/30 group-hover/btn:text-emerald-500 transition-colors" />
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                             <div className="w-full h-12 rounded-lg border border-dashed border-[#1a2e1a] bg-[#0a1610] flex items-center justify-center text-[10px] text-emerald-500/30 font-mono">
+                               NO MODULES ACTIVE
+                             </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* --- MODE SELECTION DIALOG (Standard Dark) --- */}
+      {/* --- MODE SELECTION DIALOG (Updated Colors) --- */}
       <Dialog open={isModeOpen} onOpenChange={setIsModeOpen}>
-        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden gap-0 rounded-2xl shadow-2xl">
+        <DialogContent className="bg-[#020804] border-[#1a2e1a] text-white max-w-[95vw] sm:max-w-4xl p-0 overflow-hidden gap-0 rounded-2xl shadow-2xl">
           <div className="flex flex-col md:grid md:grid-cols-2 h-[80vh] md:h-[550px] relative">
             
             {/* OPTION 1: PRACTICE */}
             <div 
-              className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-white/10 bg-[#0c0c0e] flex flex-col"
+              className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer border-b md:border-b-0 md:border-r border-[#1a2e1a] bg-[#020804] flex flex-col"
               onClick={() => handleModeSelect('learning')}
             >
               <div className="flex-1 flex items-center justify-center p-4 md:p-14 relative overflow-hidden">
@@ -431,26 +379,18 @@ const DegreeSelection = () => {
                  <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer%20(1).png" 
                   alt="Practice Coding" 
-                  className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
+                  className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110 grayscale group-hover:grayscale-0"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-transparent to-transparent" />
               </div>
-              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.1)]">
-                    <Sparkles className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-blue-400 transition-colors">Practice Mode</h3>
-                </div>
-                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                  Experiment freely. No pressure, no timers—just you improving your craft.
-                </p>
+              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#020804] border-t border-[#1a2e1a]">
+                 <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">Practice Mode</h3>
+                 <p className="text-emerald-500/40 text-xs">Unrestricted environment.</p>
               </div>
             </div>
 
             {/* OPTION 2: PROCTORED */}
             <div 
-              className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer bg-[#0c0c0e] flex flex-col"
+              className="relative h-1/2 md:h-full group overflow-hidden cursor-pointer bg-[#020804] flex flex-col"
               onClick={() => handleModeSelect('proctored')}
             >
               <div className="flex-1 flex items-center justify-center p-4 md:p-14 relative overflow-hidden">
@@ -458,28 +398,15 @@ const DegreeSelection = () => {
                 <img 
                   src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/image-Picsart-AiImageEnhancer.png" 
                   alt="Proctored Exam" 
-                  className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110"
+                  className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-110 grayscale group-hover:grayscale-0"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-transparent to-transparent" />
               </div>
-              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#0c0c0e] border-t border-white/5">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.1)]">
-                    <ShieldCheck className="w-5 h-5 text-red-400" />
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-bold text-white group-hover:text-red-400 transition-colors">Proctored Mode</h3>
-                </div>
-                <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                  Strict monitoring and time limits to officially validate your skills.
-                </p>
+              <div className="relative z-20 p-6 md:p-8 space-y-2 bg-[#020804] border-t border-[#1a2e1a]">
+                 <h3 className="text-xl font-bold text-white group-hover:text-red-400 transition-colors">Proctored Mode</h3>
+                 <p className="text-emerald-500/40 text-xs">Strict monitoring enabled.</p>
               </div>
             </div>
 
-          </div>
-
-          <div className="bg-[#050505] p-3 text-center text-xs text-muted-foreground border-t border-white/5 flex justify-between items-center px-6">
-            <span>Selected: <span className="text-white font-medium">{selectedExamData?.name}</span></span>
-            <span className="bg-white/5 px-2 py-1 rounded text-[10px] uppercase tracking-wider">{selectedExamData?.type}</span>
           </div>
         </DialogContent>
       </Dialog>
