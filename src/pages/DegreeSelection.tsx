@@ -249,17 +249,16 @@ const DegreeSelection = () => {
                   {/* Card Container */}
                   <div className="relative w-full bg-[#09090b] rounded-2xl border border-[#27272a]/60 p-7 shadow-2xl flex flex-col gap-7 transition-transform duration-300 hover:-translate-y-1">
                     
-                    {/* Top Right Status Badge */}
+                    {/* Top Right Status Badge (Signal Symbol) */}
                     <div className="absolute top-7 right-7">
-                      {isLocked ? (
-                         <div className="w-8 h-8 rounded-full bg-[#18181b] border border-[#27272a] flex items-center justify-center">
-                           <Lock className="w-4 h-4 text-[#71717a]" />
-                         </div>
-                      ) : (
-                         <div className="w-8 h-8 rounded-full bg-[#18181b]/50 border border-[#27272a]/50 flex items-center justify-center">
-                           <div className="w-2 h-2 rounded-full bg-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.2)]" />
-                         </div>
-                      )}
+                      <div className="w-8 h-8 rounded-full bg-[#18181b]/50 border border-[#27272a]/50 flex items-center justify-center">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]",
+                          isLocked 
+                            ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" 
+                            : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
+                        )} />
+                      </div>
                     </div>
 
                     {/* Header Section */}
@@ -299,9 +298,8 @@ const DegreeSelection = () => {
                            <div className="w-8 h-8 rounded-full bg-[#18181b]/50 flex items-center justify-center border border-[#27272a]">
                              <Lock className="w-3.5 h-3.5 text-[#52525b]" />
                            </div>
-                           <div className="flex flex-col">
+                           <div className="flex flex-col justify-center">
                              <span className="text-xs font-medium text-[#71717a]">Subject Locked</span>
-                             <span className="text-[10px] text-[#52525b]">Prerequisite required</span>
                            </div>
                         </div>
                       ) : availableExams.length > 0 ? (
