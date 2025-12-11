@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, Lock, ChevronRight, GraduationCap, Layers } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
+import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, Lock, ChevronRight, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
@@ -151,41 +152,20 @@ const DegreeSelection = () => {
       {/* --- SWISS ARCHITECTURAL HEADER --- */}
       <header className="border-b border-white/10 pt-16">
         <div className="max-w-[1600px] mx-auto px-4 md:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-10 min-h-[320px]">
+            <div className="grid grid-cols-1 lg:grid-cols-10 min-h-[220px]"> {/* Reduced height since elements removed */}
                 
                 {/* LEFT COLUMN (30%) */}
-                <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-white/10 py-8 lg:pr-12 flex flex-col justify-between">
+                <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-white/10 py-8 lg:pr-12 flex flex-col justify-center">
                     <div>
-                        <div className="inline-block border border-white/20 px-3 py-1 mb-6">
-                            <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.2em] text-white/60">
-                                Academic_Portal
-                            </span>
-                        </div>
                         <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[1.1] text-white tracking-tight">
                             Curriculum <br />
                             <span className="text-white/40 italic">Explorer</span>
                         </h1>
                     </div>
-                    {/* Kept minimal as per previous 'formal' request */}
-                    <div className="hidden lg:block mt-12">
-                        <div className="w-12 h-1 bg-orange-600 mb-4"></div>
-                        <p className="font-mono text-[10px] text-white/40 max-w-[200px] leading-relaxed">
-                             STRUCTURED ACADEMIC <br/> PATHWAYS
-                        </p>
-                    </div>
                 </div>
 
                 {/* RIGHT COLUMN (70%) */}
                 <div className="lg:col-span-7 flex flex-col">
-                    
-                    {/* Top Description Area */}
-                    <div className="py-8 lg:pl-12 lg:pb-8 border-b border-white/10">
-                        <p className="text-base md:text-lg lg:text-xl text-white/70 max-w-3xl leading-relaxed font-light">
-                            Select a discipline to view the structured academic path. 
-                            Our curriculum is designed for precision, rigor, and industry alignment.
-                        </p>
-                    </div>
-
                     {/* Degree Selection "Cards" - THE GRID TABS */}
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
                         {degrees.map((degree: any, index: number) => {
