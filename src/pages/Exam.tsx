@@ -167,11 +167,21 @@ const Exam = () => {
     setIsContentObscured(true);
     const newCount = violationCount + 1;
     setViolationCount(newCount);
+    
+    // Log violation to session table immediately
     if (sessionId) { 
         // @ts-ignore
         supabase.from(SESSION_TABLE).update({ violation_count: newCount }).eq('id', sessionId).then(); 
     }
-    if (newCount >= MAX_VIOLATIONS) { finishExam("TERMINATED: Max Violations Reached"); } else { toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 }); setTimeout(() => { if (document.fullscreenElement && document.hasFocus()) { setIsContentObscured(false); } }, 3000); }
+    
+    if (newCount >= MAX_VIOLATIONS) { 
+        finishExam("TERMINATED: Max Violations Reached"); 
+    } else { 
+        toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 }); 
+        setTimeout(() => { 
+            if (document.fullscreenElement && document.hasFocus()) { setIsContentObscured(false); } 
+        }, 3000); 
+    }
   };
 
   useEffect(() => {
@@ -218,45 +228,159 @@ const Exam = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate('/auth'); return; }
+      
       const sessionData: any = { user_id: user.id, status: 'in_progress', start_time: new Date().toISOString() };
       if (iitmSubjectId) { sessionData.subject_id = iitmSubjectId; sessionData.exam_type = decodeURIComponent(examType || ''); sessionData.set_name = setName; }
+      
       // @ts-ignore
       const { data: session } = await supabase.from(SESSION_TABLE).insert(sessionData).select().single();
       if (session) setSessionId(session.id);
+      
       setIsExamStarted(true);
       if (assignments.length > 0) setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('q', assignments[0].id); return p; }); else toast({ title: "No Questions", description: "This set contains no questions.", variant: "destructive" });
     } catch (err) { toast({ title: "Error", description: "Failed to start session.", variant: "destructive" }); }
   };
 
-  const handleQuestionAttempt = (qId: string, isCorrect: boolean, score: number) => { setQuestionMetrics(prev => ({ ...prev, [qId]: { ...prev[qId], attempts: (prev[qId]?.attempts || 0) + 1, isCorrect: isCorrect || prev[qId]?.isCorrect || false, score: Math.max(score, prev[qId]?.score || 0) } })); };
+  const handleQuestionAttempt = (qId: string, isCorrect: boolean, score: number) => { 
+      setQuestionMetrics(prev => ({ 
+          ...prev, 
+          [qId]: { 
+              ...prev[qId], 
+              attempts: (prev[qId]?.attempts || 0) + 1, 
+              isCorrect: isCorrect || prev[qId]?.isCorrect || false, 
+              score: Math.max(score, prev[qId]?.score || 0) // Keep highest score
+          } 
+      })); 
+  };
 
-  const finishExam = (statusReason?: string) => {
-    setIsSubmitting(true); setFinishDialogOpen(false);
+  // --- CORE SUBMISSION LOGIC ---
+  const finishExam = async (statusReason: string) => {
+    if (isSubmitting) return; // Prevent double submission
+    setIsSubmitting(true); 
+    setFinishDialogOpen(false);
+    
+    // 1. Stop Media / Cleanup
     if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
     if (audioContextRef.current) audioContextRef.current.close();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    const qIds = Object.keys(questionMetrics); const correctCount = Object.values(questionMetrics).filter(m => m.isCorrect).length; const totalScore = Object.values(questionMetrics).reduce((acc, curr) => acc + curr.score, 0); const totalMaxScore = assignments.reduce((acc: number, curr: any) => acc + (curr.max_score || 0), 0);
-    
-    // Calculate total duration spent based on (Total Duration - Time Remaining)
-    const spentTime = timeRemaining !== null ? (totalDuration - timeRemaining) : 0;
 
+    // 2. Calculate Final Metrics
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const totalMaxScore = assignments.reduce((acc: number, curr: any) => acc + (curr.max_score || 0), 0);
+    const spentTime = timeRemaining !== null ? (totalDuration - timeRemaining) : 0;
+    
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let skippedCount = 0;
+    let obtainedScore = 0;
+    let attemptedCount = 0;
+
+    // Build the detailed JSON for the new backend table
+    const submissionDetails = assignments.map((a: any) => {
+        const metrics = questionMetrics[a.id] || { attempts: 0, isCorrect: false, score: 0, timeSpent: 0 };
+        
+        if (metrics.attempts > 0) {
+            attemptedCount++;
+            if (metrics.isCorrect) {
+                correctCount++;
+                obtainedScore += metrics.score;
+            } else {
+                incorrectCount++;
+            }
+        } else {
+            skippedCount++;
+        }
+
+        return {
+            question_id: a.id,
+            question_title: a.title,
+            status: metrics.attempts === 0 ? 'Skipped' : (metrics.isCorrect ? 'Correct' : 'Incorrect'),
+            score: metrics.score,
+            max_score: a.max_score,
+            attempts: metrics.attempts,
+            time_spent_seconds: metrics.timeSpent
+        };
+    });
+
+    const isTerminated = statusReason.includes("TERMINATED");
+    const finalStatus = isTerminated ? 'terminated' : 'completed';
+
+    // 3. Save to Backend (New Table & Session Table)
+    if (user) {
+        try {
+            const promises = [];
+
+            // A. Update the Session Table (Legacy/Session Tracking)
+            if (sessionId) {
+                // @ts-ignore
+                const sessionUpdate = supabase.from(SESSION_TABLE).update({ 
+                    status: finalStatus, 
+                    end_time: new Date().toISOString(), 
+                    duration_seconds: spentTime, 
+                    questions_attempted: attemptedCount, 
+                    questions_correct: correctCount, 
+                    total_score: obtainedScore 
+                }).eq('id', sessionId);
+                promises.push(sessionUpdate);
+            }
+
+            // B. Upsert into the NEW detailed submission table
+            // Note: Ensure 'iitm_exam_submission' exists in your Supabase schema
+            const detailedSubmission = {
+                user_id: user.id,
+                exam_id: `${examType}-${setName}-${iitmSubjectId}`, // Unique composite ID for this exam context
+                marks_obtained: obtainedScore,
+                total_marks: totalMaxScore,
+                correct_questions_count: correctCount,
+                incorrect_questions_count: incorrectCount,
+                skipped_questions_count: skippedCount,
+                submission_data: submissionDetails, // The full JSON breakdown
+                status: finalStatus,
+                termination_reason: statusReason,
+                updated_at: new Date().toISOString()
+            };
+
+            // @ts-ignore
+            const submissionUpdate = supabase.from('iitm_exam_submission').upsert(
+                detailedSubmission, 
+                { onConflict: 'user_id, exam_id' } // Use user_id + exam_id as unique constraint if you want one record per exam type
+            );
+            promises.push(submissionUpdate);
+
+            await Promise.all(promises);
+
+        } catch (error) {
+            console.error("Failed to save exam data:", error);
+            toast({ variant: "destructive", title: "Save Warning", description: "Exam finished, but some data may not have synced." });
+        }
+    }
+
+    // 4. Client-side Navigation Payload
     const resultsPayload = {
-      stats: { score: totalScore, totalScore: totalMaxScore || (assignments.length * 100), accuracy: qIds.length > 0 ? Math.round((correctCount / qIds.length) * 100) : 0, correct: correctCount, totalQuestions: assignments.length, attempted: qIds.length },
+      stats: { 
+          score: obtainedScore, 
+          totalScore: totalMaxScore || (assignments.length * 100), 
+          accuracy: attemptedCount > 0 ? Math.round((correctCount / attemptedCount) * 100) : 0, 
+          correct: correctCount, 
+          totalQuestions: assignments.length, 
+          attempted: attemptedCount 
+      },
       questionDetails: assignments.map((a: any) => ({ 
         id: a.id, 
         title: a.title, 
-        description: a.description, // ADDED: Description
+        description: a.description,
         status: (questionMetrics[a.id]?.attempts || 0) === 0 ? 'Skipped' : (questionMetrics[a.id]?.isCorrect ? 'Correct' : 'Incorrect'), 
         timeSpent: questionMetrics[a.id]?.timeSpent || 0, 
         score: questionMetrics[a.id]?.score, 
         attempts: questionMetrics[a.id]?.attempts 
       })),
-      terminationReason: statusReason?.includes("TERMINATED") ? statusReason : (statusReason === "TIME_UP" ? "Time Limit Reached" : null), isError: statusReason?.includes("TERMINATED"), totalTime: spentTime, examMetadata: { subjectId: iitmSubjectId, examType, setName }
+      terminationReason: isTerminated ? statusReason : (statusReason === "TIME_UP" ? "Time Limit Reached" : null), 
+      isError: isTerminated, 
+      totalTime: spentTime, 
+      examMetadata: { subjectId: iitmSubjectId, examType, setName }
     };
-    if (sessionId) { 
-        // @ts-ignore
-        supabase.from(SESSION_TABLE).update({ status: statusReason?.includes("TERMINATED") ? 'terminated' : 'completed', end_time: new Date().toISOString(), duration_seconds: spentTime, questions_attempted: qIds.length, questions_correct: correctCount, total_score: totalScore }).eq('id', sessionId).then(); 
-    }
+
     navigate('/exam/result', { state: resultsPayload });
   };
 
