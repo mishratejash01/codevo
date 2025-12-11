@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
-import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, Lock, ChevronRight, GraduationCap } from 'lucide-react';
+import { Share2, Search, Code2, Database, Terminal, Globe, Cpu, ShieldCheck, Sparkles, Lock, ChevronRight, ArrowLeft, Grid3X3, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
@@ -34,7 +34,6 @@ const DegreeSelection = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModeOpen, setIsModeOpen] = useState(false);
   const [selectedExamData, setSelectedExamData] = useState<{id: string, name: string, type: string} | null>(null);
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // 1. Fetch Degrees
   const { data: degrees = [] } = useQuery({
@@ -151,15 +150,37 @@ const DegreeSelection = () => {
   return (
     <div className="min-h-screen bg-[#121212] text-[#f0f0f0] font-sans selection:bg-orange-500/30">
       
-      {/* --- SWISS ARCHITECTURAL HEADER (WRAPPED IN CARD BLOCK) --- */}
+      {/* --- SWISS ARCHITECTURAL HEADER (FILLED BACK SPACE) --- */}
       <div className="pt-24 pb-8 px-4 md:px-8 max-w-[1600px] mx-auto">
-        <Card className="bg-[#09090b] border-white/10 overflow-hidden shadow-2xl">
-            <div className="grid grid-cols-1 lg:grid-cols-10 min-h-[220px]">
+        <Card className="relative bg-[#09090b] border-white/10 overflow-hidden shadow-2xl group/header">
+            
+            {/* 1. BACKGROUND GRID PATTERN (Fills blank space) */}
+            <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 
+                 style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} 
+            />
+            
+            {/* 2. LARGE WATERMARK TYPOGRAPHY (Visual Interest) */}
+            <div className="absolute -right-20 -top-20 font-serif text-[200px] text-white/[0.02] z-0 select-none pointer-events-none rotate-12">
+                IITM
+            </div>
+
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-10 min-h-[260px]">
                 
-                {/* LEFT COLUMN (30%) - TITLE */}
-                <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-white/10 py-8 lg:pr-12 flex flex-col justify-center pl-8">
-                    <div>
-                        <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[1.1] text-white tracking-tight">
+                {/* LEFT COLUMN (30%) - TITLE & NAV */}
+                <div className="lg:col-span-3 border-b lg:border-b-0 lg:border-r border-white/10 p-8 flex flex-col justify-between bg-gradient-to-br from-white/[0.02] to-transparent">
+                    
+                    {/* Back Navigation (Using the back space) */}
+                    <button 
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-white/40 hover:text-white hover:translate-x-[-4px] transition-all w-fit"
+                    >
+                        <ArrowLeft className="w-3 h-3" />
+                        Return
+                    </button>
+
+                    <div className="mt-8">
+                        <div className="w-12 h-1 bg-orange-600 mb-6" />
+                        <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl leading-[0.95] text-white tracking-tight">
                             Curriculum <br />
                             <span className="text-white/40 italic">Explorer</span>
                         </h1>
@@ -167,7 +188,7 @@ const DegreeSelection = () => {
                 </div>
 
                 {/* RIGHT COLUMN (70%) - SWISS STYLE TABS */}
-                <div className="lg:col-span-7 flex flex-col">
+                <div className="lg:col-span-7 flex flex-col backdrop-blur-sm">
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2">
                         {degrees.map((degree: any, index: number) => {
                             const isActive = selectedDegree === degree.id;
@@ -181,14 +202,17 @@ const DegreeSelection = () => {
                                         isActive ? "bg-white/[0.03]" : "opacity-60 hover:opacity-100"
                                     )}
                                 >
-                                    {isActive && (
-                                        <div className="absolute top-0 left-0 w-1 md:w-full h-full md:h-1 bg-orange-600" />
-                                    )}
+                                    {/* Active Indicator Bar */}
+                                    <div className={cn("absolute left-0 top-0 bottom-0 w-1 bg-orange-600 transition-transform duration-300 origin-bottom", isActive ? "scale-y-100" : "scale-y-0")} />
+
                                     <div className="flex flex-col h-full justify-between gap-6 md:gap-8">
-                                        <div className="space-y-2">
-                                            <span className="font-mono text-xs text-orange-500/80 uppercase tracking-widest">
-                                                0{index + 1}
-                                            </span>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-mono text-xs text-orange-500/80 uppercase tracking-widest border border-orange-500/20 px-1.5 py-0.5 rounded-sm">
+                                                    0{index + 1}
+                                                </span>
+                                                {isActive && <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />}
+                                            </div>
                                             <h3 className={cn(
                                                 "font-serif text-2xl md:text-3xl transition-colors",
                                                 isActive ? "text-white" : "text-white/60 group-hover:text-white"
@@ -200,10 +224,9 @@ const DegreeSelection = () => {
                                             <span className="text-[10px] md:text-xs font-mono text-white/40 uppercase tracking-wider group-hover:text-white/60 transition-colors">
                                                 View Modules
                                             </span>
-                                            <ChevronRight className={cn(
-                                                "w-5 h-5 transition-transform duration-300",
-                                                isActive ? "text-orange-500 translate-x-2" : "text-white/20 group-hover:text-white"
-                                            )} />
+                                            <div className={cn("w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all duration-300", isActive ? "bg-white text-black border-white" : "text-white/20 group-hover:border-white/40")}>
+                                                 <ChevronRight className={cn("w-4 h-4 transition-transform", isActive && "translate-x-0.5")} />
+                                            </div>
                                         </div>
                                     </div>
                                 </button>
@@ -214,7 +237,7 @@ const DegreeSelection = () => {
             </div>
 
             {/* INTEGRATED SEARCH BAR (SWISS STYLE) */}
-            <div className="border-t border-white/10 flex flex-col md:flex-row">
+            <div className="border-t border-white/10 flex flex-col md:flex-row relative z-10 bg-[#09090b]/50 backdrop-blur-md">
                 {/* Search Label Block */}
                 <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-white/10 p-4 md:p-6 flex items-center gap-4 bg-white/[0.02]">
                     <Search className="w-4 h-4 text-white/40" />
