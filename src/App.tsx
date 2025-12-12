@@ -22,7 +22,9 @@ import PracticeSolver from "./pages/PracticeSolver";
 import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
 import SubjectModeSelection from "./pages/SubjectModeSelection";
 import Profile from "./pages/Profile";
-import About from "./pages/About"; // New Import for About Page
+import About from "./pages/About"; 
+import TermsOfService from "./pages/TermsOfService"; 
+import PrivacyPolicy from "./pages/PrivacyPolicy"; 
 
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
@@ -58,14 +60,12 @@ const AppContent = () => {
     location.pathname.startsWith('/compiler')
   );
   
-  // UPDATED: Added /u/ and /profile to hidden routes
   const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth', '/u/', '/profile'];
   const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
   const dockItems = [
     { icon: <Home size={20} />, label: 'Home', onClick: () => navigate('/') },
     { 
-      // --- RESTORED ORIGINAL IITM LOGO ---
       icon: <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-6 h-6 object-contain opacity-80 grayscale hover:grayscale-0 transition-all" />, 
       label: 'IITM BS', 
       onClick: () => navigate('/degree') 
@@ -80,8 +80,12 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/about" element={<About />} /> {/* Added About Route */}
+        <Route path="/about" element={<About />} />
         
+        {/* LEGAL ROUTES */}
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+
         <Route path="/practice" element={<Practice />} />
         <Route path="/exam" element={<Exam />} />
         <Route path="/exam/result" element={<ExamResult />} />
