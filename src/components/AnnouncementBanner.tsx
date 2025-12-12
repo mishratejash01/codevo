@@ -87,23 +87,24 @@ export const AnnouncementBanner = () => {
     <StickyBanner 
       ref={bannerRef}
       onClose={() => setIsVisible(false)}
-      // FIXED POSITION + ORIGINAL GRADIENT COLOR
-      className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-b from-blue-500 to-blue-600 border-b border-white/10 shadow-lg"
+      // UPDATED: Violet Gradient + Preserved Borders/Shadows
+      className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-violet-600 to-purple-600 border-b border-white/10 shadow-lg transition-all duration-300"
     >
-      <div className="flex w-full max-w-4xl items-center justify-between gap-4 overflow-hidden">
+      <div className="flex w-full max-w-4xl items-center justify-between gap-4">
         
-        {/* Animated Message */}
-        <div className="flex-1 overflow-hidden relative h-8 flex items-center">
+        {/* Animated Message Container - Removed fixed height/overflow/absolute for wrapping */}
+        <div className="flex-1 relative flex items-center min-h-[2rem]">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentAnnouncement.id}
-              initial={{ y: 20, opacity: 0 }}
+              initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -20, opacity: 0 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className="absolute w-full flex items-center justify-center md:justify-start gap-3"
+              exit={{ y: -10, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="w-full flex flex-col md:flex-row items-center md:items-start justify-center md:justify-start gap-2 py-1"
             >
-              <span className="font-medium text-sm md:text-base text-white drop-shadow-md text-center md:text-left truncate">
+              {/* Removed 'truncate' to allow full text visibility */}
+              <span className="font-medium text-sm md:text-base text-white drop-shadow-md text-center md:text-left leading-tight">
                 {currentAnnouncement.message}
               </span>
               
@@ -111,7 +112,7 @@ export const AnnouncementBanner = () => {
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-7 px-3 text-xs font-bold bg-white text-blue-600 hover:bg-blue-50 ml-2 whitespace-nowrap hidden md:inline-flex"
+                  className="h-6 px-3 text-[10px] md:text-xs font-bold bg-white text-violet-700 hover:bg-violet-50 whitespace-nowrap hidden md:inline-flex shadow-sm"
                   asChild
                 >
                   <a href={currentAnnouncement.link} target="_blank" rel="noreferrer">
@@ -123,12 +124,12 @@ export const AnnouncementBanner = () => {
           </AnimatePresence>
         </div>
 
-        {/* Mobile Button */}
+        {/* Mobile Button - Always visible to prevent layout jumps */}
         {currentAnnouncement.link && (
           <Button
             size="sm"
             variant="secondary"
-            className="h-7 px-3 text-xs font-bold bg-white text-blue-600 hover:bg-blue-50 md:hidden whitespace-nowrap shrink-0"
+            className="h-7 px-3 text-xs font-bold bg-white text-violet-700 hover:bg-violet-50 md:hidden whitespace-nowrap shrink-0 shadow-sm"
             asChild
           >
             <a href={currentAnnouncement.link} target="_blank" rel="noreferrer">
