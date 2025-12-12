@@ -5,6 +5,7 @@ import { StickyBanner } from "@/components/ui/sticky-banner";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { ChevronRight } from "lucide-react";
 
 // Define the shape of your announcement data
 type Announcement = {
@@ -67,12 +68,12 @@ export const AnnouncementBanner = () => {
     };
   }, [isVisible, announcements, currentIndex]);
 
-  // 3. Carousel Logic (Cycles through messages if multiple exist)
+  // 3. Carousel Logic
   useEffect(() => {
     if (announcements.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % announcements.length);
-    }, 45000); // Very slow cycle to match scrolling speed
+    }, 45000); 
     return () => clearInterval(interval);
   }, [announcements.length]);
 
@@ -83,21 +84,21 @@ export const AnnouncementBanner = () => {
   return (
     <>
       <style>{`
-        @keyframes marquee-scroll {
-          0% { transform: translateX(100%); }
-          100% { transform: translateX(-100%); }
+        @keyframes marquee-infinite {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
         }
-        .animate-marquee-slow {
-          display: inline-block;
-          white-space: nowrap;
-          animation: marquee-scroll 40s linear infinite; /* Slower speed */
+        .animate-marquee-infinite {
+          display: flex;
+          width: fit-content;
+          animation: marquee-infinite 60s linear infinite; /* Slow, smooth speed */
         }
-        .animate-marquee-slow:hover {
+        .animate-marquee-infinite:hover {
           animation-play-state: paused;
         }
-        .mask-gradient-fade {
-          mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-          -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+        .mask-fade-edges {
+          mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+          -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
         }
       `}</style>
 
@@ -106,50 +107,42 @@ export const AnnouncementBanner = () => {
         onClose={() => setIsVisible(false)}
         className={cn(
           "fixed top-0 left-0 right-0 z-[60] transition-all duration-300",
-          "border-b border-white/5 shadow-2xl backdrop-blur-md",
-          // Premium Color Grading: Dark Indigo base with a subtle top glow
-          "bg-[#0a0a0f] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/60 via-[#0a0a0f] to-[#0a0a0f]"
+          "border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)] backdrop-blur-md",
+          // Premium Color: Deep Black/Violet blend
+          "bg-[#030305]/80 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-900/40 via-[#030305]/90 to-black"
         )}
       >
-        <div className="flex w-full items-center justify-between gap-4 px-4 py-1">
+        {/* Reduced padding (py-1.5) for smaller height */}
+        <div className="flex w-full items-center justify-between gap-6 px-4 py-1.5 h-8">
           
-          {/* Main Content Area - 3/4th Width */}
-          <div className="flex-1 flex justify-center w-full">
-            <div className="w-full md:w-[75%] relative flex items-center overflow-hidden h-7 mask-gradient-fade">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentAnnouncement.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="w-full h-full relative flex items-center"
-                >
-                  {/* Scrolling Text */}
-                  <div className="w-full absolute inset-0 flex items-center">
-                    <span className="text-sm md:text-[15px] font-medium text-indigo-100/90 tracking-wide drop-shadow-sm animate-marquee-slow">
-                      {currentAnnouncement.message} 
-                      {/* Spacer for loop effect */}
-                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                      {currentAnnouncement.message}
-                    </span>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
+          {/* SCROLLING TEXT AREA (Flexible width, but contained) */}
+          <div className="flex-1 overflow-hidden relative h-full flex items-center mask-fade-edges">
+             <div className="animate-marquee-infinite">
+                {/* We repeat the text to create a seamless infinite loop that starts VISIBLE immediately */}
+                {[0, 1, 2, 3].map((i) => (
+                  <span 
+                    key={i} 
+                    className="mx-8 font-mono text-xs md:text-sm font-medium text-violet-100/90 tracking-[0.15em] uppercase whitespace-nowrap flex items-center"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500 mr-3 animate-pulse" />
+                    {currentAnnouncement.message}
+                  </span>
+                ))}
+             </div>
           </div>
 
-          {/* Action Button - Kept clean and minimal */}
+          {/* FIXED BUTTON AREA (Pinned to right, never moves) */}
           {currentAnnouncement.link && (
-            <div className="shrink-0 z-10">
+            <div className="shrink-0 z-20 flex items-center">
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 px-4 text-xs font-semibold rounded-full bg-white/5 hover:bg-white/10 text-indigo-200 hover:text-white border border-white/5 transition-all shadow-sm"
+                className="h-6 px-3 text-[10px] font-bold uppercase tracking-wider rounded border border-white/10 bg-white/5 hover:bg-violet-500/20 text-violet-200 hover:text-white transition-all group"
                 asChild
               >
                 <a href={currentAnnouncement.link} target="_blank" rel="noreferrer">
-                  {currentAnnouncement.button_text || "Explore"}
+                  {currentAnnouncement.button_text || "View"}
+                  <ChevronRight className="w-3 h-3 ml-1 opacity-50 group-hover:opacity-100 transition-opacity" />
                 </a>
               </Button>
             </div>
