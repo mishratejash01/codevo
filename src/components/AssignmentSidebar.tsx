@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
-import { Check, LockKeyhole, User, Fingerprint, ChevronRight } from 'lucide-react';
+import { Check, LockKeyhole, User, Fingerprint } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
 
@@ -63,17 +63,21 @@ export const AssignmentSidebar = ({
         return 'bg-[#1E1E1E] border-[#333] text-[#444] cursor-not-allowed';
     }
 
-    // Active Selection (High Contrast Blue)
+    // Active Selection (High Contrast Blue) - Overrides other states
     if (isSelected) {
         return 'bg-[#007ACC] border-[#007ACC] text-white z-10 shadow-sm';
     }
 
     const status = questionStatuses[id] || 'not-visited';
     switch (status) {
+      // FILLED GREEN for Attempted/Answered
       case 'attempted': 
-        return 'bg-[#1E1E1E] border-[#4CAF50] text-[#4CAF50] shadow-[inset_0_0_0_1px_rgba(76,175,80,0.2)]';
+        return 'bg-[#1b3a1b] border-[#2e7d32] text-[#4CAF50] shadow-[inset_0_0_0_1px_rgba(76,175,80,0.2)]';
+      
+      // FILLED DARK GREY for Visited/Skipped
       case 'visited': 
-        return 'bg-[#252526] border-[#444] text-[#CCC] hover:border-[#666]';
+        return 'bg-[#2D2D2D] border-[#444] text-[#CCC] hover:border-[#666]';
+        
       default: 
         return 'bg-[#1E1E1E] border-[#333] text-[#777] hover:border-[#555] hover:bg-[#252526]';
     }
@@ -106,18 +110,16 @@ export const AssignmentSidebar = ({
         </div>
       </div>
 
-      {/* 2. LEGEND (Minimal, No Review) */}
+      {/* 2. LEGEND (Modified colors to match new filled states) */}
       <div className="px-4 py-2 border-b border-[#333] bg-[#1E1E1E] shrink-0 flex items-center gap-4 text-[10px] text-[#888]">
          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 bg-[#4CAF50] border border-[#4CAF50]"></div> Solved
+            <div className="w-2 h-2 bg-[#1b3a1b] border border-[#2e7d32]"></div> Solved
          </div>
          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 bg-[#252526] border border-[#555]"></div> Visited
+            <div className="w-2 h-2 bg-[#2D2D2D] border border-[#444]"></div> Visited
          </div>
          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 border border-[#333] relative overflow-hidden">
-                <div className="absolute inset-0 border-t border-l border-transparent border-b-[#444] border-r-[#444] rotate-45 transform origin-center"></div>
-            </div> Unvisited
+            <div className="w-2 h-2 border border-[#333] bg-[#1E1E1E]"></div> Unvisited
          </div>
       </div>
 
@@ -150,7 +152,6 @@ export const AssignmentSidebar = ({
                   {/* Grid Content */}
                   <AccordionContent className="p-0 bg-[#151515]">
                     <div className="grid grid-cols-5 gap-px bg-[#333] border-b border-[#333] p-px"> 
-                      {/* Gap-px with bg color creates the grid lines effect between tiles */}
                       {items.map((assignment, idx) => {
                         const isLocked = assignment.is_unlocked === false;
                         const isSelected = selectedId === assignment.id;
@@ -167,7 +168,6 @@ export const AssignmentSidebar = ({
                             title={assignment.title}
                           >
                             <span className="text-[11px] font-mono font-medium">{idx + 1}</span>
-                            {/* Icons only for special states to keep it formal */}
                             {isLocked && <LockKeyhole className="w-2.5 h-2.5 mt-0.5 opacity-50" />}
                             {status === 'attempted' && !isSelected && <Check className="w-2.5 h-2.5 mt-0.5" />}
                           </button>
