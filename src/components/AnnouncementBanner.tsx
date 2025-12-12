@@ -50,16 +50,12 @@ export const AnnouncementBanner = () => {
   // 2. Sync Height to CSS Variable (This shifts the header)
   useEffect(() => {
     const updateHeight = () => {
-      // Calculate height only if visible
       const height = isVisible && announcements.length > 0 && bannerRef.current 
         ? bannerRef.current.offsetHeight 
         : 0;
-      
-      // Set the variable for Header.tsx to use
       document.documentElement.style.setProperty('--banner-height', `${height}px`);
     };
 
-    // Update initially and on resize
     updateHeight();
     const resizeObserver = new ResizeObserver(updateHeight);
     if (bannerRef.current) resizeObserver.observe(bannerRef.current);
@@ -75,7 +71,7 @@ export const AnnouncementBanner = () => {
     if (announcements.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % announcements.length);
-    }, 5000);
+    }, 10000); // Increased duration for reading scrolling text
     return () => clearInterval(interval);
   }, [announcements.length]);
 
@@ -84,60 +80,70 @@ export const AnnouncementBanner = () => {
   const currentAnnouncement = announcements[currentIndex];
 
   return (
-    <StickyBanner 
-      ref={bannerRef}
-      onClose={() => setIsVisible(false)}
-      // UPDATED: Violet Gradient + Preserved Borders/Shadows
-      className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-violet-600 to-purple-600 border-b border-white/10 shadow-lg transition-all duration-300"
-    >
-      <div className="flex w-full max-w-4xl items-center justify-between gap-4">
-        
-        {/* Animated Message Container - Removed fixed height/overflow/absolute for wrapping */}
-        <div className="flex-1 relative flex items-center min-h-[2rem]">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentAnnouncement.id}
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -10, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className="w-full flex flex-col md:flex-row items-center md:items-start justify-center md:justify-start gap-2 py-1"
-            >
-              {/* Removed 'truncate' to allow full text visibility */}
-              <span className="font-medium text-sm md:text-base text-white drop-shadow-md text-center md:text-left leading-tight">
-                {currentAnnouncement.message}
-              </span>
-              
-              {currentAnnouncement.link && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="h-6 px-3 text-[10px] md:text-xs font-bold bg-white text-violet-700 hover:bg-violet-50 whitespace-nowrap hidden md:inline-flex shadow-sm"
-                  asChild
-                >
-                  <a href={currentAnnouncement.link} target="_blank" rel="noreferrer">
-                    {currentAnnouncement.button_text || "Check it out"}
-                  </a>
-                </Button>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+    <>
+      {/* CSS for Marquee Animation */}
+      <style>{`
+        @keyframes marquee-scroll {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+        .animate-marquee-scroll {
+          display: inline-block;
+          white-space: nowrap;
+          animation: marquee-scroll 15s linear infinite;
+        }
+        /* Pause on hover for readability */
+        .animate-marquee-scroll:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
 
-        {/* Mobile Button - Always visible to prevent layout jumps */}
-        {currentAnnouncement.link && (
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-7 px-3 text-xs font-bold bg-white text-violet-700 hover:bg-violet-50 md:hidden whitespace-nowrap shrink-0 shadow-sm"
-            asChild
-          >
-            <a href={currentAnnouncement.link} target="_blank" rel="noreferrer">
-              {currentAnnouncement.button_text || "View"}
-            </a>
-          </Button>
-        )}
-      </div>
-    </StickyBanner>
+      <StickyBanner 
+        ref={bannerRef}
+        onClose={() => setIsVisible(false)}
+        // UPDATED: Gradient Top-to-Bottom (Violet -> Black)
+        className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-b from-violet-600 to-black border-b border-white/10 shadow-lg transition-all duration-300"
+      >
+        <div className="flex w-full max-w-4xl items-center justify-between gap-4">
+          
+          {/* Animated Message Container */}
+          <div className="flex-1 relative flex items-center overflow-hidden h-6">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentAnnouncement.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full h-full relative"
+              >
+                {/* Marquee Text */}
+                <div className="w-full h-full absolute inset-0 flex items-center">
+                  <span className="font-medium text-sm md:text-base text-white drop-shadow-md animate-marquee-scroll">
+                    {currentAnnouncement.message} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {currentAnnouncement.message}
+                  </span>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Buttons (Desktop & Mobile) */}
+          {currentAnnouncement.link && (
+            <div className="shrink-0 z-10 bg-inherit pl-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-6 px-3 text-[10px] md:text-xs font-bold bg-white text-violet-900 hover:bg-violet-50 shadow-sm whitespace-nowrap"
+                asChild
+              >
+                <a href={currentAnnouncement.link} target="_blank" rel="noreferrer">
+                  {currentAnnouncement.button_text || "Check it out"}
+                </a>
+              </Button>
+            </div>
+          )}
+        </div>
+      </StickyBanner>
+    </>
   );
 };
