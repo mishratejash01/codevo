@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { StickyBanner } from "@/components/ui/sticky-banner";
@@ -19,8 +19,10 @@ export const AnnouncementBanner = () => {
   const location = useLocation();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
+  const bannerRef = useRef<HTMLDivElement>(null);
 
-  // 1. Fetch announcements from Supabase
+  // 1. Fetch announcements
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
@@ -31,7 +33,6 @@ export const AnnouncementBanner = () => {
           .order("created_at", { ascending: false });
 
         if (!error && data) {
-          // 2. Filter: Show if route is '*' (global) OR matches current path
           const filtered = data.filter(
             (item) =>
               item.page_route === "*" || item.page_route === location.pathname
@@ -46,26 +47,52 @@ export const AnnouncementBanner = () => {
     fetchAnnouncements();
   }, [location.pathname]);
 
-  // 3. Carousel Logic ("Sidegoing" / Rotating)
+  // 2. Sync Height to CSS Variable (This shifts the header)
+  useEffect(() => {
+    const updateHeight = () => {
+      // Calculate height only if visible
+      const height = isVisible && announcements.length > 0 && bannerRef.current 
+        ? bannerRef.current.offsetHeight 
+        : 0;
+      
+      // Set the variable for Header.tsx to use
+      document.documentElement.style.setProperty('--banner-height', `${height}px`);
+    };
+
+    // Update initially and on resize
+    updateHeight();
+    const resizeObserver = new ResizeObserver(updateHeight);
+    if (bannerRef.current) resizeObserver.observe(bannerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+      document.documentElement.style.setProperty('--banner-height', '0px');
+    };
+  }, [isVisible, announcements, currentIndex]);
+
+  // 3. Carousel Logic
   useEffect(() => {
     if (announcements.length <= 1) return;
-
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % announcements.length);
-    }, 5000); // Rotate every 5 seconds
-
+    }, 5000);
     return () => clearInterval(interval);
   }, [announcements.length]);
 
-  if (announcements.length === 0) return null;
+  if (announcements.length === 0 || !isVisible) return null;
 
   const currentAnnouncement = announcements[currentIndex];
 
   return (
-    <StickyBanner className="bg-gradient-to-r from-blue-600 to-violet-600 border-b border-white/10 z-50">
+    <StickyBanner 
+      ref={bannerRef}
+      onClose={() => setIsVisible(false)}
+      // FIXED POSITION + ORIGINAL GRADIENT COLOR
+      className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-b from-blue-500 to-blue-600 border-b border-white/10 shadow-lg"
+    >
       <div className="flex w-full max-w-4xl items-center justify-between gap-4 overflow-hidden">
         
-        {/* Animated Message Container */}
+        {/* Animated Message */}
         <div className="flex-1 overflow-hidden relative h-8 flex items-center">
           <AnimatePresence mode="wait">
             <motion.div
@@ -80,7 +107,6 @@ export const AnnouncementBanner = () => {
                 {currentAnnouncement.message}
               </span>
               
-              {/* Desktop Button (Only if link exists) */}
               {currentAnnouncement.link && (
                 <Button
                   size="sm"
@@ -97,7 +123,7 @@ export const AnnouncementBanner = () => {
           </AnimatePresence>
         </div>
 
-        {/* Mobile Button (Always visible if link exists, prevents layout jump) */}
+        {/* Mobile Button */}
         {currentAnnouncement.link && (
           <Button
             size="sm"
