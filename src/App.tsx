@@ -35,9 +35,12 @@ const AppContent = () => {
 
   // --- AUTOMATIC ROUTE SYNC LOGIC ---
   useEffect(() => {
-    // We only run this in development mode (npm run dev) to keep DB clean
+    // We only run this in development mode to keep DB clean, 
+    // or you can remove the check to sync in production too.
     if (import.meta.env.DEV) {
       const syncRoutes = async () => {
+        console.log("Syncing routes to Supabase...");
+        
         // Prepare data from src/routes.tsx
         const routeData = AppRoutes.map(route => ({
           path: route.path,
@@ -50,7 +53,11 @@ const AppContent = () => {
           .from('app_routes')
           .upsert(routeData, { onConflict: 'path' });
 
-        if (error) console.error("Error syncing routes:", error);
+        if (error) {
+          console.error("Error syncing routes:", error);
+        } else {
+          console.log("Routes synced successfully!");
+        }
       };
 
       syncRoutes();
