@@ -21,7 +21,8 @@ import PracticeArena from "./pages/PracticeArena";
 import PracticeSolver from "./pages/PracticeSolver";
 import SubjectOppeSelection from "./pages/SubjectOppeSelection"; 
 import SubjectModeSelection from "./pages/SubjectModeSelection";
-import Profile from "./pages/Profile"; 
+import Profile from "./pages/Profile";
+import About from "./pages/About"; // New Import for About Page
 
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
@@ -79,6 +80,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/about" element={<About />} /> {/* Added About Route */}
         
         <Route path="/practice" element={<Practice />} />
         <Route path="/exam" element={<Exam />} />
