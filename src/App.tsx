@@ -5,13 +5,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner"; // Import toast for debug
 
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
 import { Home, Code2, Trophy, Terminal } from "lucide-react";
 
-// NEW IMPORTS
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { AppRoutes } from "./routes";
 
@@ -33,39 +33,37 @@ const AppContent = () => {
     }
   }, []);
 
-  // --- AUTOMATIC ROUTE SYNC LOGIC ---
+  // --- AUTOMATIC ROUTE SYNC LOGIC (DEBUG VERSION) ---
   useEffect(() => {
-    // We only run this in development mode to keep DB clean, 
-    // or you can remove the check to sync in production too.
-    if (import.meta.env.DEV) {
-      const syncRoutes = async () => {
-        console.log("Syncing routes to Supabase...");
-        
-        // Prepare data from src/routes.tsx
-        const routeData = AppRoutes.map(route => ({
-          path: route.path,
-          name: route.name,
-          last_seen_at: new Date().toISOString()
-        }));
+    const syncRoutes = async () => {
+      console.log("🚀 Starting Route Sync...");
+      
+      const routeData = AppRoutes.map(route => ({
+        path: route.path,
+        name: route.name,
+        last_seen_at: new Date().toISOString()
+      }));
 
-        // Upsert into Supabase 'app_routes' table
-        const { error } = await supabase
-          .from('app_routes')
-          .upsert(routeData, { onConflict: 'path' });
+      // Check if we can reach Supabase
+      const { error } = await supabase
+        .from('app_routes')
+        .upsert(routeData, { onConflict: 'path' });
 
-        if (error) {
-          console.error("Error syncing routes:", error);
-        } else {
-          console.log("Routes synced successfully!");
-        }
-      };
+      if (error) {
+        console.error("❌ Sync Error:", error);
+        toast.error(`Route Sync Failed: ${error.message}`);
+      } else {
+        console.log("✅ Sync Success!");
+        // Only show success toast once to confirm it works, then you can comment this out
+        // toast.success("Routes synced to Database!"); 
+      }
+    };
 
-      syncRoutes();
-    }
+    // Run immediately on load
+    syncRoutes();
   }, []);
-  // ----------------------------------
+  // --------------------------------------------------
 
-  // Hide Dock/Footer on specific routes
   const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth']; 
   const showDock = !hideDockRoutes.some(path => 
     location.pathname === path || 
@@ -91,11 +89,9 @@ const AppContent = () => {
 
   return (
     <>
-      {/* 1. Add Banner at the top */}
       <AnnouncementBanner />
 
       <Routes>
-        {/* 2. Map routes from centralized config */}
         {AppRoutes.map((route) => (
           <Route 
             key={route.path} 
