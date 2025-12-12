@@ -1,4 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+{
+type: "file_change",
+fileName: "src/pages/Exam.tsx",
+content: `import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -198,7 +201,7 @@ const Exam = () => {
     if (newCount >= MAX_VIOLATIONS) { 
         finishExam("TERMINATED: Max Violations Reached"); 
     } else { 
-        toast({ title: "⚠️ Violation Alert", description: `Strike ${newCount}/${MAX_VIOLATIONS}: ${message}`, variant: "destructive", duration: 5000 }); 
+        toast({ title: "⚠️ Violation Alert", description: \`Strike \${newCount}/\${MAX_VIOLATIONS}: \${message}\`, variant: "destructive", duration: 5000 }); 
         setTimeout(() => { 
             if (document.fullscreenElement && document.hasFocus()) { setIsContentObscured(false); } 
         }, 3000); 
@@ -347,10 +350,9 @@ const Exam = () => {
             }
 
             // B. Upsert into the NEW detailed submission table
-            // Note: Ensure 'iitm_exam_submission' exists in your Supabase schema
             const detailedSubmission = {
                 user_id: user.id,
-                exam_id: `${examType}-${setName}-${iitmSubjectId}`, // Unique composite ID for this exam context
+                exam_id: \`\${examType}-\${setName}-\${iitmSubjectId}\`, // Unique composite ID for this exam context
                 marks_obtained: obtainedScore,
                 total_marks: totalMaxScore,
                 correct_questions_count: correctCount,
@@ -362,10 +364,9 @@ const Exam = () => {
                 updated_at: new Date().toISOString()
             };
 
-            // @ts-ignore
             const submissionUpdate = supabase.from('iitm_exam_submission').upsert(
                 detailedSubmission, 
-                { onConflict: 'user_id, exam_id' } // Use user_id + exam_id as unique constraint if you want one record per exam type
+                { onConflict: 'user_id, exam_id' }
             );
             promises.push(submissionUpdate);
 
@@ -390,7 +391,7 @@ const Exam = () => {
       questionDetails: assignments.map((a: any) => ({ 
         id: a.id, 
         title: a.title, 
-        description: a.description,
+        description: a.description, 
         status: (questionMetrics[a.id]?.attempts || 0) === 0 ? 'Skipped' : (questionMetrics[a.id]?.isCorrect ? 'Correct' : 'Incorrect'), 
         timeSpent: questionMetrics[a.id]?.timeSpent || 0, 
         score: questionMetrics[a.id]?.score, 
@@ -411,9 +412,9 @@ const Exam = () => {
       const m = Math.floor((s % 3600) / 60);
       const sec = s % 60;
       if (h > 0) {
-          return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+          return \`\${h.toString().padStart(2, '0')}:\${m.toString().padStart(2, '0')}:\${sec.toString().padStart(2, '0')}\`;
       }
-      return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+      return \`\${m.toString().padStart(2, '0')}:\${sec.toString().padStart(2, '0')}\`;
   };
 
   return (
@@ -492,7 +493,7 @@ const Exam = () => {
                           <div 
                              key={i} 
                              className={cn("w-[3px] transition-all duration-100 rounded-[1px]", audioLevel > (i * 20) ? "bg-[#4CAF50]" : "bg-[#333]")}
-                             style={{ height: audioLevel > (i * 20) ? `${Math.max(30, Math.random() * 100)}%` : '20%' }} 
+                             style={{ height: audioLevel > (i * 20) ? \`\${Math.max(30, Math.random() * 100)}%\` : '20%' }} 
                           />
                        ))}
                     </div>
@@ -573,3 +574,5 @@ const Exam = () => {
 };
 
 export default Exam;
+`
+}
