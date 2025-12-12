@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
-import { Check, LockKeyhole, User, Fingerprint, ChevronRight } from 'lucide-react';
+import { Check, LockKeyhole, User, Fingerprint } from 'lucide-react';
 import type { QuestionStatus } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,17 +44,23 @@ export const AssignmentSidebar = ({
     return groups;
   }, [preLoadedAssignments, isProctored]);
 
-  const [openItem, setOpenItem] = useState<string>("");
+  // Changed to array to support multiple open items
+  const [openItems, setOpenItems] = useState<string[]>([]);
 
   useEffect(() => {
     if (selectedId && preLoadedAssignments.length > 0) {
       const assignment = preLoadedAssignments.find(a => a.id === selectedId);
       if (assignment) {
         const category = isProctored ? "Questions" : (assignment.category || "General");
-        setOpenItem(prev => (prev !== category ? category : prev));
+        // Add the new category to the list of open items without removing others
+        setOpenItems(prev => {
+            if (prev.includes(category)) return prev;
+            return [...prev, category];
+        });
       }
-    } else if (!openItem && Object.keys(groupedAssignments).length > 0) {
-      setOpenItem(Object.keys(groupedAssignments)[0]);
+    } else if (openItems.length === 0 && Object.keys(groupedAssignments).length > 0) {
+      // Default to opening the first category if nothing is open
+      setOpenItems([Object.keys(groupedAssignments)[0]]);
     }
   }, [selectedId, preLoadedAssignments, isProctored, groupedAssignments]);
 
@@ -125,11 +131,11 @@ export const AssignmentSidebar = ({
 
       <ScrollArea className="flex-1 bg-[#1E1E1E]">
         <div className="flex flex-col">
+          {/* Changed type to "multiple" to allow multiple categories to remain open */}
           <Accordion 
-            type="single" 
-            collapsible
-            value={openItem}
-            onValueChange={setOpenItem}
+            type="multiple" 
+            value={openItems}
+            onValueChange={setOpenItems}
             className="w-full"
           >
             {Object.entries(groupedAssignments).map(([category, items]) => {
