@@ -395,33 +395,159 @@ const Exam = () => {
       return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
+  // --- RENDER ---
   return (
-    <div className="h-screen bg-[#09090b] text-white flex flex-col font-sans select-none overflow-hidden relative" onContextMenu={e => e.preventDefault()}>
-      {isContentObscured && <div className="absolute inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center text-center p-8 animate-in fade-in duration-200 cursor-none"><div className="relative mb-6"><div className="absolute inset-0 bg-red-500 blur-3xl opacity-20 animate-pulse" /><EyeOff className="w-24 h-24 text-red-600 relative z-10" /></div><h2 className="text-4xl font-bold text-red-500 font-neuropol mb-4 tracking-widest">SECURITY LOCKOUT</h2><p className="text-xl text-gray-400 max-w-lg mb-8">Suspicious activity detected. The exam environment has been obscured to prevent unauthorized access, recording, or remote viewing.</p><div className="px-6 py-3 border border-red-500/30 rounded-full bg-red-950/30 text-red-400 font-mono text-sm animate-pulse">RETURN FOCUS TO BROWSER TO RESUME</div></div>}
+    <div className="h-screen bg-[#121212] text-white flex flex-col font-sans select-none overflow-hidden relative" onContextMenu={e => e.preventDefault()}>
+      
+      {/* SECURITY OVERLAY */}
+      {isContentObscured && (
+          <div className="absolute inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center text-center p-8 animate-in fade-in duration-200 cursor-none">
+            <div className="relative mb-6">
+                <div className="absolute inset-0 bg-red-500 blur-3xl opacity-20 animate-pulse" />
+                <EyeOff className="w-24 h-24 text-red-600 relative z-10" />
+            </div>
+            <h2 className="text-4xl font-bold text-red-500 font-neuropol mb-4 tracking-widest">SECURITY LOCKOUT</h2>
+            <p className="text-xl text-gray-400 max-w-lg mb-8">Suspicious activity detected. The exam environment has been obscured to prevent unauthorized access.</p>
+            <div className="px-6 py-3 border border-red-500/30 rounded-full bg-red-950/30 text-red-400 font-mono text-sm animate-pulse">
+                RETURN FOCUS TO BROWSER TO RESUME
+            </div>
+          </div>
+      )}
       
       {!isExamStarted ? (
         <ProctoredInstructions onStart={handleStartExamRequest} />
       ) : (
         <>
-          <header className="h-16 shrink-0 border-b border-red-500/20 bg-[#0c0c0e] flex items-center justify-between px-4 md:px-6 z-50 relative">
-            <div className="flex items-center gap-3"><div className="w-8 h-8 rounded bg-red-500/10 flex items-center justify-center border border-red-500/20"><Lock className="w-4 h-4 text-red-500" /></div><div><div className="font-bold text-red-500">{decodeURIComponent(examType || 'Proctored')} Exam</div>{setName && <div className="text-[10px] text-muted-foreground">{setName}</div>}</div></div>
-            {isExamStarted && <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2"><div className="relative group"><div className="w-24 h-16 bg-black rounded-md overflow-hidden border border-red-500/30 relative shadow-[0_0_10px_rgba(239,68,68,0.1)]"><video ref={setVideoNode} autoPlay muted playsInline className="w-full h-full object-cover transform scale-x-[-1]" /><div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_5px_red]" /></div><div className="absolute -bottom-4 left-0 w-full text-center"><span className="text-[9px] text-red-500/70 font-mono uppercase">REC</span></div></div><div className="h-16 w-3 flex flex-col-reverse gap-0.5 bg-black/50 p-0.5 rounded-sm border border-white/10">{[...Array(12)].map((_, i) => <div key={i} className={cn("w-full flex-1 rounded-[1px] transition-all duration-75", audioLevel >= (i + 1) * 8 ? (i > 9 ? "bg-red-500" : i > 6 ? "bg-yellow-500" : "bg-green-500") : "bg-white/5")} />)}</div></div>}
-            <div className="flex items-center gap-4">{isExamStarted && <div className={cn("hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border font-mono text-sm", (timeRemaining || 0) < 300 ? "border-red-500 text-red-500 animate-pulse" : "border-white/10 text-muted-foreground")}><Timer className="w-4 h-4" />{formatTime(timeRemaining || 0)}</div>}<div className="flex items-center gap-1 border border-white/10 bg-white/5 px-2 py-1 rounded"><span className="text-[10px] text-muted-foreground uppercase">Strikes</span><div className="flex gap-1">{[...Array(MAX_VIOLATIONS)].map((_, i) => <div key={i} className={cn("w-1.5 h-4 rounded-full transition-colors", i < violationCount ? "bg-red-600 shadow-[0_0_5px_red]" : "bg-white/20")} />)}</div></div><Button variant="destructive" size="sm" onClick={() => setFinishDialogOpen(true)}>Finish</Button></div>
+          {/* --- NEW HEADER DESIGN (Based on Reference) --- */}
+          <header className="h-[55px] shrink-0 bg-[#1E1E1E] border-b border-[#333] flex items-center justify-between px-4 z-50">
+            
+            {/* 1. LEFT: Identity */}
+            <div className="flex items-center gap-3 text-sm font-bold tracking-wide select-none">
+                <span className="text-[#007ACC] uppercase tracking-widest text-xs md:text-sm">
+                   {decodeURIComponent(examType || 'PROCTORED')} EXAM
+                </span>
+                {setName && (
+                    <span className="font-normal text-[#666] border-l border-[#444] pl-3 text-xs">
+                        {setName}
+                    </span>
+                )}
+            </div>
+
+            {/* 2. CENTER: Timer & Status Pill */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+               <div className="bg-black border border-[#333] rounded px-4 py-1.5 flex items-center gap-4 shadow-sm">
+                  <span className={cn(
+                      "font-mono text-sm tracking-widest", 
+                      (timeRemaining || 0) < 300 ? "text-red-500 animate-pulse" : "text-[#E0E0E0]"
+                  )}>
+                      {formatTime(timeRemaining || 0)}
+                  </span>
+                  
+                  <div className="w-[1px] h-3 bg-[#444]" />
+                  
+                  <div className="flex gap-1.5">
+                      {[...Array(MAX_VIOLATIONS)].map((_, i) => (
+                          <div key={i} className={cn(
+                              "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                              i < violationCount 
+                                ? "bg-[#D32F2F] shadow-[0_0_6px_#D32F2F] scale-110" 
+                                : "bg-[#333]"
+                          )} />
+                      ))}
+                  </div>
+               </div>
+            </div>
+
+            {/* 3. RIGHT: A/V Security Box & Actions */}
+            <div className="flex items-center gap-3">
+                {/* A/V Meter */}
+                <div className="flex items-center bg-black border border-[#333] p-1 rounded gap-2 h-[38px] select-none">
+                    {/* Video Feed (Small) */}
+                    <div className="w-[45px] h-[30px] bg-[#222] relative overflow-hidden rounded-[2px]">
+                       <video ref={setVideoNode} autoPlay muted playsInline className="w-full h-full object-cover transform scale-x-[-1] opacity-80" />
+                       <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-[#D32F2F] rounded-full animate-pulse shadow-[0_0_4px_red]" />
+                    </div>
+                    
+                    {/* Audio Bars */}
+                    <div className="flex items-end gap-[2px] h-[18px] pr-1.5">
+                       {[...Array(4)].map((_, i) => (
+                          <div 
+                             key={i} 
+                             className={cn("w-[3px] transition-all duration-100 rounded-[1px]", audioLevel > (i * 20) ? "bg-[#4CAF50]" : "bg-[#333]")}
+                             style={{ height: audioLevel > (i * 20) ? `${Math.max(30, Math.random() * 100)}%` : '20%' }} 
+                          />
+                       ))}
+                    </div>
+                </div>
+
+                <Button 
+                   variant="ghost" 
+                   onClick={() => setFinishDialogOpen(true)}
+                   className="h-[30px] bg-[#D32F2F] hover:bg-[#B71C1C] text-white text-[11px] font-bold px-4 rounded-[2px] tracking-wide ml-1 transition-colors"
+                >
+                   END
+                </Button>
+            </div>
           </header>
           
           <div className="flex-1 min-h-0 relative">
             <div className={cn("h-full transition-all duration-300", isContentObscured && "blur-2xl opacity-10 pointer-events-none")}>
               <ResizablePanelGroup direction="horizontal" className="h-full">
-                  <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#0c0c0e] border-r border-white/10 hidden md:block"><AssignmentSidebar selectedId={selectedAssignmentId} onSelect={(id) => { setSearchParams(p => { p.set('q', id); return p; }); setQuestionStatuses(prev => ({...prev, [id]: 'visited'})); }} questionStatuses={questionStatuses} preLoadedAssignments={assignments as any} /></ResizablePanel>
-                  <ResizableHandle withHandle className="hidden md:flex bg-black border-l border-r border-white/10 w-1.5" />
-                  <ResizablePanel defaultSize={80} className="h-full overflow-auto"><ErrorBoundary>{selectedAssignmentId ? <AssignmentView key={selectedAssignmentId} assignmentId={selectedAssignmentId} onStatusUpdate={(status) => setQuestionStatuses(prev => ({ ...prev, [selectedAssignmentId]: status }))} currentStatus={questionStatuses[selectedAssignmentId]} tables={activeTables} disableCopyPaste={true} onAttempt={(isCorrect, score) => handleQuestionAttempt(selectedAssignmentId, isCorrect, score)} /> : <div className="h-full flex flex-col items-center justify-center text-muted-foreground"><Lock className="w-16 h-16 mb-4 opacity-20" /><p>Select a question to begin</p></div>}</ErrorBoundary></ResizablePanel>
+                  
+                  {/* LEFT: Sidebar */}
+                  <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#1E1E1E] border-r border-[#333] hidden md:block">
+                     <AssignmentSidebar 
+                        selectedId={selectedAssignmentId} 
+                        onSelect={(id) => { setSearchParams(p => { p.set('q', id); return p; }); setQuestionStatuses(prev => ({...prev, [id]: 'visited'})); }} 
+                        questionStatuses={questionStatuses} 
+                        preLoadedAssignments={assignments as any} 
+                     />
+                  </ResizablePanel>
+                  
+                  <ResizableHandle withHandle className="hidden md:flex bg-[#121212] border-l border-r border-[#333] w-1.5" />
+                  
+                  {/* CENTER: Main Content */}
+                  <ResizablePanel defaultSize={80} className="h-full overflow-auto bg-[#1E1E1E]">
+                     <ErrorBoundary>
+                        {selectedAssignmentId ? (
+                             <AssignmentView 
+                                key={selectedAssignmentId} 
+                                assignmentId={selectedAssignmentId} 
+                                onStatusUpdate={(status) => setQuestionStatuses(prev => ({ ...prev, [selectedAssignmentId]: status }))} 
+                                currentStatus={questionStatuses[selectedAssignmentId]} 
+                                tables={activeTables} 
+                                disableCopyPaste={true} 
+                                onAttempt={(isCorrect, score) => handleQuestionAttempt(selectedAssignmentId, isCorrect, score)} 
+                             />
+                        ) : (
+                             <div className="h-full flex flex-col items-center justify-center text-[#666]">
+                                <Lock className="w-16 h-16 mb-4 opacity-10" />
+                                <p className="font-mono text-sm">Select a question to begin</p>
+                             </div>
+                        )}
+                     </ErrorBoundary>
+                  </ResizablePanel>
               </ResizablePanelGroup>
             </div>
           </div>
         </>
       )}
 
-      <AlertDialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}><AlertDialogContent className="bg-[#0c0c0e] border-white/10 text-white"><AlertDialogHeader><AlertDialogTitle>Submit Assessment?</AlertDialogTitle><AlertDialogDescription>End session and submit answers.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => finishExam("User Initiated")} className="bg-red-600 hover:bg-red-700">Submit</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+      {/* FINISH DIALOG */}
+      <AlertDialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}>
+         <AlertDialogContent className="bg-[#1E1E1E] border-[#333] text-white">
+            <AlertDialogHeader>
+               <AlertDialogTitle>Submit Assessment?</AlertDialogTitle>
+               <AlertDialogDescription className="text-gray-400">Are you sure you want to end this session? You cannot return once submitted.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+               <AlertDialogCancel className="bg-[#252526] border-[#333] hover:bg-[#2D2D2D] hover:text-white">Cancel</AlertDialogCancel>
+               <AlertDialogAction onClick={() => finishExam("User Initiated")} className="bg-[#D32F2F] hover:bg-[#B71C1C] text-white border-0">Submit</AlertDialogAction>
+            </AlertDialogFooter>
+         </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Hidden Video for stream storage if needed */}
       <video ref={setVideoNode} className="hidden" muted playsInline />
     </div>
   );
