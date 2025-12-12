@@ -6,7 +6,7 @@ import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, Lock, Timer, Video, Maximize, Mic, MonitorX, EyeOff } from 'lucide-react';
+import { Lock, Timer, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -395,7 +395,6 @@ const Exam = () => {
       return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  // --- RENDER ---
   return (
     <div className="h-screen bg-[#121212] text-white flex flex-col font-sans select-none overflow-hidden relative" onContextMenu={e => e.preventDefault()}>
       
@@ -418,7 +417,7 @@ const Exam = () => {
         <ProctoredInstructions onStart={handleStartExamRequest} />
       ) : (
         <>
-          {/* --- NEW HEADER DESIGN (Based on Reference) --- */}
+          {/* --- FIXED HEADER --- */}
           <header className="h-[55px] shrink-0 bg-[#1E1E1E] border-b border-[#333] flex items-center justify-between px-4 z-50">
             
             {/* 1. LEFT: Identity */}
@@ -433,42 +432,40 @@ const Exam = () => {
                 )}
             </div>
 
-            {/* 2. CENTER: Timer & Status Pill */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-               <div className="bg-black border border-[#333] rounded px-4 py-1.5 flex items-center gap-4 shadow-sm">
-                  <span className={cn(
-                      "font-mono text-sm tracking-widest", 
-                      (timeRemaining || 0) < 300 ? "text-red-500 animate-pulse" : "text-[#E0E0E0]"
-                  )}>
-                      {formatTime(timeRemaining || 0)}
-                  </span>
-                  
-                  <div className="w-[1px] h-3 bg-[#444]" />
-                  
-                  <div className="flex gap-1.5">
-                      {[...Array(MAX_VIOLATIONS)].map((_, i) => (
-                          <div key={i} className={cn(
-                              "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                              i < violationCount 
-                                ? "bg-[#D32F2F] shadow-[0_0_6px_#D32F2F] scale-110" 
-                                : "bg-[#333]"
-                          )} />
-                      ))}
-                  </div>
-               </div>
-            </div>
+            {/* 2. RIGHT: Controls (Timer moved here) */}
+            <div className="flex items-center gap-4">
+                
+                {/* Timer Pill - Moved to the right */}
+                <div className="bg-black border border-[#333] rounded px-3 py-1.5 flex items-center gap-3 shadow-sm h-[38px]">
+                   <Timer className="w-3.5 h-3.5 text-[#666]" />
+                   <span className={cn(
+                       "font-mono text-sm tracking-widest min-w-[60px]", 
+                       (timeRemaining || 0) < 300 ? "text-red-500 animate-pulse" : "text-[#E0E0E0]"
+                   )}>
+                       {formatTime(timeRemaining || 0)}
+                   </span>
+                   
+                   <div className="w-[1px] h-3 bg-[#444]" />
+                   
+                   <div className="flex gap-1">
+                       {[...Array(MAX_VIOLATIONS)].map((_, i) => (
+                           <div key={i} className={cn(
+                               "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                               i < violationCount 
+                                 ? "bg-[#D32F2F] shadow-[0_0_6px_#D32F2F]" 
+                                 : "bg-[#333]"
+                           )} />
+                       ))}
+                   </div>
+                </div>
 
-            {/* 3. RIGHT: A/V Security Box & Actions */}
-            <div className="flex items-center gap-3">
-                {/* A/V Meter */}
+                {/* A/V Security Box */}
                 <div className="flex items-center bg-black border border-[#333] p-1 rounded gap-2 h-[38px] select-none">
-                    {/* Video Feed (Small) */}
                     <div className="w-[45px] h-[30px] bg-[#222] relative overflow-hidden rounded-[2px]">
                        <video ref={setVideoNode} autoPlay muted playsInline className="w-full h-full object-cover transform scale-x-[-1] opacity-80" />
                        <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-[#D32F2F] rounded-full animate-pulse shadow-[0_0_4px_red]" />
                     </div>
                     
-                    {/* Audio Bars */}
                     <div className="flex items-end gap-[2px] h-[18px] pr-1.5">
                        {[...Array(4)].map((_, i) => (
                           <div 
