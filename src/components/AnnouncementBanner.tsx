@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
 
-// Define the shape of your announcement data
 type Announcement = {
   id: string;
   message: string;
@@ -91,14 +90,16 @@ export const AnnouncementBanner = () => {
         .animate-marquee-infinite {
           display: flex;
           width: fit-content;
-          animation: marquee-infinite 60s linear infinite;
+          /* Slower, cinematic speed (90s) */
+          animation: marquee-infinite 90s linear infinite;
         }
         .animate-marquee-infinite:hover {
           animation-play-state: paused;
         }
-        .mask-fade-edges {
-          mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
-          -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+        /* Soft fade masks on the edges */
+        .mask-fade-wide {
+          mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+          -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
         }
       `}</style>
 
@@ -106,28 +107,30 @@ export const AnnouncementBanner = () => {
         ref={bannerRef}
         onClose={() => setIsVisible(false)}
         className={cn(
-          "fixed top-0 left-0 right-0 z-[60] transition-all duration-300",
-          "border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.5)] backdrop-blur-md",
-          // Premium Color: Deep Black/Violet blend
-          "bg-[#030305]/80 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-900/40 via-[#030305]/90 to-black"
+          "fixed top-0 left-0 right-0 z-[60] transition-all duration-500 ease-in-out",
+          "border-b border-white/5 backdrop-blur-xl",
+          // Premium Gradient: Violet glow at top, fading to black/darkness below
+          "bg-[#020202] bg-[linear-gradient(180deg,rgba(109,40,217,0.15)_0%,rgba(2,2,2,0.8)_60%,rgba(0,0,0,1)_100%)]"
         )}
       >
-        <div className="flex w-full items-center justify-between gap-6 px-4 py-1.5 h-8">
+        <div className="flex w-full items-center justify-between gap-6 px-4 py-2 min-h-[36px]">
           
-          {/* SCROLLING TEXT AREA */}
-          <div className="flex-1 overflow-hidden relative h-full flex items-center mask-fade-edges">
-             <div className="animate-marquee-infinite">
-                {[0, 1, 2, 3].map((i) => (
-                  <span 
-                    key={i} 
-                    // UPDATED FONT & CASE: font-sans, normal casing, tracking-normal
-                    className="mx-8 font-sans text-sm md:text-base font-medium text-violet-100/90 tracking-normal whitespace-nowrap flex items-center"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500 mr-3 animate-pulse" />
-                    {currentAnnouncement.message}
-                  </span>
-                ))}
-             </div>
+          {/* SCROLLING TEXT AREA - 3/4th WIDTH */}
+          <div className="flex-1 flex justify-center w-full">
+            <div className="w-[85%] md:w-[75%] relative flex items-center overflow-hidden mask-fade-wide">
+               <div className="animate-marquee-infinite">
+                  {[0, 1, 2, 3].map((i) => (
+                    <span 
+                      key={i} 
+                      // FONT STYLE: Sans Serif + Italic (Perplexity Style)
+                      className="mx-12 font-sans italic text-sm md:text-[15px] font-medium text-gray-200/90 tracking-wide whitespace-nowrap flex items-center"
+                    >
+                      <span className="w-1 h-1 rounded-full bg-violet-400 mr-4 opacity-75" />
+                      {currentAnnouncement.message}
+                    </span>
+                  ))}
+               </div>
+            </div>
           </div>
 
           {/* FIXED BUTTON AREA */}
@@ -136,13 +139,12 @@ export const AnnouncementBanner = () => {
               <Button
                 size="sm"
                 variant="ghost"
-                // UPDATED BUTTON TEXT: font-sans, normal casing
-                className="h-6 px-3 text-xs font-semibold rounded border border-white/10 bg-white/5 hover:bg-violet-500/20 text-violet-200 hover:text-white transition-all group"
+                className="h-7 px-4 text-xs font-sans italic text-violet-300 hover:text-white hover:bg-white/5 rounded-full border border-white/5 transition-all shadow-[0_0_10px_rgba(139,92,246,0.1)] group"
                 asChild
               >
                 <a href={currentAnnouncement.link} target="_blank" rel="noreferrer">
-                  {currentAnnouncement.button_text || "View"}
-                  <ChevronRight className="w-3 h-3 ml-1 opacity-50 group-hover:opacity-100 transition-opacity" />
+                  {currentAnnouncement.button_text || "Explore"}
+                  <ChevronRight className="w-3 h-3 ml-1 opacity-50 group-hover:translate-x-0.5 transition-transform" />
                 </a>
               </Button>
             </div>
