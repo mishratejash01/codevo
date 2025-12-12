@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Heart } from 'lucide-react';
+import { Heart, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const Footer = () => {
@@ -42,12 +42,12 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Legal Links */}
+          {/* Legal Links - UPDATED */}
           <div>
             <h4 className="font-bold text-white mb-6">Legal</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><Link to="#" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
-              <li><Link to="#" className="hover:text-primary transition-colors">Terms of Service</Link></li>
+              <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
               <li><Link to="#" className="hover:text-primary transition-colors">Cookie Policy</Link></li>
               <li><Link to="#" className="hover:text-primary transition-colors">Security</Link></li>
             </ul>
@@ -66,9 +66,17 @@ export const Footer = () => {
 
         {/* Bottom Bar Details */}
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-muted-foreground text-center md:text-left">
-            © {new Date().getFullYear()}. Made with <Heart className="w-3 h-3 inline text-red-500 mx-0.5 fill-red-500" /> by CodeVo.
-          </p>
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+              <p className="text-xs text-muted-foreground text-center md:text-left">
+                © {new Date().getFullYear()}. Made with <Heart className="w-3 h-3 inline text-red-500 mx-0.5 fill-red-500" /> by CodeVo.
+              </p>
+              
+              {/* UPDATED LOCATION */}
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
+                <MapPin className="w-3 h-3" />
+                <span>Based in San Francisco, United States</span>
+              </div>
+          </div>
           
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 bg-white/5 px-3 py-1 rounded-full border border-white/5">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
