@@ -43,15 +43,13 @@ import {
   AlertCircle,
   Calendar,
   Ticket,
-  Users,
-  Mail // Added Mail icon for Invites
+  Users
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { EventRegistrationModal } from "@/components/EventRegistrationModal"; // Import the Modal
 
 // --- Types ---
 interface ProfileData {
@@ -80,7 +78,6 @@ interface Registration {
     team_name?: string;
     created_at: string;
     event: {
-        id: string;
         title: string;
         slug: string;
         image_url: string;
@@ -365,13 +362,9 @@ const Profile = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(null);
   const [isOwner, setIsOwner] = useState(false);
-  const [registrations, setRegistrations] = useState<Registration[]>([]); 
+  const [registrations, setRegistrations] = useState<Registration[]>([]); // New state for events
   
-  // --- INVITE SYSTEM STATE ---
-  const [invites, setInvites] = useState<any[]>([]);
-  const [selectedInvite, setSelectedInvite] = useState<any>(null);
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  
+  // Save & Validation States
   const [isSaving, setIsSaving] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
@@ -413,7 +406,7 @@ const Profile = () => {
         setIsOwner(true);
 
         // --- FETCH REGISTRATIONS ---
-        const { data: regs } = await supabase
+        const { data: regs, error } = await supabase
             .from('event_registrations')
             .select(`
                 id,
@@ -422,7 +415,6 @@ const Profile = () => {
                 team_name,
                 created_at,
                 event:events (
-                    id,
                     title,
                     slug,
                     image_url,
@@ -433,15 +425,7 @@ const Profile = () => {
             .order('created_at', { ascending: false });
         
         if (regs) setRegistrations(regs as any);
-
-        // --- FETCH PENDING INVITES (NEW) ---
-        const { data: inviteData } = await supabase
-            .from('team_invites')
-            .select(`*, event:events(id, title)`)
-            .eq('invitee_email', currentUser.email)
-            .eq('status', 'pending');
-        
-        if (inviteData) setInvites(inviteData);
+        // ---------------------------
 
         setLoading(false);
         return;
@@ -472,6 +456,7 @@ const Profile = () => {
   useEffect(() => {
     if (!profile || !originalProfile) return;
 
+    // Only check if username changed and is not empty
     if (profile.username !== originalProfile.username && profile.username.length > 2) {
       const checkAvailability = async () => {
         setIsCheckingUsername(true);
@@ -479,7 +464,7 @@ const Profile = () => {
           .from("profiles")
           .select("id")
           .eq("username", profile.username)
-          .neq("id", profile.id) 
+          .neq("id", profile.id) // Exclude self
           .maybeSingle();
         
         setIsCheckingUsername(false);
@@ -491,7 +476,7 @@ const Profile = () => {
         }
       };
 
-      const timer = setTimeout(checkAvailability, 500); 
+      const timer = setTimeout(checkAvailability, 500); // 500ms debounce
       return () => clearTimeout(timer);
     } else {
       setUsernameError(null);
@@ -527,7 +512,7 @@ const Profile = () => {
         if (error) throw error;
 
         toast.success("Profile saved successfully"); 
-        setOriginalProfile(profile);
+        setOriginalProfile(profile); // Update snapshot
     } catch (error: any) { 
         console.error(error);
         toast.error("Failed to save: " + error.message); 
@@ -682,55 +667,7 @@ const Profile = () => {
             <div className="relative"><Textarea value={profile.bio || ''} onChange={(e) => updateLocalState('bio', e.target.value)} className="min-h-[150px] bg-[#121214] border-white/5 focus:border-primary/50 text-base leading-relaxed p-6 rounded-2xl resize-none" placeholder="Tell the world who you are..." /></div>
           </div>
 
-          {/* --- NEW SECTION: PENDING INVITES (Merged) --- */}
-          {invites.length > 0 && (
-            <div className="space-y-6 pb-6 border-b border-white/10 border-t border-white/10 pt-6">
-                <h2 className="text-sm font-bold uppercase tracking-widest text-purple-400 flex items-center gap-2">
-                <Mail className="w-4 h-4 animate-bounce" /> Pending Team Invites
-                </h2>
-                <div className="grid gap-4">
-                {invites.map((invite) => (
-                    <div key={invite.id} className="bg-purple-500/10 border border-purple-500/20 p-4 rounded-xl flex items-center justify-between">
-                    <div>
-                        <p className="text-white font-bold text-lg">Join "{invite.team_name}"</p>
-                        <p className="text-gray-400 text-sm">Event: {invite.event.title}</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="text-red-400 border-red-500/20 hover:bg-red-500/10"
-                            onClick={async () => {
-                                await supabase.from('team_invites').update({ status: 'rejected' }).eq('id', invite.id);
-                                setInvites(invites.filter(i => i.id !== invite.id));
-                                toast.success("Invite Declined");
-                            }}
-                        >
-                            Decline
-                        </Button>
-                        <Button 
-                            size="sm" 
-                            className="bg-purple-600 hover:bg-purple-700 text-white"
-                            onClick={() => {
-                                setSelectedInvite({
-                                    id: invite.id,
-                                    team_name: invite.team_name,
-                                    email: invite.invitee_email,
-                                    event: invite.event
-                                });
-                                setIsInviteModalOpen(true);
-                            }}
-                        >
-                            Accept & Join
-                        </Button>
-                    </div>
-                    </div>
-                ))}
-                </div>
-            </div>
-          )}
-
-          {/* --- ACTIVE REGISTRATIONS --- */}
+          {/* --- NEW SECTION: ACTIVE REGISTRATIONS --- */}
           <div className="space-y-6 pb-20 border-t border-white/10 pt-10">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
                 <Ticket className="w-4 h-4" /> Active Event Registrations
@@ -795,20 +732,6 @@ const Profile = () => {
         </div>
 
       </div>
-
-      {/* MODAL for Accepting Invites */}
-      {selectedInvite && (
-        <EventRegistrationModal
-            event={selectedInvite.event}
-            isOpen={isInviteModalOpen}
-            onOpenChange={setIsInviteModalOpen}
-            inviteData={{
-                id: selectedInvite.id,
-                team_name: selectedInvite.team_name,
-                email: selectedInvite.invitee_email // Correct field name
-            }}
-        />
-      )}
     </div>
   );
 };

@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/Header';
 import { format } from 'date-fns';
-import { Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
-import { EventRegistrationModal } from '@/components/EventRegistrationModal';
+import { Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2 } from 'lucide-react';
+import { EventRegistrationModal } from '@/components/EventRegistrationModal'; // Import the new modal
 import { toast } from 'sonner';
 
 export default function EventDetails() {
@@ -14,54 +14,32 @@ export default function EventDetails() {
   const navigate = useNavigate();
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  
-  // New State for Registration Status
-  const [isRegistered, setIsRegistered] = useState(false);
-  const [checkingRegistration, setCheckingRegistration] = useState(true);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false); // State for modal
 
   useEffect(() => {
-    async function getEventAndRegistrationStatus() {
-      // 1. Fetch Event Details
-      const { data: eventData, error } = await supabase
+    async function getEvent() {
+      const { data, error } = await supabase
         .from('events')
         .select('*')
         .eq('slug', slug)
         .single();
       
-      if (error || !eventData) {
+      if (error) {
         navigate('/events');
         return;
       }
-      setEvent(eventData);
-
-      // 2. Check Registration Status (if user is logged in)
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        const { data: registration } = await supabase
-          .from('event_registrations')
-          .select('id')
-          .eq('event_id', eventData.id)
-          .eq('user_id', session.user.id)
-          .maybeSingle(); // Returns null if not found, doesn't throw error
-
-        if (registration) {
-          setIsRegistered(true);
-        }
-      }
-      
+      setEvent(data);
       setLoading(false);
-      setCheckingRegistration(false);
     }
-
-    getEventAndRegistrationStatus();
+    getEvent();
   }, [slug, navigate]);
 
   const handleRegisterClick = () => {
     if (event.registration_link) {
+      // If external link exists, open it
       window.open(event.registration_link, '_blank');
     } else {
+      // Otherwise open internal registration modal
       setIsRegisterOpen(true);
     }
   };
@@ -117,6 +95,8 @@ export default function EventDetails() {
         
         {/* Left Column: Content */}
         <div className="lg:col-span-2 space-y-10">
+          
+          {/* About Section */}
           <section className="prose prose-invert max-w-none">
             <h3 className="text-2xl font-bold mb-4 text-white flex items-center gap-2">
               <div className="w-1 h-6 bg-purple-500 rounded-full"/> About the Event
@@ -126,6 +106,7 @@ export default function EventDetails() {
             </div>
           </section>
 
+          {/* Prize Pool Section */}
           {event.prize_pool && (
             <div className="bg-gradient-to-br from-[#151518] to-[#1a1a1e] p-8 rounded-2xl border border-yellow-500/20 shadow-[0_0_30px_rgba(234,179,8,0.05)]">
               <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-yellow-400">
@@ -164,24 +145,12 @@ export default function EventDetails() {
             </div>
 
             <div className="mt-8 space-y-3">
-              {/* --- MODIFIED BUTTON LOGIC --- */}
-              {isRegistered ? (
-                <Button 
-                  className="w-full h-12 text-base md:text-lg font-bold bg-green-500/20 text-green-400 border border-green-500/50 hover:bg-green-500/30 cursor-default"
-                  onClick={() => navigate('/profile')} // Optional: Send them to profile/dashboard
-                >
-                  <CheckCircle2 className="w-5 h-5 mr-2" /> Already Registered
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleRegisterClick} 
-                  disabled={checkingRegistration}
-                  className="w-full h-12 text-base md:text-lg font-bold bg-white text-black hover:bg-gray-200 transition-all hover:scale-[1.02]"
-                >
-                  {checkingRegistration ? <Loader2 className="w-4 h-4 animate-spin"/> : "Register Now"}
-                </Button>
-              )}
-
+              <Button 
+                onClick={handleRegisterClick} 
+                className="w-full h-12 text-base md:text-lg font-bold bg-white text-black hover:bg-gray-200 transition-all hover:scale-[1.02]"
+              >
+                Register Now
+              </Button>
               <Button variant="outline" onClick={handleShare} className="w-full border-white/10 hover:bg-white/5 text-gray-300">
                 <Share2 className="w-4 h-4 mr-2" /> Share Event
               </Button>
@@ -190,6 +159,7 @@ export default function EventDetails() {
         </div>
       </div>
 
+      {/* The Registration Modal */}
       {event && (
         <EventRegistrationModal 
           event={event} 
