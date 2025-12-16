@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, differenceInDays, differenceInHours } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Calendar, MapPin, Trophy, Users, ArrowRight, Clock, ExternalLink, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer'; // Assuming you have a Footer, or remove if not
 
 interface Event {
   id: string;
@@ -19,6 +18,8 @@ interface Event {
   short_description: string;
   start_date: string;
   end_date: string;
+  registration_deadline?: string; // Made optional as it might be null
+  created_at: string; // Needed for progress bar calculation
   image_url: string;
   category: string;
   mode: 'Online' | 'Offline' | 'Hybrid';
@@ -32,7 +33,6 @@ export default function Events() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     fetchEvents();
@@ -54,9 +54,44 @@ export default function Events() {
   const featuredEvent = events.find(e => e.is_featured) || events[0];
   const regularEvents = events.filter(e => e.id !== featuredEvent?.id);
 
+  // --- DYNAMIC COUNTDOWN LOGIC ---
+  const getCountdownData = (event: Event) => {
+    if (!event) return { text: "Closed", percent: 100 };
+
+    const now = new Date();
+    // Use registration_deadline if available, otherwise fallback to start_date
+    const deadline = new Date(event.registration_deadline || event.start_date);
+    const created = new Date(event.created_at);
+
+    // Calculate time remaining
+    const daysLeft = differenceInDays(deadline, now);
+    const hoursLeft = differenceInHours(deadline, now) % 24;
+
+    let text = "";
+    if (now > deadline) {
+      text = "Registration Closed";
+    } else if (daysLeft > 0) {
+      text = `${daysLeft} Days left`;
+    } else {
+      text = `${hoursLeft} Hours left`;
+    }
+
+    // Calculate progress bar percentage
+    const totalDuration = deadline.getTime() - created.getTime();
+    const elapsed = now.getTime() - created.getTime();
+    let percent = (elapsed / totalDuration) * 100;
+    
+    // Clamp percentage between 5% (so it's visible) and 100%
+    percent = Math.max(5, Math.min(100, percent));
+
+    return { text, percent };
+  };
+
+  const featuredStats = featuredEvent ? getCountdownData(featuredEvent) : { text: "", percent: 0 };
+
   return (
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-purple-500/30">
-      <Header session={null} onLogout={() => {}} /> {/* Pass actual session props if available */}
+      <Header session={null} onLogout={() => {}} />
 
       <main className="pt-24 pb-20">
         
@@ -126,22 +161,28 @@ export default function Events() {
                   </div>
                 </div>
 
-                {/* Countdown / Stats Box (Mockup) */}
+                {/* DYNAMIC Countdown / Stats Box */}
                 <div className="hidden md:block bg-white/5 border border-white/10 backdrop-blur-xl p-6 rounded-2xl w-72">
                   <div className="flex items-center gap-3 mb-4">
                      <div className="p-2 bg-green-500/20 rounded-lg text-green-400"><Users className="w-5 h-5" /></div>
                      <div>
+                        {/* You could optionally fetch real count here with separate query */}
                         <div className="text-2xl font-bold text-white">450+</div>
                         <div className="text-xs text-gray-400">Registered Hackers</div>
                      </div>
                   </div>
                   <div className="space-y-2">
                      <div className="flex justify-between text-xs text-gray-400">
-                        <span>Registration closes in</span>
-                        <span>2 Days</span>
+                        <span>Registration Status</span>
+                        <span className={cn("font-bold", featuredStats.text === "Registration Closed" ? "text-red-400" : "text-white")}>
+                          {featuredStats.text}
+                        </span>
                      </div>
                      <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full w-[85%] bg-purple-500 rounded-full" />
+                        <div 
+                          className="h-full bg-purple-500 rounded-full transition-all duration-1000 ease-out" 
+                          style={{ width: `${featuredStats.percent}%` }}
+                        />
                      </div>
                   </div>
                 </div>
@@ -175,8 +216,6 @@ export default function Events() {
           </Tabs>
         </div>
       </main>
-      
-      {/* Optional: Add Footer Component Here */}
     </div>
   );
 }
