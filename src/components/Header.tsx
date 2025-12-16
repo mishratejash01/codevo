@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, Info, Home, User, Code2, Trophy, Terminal } from 'lucide-react'; 
+// Explicitly importing Calendar here
+import { LogIn, LogOut, Info, Home, User, Code2, Trophy, Terminal, Calendar } from 'lucide-react'; 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,7 +61,6 @@ export function Header({ session, onLogout }: HeaderProps) {
     <>
       <header 
         className="fixed z-50 left-0 right-0 mx-auto w-full max-w-6xl px-4 md:px-0 transition-all duration-300"
-        // DYNAMIC POSITIONING: Calculates top based on banner height
         style={{ top: 'calc(1.25rem + var(--banner-height, 0px))' }}
       >
         <div className={cn(
@@ -91,6 +91,12 @@ export function Header({ session, onLogout }: HeaderProps) {
               <Link to="/practice-arena" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
                 <Code2 className="w-4 h-4" /> Practice
               </Link>
+
+              {/* --- EVENTS LINK WITH ICON --- */}
+              <Link to="/events" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
+                <Calendar className="w-4 h-4" /> Events
+              </Link>
+              {/* --------------------------- */}
 
               <Link to="/compiler" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-purple-400 transition-colors hover:bg-purple-500/10 px-3 py-2 rounded-md border border-transparent hover:border-purple-500/20">
                 <Terminal className="w-4 h-4" /> Compiler
@@ -145,10 +151,8 @@ export function Header({ session, onLogout }: HeaderProps) {
           <div className="flex justify-between items-end px-2">
             <div className="flex gap-4">
               <NavItem to="/" icon={Home} label="Home" active={location.pathname === "/"} />
-              <Link to="/compiler" className={cn("flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300", location.pathname === "/compiler" ? "bg-white/10 text-white" : "text-muted-foreground")}>
-                <Terminal className="w-5 h-5 mb-1" />
-                <span className="sr-only">Compiler</span>
-              </Link>
+              {/* --- EVENTS LINK (Mobile) --- */}
+              <NavItem to="/events" icon={Calendar} label="Events" active={location.pathname.startsWith("/events")} />
             </div>
             <div className="absolute left-1/2 -translate-x-1/2 bottom-3">
                <NavItem to="/practice-arena" icon={Code2} label="Practice" active={location.pathname.startsWith("/practice-arena")} size="large" />
