@@ -258,7 +258,7 @@ const Exam = () => {
       if (session) setSessionId(session.id);
       
       setIsExamStarted(true);
-      if (assignments.length > 0) setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('q', assignments[0].id); return p; }); else toast({ title: "No Questions", description: "This set contains no questions.", variant: "destructive" });
+      if (assignments.length > 0) setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('q', (assignments[0] as any).id); return p; }); else toast({ title: "No Questions", description: "This set contains no questions.", variant: "destructive" });
     } catch (err) { toast({ title: "Error", description: "Failed to start session.", variant: "destructive" }); }
   };
 

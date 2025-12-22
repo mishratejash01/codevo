@@ -112,7 +112,7 @@ export function EventRegistrationModal({ event, isOpen, onOpenChange }: EventReg
 
     delete (formattedData as any).team_members;
 
-    const { error } = await supabase.from('event_registrations').insert(formattedData);
+    const { error } = await supabase.from('event_registrations').insert(formattedData as any);
 
     setIsSubmitting(false);
 

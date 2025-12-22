@@ -3,13 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { format, differenceInDays, differenceInHours } from 'date-fns';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Trophy, Users, ChevronRight, ChevronLeft, Clock, Sparkles } from 'lucide-react';
+import { Calendar, MapPin, Trophy, Users, ChevronRight, ChevronLeft, Clock, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header';
+import { Session } from '@supabase/supabase-js';
 
 interface Event {
   id: string;
@@ -32,11 +33,37 @@ export default function Events() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Auth state management
   useEffect(() => {
-    fetchEvents();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !session) {
+      navigate('/auth');
+    }
+  }, [authLoading, session, navigate]);
+
+  useEffect(() => {
+    if (session) {
+      fetchEvents();
+    }
+  }, [session]);
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
@@ -45,8 +72,14 @@ export default function Events() {
       .eq('status', 'published')
       .order('start_date', { ascending: true });
 
-    if (!error && data) setEvents(data as Event[]);
+    if (!error && data) setEvents(data as unknown as Event[]);
     setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    navigate('/auth');
   };
 
   const scroll = (direction: 'left' | 'right') => {
@@ -56,6 +89,15 @@ export default function Events() {
       scrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
     }
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="animate-spin h-8 w-8 text-purple-500" />
+      </div>
+    );
+  }
 
   const featuredEvent = events.find(e => e.is_featured) || events[0];
   const regularEvents = events.filter(e => e.id !== featuredEvent?.id);
@@ -80,7 +122,7 @@ export default function Events() {
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-purple-500/30 font-inter">
-      <Header session={null} onLogout={() => {}} />
+      <Header session={session} onLogout={handleLogout} />
 
       <main className="max-w-7xl mx-auto pt-32 pb-20 px-6 md:px-12">
         

@@ -6,40 +6,72 @@ import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/Header';
 import { format } from 'date-fns';
 import { Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2 } from 'lucide-react';
-import { EventRegistrationModal } from '@/components/EventRegistrationModal'; // Import the new modal
+import { EventRegistrationModal } from '@/components/EventRegistrationModal';
 import { toast } from 'sonner';
+import { Session } from '@supabase/supabase-js';
 
 export default function EventDetails() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false); // State for modal
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Auth state management
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !session) {
+      navigate('/auth');
+    }
+  }, [authLoading, session, navigate]);
 
   useEffect(() => {
-    async function getEvent() {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('slug', slug)
-        .single();
-      
-      if (error) {
-        navigate('/events');
-        return;
-      }
-      setEvent(data);
-      setLoading(false);
+    if (session) {
+      getEvent();
     }
-    getEvent();
-  }, [slug, navigate]);
+  }, [slug, session]);
+
+  async function getEvent() {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+    
+    if (error) {
+      navigate('/events');
+      return;
+    }
+    setEvent(data);
+    setLoading(false);
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    navigate('/auth');
+  };
 
   const handleRegisterClick = () => {
     if (event.registration_link) {
-      // If external link exists, open it
       window.open(event.registration_link, '_blank');
     } else {
-      // Otherwise open internal registration modal
       setIsRegisterOpen(true);
     }
   };
@@ -57,7 +89,7 @@ export default function EventDetails() {
     }
   };
 
-  if (loading) return (
+  if (authLoading || loading) return (
     <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
         <Loader2 className="animate-spin h-8 w-8 text-purple-500" />
     </div>
@@ -65,7 +97,7 @@ export default function EventDetails() {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-purple-500/30">
-      <Header session={null} onLogout={() => {}} />
+      <Header session={session} onLogout={handleLogout} />
 
       {/* Hero Image Section */}
       <div className="relative h-[50vh] md:h-[60vh] w-full">

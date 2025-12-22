@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,9 +8,28 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy, Medal, Calendar, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header'; 
+import { Session } from '@supabase/supabase-js';
 
 const Leaderboard = () => {
   const [timeframe, setTimeframe] = useState<'current' | 'last_month'>('current');
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setSession(session);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+  };
 
   // Fetch Leaderboard Data
   const { data: leaderboardData = [], isLoading } = useQuery({
@@ -120,7 +139,7 @@ const Leaderboard = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-20 px-4 relative overflow-hidden font-sans">
-      <Header />
+      <Header session={session} onLogout={handleLogout} />
       
       {/* Background Ambience */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-primary/20 blur-[120px] pointer-events-none rounded-full" />
