@@ -742,71 +742,311 @@ export type Database = {
         }
         Relationships: []
       }
-      practice_problems: {
+      practice_bookmarks: {
         Row: {
           created_at: string | null
-          description: string
-          difficulty: string | null
           id: string
-          slug: string
-          starter_templates: Json | null
-          tags: string[] | null
-          test_cases: Json | null
-          title: string
+          problem_id: string
+          user_id: string
         }
         Insert: {
           created_at?: string | null
-          description: string
-          difficulty?: string | null
           id?: string
-          slug: string
-          starter_templates?: Json | null
-          tags?: string[] | null
-          test_cases?: Json | null
-          title: string
+          problem_id: string
+          user_id: string
         }
         Update: {
           created_at?: string | null
-          description?: string
-          difficulty?: string | null
           id?: string
-          slug?: string
+          problem_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_bookmarks_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "practice_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_discussions: {
+        Row: {
+          code: string | null
+          content: string
+          created_at: string | null
+          id: string
+          language: string | null
+          parent_id: string | null
+          problem_id: string
+          title: string | null
+          updated_at: string | null
+          upvotes: number | null
+          user_id: string
+        }
+        Insert: {
+          code?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          language?: string | null
+          parent_id?: string | null
+          problem_id: string
+          title?: string | null
+          updated_at?: string | null
+          upvotes?: number | null
+          user_id: string
+        }
+        Update: {
+          code?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          language?: string | null
+          parent_id?: string | null
+          problem_id?: string
+          title?: string | null
+          updated_at?: string | null
+          upvotes?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_discussions_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "practice_discussions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_discussions_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "practice_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_notes: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          problem_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          problem_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          problem_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_notes_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "practice_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_problems: {
+        Row: {
+          acceptance_rate: number | null
+          companies: string[] | null
+          created_at: string | null
+          description: string
+          difficulty: string | null
+          dislikes: number | null
+          editorial: string | null
+          hints: Json | null
+          id: string
+          is_daily: boolean | null
+          likes: number | null
+          order_index: number | null
+          similar_problems: string[] | null
+          slug: string
+          space_complexity: string | null
+          starter_templates: Json | null
+          tags: string[] | null
+          test_cases: Json | null
+          time_complexity: string | null
+          title: string
+          total_accepted: number | null
+          total_submissions: number | null
+        }
+        Insert: {
+          acceptance_rate?: number | null
+          companies?: string[] | null
+          created_at?: string | null
+          description: string
+          difficulty?: string | null
+          dislikes?: number | null
+          editorial?: string | null
+          hints?: Json | null
+          id?: string
+          is_daily?: boolean | null
+          likes?: number | null
+          order_index?: number | null
+          similar_problems?: string[] | null
+          slug: string
+          space_complexity?: string | null
           starter_templates?: Json | null
           tags?: string[] | null
           test_cases?: Json | null
+          time_complexity?: string | null
+          title: string
+          total_accepted?: number | null
+          total_submissions?: number | null
+        }
+        Update: {
+          acceptance_rate?: number | null
+          companies?: string[] | null
+          created_at?: string | null
+          description?: string
+          difficulty?: string | null
+          dislikes?: number | null
+          editorial?: string | null
+          hints?: Json | null
+          id?: string
+          is_daily?: boolean | null
+          likes?: number | null
+          order_index?: number | null
+          similar_problems?: string[] | null
+          slug?: string
+          space_complexity?: string | null
+          starter_templates?: Json | null
+          tags?: string[] | null
+          test_cases?: Json | null
+          time_complexity?: string | null
           title?: string
+          total_accepted?: number | null
+          total_submissions?: number | null
+        }
+        Relationships: []
+      }
+      practice_reactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          problem_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          problem_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          problem_id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_reactions_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "practice_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_streaks: {
+        Row: {
+          current_streak: number | null
+          id: string
+          last_solved_at: string | null
+          longest_streak: number | null
+          streak_dates: string[] | null
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number | null
+          id?: string
+          last_solved_at?: string | null
+          longest_streak?: number | null
+          streak_dates?: string[] | null
+          user_id: string
+        }
+        Update: {
+          current_streak?: number | null
+          id?: string
+          last_solved_at?: string | null
+          longest_streak?: number | null
+          streak_dates?: string[] | null
+          user_id?: string
         }
         Relationships: []
       }
       practice_submissions: {
         Row: {
           code: string | null
+          error_message: string | null
           id: string
           language: string | null
+          memory_kb: number | null
+          memory_percentile: number | null
           problem_id: string | null
+          runtime_ms: number | null
+          runtime_percentile: number | null
           score: number | null
           status: string | null
           submitted_at: string | null
+          test_cases_passed: number | null
+          test_cases_total: number | null
           user_id: string | null
         }
         Insert: {
           code?: string | null
+          error_message?: string | null
           id?: string
           language?: string | null
+          memory_kb?: number | null
+          memory_percentile?: number | null
           problem_id?: string | null
+          runtime_ms?: number | null
+          runtime_percentile?: number | null
           score?: number | null
           status?: string | null
           submitted_at?: string | null
+          test_cases_passed?: number | null
+          test_cases_total?: number | null
           user_id?: string | null
         }
         Update: {
           code?: string | null
+          error_message?: string | null
           id?: string
           language?: string | null
+          memory_kb?: number | null
+          memory_percentile?: number | null
           problem_id?: string | null
+          runtime_ms?: number | null
+          runtime_percentile?: number | null
           score?: number | null
           status?: string | null
           submitted_at?: string | null
+          test_cases_passed?: number | null
+          test_cases_total?: number | null
           user_id?: string | null
         }
         Relationships: [
