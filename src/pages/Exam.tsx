@@ -392,8 +392,19 @@ const Exam = () => {
       }
       
       // @ts-ignore
-      const { data: session } = await supabase.from(SESSION_TABLE).insert(sessionData).select().single();
-      if (session) setSessionId(session.id);
+      const { data: session, error: sessionError } = await supabase.from(SESSION_TABLE).insert(sessionData).select().single();
+      
+      if (sessionError) {
+        console.error("Failed to create exam session:", sessionError);
+        toast({ 
+          title: "Session Error", 
+          description: "Could not initialize exam session. Please try again.", 
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      if (session) setSessionId((session as any).id);
       
       setIsExamStarted(true);
       if (assignments.length > 0) {
