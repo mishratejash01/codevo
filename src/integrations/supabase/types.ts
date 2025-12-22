@@ -16,49 +16,49 @@ export type Database = {
     Tables: {
       announcements: {
         Row: {
-          id: string
-          created_at: string | null
-          message: string
-          link: string | null
           button_text: string | null
-          page_route: string
+          created_at: string | null
+          id: string
           is_active: boolean | null
+          link: string | null
+          message: string
+          page_route: string
         }
         Insert: {
-          id?: string
-          created_at?: string | null
-          message: string
-          link?: string | null
           button_text?: string | null
-          page_route?: string
+          created_at?: string | null
+          id?: string
           is_active?: boolean | null
+          link?: string | null
+          message: string
+          page_route?: string
         }
         Update: {
-          id?: string
-          created_at?: string | null
-          message?: string
-          link?: string | null
           button_text?: string | null
-          page_route?: string
+          created_at?: string | null
+          id?: string
           is_active?: boolean | null
+          link?: string | null
+          message?: string
+          page_route?: string
         }
         Relationships: []
       }
       app_routes: {
         Row: {
-          path: string
-          name: string | null
           last_seen_at: string | null
+          name: string | null
+          path: string
         }
         Insert: {
-          path: string
-          name?: string | null
           last_seen_at?: string | null
+          name?: string | null
+          path: string
         }
         Update: {
-          path?: string
-          name?: string | null
           last_seen_at?: string | null
+          name?: string | null
+          path?: string
         }
         Relationships: []
       }
@@ -99,6 +99,170 @@ export type Database = {
           instructions?: string | null
           max_score?: number | null
           starter_code?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      event_registrations: {
+        Row: {
+          agreed_to_privacy: boolean
+          agreed_to_rules: boolean
+          college_org_name: string
+          country_city: string
+          created_at: string | null
+          current_status: string
+          email: string
+          event_id: string
+          experience_level: string | null
+          full_name: string
+          github_link: string | null
+          id: string
+          linkedin_link: string | null
+          mobile_number: string
+          motivation_answer: string | null
+          participation_type: string | null
+          preferred_track: string | null
+          primary_languages: Json | null
+          prior_experience: boolean | null
+          resume_url: string | null
+          status: string | null
+          team_members_data: Json | null
+          team_name: string | null
+          tech_stack_skills: Json | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agreed_to_privacy?: boolean
+          agreed_to_rules?: boolean
+          college_org_name: string
+          country_city: string
+          created_at?: string | null
+          current_status: string
+          email: string
+          event_id: string
+          experience_level?: string | null
+          full_name: string
+          github_link?: string | null
+          id?: string
+          linkedin_link?: string | null
+          mobile_number: string
+          motivation_answer?: string | null
+          participation_type?: string | null
+          preferred_track?: string | null
+          primary_languages?: Json | null
+          prior_experience?: boolean | null
+          resume_url?: string | null
+          status?: string | null
+          team_members_data?: Json | null
+          team_name?: string | null
+          tech_stack_skills?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agreed_to_privacy?: boolean
+          agreed_to_rules?: boolean
+          college_org_name?: string
+          country_city?: string
+          created_at?: string | null
+          current_status?: string
+          email?: string
+          event_id?: string
+          experience_level?: string | null
+          full_name?: string
+          github_link?: string | null
+          id?: string
+          linkedin_link?: string | null
+          mobile_number?: string
+          motivation_answer?: string | null
+          participation_type?: string | null
+          preferred_track?: string | null
+          primary_languages?: Json | null
+          prior_experience?: boolean | null
+          resume_url?: string | null
+          status?: string | null
+          team_members_data?: Json | null
+          team_name?: string | null
+          tech_stack_skills?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string | null
+          current_participants: number | null
+          end_date: string
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          location: string | null
+          max_participants: number | null
+          mode: string
+          prize_pool: string | null
+          registration_deadline: string | null
+          registration_link: string | null
+          short_description: string
+          slug: string
+          start_date: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          content?: string | null
+          created_at?: string | null
+          current_participants?: number | null
+          end_date: string
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          location?: string | null
+          max_participants?: number | null
+          mode: string
+          prize_pool?: string | null
+          registration_deadline?: string | null
+          registration_link?: string | null
+          short_description: string
+          slug: string
+          start_date: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string | null
+          current_participants?: number | null
+          end_date?: string
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          location?: string | null
+          max_participants?: number | null
+          mode?: string
+          prize_pool?: string | null
+          registration_deadline?: string | null
+          registration_link?: string | null
+          short_description?: string
+          slug?: string
+          start_date?: string
+          status?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -422,116 +586,6 @@ export type Database = {
           total_marks?: number | null
           updated_at?: string | null
           user_id?: string
-        }
-        Relationships: []
-      }
-      iitm_exam_submissions: {
-        Row: {
-          code: string
-          exam_id: string
-          id: string
-          language: string | null
-          private_tests_passed: number | null
-          private_tests_total: number | null
-          public_tests_passed: number | null
-          public_tests_total: number | null
-          score: number | null
-          status: string | null
-          submitted_at: string | null
-          user_id: string
-        }
-        Insert: {
-          code: string
-          exam_id: string
-          id?: string
-          language?: string | null
-          private_tests_passed?: number | null
-          private_tests_total?: number | null
-          public_tests_passed?: number | null
-          public_tests_total?: number | null
-          score?: number | null
-          status?: string | null
-          submitted_at?: string | null
-          user_id: string
-        }
-        Update: {
-          code?: string
-          exam_id?: string
-          id?: string
-          language?: string | null
-          private_tests_passed?: number | null
-          private_tests_total?: number | null
-          public_tests_passed?: number | null
-          public_tests_total?: number | null
-          score?: number | null
-          status?: string | null
-          submitted_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "iitm_exam_submissions_exam_id_fkey"
-            columns: ["exam_id"]
-            isOneToOne: false
-            referencedRelation: "iitm_exams_questions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      iitm_exams_questions: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          deadline: string | null
-          description: string | null
-          exam_type: string
-          expected_time: number | null
-          id: string
-          instructions: string | null
-          max_score: number | null
-          private_test_cases: Json | null
-          set_name: string | null
-          starter_code: string | null
-          subject_id: string
-          test_cases: Json | null
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          deadline?: string | null
-          description?: string | null
-          exam_type: string
-          expected_time?: number | null
-          id?: string
-          instructions?: string | null
-          max_score?: number | null
-          private_test_cases?: Json | null
-          set_name?: string | null
-          starter_code?: string | null
-          subject_id: string
-          test_cases?: Json | null
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          deadline?: string | null
-          description?: string | null
-          exam_type?: string
-          expected_time?: number | null
-          id?: string
-          instructions?: string | null
-          max_score?: number | null
-          private_test_cases?: Json | null
-          set_name?: string | null
-          starter_code?: string | null
-          subject_id?: string
-          test_cases?: Json | null
-          title?: string
-          updated_at?: string | null
         }
         Relationships: []
       }
@@ -910,44 +964,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "submissions_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "assignments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      test_cases: {
-        Row: {
-          assignment_id: string
-          created_at: string | null
-          expected_output: string
-          id: string
-          input: string
-          is_public: boolean | null
-          weight: number | null
-        }
-        Insert: {
-          assignment_id: string
-          created_at?: string | null
-          expected_output: string
-          id?: string
-          input: string
-          is_public?: boolean | null
-          weight?: number | null
-        }
-        Update: {
-          assignment_id?: string
-          created_at?: string | null
-          expected_output?: string
-          id?: string
-          input?: string
-          is_public?: boolean | null
-          weight?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "test_cases_assignment_id_fkey"
             columns: ["assignment_id"]
             isOneToOne: false
             referencedRelation: "assignments"
