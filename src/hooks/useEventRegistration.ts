@@ -28,7 +28,7 @@ interface RegistrationStatus {
   loading: boolean;
 }
 
-export function useEventRegistration(eventId: string | undefined): RegistrationStatus {
+export function useEventRegistration(eventId: string | undefined, refreshKey?: number): RegistrationStatus & { refetch: () => void } {
   const [status, setStatus] = useState<RegistrationStatus>({
     isRegistered: false,
     registration: null,
@@ -38,78 +38,8 @@ export function useEventRegistration(eventId: string | undefined): RegistrationS
     loading: true,
   });
 
-  useEffect(() => {
-    async function checkRegistration() {
-      if (!eventId) {
-        setStatus({ 
-          isRegistered: false, 
-          registration: null, 
-          hasPendingInvitation: false,
-          hasAcceptedInvitation: false,
-          invitation: null,
-          loading: false 
-        });
-        return;
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        setStatus({ 
-          isRegistered: false, 
-          registration: null, 
-          hasPendingInvitation: false,
-          hasAcceptedInvitation: false,
-          invitation: null,
-          loading: false 
-        });
-        return;
-      }
-
-      // First check if user has their own registration
-      const { data: registrationData, error: regError } = await supabase
-        .from('event_registrations')
-        .select('id, team_name, team_role, participation_type, payment_status, status')
-        .eq('event_id', eventId)
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-
-      if (!regError && registrationData) {
-        setStatus({
-          isRegistered: true,
-          registration: registrationData as any,
-          hasPendingInvitation: false,
-          hasAcceptedInvitation: false,
-          invitation: null,
-          loading: false,
-        });
-        return;
-      }
-
-      // Check for pending or accepted invitations by email
-      const userEmail = session.user.email?.toLowerCase();
-      if (userEmail) {
-        const { data: invitationData, error: invError } = await supabase
-          .from('team_invitations')
-          .select('id, event_id, team_name, inviter_name, inviter_email, role, status, registration_id')
-          .eq('event_id', eventId)
-          .eq('invitee_email', userEmail)
-          .in('status', ['pending', 'accepted'])
-          .maybeSingle();
-
-        if (!invError && invitationData) {
-          setStatus({
-            isRegistered: false,
-            registration: null,
-            hasPendingInvitation: invitationData.status === 'pending',
-            hasAcceptedInvitation: invitationData.status === 'accepted',
-            invitation: invitationData as TeamInvitation,
-            loading: false,
-          });
-          return;
-        }
-      }
-
-      // No registration or invitation found
+  const checkRegistration = async () => {
+    if (!eventId) {
       setStatus({ 
         isRegistered: false, 
         registration: null, 
@@ -118,12 +48,84 @@ export function useEventRegistration(eventId: string | undefined): RegistrationS
         invitation: null,
         loading: false 
       });
+      return;
     }
 
-    checkRegistration();
-  }, [eventId]);
+    setStatus(prev => ({ ...prev, loading: true }));
 
-  return status;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setStatus({ 
+        isRegistered: false, 
+        registration: null, 
+        hasPendingInvitation: false,
+        hasAcceptedInvitation: false,
+        invitation: null,
+        loading: false 
+      });
+      return;
+    }
+
+    // First check if user has their own registration
+    const { data: registrationData, error: regError } = await supabase
+      .from('event_registrations')
+      .select('id, team_name, team_role, participation_type, payment_status, status')
+      .eq('event_id', eventId)
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+
+    if (!regError && registrationData) {
+      setStatus({
+        isRegistered: true,
+        registration: registrationData as any,
+        hasPendingInvitation: false,
+        hasAcceptedInvitation: false,
+        invitation: null,
+        loading: false,
+      });
+      return;
+    }
+
+    // Check for pending or accepted invitations by email
+    const userEmail = session.user.email?.toLowerCase();
+    if (userEmail) {
+      const { data: invitationData, error: invError } = await supabase
+        .from('team_invitations')
+        .select('id, event_id, team_name, inviter_name, inviter_email, role, status, registration_id')
+        .eq('event_id', eventId)
+        .eq('invitee_email', userEmail)
+        .in('status', ['pending', 'accepted'])
+        .maybeSingle();
+
+      if (!invError && invitationData) {
+        setStatus({
+          isRegistered: false,
+          registration: null,
+          hasPendingInvitation: invitationData.status === 'pending',
+          hasAcceptedInvitation: invitationData.status === 'accepted',
+          invitation: invitationData as TeamInvitation,
+          loading: false,
+        });
+        return;
+      }
+    }
+
+    // No registration or invitation found
+    setStatus({ 
+      isRegistered: false, 
+      registration: null, 
+      hasPendingInvitation: false,
+      hasAcceptedInvitation: false,
+      invitation: null,
+      loading: false 
+    });
+  };
+
+  useEffect(() => {
+    checkRegistration();
+  }, [eventId, refreshKey]);
+
+  return { ...status, refetch: checkRegistration };
 }
 
 export function useCheckPendingInvitations() {

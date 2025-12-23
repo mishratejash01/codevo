@@ -405,8 +405,8 @@ const Profile = () => {
         setOriginalProfile(defaultProfile); // Snapshot for tracking changes
         setIsOwner(true);
 
-        // --- FETCH REGISTRATIONS ---
-        const { data: regs, error } = await supabase
+        // --- FETCH REGISTRATIONS (only for current user) ---
+        const { data: regs } = await supabase
             .from('event_registrations')
             .select(`
                 id,
@@ -422,6 +422,7 @@ const Profile = () => {
                     location
                 )
             `)
+            .eq('user_id', currentUser.id)
             .order('created_at', { ascending: false });
         
         if (regs) setRegistrations(regs as any);

@@ -31,8 +31,9 @@ export default function EventDetails() {
     hasPendingInvitation,
     hasAcceptedInvitation,
     invitation,
-    loading: regLoading 
-  } = useEventRegistration(event?.id);
+    loading: regLoading,
+    refetch: refetchRegistration
+  } = useEventRegistration(event?.id, refreshKey);
 
   // Auth state management
   useEffect(() => {
@@ -97,17 +98,17 @@ export default function EventDetails() {
 
   const handleInvitationAccepted = () => {
     // Trigger a refresh of registration status
-    setRefreshKey(prev => prev + 1);
+    refetchRegistration();
   };
 
   const handleInvitationDeclined = () => {
     // Trigger a refresh of registration status
-    setRefreshKey(prev => prev + 1);
+    refetchRegistration();
   };
 
   const handleRegistrationComplete = () => {
-    // Reload the page to show the updated status
-    window.location.reload();
+    // Refetch registration status to show updated state
+    refetchRegistration();
   };
 
   const isHackathon = event?.event_type === 'hackathon';
