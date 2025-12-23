@@ -1474,6 +1474,36 @@ export type Database = {
           },
         ]
       }
+      website_availability: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_available: boolean
+          message: string | null
+          section_key: string
+          section_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_available?: boolean
+          message?: string | null
+          section_key: string
+          section_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_available?: boolean
+          message?: string | null
+          section_key?: string
+          section_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       iitm_leaderboard: {

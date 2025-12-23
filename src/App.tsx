@@ -15,6 +15,7 @@ import { Home, Code2, Trophy, Terminal } from "lucide-react";
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { AppRoutes } from "./routes";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
+import AvailabilityGuard from "@/components/AvailabilityGuard";
 
 const queryClient = new QueryClient();
 
@@ -91,23 +92,45 @@ const AppContent = () => {
     { icon: <Trophy size={20} />, label: 'Ranks', onClick: () => navigate('/leaderboard') },
   ];
 
+  // Map routes to their section keys for availability checking
+  const getSectionKey = (path: string): string | null => {
+    if (path.startsWith('/degree') || path === '/exam' || path.startsWith('/exam/')) return 'iitm_bs';
+    if (path === '/practice-arena' || path.startsWith('/practice-arena/') || path === '/practice' || path.startsWith('/practice/')) return 'practice';
+    if (path === '/events' || path.startsWith('/events/')) return 'events';
+    if (path === '/compiler') return 'compiler';
+    if (path === '/leaderboard') return 'leaderboard';
+    if (path === '/about') return 'about';
+    return null; // No section restriction for other routes
+  };
+
   return (
-    <>
+    <AvailabilityGuard sectionKey="main_website">
       <AnnouncementBanner />
 
       <Routes>
-        {AppRoutes.map((route) => (
-          <Route 
-            key={route.path} 
-            path={route.path} 
-            element={<route.component />} 
-          />
-        ))}
+        {AppRoutes.map((route) => {
+          const sectionKey = getSectionKey(route.path);
+          const RouteElement = <route.component />;
+          
+          return (
+            <Route 
+              key={route.path} 
+              path={route.path} 
+              element={
+                sectionKey ? (
+                  <AvailabilityGuard sectionKey={sectionKey}>
+                    {RouteElement}
+                  </AvailabilityGuard>
+                ) : RouteElement
+              }
+            />
+          );
+        })}
       </Routes>
 
       {showFooter && <Footer />}
       {showDock && <Dock items={dockItems} baseItemSize={45} magnification={60} />}
-    </>
+    </AvailabilityGuard>
   );
 };
 
