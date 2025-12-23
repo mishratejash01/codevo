@@ -32,9 +32,17 @@ for name in list(globals().keys()):
 
 function extractMissingModuleName(message) {
   const msg = String(message || "");
+
+  // Common Pyodide traceback includes the module name somewhere in the text.
+  // Examples:
+  // - "ModuleNotFoundError: No module named 'numpy'"
+  // - "No module named numpy"
+  // - "ModuleNotFoundError: numpy"
   const patterns = [
-    /No module named ['"]([^'"]+)['"]/,
-    /No module named ([A-Za-z0-9_\.]+)/,
+    /ModuleNotFoundError:\s*No module named ['\"]([^'\"\s]+)['\"]/,
+    /No module named ['\"]([^'\"\s]+)['\"]/,
+    /No module named\s+([A-Za-z0-9_\.]+)/,
+    /ModuleNotFoundError:\s*['\"]?([^'\"\s]+)['\"]?/,
   ];
 
   for (const pattern of patterns) {
@@ -161,7 +169,8 @@ self.onmessage = async (event) => {
       await runWithFreshGlobals();
 
     } catch (err) {
-      let errorMessage = err.message || String(err);
+      const rawError = err?.message ?? (typeof err?.toString === 'function' ? err.toString() : '') ?? String(err);
+      let errorMessage = String(rawError || err || 'Unknown error');
 
       // If a module is missing, try to auto-load it from Pyodide's package repo
       const missingModule = extractMissingModuleName(errorMessage);
@@ -181,7 +190,7 @@ self.onmessage = async (event) => {
         } catch (loadOrRetryErr) {
           // If load succeeded but the retry failed, show the retry error instead
           if (packageLoaded) {
-            errorMessage = loadOrRetryErr.message || String(loadOrRetryErr);
+            errorMessage = loadOrRetryErr?.message ?? String(loadOrRetryErr);
           } else {
             const details = loadOrRetryErr?.message ? `\nDetails: ${loadOrRetryErr.message}` : '';
             errorMessage = `ModuleNotFoundError: '${pkg}'\n` +
@@ -197,11 +206,17 @@ self.onmessage = async (event) => {
       } else if (errorMessage.includes('KeyboardInterrupt')) {
         errorMessage = 'Program interrupted by user (Ctrl+C)';
       } else if (errorMessage.includes('ModuleNotFoundError') || errorMessage.includes('No module named')) {
-        const moduleName = extractMissingModuleName(errorMessage) || 'unknown';
-        const pkg = moduleName.split('.')[0];
-        errorMessage = `ModuleNotFoundError: '${pkg}'\n` +
-          `💡 This package isn't available here (or failed to download).\n` +
-          `Tip: Browser Python supports only Pyodide packages.`;
+        const moduleName = extractMissingModuleName(errorMessage);
+        if (moduleName) {
+          const pkg = moduleName.split('.')[0];
+          errorMessage = `ModuleNotFoundError: '${pkg}'\n` +
+            `💡 This package isn't available here (or failed to download).\n` +
+            `Tip: Browser Python supports only Pyodide packages.`;
+        } else {
+          // If we can't parse the module name, show the raw traceback for debugging.
+          errorMessage = String(rawError || errorMessage) +
+            `\n\n💡 Could not detect which package is missing. Please re-run and share the full traceback above.`;
+        }
       }
 
       self.postMessage({ type: 'OUTPUT', text: '\n' + errorMessage + '\n' });
