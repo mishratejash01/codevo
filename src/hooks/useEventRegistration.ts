@@ -35,21 +35,17 @@ export function useEventRegistration(eventId: string | undefined, refreshKey?: n
     hasPendingInvitation: false,
     hasAcceptedInvitation: false,
     invitation: null,
-    loading: true,
+    loading: true, // Start with loading true
   });
 
   const checkRegistration = async () => {
+    // Keep loading true if no eventId yet - don't set to false prematurely
     if (!eventId) {
-      setStatus({ 
-        isRegistered: false, 
-        registration: null, 
-        hasPendingInvitation: false,
-        hasAcceptedInvitation: false,
-        invitation: null,
-        loading: false 
-      });
-      return;
+      return; // Don't update state, wait for eventId
     }
+
+    // Set loading true before starting queries
+    setStatus(prev => ({ ...prev, loading: true }));
 
     setStatus(prev => ({ ...prev, loading: true }));
 

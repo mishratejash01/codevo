@@ -134,6 +134,15 @@ export default function EventDetails() {
 
   // Determine what to render in the sidebar
   const renderSidebarContent = () => {
+    // Show loading while checking registration/invitation status
+    if (regLoading) {
+      return (
+        <div className="mt-8 flex justify-center py-6">
+          <Loader2 className="animate-spin h-6 w-6 text-purple-500" />
+        </div>
+      );
+    }
+
     // Already registered - show confirmation
     if (isRegistered) {
       return (
