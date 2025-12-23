@@ -926,6 +926,7 @@ export type Database = {
           id: string
           is_daily: boolean | null
           likes: number | null
+          method_signature: Json | null
           order_index: number | null
           similar_problems: string[] | null
           slug: string
@@ -950,6 +951,7 @@ export type Database = {
           id?: string
           is_daily?: boolean | null
           likes?: number | null
+          method_signature?: Json | null
           order_index?: number | null
           similar_problems?: string[] | null
           slug: string
@@ -974,6 +976,7 @@ export type Database = {
           id?: string
           is_daily?: boolean | null
           likes?: number | null
+          method_signature?: Json | null
           order_index?: number | null
           similar_problems?: string[] | null
           slug?: string
