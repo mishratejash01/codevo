@@ -143,7 +143,7 @@ export function InviteeRegistrationForm({
         const { error: inviteError } = await supabase
           .from('team_invitations')
           .update({
-            status: 'completed',
+            status: 'accepted',
             responded_at: new Date().toISOString(),
           })
           .eq('id', invitation.id);
@@ -168,7 +168,7 @@ export function InviteeRegistrationForm({
 
       // Determine status based on event payment settings
       const registrationStatus = isPaid ? 'pending_payment' : 'confirmed';
-      const paymentStatus = isPaid ? 'pending' : 'not_required';
+      const paymentStatus = isPaid ? 'pending' : 'exempt';
 
       const { error: regError } = await supabase.from('event_registrations').insert({
         event_id: eventId,
