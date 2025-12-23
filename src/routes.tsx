@@ -17,13 +17,14 @@ import Profile from "./pages/Profile";
 import About from "./pages/About"; 
 import TermsOfService from "./pages/TermsOfService"; 
 import PrivacyPolicy from "./pages/PrivacyPolicy"; 
-// --- NEW IMPORTS ---
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
+import Dashboard from "./pages/Dashboard";
 
 export const AppRoutes = [
   { path: "/", component: Landing, name: "Landing Page" },
   { path: "/auth", component: Auth, name: "Authentication" },
+  { path: "/dashboard", component: Dashboard, name: "Dashboard" },
   { path: "/about", component: About, name: "About Us" },
   { path: "/terms", component: TermsOfService, name: "Terms of Service" },
   { path: "/privacy", component: PrivacyPolicy, name: "Privacy Policy" },

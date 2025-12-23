@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 // Explicitly importing Calendar here
-import { LogIn, LogOut, Info, Home, User, Code2, Trophy, Terminal, Calendar } from 'lucide-react'; 
+import { LogIn, LogOut, Info, Home, User, Code2, Trophy, Terminal, Calendar, LayoutDashboard } from 'lucide-react'; 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -127,6 +127,13 @@ export function Header({ session, onLogout }: HeaderProps) {
                   <DropdownMenuContent align="end" className="w-56 bg-[#0c0c0e] border-white/10 text-white">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem className="focus:bg-white/5 cursor-pointer" onClick={() => navigate('/dashboard')}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="focus:bg-white/5 cursor-pointer" onClick={() => navigate('/profile')}>
+                      <User className="mr-2 h-4 w-4" /> Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-white/10" />
                     <DropdownMenuItem className="focus:bg-red-500/10 focus:text-red-400 text-red-400 cursor-pointer" onClick={onLogout}>
                       <LogOut className="mr-2 h-4 w-4" /> Logout
                     </DropdownMenuItem>
@@ -160,7 +167,7 @@ export function Header({ session, onLogout }: HeaderProps) {
             <div className="flex gap-4">
               <NavItem to="/leaderboard" icon={Trophy} label="Rank" active={location.pathname === "/leaderboard"} />
               {session ? (
-                 <NavItem to="/profile" icon={User} label="Profile" active={location.pathname === "/profile"} />
+                 <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={location.pathname === "/dashboard"} />
               ) : (
                  <NavItem to="/auth" icon={LogIn} label="Login" active={location.pathname === "/auth"} />
               )}
