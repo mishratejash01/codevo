@@ -9,6 +9,8 @@ import { Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2, Code, Users } fro
 import { HackathonRegistrationModal } from '@/components/events/HackathonRegistrationModal';
 import { NormalEventRegistrationModal } from '@/components/events/NormalEventRegistrationModal';
 import { AlreadyRegisteredCard } from '@/components/events/AlreadyRegisteredCard';
+import { PendingInvitationCard, InvitationBanner } from '@/components/events/InvitationBanner';
+import { InviteeRegistrationForm } from '@/components/events/InviteeRegistrationForm';
 import { useEventRegistration } from '@/hooks/useEventRegistration';
 import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
@@ -21,7 +23,16 @@ export default function EventDetails() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const { isRegistered, registration, loading: regLoading } = useEventRegistration(event?.id);
+  const [refreshKey, setRefreshKey] = useState(0);
+  
+  const { 
+    isRegistered, 
+    registration, 
+    hasPendingInvitation,
+    hasAcceptedInvitation,
+    invitation,
+    loading: regLoading 
+  } = useEventRegistration(event?.id);
 
   // Auth state management
   useEffect(() => {
@@ -84,6 +95,21 @@ export default function EventDetails() {
     }
   };
 
+  const handleInvitationAccepted = () => {
+    // Trigger a refresh of registration status
+    setRefreshKey(prev => prev + 1);
+  };
+
+  const handleInvitationDeclined = () => {
+    // Trigger a refresh of registration status
+    setRefreshKey(prev => prev + 1);
+  };
+
+  const handleRegistrationComplete = () => {
+    // Reload the page to show the updated status
+    window.location.reload();
+  };
+
   const isHackathon = event?.event_type === 'hackathon';
 
   const handleShare = async () => {
@@ -104,6 +130,75 @@ export default function EventDetails() {
         <Loader2 className="animate-spin h-8 w-8 text-purple-500" />
     </div>
   );
+
+  // Determine what to render in the sidebar
+  const renderSidebarContent = () => {
+    // Already registered - show confirmation
+    if (isRegistered) {
+      return (
+        <div className="mt-8">
+          <AlreadyRegisteredCard 
+            eventId={event.id}
+            eventTitle={event.title}
+            eventType={event.event_type || 'normal'}
+            isPaid={event.is_paid}
+            registrationFee={event.registration_fee}
+            currency={event.currency}
+          />
+        </div>
+      );
+    }
+
+    // Has pending invitation - show accept/decline
+    if (hasPendingInvitation && invitation) {
+      return (
+        <div className="mt-8">
+          <PendingInvitationCard
+            invitation={invitation as any}
+            eventTitle={event.title}
+            onAccept={handleInvitationAccepted}
+            onDecline={handleInvitationDeclined}
+          />
+        </div>
+      );
+    }
+
+    // Accepted invitation - show registration form
+    if (hasAcceptedInvitation && invitation) {
+      return (
+        <div className="mt-8">
+          <InviteeRegistrationForm
+            eventId={event.id}
+            eventTitle={event.title}
+            invitation={{
+              id: invitation.id,
+              team_name: invitation.team_name,
+              inviter_name: invitation.inviter_name,
+              role: invitation.role,
+              registration_id: invitation.registration_id,
+            }}
+            onComplete={handleRegistrationComplete}
+          />
+        </div>
+      );
+    }
+
+    // No registration/invitation - show register button
+    return (
+      <div className="mt-8 space-y-3">
+        <Button 
+          onClick={handleRegisterClick} 
+          className="w-full h-12 text-base md:text-lg font-bold bg-white text-black hover:bg-gray-200 transition-all hover:scale-[1.02]"
+        >
+          {isHackathon && <Code className="w-4 h-4 mr-2" />}
+          Register Now
+        </Button>
+        <Button variant="outline" onClick={handleShare} className="w-full border-white/10 hover:bg-white/5 text-gray-300">
+          <Share2 className="w-4 h-4 mr-2" /> Share Event
+        </Button>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-purple-500/30">
@@ -137,6 +232,9 @@ export default function EventDetails() {
         
         {/* Left Column: Content */}
         <div className="lg:col-span-2 space-y-10">
+          
+          {/* Invitation Banner */}
+          <InvitationBanner />
           
           {/* About Section */}
           <section className="prose prose-invert max-w-none">
@@ -186,32 +284,8 @@ export default function EventDetails() {
               </div>
             </div>
 
-            {/* Already Registered or Register Button */}
-            {isRegistered ? (
-              <div className="mt-8">
-                <AlreadyRegisteredCard 
-                  eventId={event.id}
-                  eventTitle={event.title}
-                  eventType={event.event_type || 'normal'}
-                  isPaid={event.is_paid}
-                  registrationFee={event.registration_fee}
-                  currency={event.currency}
-                />
-              </div>
-            ) : (
-              <div className="mt-8 space-y-3">
-                <Button 
-                  onClick={handleRegisterClick} 
-                  className="w-full h-12 text-base md:text-lg font-bold bg-white text-black hover:bg-gray-200 transition-all hover:scale-[1.02]"
-                >
-                  {isHackathon && <Code className="w-4 h-4 mr-2" />}
-                  Register Now
-                </Button>
-                <Button variant="outline" onClick={handleShare} className="w-full border-white/10 hover:bg-white/5 text-gray-300">
-                  <Share2 className="w-4 h-4 mr-2" /> Share Event
-                </Button>
-              </div>
-            )}
+            {/* Dynamic sidebar content based on registration/invitation state */}
+            {renderSidebarContent()}
           </div>
         </div>
       </div>

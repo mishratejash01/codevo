@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Users, Mail, CheckCircle2, X, ChevronRight, Loader2, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 interface PendingInvitation {
@@ -17,6 +16,7 @@ interface PendingInvitation {
   role: string;
   token: string;
   created_at: string;
+  registration_id: string | null;
   event?: {
     title: string;
     slug: string;
@@ -25,12 +25,110 @@ interface PendingInvitation {
   };
 }
 
+interface PendingInvitationCardProps {
+  invitation: PendingInvitation;
+  eventTitle: string;
+  onAccept: () => void;
+  onDecline: () => void;
+}
+
+export function PendingInvitationCard({ 
+  invitation, 
+  eventTitle,
+  onAccept,
+  onDecline 
+}: PendingInvitationCardProps) {
+  const [processing, setProcessing] = useState(false);
+
+  async function handleResponse(accept: boolean) {
+    setProcessing(true);
+    
+    const { error } = await supabase
+      .from('team_invitations')
+      .update({
+        status: accept ? 'accepted' : 'declined',
+        responded_at: new Date().toISOString()
+      })
+      .eq('id', invitation.id);
+
+    if (error) {
+      toast.error("Failed to respond to invitation");
+      setProcessing(false);
+      return;
+    }
+
+    if (accept) {
+      toast.success("Invitation accepted! Complete your registration below.");
+      onAccept();
+    } else {
+      toast.info("Invitation declined");
+      onDecline();
+    }
+    
+    setProcessing(false);
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-purple-900/20 to-pink-900/10 border border-purple-500/30 rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="bg-purple-500/10 border-b border-purple-500/20 p-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+            <Mail className="w-7 h-7 text-purple-400" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-white">You're Invited!</h3>
+            <p className="text-sm text-purple-400">{eventTitle}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-6 space-y-4">
+        <div className="bg-zinc-800/50 rounded-xl p-4 text-center">
+          <p className="text-zinc-400 mb-1">
+            <strong className="text-white">{invitation.inviter_name}</strong> wants you to join
+          </p>
+          <p className="text-2xl font-bold text-purple-400">{invitation.team_name}</p>
+          <p className="text-sm text-zinc-500 mt-2">as a <strong>{invitation.role}</strong></p>
+        </div>
+
+        <div className="text-center text-sm text-zinc-500">
+          <p>Accept to join the team and complete your registration.</p>
+        </div>
+
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10"
+            onClick={() => handleResponse(false)}
+            disabled={processing}
+          >
+            <X className="w-4 h-4 mr-2" /> Decline
+          </Button>
+          <Button
+            className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
+            onClick={() => handleResponse(true)}
+            disabled={processing}
+          >
+            {processing ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+            )}
+            Accept & Join
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function InvitationBanner() {
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvite, setSelectedInvite] = useState<PendingInvitation | null>(null);
   const [processing, setProcessing] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPendingInvitations();
@@ -77,12 +175,7 @@ export function InvitationBanner() {
     }
 
     if (accept) {
-      toast.success("Invitation accepted! You're now part of the team.");
-      // Redirect to registration form to complete their details
-      const invite = invitations.find(i => i.id === invitationId);
-      if (invite?.event?.slug) {
-        navigate(`/events/${invite.event.slug}?join=true`);
-      }
+      toast.success("Invitation accepted! Complete your registration on the event page.");
     } else {
       toast.info("Invitation declined");
     }
