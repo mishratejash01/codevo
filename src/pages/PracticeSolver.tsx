@@ -23,6 +23,7 @@ import { JudgingLoader } from '@/components/practice/JudgingLoader';
 import { VerdictDisplay } from '@/components/practice/VerdictDisplay';
 import { PerformanceChart } from '@/components/practice/PerformanceChart';
 import { CustomTestSandbox } from '@/components/practice/CustomTestSandbox';
+import { wrapCodeForExecution, Language as WrapperLanguage } from '@/utils/codeWrappers';
 
 export default function PracticeSolver() {
   const { slug } = useParams();
@@ -101,14 +102,15 @@ export default function PracticeSolver() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Prepare code with language-specific driver code (LeetCode-style)
   const prepareCode = (userCode: string, input: any) => {
-    let codeToRun = userCode;
-    if (activeLanguage === 'python' && input) {
-       const inputStr = String(input);
-       const cleanInput = inputStr.replace(/[a-zA-Z0-9_]+\s=\s/g, '');
-       codeToRun += `\n\n# --- Driver Code ---\ntry:\n    if 'Solution' in dir():\n        sol = Solution()\n        methods = [m for m in dir(sol) if not m.startswith('__')]\n        if methods:\n            print(getattr(sol, methods[0])(${cleanInput}))\nexcept Exception as e:\n    print(f"Runtime Error: {e}")`;
-    }
-    return codeToRun;
+    const rawInput = String(input || '');
+    // Use the new universal code wrapper for all languages
+    return wrapCodeForExecution(
+      activeLanguage as WrapperLanguage,
+      userCode,
+      rawInput
+    );
   };
 
   const handleRun = async () => {

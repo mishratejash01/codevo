@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeOutput } from '@/utils/inputParser';
 
 const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
 
@@ -178,6 +179,39 @@ const getTierBadge = (percentile: number): { tier: string; emoji: string; messag
   };
 };
 
+/**
+ * Compare two outputs with fuzzy matching for cross-language compatibility
+ */
+const compareOutputs = (actual: string, expected: string): boolean => {
+  // Exact match
+  if (actual === expected) return true;
+  
+  // Try parsing as JSON and comparing
+  try {
+    const actualParsed = JSON.parse(actual.replace(/'/g, '"'));
+    const expectedParsed = JSON.parse(expected.replace(/'/g, '"'));
+    return JSON.stringify(actualParsed) === JSON.stringify(expectedParsed);
+  } catch {
+    // Not JSON, continue with string comparison
+  }
+  
+  // Remove all whitespace and compare
+  const normalizedActual = actual.replace(/\s/g, '');
+  const normalizedExpected = expected.replace(/\s/g, '');
+  if (normalizedActual === normalizedExpected) return true;
+  
+  // Handle numeric comparison (floating point tolerance)
+  const actualNum = parseFloat(actual);
+  const expectedNum = parseFloat(expected);
+  if (!isNaN(actualNum) && !isNaN(expectedNum)) {
+    return Math.abs(actualNum - expectedNum) < 1e-6;
+  }
+  
+  // Check if output contains expected (for multi-line or formatted output)
+  return normalizedActual.includes(normalizedExpected) || 
+         normalizedExpected.includes(normalizedActual);
+};
+
 export const useEnhancedCodeRunner = () => {
   const [judgingPhase, setJudgingPhase] = useState<JudgingPhase>({ status: 'idle' });
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -271,9 +305,11 @@ export const useEnhancedCodeRunner = () => {
         totalRuntime += result.executionTime;
         totalMemory += result.memory;
 
-        const cleanOutput = result.output?.trim() || '';
-        const expectedStr = String(test.output || '').trim();
-        const passed = cleanOutput === expectedStr || cleanOutput.includes(expectedStr);
+        const cleanOutput = normalizeOutput(result.output || '');
+        const expectedStr = normalizeOutput(String(test.output || ''));
+        
+        // Use normalized comparison for better cross-language support
+        const passed = compareOutputs(cleanOutput, expectedStr);
 
         testResults.push({
           passed,
