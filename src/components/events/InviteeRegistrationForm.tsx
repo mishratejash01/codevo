@@ -11,6 +11,9 @@ import { toast } from 'sonner';
 interface InviteeRegistrationFormProps {
   eventId: string;
   eventTitle: string;
+  isPaid?: boolean;
+  registrationFee?: number;
+  currency?: string;
   invitation: {
     id: string;
     team_name: string;
@@ -23,7 +26,10 @@ interface InviteeRegistrationFormProps {
 
 export function InviteeRegistrationForm({ 
   eventId, 
-  eventTitle, 
+  eventTitle,
+  isPaid = false,
+  registrationFee = 0,
+  currency = 'INR',
   invitation,
   onComplete 
 }: InviteeRegistrationFormProps) {
@@ -94,6 +100,10 @@ export function InviteeRegistrationForm({
         return;
       }
 
+      // Determine status based on event payment settings
+      const registrationStatus = isPaid ? 'pending_payment' : 'confirmed';
+      const paymentStatus = isPaid ? 'pending' : 'not_required';
+
       // Create registration for the invitee
       const { error: regError } = await supabase
         .from('event_registrations')
@@ -113,8 +123,8 @@ export function InviteeRegistrationForm({
           team_name: invitation.team_name,
           team_role: invitation.role,
           invited_by_registration_id: invitation.registration_id,
-          status: 'confirmed',
-          payment_status: 'not_required',
+          status: registrationStatus,
+          payment_status: paymentStatus,
           agreed_to_rules: true,
           agreed_to_privacy: true,
         });

@@ -1517,6 +1517,10 @@ export type Database = {
         }[]
       }
       generate_invitation_token: { Args: never; Returns: string }
+      get_my_event_access_status: {
+        Args: { p_event_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
