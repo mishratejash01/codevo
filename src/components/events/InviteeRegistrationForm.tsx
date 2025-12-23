@@ -92,53 +92,77 @@ export function InviteeRegistrationForm({
     prefillUserData();
   }, []);
 
+  const formatSbError = (error: any) => {
+    if (!error) return 'Unknown error';
+    const code = error.code ? ` (${error.code})` : '';
+    const details = error.details ? ` — ${error.details}` : '';
+    return `${error.message || 'Request failed'}${code}${details}`;
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
-    if (!formData.full_name || !formData.email || !formData.mobile_number || 
-        !formData.college_org_name || !formData.country_city || !formData.current_status) {
-      toast.error("Please fill in all required fields");
+
+    if (
+      !formData.full_name ||
+      !formData.email ||
+      !formData.mobile_number ||
+      !formData.college_org_name ||
+      !formData.country_city ||
+      !formData.current_status
+    ) {
+      toast.error('Please fill in all required fields');
       return;
     }
 
     setLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session?.user) {
-        toast.error("Please log in to continue");
-        setLoading(false);
+        toast.error('Please log in to continue');
         return;
       }
 
-      // Check if user already has a registration for this event
-      const { data: existingReg } = await supabase
+      // Fast-path: if registration already exists (by user_id), just mark invitation completed.
+      const { data: existingReg, error: existingRegError } = await supabase
         .from('event_registrations')
         .select('id')
         .eq('event_id', eventId)
         .eq('user_id', session.user.id)
         .maybeSingle();
 
-      if (existingReg) {
-        // User already registered, just update invitation status
+      if (existingRegError) {
+        console.error('[InviteeRegistrationForm] existing registration check failed:', existingRegError);
+        // Continue anyway; we can still try insert.
+      }
+
+      const completeInvitation = async () => {
         const { error: inviteError } = await supabase
           .from('team_invitations')
-          .update({ 
+          .update({
             status: 'completed',
-            responded_at: new Date().toISOString()
+            responded_at: new Date().toISOString(),
           })
           .eq('id', invitation.id);
 
         if (inviteError) {
-          console.error('Invitation update error:', inviteError);
-          toast.error(`Failed to update invitation: ${inviteError.message}`);
-          setLoading(false);
-          return;
+          console.error('[InviteeRegistrationForm] invitation update error:', inviteError);
+          toast.error(`Invitation update failed: ${formatSbError(inviteError)}`);
+          return false;
         }
 
-        toast.success("You're already registered! Invitation marked as complete.");
-        onComplete();
-        setLoading(false);
+        return true;
+      };
+
+      if (existingReg?.id) {
+        const ok = await completeInvitation();
+        if (ok) {
+          toast.success("You're already registered. Invitation marked as complete.");
+          onComplete();
+        }
         return;
       }
 
@@ -146,63 +170,57 @@ export function InviteeRegistrationForm({
       const registrationStatus = isPaid ? 'pending_payment' : 'confirmed';
       const paymentStatus = isPaid ? 'pending' : 'not_required';
 
-      // Create registration for the invitee
-      const { error: regError } = await supabase
-        .from('event_registrations')
-        .insert({
-          event_id: eventId,
-          user_id: session.user.id,
-          full_name: formData.full_name,
-          email: formData.email,
-          mobile_number: formData.mobile_number,
-          college_org_name: formData.college_org_name,
-          country_city: formData.country_city,
-          current_status: formData.current_status,
-          experience_level: formData.experience_level,
-          github_link: formData.github_link || null,
-          linkedin_link: formData.linkedin_link || null,
-          participation_type: 'Team',
-          team_name: invitation.team_name,
-          team_role: invitation.role,
-          invited_by_registration_id: invitation.registration_id,
-          status: registrationStatus,
-          payment_status: paymentStatus,
-          agreed_to_rules: true,
-          agreed_to_privacy: true,
-        });
+      const { error: regError } = await supabase.from('event_registrations').insert({
+        event_id: eventId,
+        user_id: session.user.id,
+        full_name: formData.full_name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        mobile_number: formData.mobile_number.trim(),
+        college_org_name: formData.college_org_name.trim(),
+        country_city: formData.country_city.trim(),
+        current_status: formData.current_status,
+        experience_level: formData.experience_level,
+        github_link: formData.github_link.trim() || null,
+        linkedin_link: formData.linkedin_link.trim() || null,
+        participation_type: 'Team',
+        team_name: invitation.team_name,
+        team_role: invitation.role,
+        invited_by_registration_id: invitation.registration_id,
+        status: registrationStatus,
+        payment_status: paymentStatus,
+        agreed_to_rules: true,
+        agreed_to_privacy: true,
+      });
 
       if (regError) {
-        console.error('Registration error:', regError);
-        toast.error(`Registration failed: ${regError.message}`);
-        setLoading(false);
+        console.error('[InviteeRegistrationForm] registration insert error:', regError);
+
+        // If the backend enforces uniqueness and this is a duplicate, treat it as already registered.
+        if (regError.code === '23505') {
+          const ok = await completeInvitation();
+          if (ok) {
+            toast.success("You're already registered. Invitation marked as complete.");
+            onComplete();
+          }
+          return;
+        }
+
+        toast.error(`Registration failed: ${formatSbError(regError)}`);
         return;
       }
 
-      // Update invitation status to completed
-      const { error: inviteError } = await supabase
-        .from('team_invitations')
-        .update({ 
-          status: 'completed',
-          responded_at: new Date().toISOString()
-        })
-        .eq('id', invitation.id);
-
-      if (inviteError) {
-        console.error('Invitation update error:', inviteError);
-        // Registration succeeded, invitation update failed - still continue
-        toast.warning("Registered successfully, but couldn't update invitation status.");
-      } else {
+      const invitationOk = await completeInvitation();
+      if (invitationOk) {
         toast.success("You've successfully joined the team!");
       }
-      
+
       onComplete();
-
     } catch (err) {
-      console.error('Error:', err);
-      toast.error("Something went wrong. Please try again.");
+      console.error('[InviteeRegistrationForm] unexpected error:', err);
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   if (prefilling) {
@@ -235,7 +253,7 @@ export function InviteeRegistrationForm({
       <CardContent className="p-6 space-y-6">
         {/* Team Info Badge */}
         <div className="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
-          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">
+          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
             <Users className="w-3 h-3 mr-1" /> Team Member
           </Badge>
           <Badge variant="outline" className="text-muted-foreground">
