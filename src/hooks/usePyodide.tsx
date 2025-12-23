@@ -1,192 +1,200 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-declare global {
-  interface Window {
-    loadPyodide: any;
-    pyodide: any;
-  }
+// Buffer layout constants
+const STATUS_WAITING = 0;
+const STATUS_INPUT_READY = 1;
+const STATUS_INTERRUPT = -1;
+const TEXT_BUFFER_SIZE = 4096; // 4KB for input text
+
+interface WorkerMessage {
+  type: 'READY' | 'OUTPUT' | 'INPUT_REQUEST' | 'FINISHED' | 'ERROR';
+  text?: string;
+  message?: string;
 }
-
-// --- GLOBAL SINGLETON (Keeps Python alive across reloads) ---
-let pyodideInstance: any = null;
-let isPyodideLoading = false;
-let pyodideReadyPromise: Promise<any> | null = null;
-
-// For interactive input with SharedArrayBuffer (if available)
-let sharedInputBuffer: SharedArrayBuffer | null = null;
-let inputArray: Int32Array | null = null;
-let inputTextArray: Uint8Array | null = null;
 
 export const usePyodide = () => {
   const [output, setOutput] = useState<string>("");
   const [isRunning, setIsRunning] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const inputResolverRef = useRef<((value: string) => void) | null>(null);
-  const inputBufferRef = useRef<string>("");
-  const isWaitingForInputRef = useRef(false);
+  const [isWaitingForInput, setIsWaitingForInput] = useState(false);
+  
+  // Worker and buffer refs
+  const workerRef = useRef<Worker | null>(null);
+  const sharedSignalBufferRef = useRef<SharedArrayBuffer | null>(null);
+  const sharedTextBufferRef = useRef<SharedArrayBuffer | null>(null);
+  const signalArrayRef = useRef<Int32Array | null>(null);
+  const textArrayRef = useRef<Uint8Array | null>(null);
+  const inputLineRef = useRef<string>("");
+  const hasSharedArrayBufferRef = useRef<boolean>(typeof SharedArrayBuffer !== 'undefined');
 
-  // Check if SharedArrayBuffer is available
-  const hasSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined';
-
-  // 1. Load Pyodide Once (Singleton Pattern)
+  // Initialize the Web Worker
   useEffect(() => {
-    const initPyodide = async () => {
-      // If already loaded, just set ready and exit
-      if (pyodideInstance) {
-        setIsReady(true);
-        return;
-      }
-
-      // If currently loading, wait for it
-      if (isPyodideLoading) {
-        if (pyodideReadyPromise) await pyodideReadyPromise;
-        setIsReady(true);
-        return;
-      }
-
-      isPyodideLoading = true;
+    // Check if SharedArrayBuffer is available
+    const hasSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined';
+    hasSharedArrayBufferRef.current = hasSharedArrayBuffer;
+    
+    if (!hasSharedArrayBuffer) {
+      console.warn('SharedArrayBuffer not available. Interactive input will be limited.');
+    }
+    
+    // Create the worker
+    const worker = new Worker('/pyodide.worker.js');
+    workerRef.current = worker;
+    
+    // Create shared buffers if available
+    let sharedBuffer: SharedArrayBuffer | null = null;
+    let textBuffer: SharedArrayBuffer | null = null;
+    
+    if (hasSharedArrayBuffer) {
       try {
-        // A. Inject the script tag if missing
-        if (!document.getElementById('pyodide-script')) {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js';
-          script.id = 'pyodide-script';
-          document.body.appendChild(script);
-          await new Promise((resolve) => { script.onload = resolve; });
-        }
-
-        // B. Initialize Pyodide
-        pyodideReadyPromise = window.loadPyodide({
-          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
-        });
+        sharedBuffer = new SharedArrayBuffer(8); // 2 Int32 values
+        textBuffer = new SharedArrayBuffer(TEXT_BUFFER_SIZE);
         
-        const pyodide = await pyodideReadyPromise;
-
-        // C. Setup stdin based on SharedArrayBuffer availability
-        if (hasSharedArrayBuffer) {
-          // Create shared buffers for input
-          sharedInputBuffer = new SharedArrayBuffer(4); // Signal buffer
-          const textBuffer = new SharedArrayBuffer(1024); // Text buffer
-          inputArray = new Int32Array(sharedInputBuffer);
-          inputTextArray = new Uint8Array(textBuffer);
+        sharedSignalBufferRef.current = sharedBuffer;
+        sharedTextBufferRef.current = textBuffer;
+        signalArrayRef.current = new Int32Array(sharedBuffer);
+        textArrayRef.current = new Uint8Array(textBuffer);
+      } catch (e) {
+        console.warn('Failed to create SharedArrayBuffer:', e);
+      }
+    }
+    
+    // Handle messages from worker
+    worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
+      const { type, text, message } = event.data;
+      
+      switch (type) {
+        case 'READY':
+          setIsReady(true);
+          break;
           
-          pyodide.setStdin({
-            stdin: () => {
-              // Signal that we're waiting for input
-              Atomics.store(inputArray!, 0, 0);
-              isWaitingForInputRef.current = true;
-              
-              // Wait for input (with timeout)
-              const result = Atomics.wait(inputArray!, 0, 0, 30000); // 30 second timeout
-              
-              isWaitingForInputRef.current = false;
-              
-              if (result === 'timed-out') {
-                return ""; // Timeout
-              }
-              
-              // Read the input text
-              const length = inputArray![0];
-              if (length > 0) {
-                const text = new TextDecoder().decode(inputTextArray!.slice(0, length));
-                return text;
-              }
-              return "";
-            }
-          });
-        } else {
-          // Fallback: Use prompt for browsers without SharedArrayBuffer
-          pyodide.setStdin({
-            stdin: () => {
-              const result = window.prompt("Python Input Required:");
-              return result !== null ? result : "";
-            }
-          });
-        }
-
-        // D. Setup Initial Output Redirection
-        pyodide.setStdout({ batched: (text: string) => { console.log(text); } });
-        pyodide.setStderr({ batched: (text: string) => { console.log(text); } });
-
-        pyodideInstance = pyodide;
-        setIsReady(true);
-      } catch (err) {
-        console.error("Pyodide Load Failed:", err);
-        setOutput("Error loading Python environment. Please refresh the page.");
-      } finally {
-        isPyodideLoading = false;
+        case 'OUTPUT':
+          if (text) {
+            setOutput(prev => prev + text);
+          }
+          break;
+          
+        case 'INPUT_REQUEST':
+          setIsWaitingForInput(true);
+          break;
+          
+        case 'FINISHED':
+          setIsRunning(false);
+          setIsWaitingForInput(false);
+          break;
+          
+        case 'ERROR':
+          setOutput(prev => prev + `\nError: ${message}\n`);
+          setIsRunning(false);
+          break;
       }
     };
-
-    initPyodide();
-  }, [hasSharedArrayBuffer]);
-
-  // 2. Run Code Function
-  const runCode = useCallback(async (code: string) => {
-    if (!pyodideInstance) return;
     
-    setIsRunning(true);
-    setOutput(""); // Clear the output state to trigger Terminal reset
-    inputBufferRef.current = "";
-
-    // Redirect output to THIS specific component's state
-    pyodideInstance.setStdout({ batched: (text: string) => setOutput((prev) => prev + text + "\n") });
-    pyodideInstance.setStderr({ batched: (text: string) => setOutput((prev) => prev + text + "\n") });
-
-    try {
-      // CLEANUP: Wipe variables from previous run so it feels fresh
-      await pyodideInstance.runPythonAsync("globals().clear()"); 
-      
-      // NOW RUN USER CODE
-      await pyodideInstance.runPythonAsync(code);
-    } catch (err: any) {
-      // Format Python errors nicely
-      let errorMessage = err.message;
-      
-      // Make common errors more friendly
-      if (errorMessage.includes('EOFError')) {
-        errorMessage = "EOF Error: No more input available.\n\n💡 If using SharedArrayBuffer input, make sure to press Enter after typing.";
-      } else if (errorMessage.includes('KeyboardInterrupt')) {
-        errorMessage = "Program interrupted.";
-      } else if (errorMessage.includes('ModuleNotFoundError') || errorMessage.includes('No module named')) {
-        const moduleName = errorMessage.match(/No module named '([^']+)'/)?.[1] || 'unknown';
-        errorMessage = `Module Not Found: '${moduleName}'\n\n💡 This module is not available in the browser environment. Try using standard library modules.`;
-      }
-      
-      setOutput((prev) => prev + `\nError:\n${errorMessage}`);
-    } finally {
+    worker.onerror = (error) => {
+      console.error('Worker error:', error);
+      setOutput(prev => prev + `\nWorker Error: ${error.message}\n`);
       setIsRunning(false);
-    }
+    };
+    
+    // Initialize the worker
+    worker.postMessage({
+      type: 'INIT',
+      sharedBuffer,
+      textBuffer
+    });
+    
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
   }, []);
 
-  // 3. Write input to the Python process
-  const writeInputToWorker = useCallback((text: string) => {
-    if (!hasSharedArrayBuffer || !inputArray || !inputTextArray) {
-      // Fallback mode - just accumulate input (won't work interactively)
-      inputBufferRef.current += text;
+  // Run Python code
+  const runCode = useCallback((code: string) => {
+    if (!workerRef.current || !isReady) {
+      console.warn('Worker not ready');
       return;
     }
     
-    // Handle Enter key
-    if (text === '\r' || text === '\n') {
-      const inputText = inputBufferRef.current + '\n';
-      inputBufferRef.current = "";
+    // Reset state for new run
+    setIsRunning(true);
+    setOutput(""); // Clear output
+    setIsWaitingForInput(false);
+    inputLineRef.current = "";
+    
+    // Reset the signal buffer
+    if (signalArrayRef.current) {
+      Atomics.store(signalArrayRef.current, 0, STATUS_WAITING);
+      Atomics.store(signalArrayRef.current, 1, 0);
+    }
+    
+    // Send code to worker
+    workerRef.current.postMessage({ type: 'RUN', code });
+  }, [isReady]);
+
+  // Write input character to the Python process
+  const writeInputToWorker = useCallback((char: string) => {
+    // Handle Enter key - submit the input line
+    if (char === '\r' || char === '\n') {
+      const inputText = inputLineRef.current + '\n';
+      inputLineRef.current = "";
       
-      // Write input to shared buffer
+      if (!hasSharedArrayBufferRef.current || !signalArrayRef.current || !textArrayRef.current) {
+        // Fallback: Can't provide interactive input without SharedArrayBuffer
+        console.warn('Cannot provide interactive input: SharedArrayBuffer not available');
+        return;
+      }
+      
+      // Write the input text to the shared buffer
       const encoded = new TextEncoder().encode(inputText);
-      inputTextArray.set(encoded.slice(0, 1023)); // Max 1KB input
+      const length = Math.min(encoded.length, TEXT_BUFFER_SIZE - 1);
+      textArrayRef.current.set(encoded.slice(0, length));
       
       // Signal that input is ready
-      Atomics.store(inputArray, 0, encoded.length);
-      Atomics.notify(inputArray, 0, 1);
-    } else if (text === '\x7f' || text === '\b') {
-      // Backspace
-      inputBufferRef.current = inputBufferRef.current.slice(0, -1);
-    } else {
-      // Regular character
-      inputBufferRef.current += text;
+      Atomics.store(signalArrayRef.current, 1, length); // Store length
+      Atomics.store(signalArrayRef.current, 0, STATUS_INPUT_READY); // Set status
+      Atomics.notify(signalArrayRef.current, 0, 1); // Wake the worker
+      
+      setIsWaitingForInput(false);
+    } 
+    // Handle Backspace
+    else if (char === '\x7f' || char === '\b') {
+      inputLineRef.current = inputLineRef.current.slice(0, -1);
     }
-  }, [hasSharedArrayBuffer]);
+    // Handle Ctrl+C (interrupt)
+    else if (char === '\x03') {
+      if (signalArrayRef.current) {
+        Atomics.store(signalArrayRef.current, 0, STATUS_INTERRUPT);
+        Atomics.notify(signalArrayRef.current, 0, 1);
+      }
+      workerRef.current?.postMessage({ type: 'INTERRUPT' });
+      inputLineRef.current = "";
+    }
+    // Regular character
+    else {
+      inputLineRef.current += char;
+    }
+  }, []);
 
-  return { runCode, output, isRunning, isReady, writeInputToWorker };
+  // Stop execution
+  const stopExecution = useCallback(() => {
+    if (signalArrayRef.current) {
+      Atomics.store(signalArrayRef.current, 0, STATUS_INTERRUPT);
+      Atomics.notify(signalArrayRef.current, 0, 1);
+    }
+    workerRef.current?.postMessage({ type: 'INTERRUPT' });
+    setIsRunning(false);
+    setIsWaitingForInput(false);
+  }, []);
+
+  return { 
+    runCode, 
+    output, 
+    isRunning, 
+    isReady, 
+    isWaitingForInput,
+    writeInputToWorker,
+    stopExecution,
+    hasSharedArrayBuffer: hasSharedArrayBufferRef.current
+  };
 };

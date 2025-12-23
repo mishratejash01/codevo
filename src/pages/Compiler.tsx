@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { CodeEditor } from '@/components/CodeEditor';
 import { useCodeRunner, Language } from '@/hooks/useCodeRunner';
 import { usePyodide } from '@/hooks/usePyodide';
 import { TerminalView } from '@/components/TerminalView';
-import { Loader2, Play, RefreshCw, Code2, Home, Terminal as TerminalIcon, Download, Keyboard, Lock, AlertTriangle } from 'lucide-react';
+import { Loader2, Play, RefreshCw, Code2, Home, Terminal as TerminalIcon, Download, Keyboard, Lock, AlertTriangle, Square, Clock, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
@@ -160,8 +160,8 @@ for i in {1..3}; do
     echo "Count: $i"
 done`;
     default: 
-      return `# Python 3
-# The terminal below is interactive - just run and type!
+      return `# Python 3 - Interactive Terminal
+# Type your input directly below when prompted!
 
 name = input("Enter your name: ")
 age = int(input("Enter your age: "))
@@ -207,6 +207,13 @@ const detectsInput = (code: string, language: Language): boolean => {
   }
 };
 
+// Format execution time
+const formatTime = (ms: number): string => {
+  if (ms < 1000) return `${ms}ms`;
+  const seconds = (ms / 1000).toFixed(1);
+  return `${seconds}s`;
+};
+
 const Compiler = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -225,18 +232,24 @@ const Compiler = () => {
   const [output, setOutput] = useState<string>('// Output will appear here...');
   const [activeTab, setActiveTab] = useState("output");
   const [isError, setIsError] = useState(false);
-  const [isOutputExpanded, setIsOutputExpanded] = useState(true);
+  const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const executionStartRef = useRef<number | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const { executeCode, loading: pistonLoading } = useCodeRunner();
   const { 
-      runCode: runPython, 
-      output: pythonOutput, 
-      isRunning: pythonRunning, 
-      isReady: pythonReady, 
-      writeInputToWorker 
+    runCode: runPython, 
+    output: pythonOutput, 
+    isRunning: pythonRunning, 
+    isReady: pythonReady,
+    isWaitingForInput,
+    writeInputToWorker,
+    stopExecution,
+    hasSharedArrayBuffer
   } = usePyodide();
 
   const isLoading = pistonLoading || pythonRunning || (activeLanguage === 'python' && !pythonReady);
+  const isExecuting = pistonLoading || pythonRunning;
   
   // Detect if code needs input and show warning
   const codeNeedsInput = useMemo(() => {
@@ -245,6 +258,30 @@ const Compiler = () => {
   }, [code, activeLanguage]);
   
   const inputIsEmpty = inputData.trim() === '';
+
+  // Execution timer
+  useEffect(() => {
+    if (isExecuting && executionStartRef.current === null) {
+      executionStartRef.current = Date.now();
+      timerIntervalRef.current = setInterval(() => {
+        if (executionStartRef.current) {
+          setExecutionTime(Date.now() - executionStartRef.current);
+        }
+      }, 100);
+    } else if (!isExecuting && executionStartRef.current !== null) {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      executionStartRef.current = null;
+    }
+    
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, [isExecuting]);
 
   useEffect(() => {
     const fetchLanguages = async () => {
@@ -281,6 +318,16 @@ const Compiler = () => {
     setCode(getStarterTemplate(newLang));
     setOutput('// Language changed. Output cleared.');
     setIsError(false);
+    setExecutionTime(null);
+  };
+
+  const handleReset = () => {
+    setCode(getStarterTemplate(activeLanguage));
+    setOutput('// Code reset to template.');
+    setInputData('');
+    setIsError(false);
+    setExecutionTime(null);
+    toast({ title: "Reset", description: "Code reset to starter template.", duration: 2000 });
   };
 
   const handleRun = async () => {
@@ -291,24 +338,37 @@ const Compiler = () => {
         return;
     }
 
+    setExecutionTime(null);
+    executionStartRef.current = Date.now();
+
     if (activeLanguage === 'python') {
-        runPython(code);
+      runPython(code);
     } else {
-        setActiveTab("output"); 
-        setOutput(""); 
-        setIsError(false); 
-        
-        const result = await executeCode(activeLanguage, code, inputData);
-        
-        if (!result.success) setIsError(true);
-        setOutput(result.output || result.error || "Unknown Error");
+      setActiveTab("output"); 
+      setOutput(""); 
+      setIsError(false); 
+      
+      const result = await executeCode(activeLanguage, code, inputData);
+      
+      if (!result.success) setIsError(true);
+      setOutput(result.output || result.error || "Unknown Error");
+      
+      // Set final execution time
+      if (executionStartRef.current) {
+        setExecutionTime(Date.now() - executionStartRef.current);
+      }
     }
-    
-    setIsOutputExpanded(true);
+  };
+
+  const handleStop = () => {
+    if (activeLanguage === 'python') {
+      stopExecution();
+      toast({ title: "Stopped", description: "Program execution interrupted.", duration: 2000 });
+    }
   };
 
   const handleDownload = () => {
-      try {
+    try {
       const filename = getFileName(activeLanguage);
       const blob = new Blob([code], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -342,6 +402,16 @@ const Compiler = () => {
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
+          {/* Execution Timer */}
+          {(isExecuting || executionTime !== null) && (
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-white/5 border border-white/10">
+              <Clock className="w-3 h-3 text-muted-foreground" />
+              <span className="text-[10px] md:text-xs font-mono text-muted-foreground">
+                {isExecuting ? formatTime(executionTime || 0) : executionTime !== null ? formatTime(executionTime) : ''}
+              </span>
+            </div>
+          )}
+
           <Select value={activeLanguage} onValueChange={handleLanguageChange}>
             <SelectTrigger className="h-8 md:h-9 w-[100px] md:w-[140px] bg-white/5 border-white/10 text-[10px] md:text-xs font-medium">
               <div className="flex items-center gap-1.5 md:gap-2">
@@ -365,31 +435,57 @@ const Compiler = () => {
               ))}
             </SelectContent>
           </Select>
+
+          {/* Reset Button */}
+          <Button 
+            onClick={handleReset} 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 md:h-9 md:w-9 text-muted-foreground hover:text-white hover:bg-white/10"
+            title="Reset to template"
+          >
+            <RotateCcw className="w-3.5 md:w-4 h-3.5 md:h-4" />
+          </Button>
           
           <Button onClick={handleDownload} variant="outline" size="sm" className="h-8 md:h-9 border-white/10 bg-white/5 hover:bg-white/10 text-white px-2 md:px-3">
             <Download className="w-3.5 md:w-4 h-3.5 md:h-4" />
             <span className="hidden md:inline ml-2">Save</span>
           </Button>
 
+          {/* Stop Button - Only show when running Python */}
+          {pythonRunning && activeLanguage === 'python' && (
+            <Button 
+              onClick={handleStop}
+              size="sm" 
+              className="h-8 md:h-9 px-3 md:px-4 font-bold text-white bg-red-600 hover:bg-red-500 text-xs md:text-sm"
+            >
+              <Square className="w-3 md:w-3.5 h-3 md:h-3.5 mr-1.5 fill-current" />
+              Stop
+            </Button>
+          )}
+
+          {/* Run Button */}
           <Button 
             onClick={handleRun} 
             disabled={isLoading || lockedLanguages[activeLanguage]} 
             size="sm" 
             className={cn(
-                "h-8 md:h-9 px-3 md:px-6 font-bold text-white transition-all text-xs md:text-sm",
-                isLoading || lockedLanguages[activeLanguage] ? "bg-red-600 hover:bg-red-500" : "bg-green-600 hover:bg-green-500 shadow-[0_0_15px_rgba(22,163,74,0.4)]"
+              "h-8 md:h-9 px-3 md:px-6 font-bold text-white transition-all text-xs md:text-sm",
+              isLoading || lockedLanguages[activeLanguage] 
+                ? "bg-amber-600 hover:bg-amber-500" 
+                : "bg-green-600 hover:bg-green-500 shadow-[0_0_15px_rgba(22,163,74,0.4)]"
             )}
           >
             {isLoading ? (
-                <>
-                  <Loader2 className="w-3.5 md:w-4 h-3.5 md:h-4 mr-1.5 md:mr-2 animate-spin"/> 
-                  <span className="hidden sm:inline">{!pythonReady && activeLanguage === 'python' ? "Booting..." : "Running..."}</span>
-                  <span className="sm:hidden">...</span>
-                </>
+              <>
+                <Loader2 className="w-3.5 md:w-4 h-3.5 md:h-4 mr-1.5 md:mr-2 animate-spin"/> 
+                <span className="hidden sm:inline">{!pythonReady && activeLanguage === 'python' ? "Loading..." : "Running..."}</span>
+                <span className="sm:hidden">...</span>
+              </>
             ) : lockedLanguages[activeLanguage] ? (
-                <><Lock className="w-3.5 md:w-4 h-3.5 md:h-4 mr-1.5 md:mr-2"/> <span className="hidden sm:inline">Locked</span></>
+              <><Lock className="w-3.5 md:w-4 h-3.5 md:h-4 mr-1.5 md:mr-2"/> <span className="hidden sm:inline">Locked</span></>
             ) : (
-                <><Play className="w-3.5 md:w-4 h-3.5 md:h-4 mr-1.5 md:mr-2 fill-current"/> Run</>
+              <><Play className="w-3.5 md:w-4 h-3.5 md:h-4 mr-1.5 md:mr-2 fill-current"/> Run</>
             )}
           </Button>
         </div>
@@ -415,15 +511,39 @@ const Compiler = () => {
                   <div className="flex items-center gap-2 text-[10px] md:text-xs font-bold text-muted-foreground uppercase tracking-wider">
                     <TerminalIcon className="w-3 h-3" /> Interactive Terminal
                   </div>
-                  {pythonRunning && (
-                    <div className="flex items-center gap-2">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  <div className="flex items-center gap-3">
+                    {/* SharedArrayBuffer status */}
+                    {!hasSharedArrayBuffer && (
+                      <span className="text-[8px] md:text-[10px] text-amber-400 font-mono" title="Interactive input requires SharedArrayBuffer">
+                        Limited Mode
                       </span>
-                      <span className="text-[8px] md:text-[10px] text-green-400 font-mono">ACTIVE</span>
-                    </div>
-                  )}
+                    )}
+                    {pythonRunning && (
+                      <div className="flex items-center gap-2">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        <span className="text-[8px] md:text-[10px] text-green-400 font-mono">
+                          {isWaitingForInput ? 'WAITING FOR INPUT' : 'RUNNING'}
+                        </span>
+                      </div>
+                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 text-muted-foreground hover:text-white" 
+                      onClick={() => {
+                        // Clear terminal by triggering a reset
+                        if (!pythonRunning) {
+                          runPython(''); // Empty run to clear
+                        }
+                      }}
+                      title="Clear terminal"
+                    >
+                      <RefreshCw className="w-3 h-3"/>
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="flex-1 relative">
@@ -431,13 +551,15 @@ const Compiler = () => {
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-xs md:text-sm font-mono">
                       <div className="flex flex-col items-center gap-3 p-4 text-center">
                         <Loader2 className="w-6 md:w-8 h-6 md:h-8 animate-spin text-purple-500" />
-                        <span className="text-[10px] md:text-xs">Initializing Python...</span>
+                        <span className="text-[10px] md:text-xs">Loading Python Environment...</span>
+                        <span className="text-[8px] md:text-[10px] text-muted-foreground">First load may take 5-10 seconds</span>
                       </div>
                     </div>
                   ) : (
                     <TerminalView 
                       output={pythonOutput} 
-                      onInput={writeInputToWorker} 
+                      onInput={writeInputToWorker}
+                      isWaitingForInput={isWaitingForInput}
                     />
                   )}
                 </div>
