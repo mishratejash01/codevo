@@ -143,7 +143,7 @@ export function InviteeRegistrationForm({
         const { error: inviteError } = await supabase
           .from('team_invitations')
           .update({
-            status: 'accepted',
+            status: 'completed',
             responded_at: new Date().toISOString(),
           })
           .eq('id', invitation.id);
