@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 3000,
+    port: 8080,
     // Explicitly disable strict isolation to allow external images
     headers: {
       "Cross-Origin-Embedder-Policy": "unsafe-none",

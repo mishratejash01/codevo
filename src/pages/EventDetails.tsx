@@ -85,6 +85,15 @@ export default function EventDetails() {
   };
 
   const handleRegisterClick = () => {
+    // Block registration if user has pending/accepted invitation
+    if (hasPendingInvitation) {
+      toast.info("You have a pending team invitation. Please respond to it first.");
+      return;
+    }
+    if (hasAcceptedInvitation) {
+      toast.info("Please complete your team registration below.");
+      return;
+    }
     if (isRegistered) {
       toast.info("You're already registered for this event!");
       return;
@@ -180,6 +189,9 @@ export default function EventDetails() {
           <InviteeRegistrationForm
             eventId={event.id}
             eventTitle={event.title}
+            isPaid={event.is_paid}
+            registrationFee={event.registration_fee}
+            currency={event.currency}
             invitation={{
               id: invitation.id,
               team_name: invitation.team_name,
