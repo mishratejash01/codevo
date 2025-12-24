@@ -8,8 +8,6 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
-  SheetTitle,
-  SheetDescription
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -21,7 +19,6 @@ import {
   MapPin, 
   Check, 
   Loader2,
-  MessageSquareText, 
   Copy, 
   LayoutTemplate, 
   X, 
@@ -30,18 +27,14 @@ import {
   ChevronRight, 
   User, 
   Save, 
-  AlertCircle, 
   Calendar, 
   Ticket, 
   Users,
-  Code2,
   GraduationCap,
   Sparkles,
   Terminal,
   Shield,
   Zap,
-  ExternalLink,
-  Cpu,
   Activity
 } from "lucide-react";
 import { toast } from "sonner";
@@ -216,12 +209,6 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
     navigator.clipboard.writeText(`${window.location.origin}/u/${profile.username}`);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  const getLinkedInUsername = (url?: string) => {
-    if (!url) return null;
-    const match = url.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/);
-    return match ? match[1] : null;
   };
 
   return (
@@ -452,71 +439,99 @@ const Profile = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [usernameError, setUsernameError] = useState<string | null>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
 
   // --- DATA FETCHING ---
   useEffect(() => {
+    let isMounted = true;
+
     const init = async () => {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getSession().then(res => res.data);
-      
-      if (!username) {
-        // --- EDIT MODE (My Profile) ---
-        if (!user) { navigate("/auth"); return; }
+      try {
+        setLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
         
-        const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-        
-        const def: ProfileData = {
-            id: user.id,
-            username: data?.username || "", 
-            full_name: data?.full_name || user.user_metadata?.full_name || "Agent",
-            institute_name: data?.institute_name || "",
-            degree: data?.degree || "",
-            branch: data?.branch || "",
-            start_year: data?.start_year || new Date().getFullYear(),
-            end_year: data?.end_year || new Date().getFullYear() + 4,
-            country: data?.country || "",
-            github_handle: data?.github_handle || "",
-            linkedin_url: data?.linkedin_url || "",
-            portfolio_url: data?.portfolio_url || "",
-            bio: data?.bio || "",
-            avatar_url: data?.avatar_url || user.user_metadata?.avatar_url || "",
-            contact_no: data?.contact_no || "",
-            cover_url: data?.cover_url || ""
-        };
-        
-        setProfile(def); 
-        setOriginalProfile(def); 
-        setIsOwner(true);
-        
-        // Fetch Events
-        const { data: regs } = await supabase.from('event_registrations')
-          .select(`*, event:events(*)`)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+        if (!username) {
+          // --- EDIT MODE (My Profile) ---
+          if (!user) { 
+            if (isMounted) navigate("/auth"); 
+            return; 
+          }
           
-        if (regs) setRegistrations(regs as any);
-        setLoading(false);
-      } else {
-        // --- PUBLIC MODE (View Profile) ---
-        const { data, error } = await supabase.from("profiles").select("*").eq("username", username).maybeSingle();
-        
-        if (error || !data) { 
-          toast.error("User Identity Not Found"); 
-          navigate("/"); 
-          return; 
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (profileError) throw profileError;
+          
+          const def: ProfileData = {
+              id: user.id,
+              username: profileData?.username || "", 
+              full_name: profileData?.full_name || user.user_metadata?.full_name || "Agent",
+              institute_name: profileData?.institute_name || "",
+              degree: profileData?.degree || "",
+              branch: profileData?.branch || "",
+              start_year: profileData?.start_year || new Date().getFullYear(),
+              end_year: profileData?.end_year || new Date().getFullYear() + 4,
+              country: profileData?.country || "",
+              github_handle: profileData?.github_handle || "",
+              linkedin_url: profileData?.linkedin_url || "",
+              portfolio_url: profileData?.portfolio_url || "",
+              bio: profileData?.bio || "",
+              avatar_url: profileData?.avatar_url || user.user_metadata?.avatar_url || "",
+              contact_no: profileData?.contact_no || "",
+              cover_url: profileData?.cover_url || ""
+          };
+          
+          if (isMounted) {
+            setProfile(def); 
+            setOriginalProfile(def); 
+            setIsOwner(true);
+          }
+          
+          // Fetch Events
+          const { data: regs } = await supabase.from('event_registrations')
+            .select(`*, event:events(*)`)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+            
+          if (isMounted && regs) setRegistrations(regs as any);
+
+        } else {
+          // --- PUBLIC MODE (View Profile) ---
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("username", username)
+            .maybeSingle();
+          
+          if (error) throw error;
+          if (!data) { 
+            toast.error("User Identity Not Found"); 
+            if (isMounted) navigate("/"); 
+            return; 
+          }
+          
+          if (isMounted) {
+            setProfile(data as ProfileData);
+            if (user && data.id === user.id) { 
+              setIsOwner(true); 
+              setOriginalProfile(data as ProfileData); 
+            }
+          }
         }
-        
-        setProfile(data as ProfileData);
-        if (user && data.id === user.id) { 
-          setIsOwner(true); 
-          setOriginalProfile(data as ProfileData); 
-        }
-        setLoading(false);
+      } catch (error: any) {
+        console.error("Profile load error:", error);
+        toast.error("Failed to load profile data.");
+      } finally {
+        if (isMounted) setLoading(false);
       }
     };
+
     init();
+
+    return () => { isMounted = false; };
   }, [username, navigate]);
 
   // --- SAVE HANDLER ---
@@ -555,7 +570,12 @@ const Profile = () => {
     </div>
   );
   
-  if (!profile) return null;
+  if (!profile) return (
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
+      <h2 className="text-xl font-bold">Profile Not Found</h2>
+      <Button variant="link" onClick={() => navigate("/")} className="text-cyan-500 mt-4">Return Home</Button>
+    </div>
+  );
 
   // ----------------------------------------------------------------------
   // 6. PUBLIC VIEW RENDER (Marketing Page)
