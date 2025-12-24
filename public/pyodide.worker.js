@@ -2,7 +2,7 @@
  * Pyodide Web Worker with SharedArrayBuffer for Interactive Input
  * * This worker runs Python code in isolation and handles interactive input()
  * by blocking with Atomics.wait() until the main thread provides input.
- * * KEY FIX: Uses 'micropip' to install libraries (both PyPI and Pyodide standard libs).
+ * * KEY FIX: Robust regexes to catch "The module 'numpy' is included" errors.
  */
 
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
@@ -31,18 +31,24 @@ for name in list(globals().keys()):
 function extractMissingModuleName(message) {
   const msg = String(message || "");
 
+  // List of patterns to detect missing modules.
+  // We use \s+ to handle any number of spaces/tabs/newlines.
   const patterns = [
-    // Standard Python error: "No module named 'numpy'"
-    /No module named ['"]([^'"]+)['"]/,
-    // Standard Python error (variant): "No module named numpy"
-    /No module named\s+([A-Za-z0-9_\.]+)/,
-    // Pyodide specific error: "The module 'numpy' is included in the Pyodide distribution..."
-    /The module ['"]([^'"]+)['"] is included/
+    // 1. Pyodide Standard Lib Error: "The module 'numpy' is included in the Pyodide distribution..."
+    /The module\s+['"]([^'"]+)['"]\s+is included/,
+    
+    // 2. Standard Python Error: "No module named 'xyz'"
+    /No module named\s+['"]([^'"]+)['"]/,
+    
+    // 3. Standard Python Error (no quotes): "No module named xyz"
+    /No module named\s+([\w\.]+)/
   ];
 
   for (const pattern of patterns) {
     const match = msg.match(pattern);
-    if (match?.[1]) return match[1];
+    if (match && match[1]) {
+      return match[1];
+    }
   }
 
   return null;
@@ -54,7 +60,7 @@ async function initPyodide() {
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
     });
     
-    // --- NEW: Load Micropip immediately ---
+    // --- Load Micropip immediately ---
     await pyodide.loadPackage("micropip");
     micropip = pyodide.pyimport("micropip");
 
@@ -155,7 +161,7 @@ self.onmessage = async (event) => {
         try {
           self.postMessage({ type: 'OUTPUT', text: `\n📦 Installing '${pkg}' via micropip...\n` });
           
-          // Micropip is smart: it checks PyPI AND Pyodide's internal repo
+          // Micropip handles both PyPI and Pyodide standard libs
           await micropip.install(pkg);
           
           packageLoaded = true;
