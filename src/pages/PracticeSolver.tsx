@@ -13,7 +13,7 @@ import { CodeEditor } from '@/components/CodeEditor';
 import { 
   Play, Send, ChevronLeft, Loader2, Bug, Terminal, FileCode2, Timer, 
   Home, RefreshCw, CheckCircle2, BookOpen, MessageSquare, History, 
-  Beaker, Sparkles, Zap, Cpu, Settings, Maximize2, Minimize2 
+  Beaker, Sparkles, Zap, Maximize2, Minimize2, ChevronRight, Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,12 @@ import { PerformanceChart } from '@/components/practice/PerformanceChart';
 import { CustomTestSandbox } from '@/components/practice/CustomTestSandbox';
 import { wrapCodeForExecution, Language as WrapperLanguage } from '@/utils/codeWrappers';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Helper to safely display input/output
+const formatValue = (val: any) => {
+  if (typeof val === 'object' && val !== null) return JSON.stringify(val);
+  return String(val);
+};
 
 export default function PracticeSolver() {
   const { slug } = useParams();
@@ -109,7 +115,7 @@ export default function PracticeSolver() {
   };
 
   const prepareCode = (userCode: string, input: any) => {
-    const rawInput = String(input || '');
+    const rawInput = formatValue(input || '');
     return wrapCodeForExecution(
       activeLanguage as WrapperLanguage,
       userCode,
@@ -238,7 +244,6 @@ export default function PracticeSolver() {
 
   const isJudging = judgingPhase.status !== 'idle' && judgingPhase.status !== 'complete';
 
-  // --- Styles & Animation Variants ---
   const DifficultyColor = {
     'Easy': 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
     'Medium': 'text-amber-400 bg-amber-500/10 border-amber-500/20',
@@ -356,9 +361,6 @@ export default function PracticeSolver() {
                       className="relative h-8 rounded-md px-3 text-[11px] font-bold uppercase tracking-wider text-zinc-500 data-[state=active]:text-white data-[state=active]:bg-white/5 transition-all hover:text-zinc-300"
                     >
                       <tab.icon className="w-3.5 h-3.5 mr-2" /> {tab.label}
-                      {tab.value === descriptionTab && (
-                        <motion.div layoutId="active-tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
-                      )}
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -366,101 +368,90 @@ export default function PracticeSolver() {
 
               {/* Tab Contents */}
               <div className="flex-1 relative bg-[#08080a] overflow-hidden">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={descriptionTab}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="h-full"
-                  >
-                    <TabsContent value="description" className="h-full m-0 data-[state=active]:flex flex-col">
-                      <ScrollArea className="flex-1">
-                        <div className="p-6 pb-24 max-w-3xl mx-auto">
-                          {/* Problem Title Block */}
-                          <div className="mb-6 pb-6 border-b border-white/5">
-                            <h2 className="text-2xl font-bold text-white mb-3">{problem.title}</h2>
-                            <div className="flex flex-wrap gap-2">
-                               {problem.tags?.map((tag:string) => (
-                                 <Badge key={tag} variant="secondary" className="bg-white/5 text-zinc-400 hover:text-white border-white/5 text-[10px] uppercase tracking-wider">
-                                   #{tag}
-                                 </Badge>
-                               ))}
-                            </div>
-                          </div>
+                <TabsContent value="description" className="h-full m-0 data-[state=active]:flex flex-col">
+                  <ScrollArea className="flex-1">
+                    <div className="p-6 pb-24 max-w-3xl mx-auto">
+                      {/* Problem Title Block */}
+                      <div className="mb-6 pb-6 border-b border-white/5">
+                        <h2 className="text-2xl font-bold text-white mb-3">{problem.title}</h2>
+                        <div className="flex flex-wrap gap-2">
+                           {problem.tags?.map((tag:string) => (
+                             <Badge key={tag} variant="secondary" className="bg-white/5 text-zinc-400 hover:text-white border-white/5 text-[10px] uppercase tracking-wider">
+                               #{tag}
+                             </Badge>
+                           ))}
+                        </div>
+                      </div>
 
-                          {/* Description Text */}
-                          <div className="prose prose-invert prose-sm max-w-none text-zinc-300 leading-7 font-sans">
-                            <p className="whitespace-pre-wrap">{problem.description}</p>
-                          </div>
+                      {/* Description Text */}
+                      <div className="prose prose-invert prose-sm max-w-none text-zinc-300 leading-7 font-sans">
+                        <p className="whitespace-pre-wrap">{problem.description}</p>
+                      </div>
 
-                          {/* Examples */}
-                          {testCases.length > 0 && (
-                            <div className="space-y-4 mt-8">
-                              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                                <Sparkles className="w-3 h-3 text-yellow-500" /> Simulation Data
-                              </h3>
-                              {testCases.filter((t: any) => t.is_public).map((t: any, i: number) => (
-                                <div key={i} className="bg-[#0c0c0e] border border-white/5 rounded-xl overflow-hidden shadow-sm">
-                                  <div className="px-3 py-2 bg-white/5 border-b border-white/5 flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Scenario {i + 1}</span>
-                                    <div className="flex gap-1">
-                                       <div className="w-2 h-2 rounded-full bg-red-500/20" />
-                                       <div className="w-2 h-2 rounded-full bg-yellow-500/20" />
-                                       <div className="w-2 h-2 rounded-full bg-green-500/20" />
-                                    </div>
-                                  </div>
-                                  <div className="p-4 space-y-3 font-mono text-xs">
-                                    <div className="space-y-1">
-                                      <span className="text-zinc-500 text-[10px] uppercase font-bold">Input Stream</span>
-                                      <div className="bg-[#050505] p-2 rounded border border-white/5 text-blue-300">{String(t.input)}</div>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <span className="text-zinc-500 text-[10px] uppercase font-bold">Expected Output</span>
-                                      <div className="bg-[#050505] p-2 rounded border border-white/5 text-emerald-300">{t.output}</div>
-                                    </div>
-                                  </div>
+                      {/* Examples */}
+                      {testCases.length > 0 && (
+                        <div className="space-y-4 mt-8">
+                          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                            <Sparkles className="w-3 h-3 text-yellow-500" /> Simulation Data
+                          </h3>
+                          {testCases.filter((t: any) => t.is_public).map((t: any, i: number) => (
+                            <div key={i} className="bg-[#0c0c0e] border border-white/5 rounded-xl overflow-hidden shadow-sm">
+                              <div className="px-3 py-2 bg-white/5 border-b border-white/5 flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Scenario {i + 1}</span>
+                                <div className="flex gap-1">
+                                   <div className="w-2 h-2 rounded-full bg-red-500/20" />
+                                   <div className="w-2 h-2 rounded-full bg-yellow-500/20" />
+                                   <div className="w-2 h-2 rounded-full bg-green-500/20" />
                                 </div>
-                              ))}
-                            </div>
-                          )}
-
-                          <div className="mt-8 space-y-4">
-                             <HintsAccordion hints={hints} hasAttempted={!!hasAttempted} />
-                             <ProblemNotes problemId={problem.id} userId={userId} />
-                          </div>
-                        </div>
-                      </ScrollArea>
-                    </TabsContent>
-
-                    <TabsContent value="editorial" className="h-full m-0">
-                      <ScrollArea className="h-full">
-                        <div className="p-6">
-                          {problem.editorial ? (
-                            <div className="prose prose-invert prose-sm max-w-none"><p className="whitespace-pre-wrap">{problem.editorial}</p></div>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center h-[400px] text-zinc-600">
-                              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-                                <BookOpen className="w-8 h-8 opacity-50" />
                               </div>
-                              <p className="text-sm font-bold uppercase tracking-widest">Classified Information</p>
-                              <p className="text-xs mt-2">Editorial content is currently unavailable.</p>
+                              <div className="p-4 space-y-3 font-mono text-xs">
+                                <div className="space-y-1">
+                                  <span className="text-zinc-500 text-[10px] uppercase font-bold">Input Stream</span>
+                                  <div className="bg-[#050505] p-2 rounded border border-white/5 text-blue-300">{formatValue(t.input)}</div>
+                                </div>
+                                <div className="space-y-1">
+                                  <span className="text-zinc-500 text-[10px] uppercase font-bold">Expected Output</span>
+                                  <div className="bg-[#050505] p-2 rounded border border-white/5 text-emerald-300">{formatValue(t.output)}</div>
+                                </div>
+                              </div>
                             </div>
-                          )}
+                          ))}
                         </div>
-                      </ScrollArea>
-                    </TabsContent>
+                      )}
 
-                    <TabsContent value="submissions" className="h-full m-0">
-                      <SubmissionHistory problemId={problem.id} userId={userId} onSelectSubmission={handleSelectSubmission} />
-                    </TabsContent>
+                      <div className="mt-8 space-y-4">
+                         <HintsAccordion hints={hints} hasAttempted={!!hasAttempted} />
+                         <ProblemNotes problemId={problem.id} userId={userId} />
+                      </div>
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
 
-                    <TabsContent value="discussion" className="h-full m-0">
-                      <DiscussionTab problemId={problem.id} userId={userId} />
-                    </TabsContent>
-                  </motion.div>
-                </AnimatePresence>
+                <TabsContent value="editorial" className="h-full m-0">
+                  <ScrollArea className="h-full">
+                    <div className="p-6">
+                      {problem.editorial ? (
+                        <div className="prose prose-invert prose-sm max-w-none"><p className="whitespace-pre-wrap">{problem.editorial}</p></div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-[400px] text-zinc-600">
+                          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                            <BookOpen className="w-8 h-8 opacity-50" />
+                          </div>
+                          <p className="text-sm font-bold uppercase tracking-widest">Classified Information</p>
+                          <p className="text-xs mt-2">Editorial content is currently unavailable.</p>
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                <TabsContent value="submissions" className="h-full m-0">
+                  <SubmissionHistory problemId={problem.id} userId={userId} onSelectSubmission={handleSelectSubmission} />
+                </TabsContent>
+
+                <TabsContent value="discussion" className="h-full m-0">
+                  <DiscussionTab problemId={problem.id} userId={userId} />
+                </TabsContent>
               </div>
 
               {/* Success/Verdict Overlay (Bottom of Left Panel) */}
@@ -583,7 +574,7 @@ export default function PracticeSolver() {
                              <ChevronRight className="w-3 h-3" /> Input Stream
                           </label>
                           <div className="w-full bg-[#0c0c0e] p-4 rounded-lg border border-white/5 text-zinc-300 shadow-inner">
-                             {testCases[activeTestCaseId]?.input}
+                             {formatValue(testCases[activeTestCaseId]?.input)}
                           </div>
                         </div>
                         {testCases[activeTestCaseId]?.output && (
@@ -592,7 +583,7 @@ export default function PracticeSolver() {
                                <ChevronRight className="w-3 h-3" /> Expected Output
                             </label>
                             <div className="w-full bg-[#0c0c0e] p-4 rounded-lg border border-white/5 text-zinc-500 shadow-inner">
-                               {testCases[activeTestCaseId]?.output}
+                               {formatValue(testCases[activeTestCaseId]?.output)}
                             </div>
                           </div>
                         )}
@@ -601,7 +592,7 @@ export default function PracticeSolver() {
                     
                     <TabsContent value="custom" className="mt-0 h-full relative z-10">
                       <CustomTestSandbox
-                        defaultInput={testCases[0]?.input ? String(testCases[0].input) : ''}
+                        defaultInput={testCases[0]?.input ? formatValue(testCases[0].input) : ''}
                         onRunCustomTest={handleRunCustomTest}
                         isRunning={judgingPhase.status === 'running'}
                       />
@@ -614,7 +605,7 @@ export default function PracticeSolver() {
                         </div>
                       ) : !executionResult ? (
                         <div className="flex flex-col items-center justify-center h-full text-zinc-700 space-y-4">
-                          <Cpu className="w-12 h-12 opacity-20" />
+                          <Zap className="w-12 h-12 opacity-20" />
                           <div className="text-center">
                             <p className="text-sm font-bold uppercase tracking-widest text-zinc-600">Awaiting Compilation</p>
                             <p className="text-[10px] text-zinc-700 mt-1">Initiate run sequence to view output logs.</p>
