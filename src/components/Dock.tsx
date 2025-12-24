@@ -10,17 +10,25 @@ import {
   AnimatePresence
 } from 'framer-motion';
 import React, { Children, cloneElement, useEffect, useRef, useState } from 'react';
+import { 
+  Home, 
+  Code2, 
+  Calendar, // For Events
+  User,     // For Profile
+  LayoutDashboard 
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './Dock.css';
 
 export type DockItemData = {
   icon: React.ReactNode;
   label: React.ReactNode;
-  onClick?: () => void; // Made optional
+  onClick?: () => void;
   className?: string;
 };
 
 export type DockProps = {
-  items: DockItemData[];
+  items?: DockItemData[]; // Made optional so we can provide defaults
   className?: string;
   distance?: number;
   baseItemSize?: number;
@@ -90,13 +98,7 @@ function DockItem({
   );
 }
 
-type DockLabelProps = {
-  className?: string;
-  children: React.ReactNode;
-  isHovered?: MotionValue<number>;
-};
-
-function DockLabel({ children, className = '', isHovered }: DockLabelProps) {
+function DockLabel({ children, className = '', isHovered }: { children: React.ReactNode; className?: string; isHovered?: MotionValue<number> }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -112,7 +114,7 @@ function DockLabel({ children, className = '', isHovered }: DockLabelProps) {
       {isVisible && (
         <motion.div
           initial={{ opacity: 0, y: 10, x: "-50%" }}
-          animate={{ opacity: 1, y: -10, x: "-50%" }} // Moves up slightly when visible
+          animate={{ opacity: 1, y: -10, x: "-50%" }}
           exit={{ opacity: 0, y: 5, x: "-50%" }}
           transition={{ duration: 0.2 }}
           className={`dock-label ${className}`}
@@ -125,12 +127,7 @@ function DockLabel({ children, className = '', isHovered }: DockLabelProps) {
   );
 }
 
-type DockIconProps = {
-  className?: string;
-  children: React.ReactNode;
-};
-
-function DockIcon({ children, className = '' }: DockIconProps) {
+function DockIcon({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return <div className={`dock-icon ${className}`}>{children}</div>;
 }
 
@@ -143,6 +140,36 @@ export default function Dock({
   baseItemSize = 50
 }: DockProps) {
   const mouseX = useMotionValue(Infinity);
+  const navigate = useNavigate();
+
+  // If no items are passed, we use the updated default list requested
+  const displayItems = items || [
+    {
+      icon: <Home className="h-full w-full" />,
+      label: "Home",
+      onClick: () => navigate('/'),
+    },
+    {
+      icon: <Code2 className="h-full w-full" />,
+      label: "Practice",
+      onClick: () => navigate('/practice-arena'),
+    },
+    {
+      icon: <Calendar className="h-full w-full" />,
+      label: "Events", // Replaced Compiler
+      onClick: () => navigate('/events'),
+    },
+    {
+      icon: <User className="h-full w-full" />,
+      label: "Profile", // Replaced Ranking
+      onClick: () => navigate('/profile'),
+    },
+    {
+      icon: <LayoutDashboard className="h-full w-full" />,
+      label: "Dashboard",
+      onClick: () => navigate('/dashboard'),
+    },
+  ];
 
   return (
     <div className="dock-outer">
@@ -153,7 +180,7 @@ export default function Dock({
         role="toolbar"
         aria-label="Application dock"
       >
-        {items.map((item, index) => (
+        {displayItems.map((item, index) => (
           <DockItem
             key={index}
             onClick={item.onClick}
