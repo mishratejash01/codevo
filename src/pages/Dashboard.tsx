@@ -51,22 +51,18 @@ export default function Dashboard() {
   const { data: practiceStats } = useQuery({
     queryKey: ['dashboard_practice_stats', userId],
     queryFn: async () => {
-      // Get all problems count by difficulty
       const { data: problems } = await supabase
         .from('practice_problems')
         .select('id, difficulty');
       
-      // Get user's completed submissions
       const { data: submissions } = await supabase
         .from('practice_submissions')
         .select('problem_id, status')
         .eq('user_id', userId!)
         .eq('status', 'completed');
 
-      // Get unique solved problem IDs
       const solvedIds = new Set(submissions?.map(s => s.problem_id) || []);
       
-      // Calculate stats by difficulty
       const difficulties = { easy: { solved: 0, total: 0 }, medium: { solved: 0, total: 0 }, hard: { solved: 0, total: 0 } };
       
       problems?.forEach(p => {
@@ -79,7 +75,6 @@ export default function Dashboard() {
         }
       });
 
-      // Calculate acceptance rate
       const { data: allSubmissions } = await supabase
         .from('practice_submissions')
         .select('status')
@@ -161,7 +156,7 @@ export default function Dashboard() {
     enabled: !!userId,
   });
 
-  // Fetch recent submissions with problem info
+  // Fetch recent submissions
   const { data: recentSubmissions, isLoading: submissionsLoading } = useQuery({
     queryKey: ['dashboard_submissions', userId],
     queryFn: async () => {
@@ -174,7 +169,6 @@ export default function Dashboard() {
 
       if (!submissions || submissions.length === 0) return [];
 
-      // Get problem details
       const problemIds = [...new Set(submissions.map(s => s.problem_id).filter(Boolean))];
       const { data: problems } = await supabase
         .from('practice_problems')
@@ -192,7 +186,7 @@ export default function Dashboard() {
     enabled: !!userId,
   });
 
-  // Fetch skills from solved problems
+  // Fetch skills
   const { data: skills } = useQuery({
     queryKey: ['dashboard_skills', userId],
     queryFn: async () => {
@@ -210,7 +204,6 @@ export default function Dashboard() {
         .select('tags')
         .in('id', problemIds);
 
-      // Count tags
       const tagCounts: Record<string, number> = {};
       problems?.forEach(p => {
         p.tags?.forEach((tag: string) => {
@@ -225,7 +218,7 @@ export default function Dashboard() {
     enabled: !!userId,
   });
 
-  // Calculate submissions this month
+  // Monthly submissions calculation
   const { data: monthlySubmissions } = useQuery({
     queryKey: ['dashboard_monthly', userId],
     queryFn: async () => {
@@ -244,23 +237,21 @@ export default function Dashboard() {
     enabled: !!userId,
   });
 
-  // Calculate total points (simple formula: easy=10, medium=20, hard=40)
   const totalPoints = practiceStats 
     ? (practiceStats.easy.solved * 10) + (practiceStats.medium.solved * 20) + (practiceStats.hard.solved * 40)
     : 0;
 
-  // Get last problem slug for "Continue Practicing"
   const lastProblemSlug = recentSubmissions?.[0]?.problem_slug;
 
   if (sessionLoading) {
     return (
-      <div className="min-h-screen bg-background pt-32 pb-16 px-4">
+      <div className="min-h-screen bg-[#020202] pt-32 pb-16 px-4">
         <div className="max-w-7xl mx-auto space-y-6">
-          <Skeleton className="h-32 w-full rounded-2xl" />
+          <Skeleton className="h-32 w-full rounded-2xl bg-zinc-900" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 rounded-xl bg-zinc-900" />)}
           </div>
-          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl bg-zinc-900" />
         </div>
       </div>
     );
@@ -282,19 +273,19 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-32 pb-16 px-4">
+    <div className="min-h-screen bg-[#020202] text-zinc-100 pt-32 pb-16 px-4">
       <motion.div 
         className="max-w-7xl mx-auto space-y-6"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        {/* Header */}
+        {/* Header Section */}
         <motion.div variants={itemVariants}>
           <DashboardHeader profile={profile} totalPoints={totalPoints} />
         </motion.div>
 
-        {/* Stats Overview */}
+        {/* Stats Section - Top row of Bento */}
         <motion.div variants={itemVariants}>
           <StatsOverview
             problemsSolved={practiceStats?.totalSolved || 0}
@@ -305,40 +296,52 @@ export default function Dashboard() {
           />
         </motion.div>
 
-        {/* Activity Calendar */}
-        <motion.div variants={itemVariants}>
-          <ActivityCalendar userId={userId} />
-        </motion.div>
+        {/* Main Bento Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* Left Large Column (8 Units) */}
+          <div className="lg:col-span-8 space-y-6">
+            
+            {/* Activity Heatmap Tile */}
+            <motion.div variants={itemVariants} className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 backdrop-blur-sm">
+              <h3 className="text-lg font-semibold mb-4">Practice Consistency</h3>
+              <ActivityCalendar userId={userId} />
+            </motion.div>
 
-        {/* Progress Cards */}
-        <motion.div variants={itemVariants}>
-          <ProgressCards
-            practiceStats={practiceStats || { easy: { solved: 0, total: 0 }, medium: { solved: 0, total: 0 }, hard: { solved: 0, total: 0 }, acceptanceRate: 0 }}
-            examStats={examStats || { totalExams: 0, averageScore: 0, bestScore: 0, subjectsAttempted: 0 }}
-          />
-        </motion.div>
+            {/* Events Tile */}
+            <motion.div variants={itemVariants}>
+              <ActiveEvents events={userEvents || []} isLoading={eventsLoading} />
+            </motion.div>
 
-        {/* Three Column Layout */}
-        <motion.div variants={itemVariants} className="grid lg:grid-cols-3 gap-6">
-          {/* Active Events */}
-          <div className="lg:col-span-2">
-            <ActiveEvents events={userEvents || []} isLoading={eventsLoading} />
+            {/* Progress/Exam Stats Tile */}
+            <motion.div variants={itemVariants}>
+              <ProgressCards
+                practiceStats={practiceStats || { easy: { solved: 0, total: 0 }, medium: { solved: 0, total: 0 }, hard: { solved: 0, total: 0 }, acceptanceRate: 0 }}
+                examStats={examStats || { totalExams: 0, averageScore: 0, bestScore: 0, subjectsAttempted: 0 }}
+              />
+            </motion.div>
           </div>
 
-          {/* Quick Actions */}
-          <div>
-            <QuickActions lastProblemSlug={lastProblemSlug} />
+          {/* Right Column (4 Units) */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* Quick Actions Tile */}
+            <motion.div variants={itemVariants}>
+              <QuickActions lastProblemSlug={lastProblemSlug} />
+            </motion.div>
+
+            {/* Recent Activity Tile */}
+            <motion.div variants={itemVariants}>
+              <RecentActivity submissions={recentSubmissions || []} isLoading={submissionsLoading} />
+            </motion.div>
+
+            {/* Skills Tile */}
+            <motion.div variants={itemVariants}>
+              <SkillsCloud skills={skills || []} />
+            </motion.div>
+
           </div>
-        </motion.div>
-
-        {/* Two Column Layout */}
-        <motion.div variants={itemVariants} className="grid lg:grid-cols-2 gap-6">
-          {/* Recent Activity */}
-          <RecentActivity submissions={recentSubmissions || []} isLoading={submissionsLoading} />
-
-          {/* Skills Cloud */}
-          <SkillsCloud skills={skills || []} />
-        </motion.div>
+        </div>
       </motion.div>
     </div>
   );
