@@ -80,14 +80,13 @@ const EventCard = ({ event }: any) => (
 export default function Dashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'peers'>('overview');
-  const [session, setSession] = useState<any>(null);
 
   // --- DATA FETCHING ---
-  const { isLoading: sessionLoading } = useQuery({
+  // FIXED: Using returned data directly instead of setting local state inside queryFn
+  const { data: session, isLoading: sessionLoading } = useQuery({
     queryKey: ['session'],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
       return session;
     },
   });
