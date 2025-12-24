@@ -102,14 +102,12 @@ const COVER_TEMPLATES = [
   "https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?q=80&w=2070&auto=format&fit=crop", 
 ];
 
-// --- Helper Functions ---
 const getLinkedInUsername = (url?: string) => {
   if (!url) return null;
   const match = url.match(/linkedin\.com\/in\/([a-zA-Z0-9-]+)/);
   return match ? match[1] : null;
 };
 
-// --- SUB-COMPONENT: Social Edit Block ---
 const SocialEditBlock = ({ 
   icon: Icon, 
   label, 
@@ -126,7 +124,6 @@ const SocialEditBlock = ({
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value);
 
-  // Sync temp value when prop changes
   useEffect(() => {
     setTempValue(value);
   }, [value]);
@@ -168,15 +165,12 @@ const SocialEditBlock = ({
   );
 };
 
-// --- SUB-COMPONENT: Profile Card (The Preview) ---
 const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData, isOwner: boolean, onEdit?: () => void }) => {
   const [isLinkCopied, setIsLinkCopied] = useState(false);
   const navigate = useNavigate();
 
-  // Updated Share Logic
   const handleShare = async () => {
     const url = `${window.location.origin}/u/${profile.username}`;
-    
     if (navigator.share) {
       try {
         await navigator.share({
@@ -188,7 +182,6 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
         console.error("Error sharing:", err);
       }
     } else {
-      // Fallback
       navigator.clipboard.writeText(url);
       toast.success("Link copied to clipboard!");
     }
@@ -288,7 +281,6 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
   );
 };
 
-// --- Widget Component (Landing Page Popup) ---
 export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -302,7 +294,8 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
       let query = supabase.from("profiles").select("*");
       if (session?.user?.id) query = query.eq("id", session.user.id);
       else query = query.eq("username", defaultUsername);
-      const { data } = await query.single();
+      // FIXED: Use maybeSingle instead of single
+      const { data } = await query.maybeSingle();
       if (data) setProfile(data as ProfileData);
     };
     fetchProfile();
@@ -354,7 +347,6 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
   );
 };
 
-// --- Main Page Component (Editor) ---
 const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
@@ -362,9 +354,8 @@ const Profile = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(null);
   const [isOwner, setIsOwner] = useState(false);
-  const [registrations, setRegistrations] = useState<Registration[]>([]); // New state for events
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
   
-  // Save & Validation States
   const [isSaving, setIsSaving] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
@@ -376,11 +367,11 @@ const Profile = () => {
       setLoading(true);
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
-      // CASE 1: No username in URL (Route: /profile) - PRIVATE EDITOR
       if (!username) {
         if (!currentUser) { navigate("/auth"); return; }
         
-        const { data: myProfile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single();
+        // FIXED: maybeSingle to handle missing profiles
+        const { data: myProfile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).maybeSingle();
         
         const defaultProfile: ProfileData = {
             id: currentUser.id,
@@ -402,10 +393,9 @@ const Profile = () => {
         };
 
         setProfile(defaultProfile);
-        setOriginalProfile(defaultProfile); // Snapshot for tracking changes
+        setOriginalProfile(defaultProfile);
         setIsOwner(true);
 
-        // --- FETCH REGISTRATIONS (only for current user) ---
         const { data: regs } = await supabase
             .from('event_registrations')
             .select(`
@@ -426,14 +416,12 @@ const Profile = () => {
             .order('created_at', { ascending: false });
         
         if (regs) setRegistrations(regs as any);
-        // ---------------------------
-
         setLoading(false);
         return;
       }
 
-      // CASE 2: Username provided (Route: /u/:username) - PUBLIC VIEW
-      const { data, error } = await supabase.from("profiles").select("*").eq("username", username).single();
+      // FIXED: maybeSingle to resolve 406 Not Acceptable error
+      const { data, error } = await supabase.from("profiles").select("*").eq("username", username).maybeSingle();
       
       if (error || !data) { 
         if (currentUser) {
@@ -453,19 +441,17 @@ const Profile = () => {
     init();
   }, [username, navigate]);
 
-  // Debounced Username Check
   useEffect(() => {
     if (!profile || !originalProfile) return;
 
-    // Only check if username changed and is not empty
     if (profile.username !== originalProfile.username && profile.username.length > 2) {
       const checkAvailability = async () => {
         setIsCheckingUsername(true);
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("profiles")
           .select("id")
           .eq("username", profile.username)
-          .neq("id", profile.id) // Exclude self
+          .neq("id", profile.id)
           .maybeSingle();
         
         setIsCheckingUsername(false);
@@ -477,7 +463,7 @@ const Profile = () => {
         }
       };
 
-      const timer = setTimeout(checkAvailability, 500); // 500ms debounce
+      const timer = setTimeout(checkAvailability, 500);
       return () => clearTimeout(timer);
     } else {
       setUsernameError(null);
@@ -513,7 +499,7 @@ const Profile = () => {
         if (error) throw error;
 
         toast.success("Profile saved successfully"); 
-        setOriginalProfile(profile); // Update snapshot
+        setOriginalProfile(profile);
     } catch (error: any) { 
         console.error(error);
         toast.error("Failed to save: " + error.message); 
@@ -540,17 +526,12 @@ const Profile = () => {
     );
   }
 
-  // Helper to check if there are unsaved changes
   const isDirty = JSON.stringify(profile) !== JSON.stringify(originalProfile);
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-12 px-4 md:px-8 lg:px-12">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 relative">
-        
-        {/* LEFT: Editor (Scrollable) */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-10">
-          
-          {/* Header with SAVE BUTTON */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-white mb-2">Edit Profile</h1>
@@ -668,7 +649,6 @@ const Profile = () => {
             <div className="relative"><Textarea value={profile.bio || ''} onChange={(e) => updateLocalState('bio', e.target.value)} className="min-h-[150px] bg-[#121214] border-white/5 focus:border-primary/50 text-base leading-relaxed p-6 rounded-2xl resize-none" placeholder="Tell the world who you are..." /></div>
           </div>
 
-          {/* --- NEW SECTION: ACTIVE REGISTRATIONS --- */}
           <div className="space-y-6 pb-20 border-t border-white/10 pt-10">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
                 <Ticket className="w-4 h-4" /> Active Event Registrations
@@ -719,10 +699,8 @@ const Profile = () => {
                 </div>
             )}
           </div>
-          
         </div>
 
-        {/* RIGHT: Live Preview (Sticky) */}
         <div className="lg:col-span-5 xl:col-span-4 relative hidden lg:block">
           <div className="sticky top-28 space-y-8">
             <div>
@@ -731,7 +709,6 @@ const Profile = () => {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
