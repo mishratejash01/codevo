@@ -31,12 +31,13 @@ for name in list(globals().keys()):
 function extractMissingModuleName(message) {
   const msg = String(message || "");
 
-  // Common Pyodide traceback includes the module name somewhere in the text.
   const patterns = [
-    /ModuleNotFoundError:\s*No module named ['\"]([^'\"\s]+)['\"]/,
-    /No module named ['\"]([^'\"\s]+)['\"]/,
+    // Standard Python error: "No module named 'numpy'"
+    /No module named ['"]([^'"]+)['"]/,
+    // Standard Python error (variant): "No module named numpy"
     /No module named\s+([A-Za-z0-9_\.]+)/,
-    /ModuleNotFoundError:\s*['\"]?([^'\"\s]+)['\"]?/,
+    // Pyodide specific error: "The module 'numpy' is included in the Pyodide distribution..."
+    /The module ['"]([^'"]+)['"] is included/
   ];
 
   for (const pattern of patterns) {
