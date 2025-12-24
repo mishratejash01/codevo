@@ -104,6 +104,95 @@ export type Database = {
         }
         Relationships: []
       }
+      event_discussions: {
+        Row: {
+          content: string
+          created_at: string | null
+          event_id: string
+          id: string
+          parent_id: string | null
+          updated_at: string | null
+          upvotes: number | null
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          event_id: string
+          id?: string
+          parent_id?: string | null
+          updated_at?: string | null
+          upvotes?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          parent_id?: string | null
+          updated_at?: string | null
+          upvotes?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_discussions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_discussions_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "event_discussions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_faqs: {
+        Row: {
+          answer: string
+          created_at: string | null
+          event_id: string
+          id: string
+          is_pinned: boolean | null
+          order_index: number | null
+          question: string
+          updated_at: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string | null
+          event_id: string
+          id?: string
+          is_pinned?: boolean | null
+          order_index?: number | null
+          question: string
+          updated_at?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          is_pinned?: boolean | null
+          order_index?: number | null
+          question?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_faqs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_payments: {
         Row: {
           amount: number
@@ -175,6 +264,47 @@ export type Database = {
             columns: ["registration_id"]
             isOneToOne: false
             referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_prizes: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_id: string
+          icon_url: string | null
+          id: string
+          position: number
+          prize_value: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_id: string
+          icon_url?: string | null
+          id?: string
+          position: number
+          prize_value?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_id?: string
+          icon_url?: string | null
+          id?: string
+          position?: number
+          prize_value?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_prizes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -289,15 +419,106 @@ export type Database = {
           },
         ]
       }
+      event_reviews: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          is_verified: boolean | null
+          rating: number
+          review_text: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          is_verified?: boolean | null
+          rating: number
+          review_text?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          is_verified?: boolean | null
+          rating?: number
+          review_text?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_reviews_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_stages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          event_id: string
+          id: string
+          is_active: boolean | null
+          order_index: number
+          stage_type: string | null
+          start_date: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          event_id: string
+          id?: string
+          is_active?: boolean | null
+          order_index?: number
+          stage_type?: string | null
+          start_date: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          event_id?: string
+          id?: string
+          is_active?: boolean | null
+          order_index?: number
+          stage_type?: string | null
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_stages_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           allow_solo: boolean | null
           category: string
+          contact_email: string | null
+          contact_phone: string | null
           content: string | null
           created_at: string | null
           currency: string | null
           current_participants: number | null
           custom_questions: Json | null
+          eligibility_criteria: Json | null
           end_date: string
           event_type: string | null
           id: string
@@ -309,10 +530,13 @@ export type Database = {
           max_team_size: number | null
           min_team_size: number | null
           mode: string
+          organizer_logo: string | null
+          organizer_name: string | null
           prize_pool: string | null
           registration_deadline: string | null
           registration_fee: number | null
           registration_link: string | null
+          rules: string | null
           rules_document_url: string | null
           short_description: string
           slug: string
@@ -321,15 +545,19 @@ export type Database = {
           title: string
           tracks: Json | null
           updated_at: string | null
+          venue: string | null
         }
         Insert: {
           allow_solo?: boolean | null
           category: string
+          contact_email?: string | null
+          contact_phone?: string | null
           content?: string | null
           created_at?: string | null
           currency?: string | null
           current_participants?: number | null
           custom_questions?: Json | null
+          eligibility_criteria?: Json | null
           end_date: string
           event_type?: string | null
           id?: string
@@ -341,10 +569,13 @@ export type Database = {
           max_team_size?: number | null
           min_team_size?: number | null
           mode: string
+          organizer_logo?: string | null
+          organizer_name?: string | null
           prize_pool?: string | null
           registration_deadline?: string | null
           registration_fee?: number | null
           registration_link?: string | null
+          rules?: string | null
           rules_document_url?: string | null
           short_description: string
           slug: string
@@ -353,15 +584,19 @@ export type Database = {
           title: string
           tracks?: Json | null
           updated_at?: string | null
+          venue?: string | null
         }
         Update: {
           allow_solo?: boolean | null
           category?: string
+          contact_email?: string | null
+          contact_phone?: string | null
           content?: string | null
           created_at?: string | null
           currency?: string | null
           current_participants?: number | null
           custom_questions?: Json | null
+          eligibility_criteria?: Json | null
           end_date?: string
           event_type?: string | null
           id?: string
@@ -373,10 +608,13 @@ export type Database = {
           max_team_size?: number | null
           min_team_size?: number | null
           mode?: string
+          organizer_logo?: string | null
+          organizer_name?: string | null
           prize_pool?: string | null
           registration_deadline?: string | null
           registration_fee?: number | null
           registration_link?: string | null
+          rules?: string | null
           rules_document_url?: string | null
           short_description?: string
           slug?: string
@@ -385,6 +623,7 @@ export type Database = {
           title?: string
           tracks?: Json | null
           updated_at?: string | null
+          venue?: string | null
         }
         Relationships: []
       }
