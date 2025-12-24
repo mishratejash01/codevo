@@ -1,16 +1,14 @@
 /**
  * Pyodide Web Worker with SharedArrayBuffer for Interactive Input
- * 
- * This worker runs Python code in isolation and handles interactive input()
+ * * This worker runs Python code in isolation and handles interactive input()
  * by blocking with Atomics.wait() until the main thread provides input.
- * 
- * KEY FIX: Uses raw stdout mode for real-time character-by-character output
- * so that input() prompts appear BEFORE blocking for input.
+ * * KEY FIX: Uses 'micropip' to install libraries (both PyPI and Pyodide standard libs).
  */
 
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
 
 let pyodide = null;
+let micropip = null;
 let sharedSignalArray = null; // Int32Array for signaling
 let sharedTextArray = null;   // Uint8Array for text data
 
@@ -34,10 +32,6 @@ function extractMissingModuleName(message) {
   const msg = String(message || "");
 
   // Common Pyodide traceback includes the module name somewhere in the text.
-  // Examples:
-  // - "ModuleNotFoundError: No module named 'numpy'"
-  // - "No module named numpy"
-  // - "ModuleNotFoundError: numpy"
   const patterns = [
     /ModuleNotFoundError:\s*No module named ['\"]([^'\"\s]+)['\"]/,
     /No module named ['\"]([^'\"\s]+)['\"]/,
@@ -59,8 +53,11 @@ async function initPyodide() {
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
     });
     
+    // --- NEW: Load Micropip immediately ---
+    await pyodide.loadPackage("micropip");
+    micropip = pyodide.pyimport("micropip");
+
     // CRITICAL: Use RAW mode for character-by-character output
-    // This ensures prompts like "Enter your name: " appear BEFORE input() blocks
     pyodide.setStdout({
       raw: (byte) => {
         const char = String.fromCharCode(byte);
@@ -88,7 +85,6 @@ function setupInteractiveStdin() {
     pyodide.setStdin({
       stdin: () => {
         self.postMessage({ type: 'INPUT_REQUEST' });
-        // Without SharedArrayBuffer, we can't block. Return empty string.
         return "";
       }
     });
@@ -97,38 +93,23 @@ function setupInteractiveStdin() {
   
   pyodide.setStdin({
     stdin: () => {
-      // Signal to main thread that we need input
       self.postMessage({ type: 'INPUT_REQUEST' });
-      
-      // Reset the status to waiting
       Atomics.store(sharedSignalArray, 0, STATUS_WAITING);
-      
-      // Block and wait for input (timeout after 5 minutes)
       const result = Atomics.wait(sharedSignalArray, 0, STATUS_WAITING, 300000);
       
-      // Check the status
       const status = Atomics.load(sharedSignalArray, 0);
-      
       if (status === STATUS_INTERRUPT) {
         throw new Error('KeyboardInterrupt');
       }
-      
       if (result === 'timed-out') {
         throw new Error('EOFError: Input timeout - no input received within 5 minutes');
       }
       
-      // Read the input length
       const length = Atomics.load(sharedSignalArray, 1);
+      if (length <= 0) return "";
       
-      if (length <= 0) {
-        return "";
-      }
-      
-      // Read the text from the shared buffer
       const textBytes = sharedTextArray.slice(0, length);
-      const text = new TextDecoder().decode(textBytes);
-      
-      return text;
+      return new TextDecoder().decode(textBytes);
     }
   });
 }
@@ -137,17 +118,12 @@ self.onmessage = async (event) => {
   const { type, code, sharedBuffer, textBuffer } = event.data;
   
   if (type === 'INIT') {
-    // Store the shared buffers
     if (sharedBuffer && textBuffer) {
       sharedSignalArray = new Int32Array(sharedBuffer);
       sharedTextArray = new Uint8Array(textBuffer);
     }
-    
-    // Initialize Pyodide
     const success = await initPyodide();
-    
     if (success) {
-      // Setup stdin with the shared buffers
       setupInteractiveStdin();
       self.postMessage({ type: 'READY' });
     }
@@ -161,62 +137,52 @@ self.onmessage = async (event) => {
     }
     
     try {
-      const runWithFreshGlobals = async () => {
-        await pyodide.runPythonAsync(CLEAR_GLOBALS_CODE);
-        await pyodide.runPythonAsync(code);
-      };
-
-      await runWithFreshGlobals();
+      // 1. Clear globals and run user code
+      await pyodide.runPythonAsync(CLEAR_GLOBALS_CODE);
+      await pyodide.runPythonAsync(code);
 
     } catch (err) {
-      const rawError = err?.message ?? (typeof err?.toString === 'function' ? err.toString() : '') ?? String(err);
-      let errorMessage = String(rawError || err || 'Unknown error');
+      const rawError = err?.message ?? String(err);
+      let errorMessage = rawError;
 
-      // If a module is missing, try to auto-load it from Pyodide's package repo
+      // 2. Handle Missing Modules via Micropip
       const missingModule = extractMissingModuleName(errorMessage);
       if (missingModule) {
         const pkg = missingModule.split('.')[0];
         let packageLoaded = false;
 
         try {
-          self.postMessage({ type: 'OUTPUT', text: `\nLoading Python package '${pkg}'...\n` });
-          await pyodide.loadPackage(pkg);
+          self.postMessage({ type: 'OUTPUT', text: `\n📦 Installing '${pkg}' via micropip...\n` });
+          
+          // Micropip is smart: it checks PyPI AND Pyodide's internal repo
+          await micropip.install(pkg);
+          
           packageLoaded = true;
+          self.postMessage({ type: 'OUTPUT', text: `✅ Installed '${pkg}'. Retrying code...\n\n` });
 
-          // Retry after loading
+          // Retry execution
           await pyodide.runPythonAsync(CLEAR_GLOBALS_CODE);
           await pyodide.runPythonAsync(code);
-          return;
+          return; // Success on retry, exit the error handler
+
         } catch (loadOrRetryErr) {
-          // If load succeeded but the retry failed, show the retry error instead
           if (packageLoaded) {
+            // If install worked but code still failed, show the new error
             errorMessage = loadOrRetryErr?.message ?? String(loadOrRetryErr);
           } else {
-            const details = loadOrRetryErr?.message ? `\nDetails: ${loadOrRetryErr.message}` : '';
+            // Install failed (likely C-extension not supported in browser)
             errorMessage = `ModuleNotFoundError: '${pkg}'\n` +
-              `💡 '${pkg}' couldn't be loaded in this browser-based Python environment.${details}\n` +
-              `Tip: Only Pyodide-supported packages can be used here.`;
+              `💡 '${pkg}' failed to install.\n` +
+              `Reason: It might require C-extensions or network sockets not supported in the browser.`;
           }
         }
       }
 
-      // Make errors more user-friendly
+      // 3. User-Friendly Error Formatting
       if (errorMessage.includes('EOFError')) {
-        errorMessage = 'EOFError: Not enough input provided.\n💡 Type your input in the terminal and press Enter.';
+        errorMessage = 'EOFError: Input required.\n💡 Type your input in the terminal and press Enter.';
       } else if (errorMessage.includes('KeyboardInterrupt')) {
-        errorMessage = 'Program interrupted by user (Ctrl+C)';
-      } else if (errorMessage.includes('ModuleNotFoundError') || errorMessage.includes('No module named')) {
-        const moduleName = extractMissingModuleName(errorMessage);
-        if (moduleName) {
-          const pkg = moduleName.split('.')[0];
-          errorMessage = `ModuleNotFoundError: '${pkg}'\n` +
-            `💡 This package isn't available here (or failed to download).\n` +
-            `Tip: Browser Python supports only Pyodide packages.`;
-        } else {
-          // If we can't parse the module name, show the raw traceback for debugging.
-          errorMessage = String(rawError || errorMessage) +
-            `\n\n💡 Could not detect which package is missing. Please re-run and share the full traceback above.`;
-        }
+        errorMessage = 'Program interrupted (Ctrl+C)';
       }
 
       self.postMessage({ type: 'OUTPUT', text: '\n' + errorMessage + '\n' });
@@ -226,7 +192,6 @@ self.onmessage = async (event) => {
   }
   
   if (type === 'INTERRUPT') {
-    // Signal interrupt to the waiting stdin
     if (sharedSignalArray) {
       Atomics.store(sharedSignalArray, 0, STATUS_INTERRUPT);
       Atomics.notify(sharedSignalArray, 0, 1);
