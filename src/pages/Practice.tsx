@@ -4,20 +4,17 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AssignmentSidebar } from '@/components/AssignmentSidebar';
 import { AssignmentView } from '@/components/AssignmentView';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { 
-  Timer, LogOut, LayoutGrid, Home, 
-  Infinity as InfinityIcon, Menu, Target, 
-  Sparkles, Hash, Zap 
-} from 'lucide-react';
+import { Timer, LogOut, LayoutGrid, Home, Infinity as InfinityIcon, Menu, X, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { UserStatsCard } from '@/components/practice/UserStatsCard';
-import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+export type QuestionStatus = 'not-visited' | 'visited' | 'attempted' | 'review';
 
 const IITM_TABLES = { assignments: 'iitm_assignments', testCases: 'iitm_test_cases', submissions: 'iitm_submissions' };
 const STANDARD_TABLES = { assignments: 'assignments', testCases: 'test_cases', submissions: 'submissions' };
@@ -29,6 +26,7 @@ const Practice = () => {
   
   const iitmSubjectId = searchParams.get('iitm_subject');
   const categoryParam = searchParams.get('category');
+  const limitParam = searchParams.get('limit');
   const selectedAssignmentId = searchParams.get('q');
   
   const timerParam = parseInt(searchParams.get('timer') || '0');
@@ -37,30 +35,48 @@ const Practice = () => {
 
   const activeTables = iitmSubjectId ? IITM_TABLES : STANDARD_TABLES;
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, QuestionStatus>>({});
+  const { toast } = useToast();
+  
   const [elapsedTime, setElapsedTime] = useState(0); 
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Auth state for stats components
-  const [userId, setUserId] = useState<string | undefined>();
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id));
-  }, []);
-
   const { data: assignments = [] } = useQuery({
-    queryKey: [activeTables.assignments, iitmSubjectId, categoryParam, selectedAssignmentId], 
+    queryKey: [activeTables.assignments, iitmSubjectId, categoryParam, limitParam, selectedAssignmentId], 
     queryFn: async () => {
-      let query = supabase.from(activeTables.assignments as any).select('*');
-      if (selectedAssignmentId) query = query.eq('id', selectedAssignmentId);
-      else if (iitmSubjectId) {
-        query = query.eq('subject_id', iitmSubjectId);
-        if (categoryParam) query = query.eq('category', categoryParam);
+      let query = supabase.from(activeTables.assignments as any).select('id, title, category, expected_time, is_unlocked');
+      
+      if (selectedAssignmentId) {
+        query = query.eq('id', selectedAssignmentId);
+      } else {
+        if (iitmSubjectId) {
+          query = query.eq('subject_id', iitmSubjectId);
+          if (categoryParam) {
+            query = query.eq('category', categoryParam);
+          }
+        }
       }
+
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []).sort((a: any, b: any) => a.title.localeCompare(b.title));
+      
+      let result = (data || []) as any[];
+      return result.sort((a: any, b: any) => a.title.localeCompare(b.title));
     },
   });
+
+  useEffect(() => {
+    if (assignments.length > 0 && !selectedAssignmentId) {
+      setSearchParams(prev => {
+        const p = new URLSearchParams(prev);
+        const firstUnlocked = assignments.find((a: any) => a.is_unlocked !== false) || assignments[0];
+        if (firstUnlocked) {
+           p.set('q', firstUnlocked.id);
+        }
+        return p;
+      });
+    }
+  }, [assignments, selectedAssignmentId, setSearchParams]);
 
   useEffect(() => {
     const interval = setInterval(() => setElapsedTime((prev) => prev + 1), 1000);
@@ -68,132 +84,172 @@ const Practice = () => {
   }, []);
 
   const formatTimer = () => {
-    const time = hasTimeLimit ? timeLimitSeconds - elapsedTime : elapsedTime;
-    const absTime = Math.abs(time);
-    const m = Math.floor(absTime / 60).toString().padStart(2, '0');
-    const s = (absTime % 60).toString().padStart(2, '0');
-    return `${time < 0 ? '+' : ''}${m}:${s}`;
+    if (!hasTimeLimit) {
+      const m = Math.floor(elapsedTime / 60);
+      const s = elapsedTime % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    const remaining = timeLimitSeconds - elapsedTime;
+    
+    if (remaining >= 0) {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    } else {
+      const overtime = Math.abs(remaining);
+      const m = Math.floor(overtime / 60);
+      const s = overtime % 60;
+      return `+${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
   };
 
+  const isOvertime = hasTimeLimit && elapsedTime > timeLimitSeconds;
+
+  const handleQuestionSelect = (id: string) => {
+    setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev);
+        newParams.set('q', id);
+        return newParams;
+    });
+    if (questionStatuses[id] !== 'attempted' && questionStatuses[id] !== 'review') {
+      setQuestionStatuses(prev => ({ ...prev, [id]: 'visited' }));
+    }
+    setIsSidebarOpen(false);
+  };
+
+  const handleExitEnvironment = () => setIsExitDialogOpen(true);
+  const confirmExit = () => { sessionStorage.clear(); navigate('/'); };
+
+  const SidebarContent = () => (
+    <AssignmentSidebar
+      selectedId={selectedAssignmentId}
+      onSelect={handleQuestionSelect}
+      questionStatuses={questionStatuses}
+      preLoadedAssignments={assignments as any} 
+    />
+  );
+
   return (
-    <div className="min-h-screen bg-[#080808] text-[#f1f5f9] flex flex-col font-sans">
-      {/* Navigation - Refined Breadcrumb Style */}
-      <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1f1f1f] bg-[#080808] sticky top-0 z-50">
-        <div className="flex items-center gap-8">
-          <div className="font-extrabold text-xl tracking-tighter">
-            PRACTICE<span className="text-[#8b5cf6]">ARENA</span>
-          </div>
-          <div className="hidden md:flex items-center gap-2 text-[10px] font-bold text-[#64748b] uppercase tracking-widest">
-            <span>DASHBOARD</span>
-            <span className="text-[#1f1f1f]">/</span>
-            <span className="text-white">OVERVIEW</span>
+    <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden selection:bg-primary/20">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-[#09090b] px-3 md:px-4 py-2 md:py-3 flex items-center justify-between z-50 shadow-md shrink-0 h-14 md:h-16">
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Mobile Menu Button */}
+          {isMobile && (
+            <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white hover:bg-white/10 md:hidden">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[280px] p-0 bg-[#0c0c0e] border-white/10">
+                <div className="h-full overflow-hidden">
+                  <SidebarContent />
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
+          
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-white hover:bg-white/10 hidden md:flex">
+            <Home className="w-5 h-5" />
+          </Button>
+          
+          <div className="flex items-center gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-primary/10 border border-primary/20">
+            <LayoutGrid className="w-3 md:w-4 h-3 md:h-4 text-primary" />
+            <h1 className="text-xs md:text-sm font-bold tracking-tight text-primary">
+              {assignments.length === 1 ? 'Practice' : (categoryParam ? `${decodeURIComponent(categoryParam)}` : 'Practice')}
+            </h1>
           </div>
         </div>
-
-        <div className="flex items-center gap-4">
+        
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Timer Display */}
           <div className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-sm font-bold transition-all",
-            hasTimeLimit && elapsedTime > timeLimitSeconds ? "bg-red-500/10 border-red-500/50 text-red-500 animate-pulse" : "bg-[#111] border-[#1f1f1f] text-[#64748b]"
+            "flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border font-mono text-xs md:text-sm font-bold transition-all duration-500",
+            isOvertime 
+              ? "bg-red-950/30 border-red-500/50 text-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.3)]" 
+              : "bg-black/40 border-white/10 text-muted-foreground"
           )}>
-            {hasTimeLimit ? <Timer className="w-4 h-4" /> : <InfinityIcon className="w-4 h-4" />}
+            {hasTimeLimit ? <Timer className="w-3 md:w-4 h-3 md:h-4" /> : <InfinityIcon className="w-3 md:w-4 h-3 md:h-4" />}
             <span>{formatTimer()}</span>
+            {isOvertime && <span className="text-[8px] md:text-[10px] uppercase font-sans tracking-wide ml-0.5 md:ml-1 hidden sm:inline">Overtime</span>}
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setIsExitDialogOpen(true)} className="text-red-400 hover:bg-red-500/10 rounded-full">
-            <LogOut className="w-5 h-5" />
+
+          <Button variant="outline" size="sm" onClick={handleExitEnvironment} className="gap-1.5 md:gap-2 border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 md:h-9 px-2 md:px-3 text-xs md:text-sm">
+            <LogOut className="w-3 md:w-4 h-3 md:h-4" /> 
+            <span className="hidden sm:inline">Exit</span>
           </Button>
         </div>
-      </nav>
+      </header>
 
-      {/* Main Grid Layout */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr_340px] gap-10 p-6 md:p-12 max-w-[1800px] mx-auto w-full overflow-hidden">
-        
-        {/* Left Sidebar - Topics & Difficulty */}
-        <aside className="hidden lg:flex flex-col gap-8">
-          <div className="grid grid-cols-3 gap-2 p-1 bg-[#111] border border-[#1f1f1f] rounded-xl">
-            {['Easy', 'Med', 'Hard'].map((d) => (
-              <button key={d} className={cn(
-                "py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all",
-                d === 'Easy' ? "bg-[#161616] text-[#10b981] shadow-lg" : "text-[#64748b] hover:text-white"
-              )}>
-                {d}
-              </button>
-            ))}
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 px-3 text-[10px] font-black text-[#64748b] tracking-widest">
-              <Sparkles className="w-3 h-3" /> TOPICS
-            </div>
-            <nav className="flex flex-col gap-1">
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#8b5cf6]/10 text-[#8b5cf6] font-semibold text-sm cursor-pointer">
-                <span className="text-lg">✦</span> All Topics
-              </div>
-              {['ARRAY', 'STRING', 'HASH TABLE', 'DYNAMIC PROG.'].map(topic => (
-                <div key={topic} className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#94a3b8] hover:bg-white/5 font-medium text-sm transition-colors cursor-pointer">
-                  <Hash className="w-4 h-4 opacity-50" /> {topic}
+      <div className="flex-1 overflow-hidden relative">
+        {isMobile ? (
+          // Mobile: Full width assignment view
+          <div className="h-full">
+            <ErrorBoundary>
+              {selectedAssignmentId ? (
+                <AssignmentView 
+                  key={selectedAssignmentId}
+                  assignmentId={selectedAssignmentId} 
+                  onStatusUpdate={(status) => setQuestionStatuses(prev => ({ ...prev, [selectedAssignmentId]: status }))}
+                  currentStatus={questionStatuses[selectedAssignmentId]}
+                  tables={activeTables} 
+                />
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground">
+                  <LayoutGrid className="w-10 h-10 mb-4 opacity-20" />
+                  <p>Select a question to begin</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-4 border-white/10"
+                    onClick={() => setIsSidebarOpen(true)}
+                  >
+                    <Menu className="w-4 h-4 mr-2" /> Open Question List
+                  </Button>
                 </div>
-              ))}
-            </nav>
+              )}
+            </ErrorBoundary>
           </div>
-        </aside>
-
-        {/* Center Workspace */}
-        <main className="bg-[#121212] border border-[#1f1f1f] rounded-[32px] overflow-hidden flex flex-col shadow-2xl">
-          <ErrorBoundary>
-            {selectedAssignmentId ? (
-              <AssignmentView 
-                key={selectedAssignmentId}
-                assignmentId={selectedAssignmentId} 
-                onStatusUpdate={(status) => setQuestionStatuses(prev => ({ ...prev, [selectedAssignmentId]: status }))}
-                currentStatus={questionStatuses[selectedAssignmentId]}
-                tables={activeTables} 
-              />
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
-                <div className="w-20 h-20 rounded-3xl bg-[#1a1a1a] flex items-center justify-center mb-6">
-                  <Zap className="w-10 h-10 text-[#8b5cf6]" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Recommended Challenges</h2>
-                <p className="text-[#64748b] mb-8">Select a problem from the list to begin your session.</p>
-                <div className="w-full max-w-md space-y-4">
-                   {assignments.slice(0, 3).map((a: any) => (
-                     <div key={a.id} className="flex items-center justify-between p-4 bg-[#1a1a1a] border border-[#333] rounded-2xl">
-                       <div className="text-left">
-                         <div className="font-bold">{a.title}</div>
-                         <div className="text-xs text-[#64748b]">{a.category} • <span className="text-[#10b981]">Easy</span></div>
-                       </div>
-                       <Button variant="outline" size="sm" onClick={() => setSearchParams({ q: a.id })} className="rounded-xl border-[#333] hover:bg-[#8b5cf6] hover:border-[#8b5cf6]">Solve</Button>
-                     </div>
-                   ))}
-                </div>
-              </div>
-            )}
-          </ErrorBoundary>
-        </main>
-
-        {/* Right Sidebar - Professional Progress */}
-        <aside className="hidden lg:flex flex-col gap-12 overflow-y-auto pr-2">
-          <div className="space-y-6">
-            <div className="text-[10px] font-black text-[#64748b] tracking-widest px-1">YOUR PROGRESS</div>
-            <UserStatsCard userId={userId} />
-          </div>
-
-          <div className="space-y-6">
-            <div className="text-[10px] font-black text-[#64748b] tracking-widest px-1">ACTIVITY STREAK</div>
-            <ActivityCalendar userId={userId} />
-          </div>
-        </aside>
+        ) : (
+          // Desktop: Resizable panels
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#0c0c0e] border-r border-white/10 flex flex-col">
+              <SidebarContent />
+            </ResizablePanel>
+            <ResizableHandle withHandle className="bg-white/5 hover:bg-primary/50 transition-colors w-1" />
+            <ResizablePanel defaultSize={80} className="bg-[#09090b] relative">
+              <ErrorBoundary>
+                {selectedAssignmentId ? (
+                  <AssignmentView 
+                    key={selectedAssignmentId}
+                    assignmentId={selectedAssignmentId} 
+                    onStatusUpdate={(status) => setQuestionStatuses(prev => ({ ...prev, [selectedAssignmentId]: status }))}
+                    currentStatus={questionStatuses[selectedAssignmentId]}
+                    tables={activeTables} 
+                  />
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground">
+                    <LayoutGrid className="w-10 h-10 mb-4 opacity-20" />
+                    <p>Select a question to begin</p>
+                  </div>
+                )}
+              </ErrorBoundary>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
       </div>
 
       <Dialog open={isExitDialogOpen} onOpenChange={setIsExitDialogOpen}>
-        <DialogContent className="bg-[#0c0c0e] border-[#1f1f1f] text-white">
+        <DialogContent className="bg-[#0c0c0e] border-white/10 text-white sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">End Practice Session?</DialogTitle>
-            <DialogDescription className="text-[#64748b]">Your progress for this session will be cleared.</DialogDescription>
+            <DialogTitle>End Practice Session?</DialogTitle>
+            <DialogDescription>Your progress for this session will be cleared.</DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-3 mt-4">
-            <Button variant="ghost" onClick={() => setIsExitDialogOpen(false)} className="hover:bg-white/5">Cancel</Button>
-            <Button onClick={() => navigate('/')} className="bg-red-500 hover:bg-red-600 text-white font-bold px-8">End Session</Button>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setIsExitDialogOpen(false)}>Cancel</Button>
+            <Button onClick={confirmExit} variant="destructive">End Session</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

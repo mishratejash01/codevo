@@ -1,7 +1,8 @@
 /**
  * Pyodide Web Worker with SharedArrayBuffer for Interactive Input
- * * This worker runs Python code in isolation and handles interactive input().
- * * KEY FIX: Uses a 'while' loop to recursively install multiple missing libraries.
+ * * This worker runs Python code in isolation and handles interactive input()
+ * by blocking with Atomics.wait() until the main thread provides input.
+ * * KEY FIX: Robust regexes to catch "The module 'numpy' is included" errors.
  */
 
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
@@ -30,6 +31,8 @@ for name in list(globals().keys()):
 function extractMissingModuleName(message) {
   const msg = String(message || "");
 
+  // List of patterns to detect missing modules.
+  // We use \s+ to handle any number of spaces/tabs/newlines.
   const patterns = [
     // 1. Pyodide Standard Lib Error: "The module 'numpy' is included in the Pyodide distribution..."
     /The module\s+['"]([^'"]+)['"]\s+is included/,
@@ -140,63 +143,59 @@ self.onmessage = async (event) => {
       return;
     }
     
-    const MAX_AUTO_INSTALLS = 5; // Prevent infinite loops
-    let installAttempts = 0;
-    
-    // LOOP: Keep trying to run the code until it works or we run out of retries
-    while (true) {
-      try {
-        // 1. Clear globals and run user code
-        await pyodide.runPythonAsync(CLEAR_GLOBALS_CODE);
-        await pyodide.runPythonAsync(code);
-        
-        // If we get here, code ran successfully
-        break; 
+    try {
+      // 1. Clear globals and run user code
+      await pyodide.runPythonAsync(CLEAR_GLOBALS_CODE);
+      await pyodide.runPythonAsync(code);
 
-      } catch (err) {
-        const rawError = err?.message ?? String(err);
-        const missingModule = extractMissingModuleName(rawError);
-        
-        // 2. Handle Missing Modules via Micropip
-        if (missingModule && installAttempts < MAX_AUTO_INSTALLS) {
-          const pkg = missingModule.split('.')[0];
-          installAttempts++;
+    } catch (err) {
+      const rawError = err?.message ?? String(err);
+      let errorMessage = rawError;
 
-          try {
-            self.postMessage({ type: 'OUTPUT', text: `\n📦 Installing '${pkg}' via micropip...\n` });
-            
-            // Micropip handles both PyPI and Pyodide standard libs
-            await micropip.install(pkg);
-            
-            self.postMessage({ type: 'OUTPUT', text: `✅ Installed '${pkg}'. Retrying code...\n\n` });
-            
-            // CONTINUE the loop to try running the code again
-            continue; 
+      // 2. Handle Missing Modules via Micropip
+      const missingModule = extractMissingModuleName(errorMessage);
+      if (missingModule) {
+        const pkg = missingModule.split('.')[0];
+        let packageLoaded = false;
 
-          } catch (installErr) {
-            // Install failed (likely C-extension not supported)
-             const installErrorMsg = `ModuleNotFoundError: '${pkg}'\n` +
+        try {
+          self.postMessage({ type: 'OUTPUT', text: `\n📦 Installing '${pkg}' via micropip...\n` });
+          
+          // Micropip handles both PyPI and Pyodide standard libs
+          await micropip.install(pkg);
+          
+          packageLoaded = true;
+          self.postMessage({ type: 'OUTPUT', text: `✅ Installed '${pkg}'. Retrying code...\n\n` });
+
+          // Retry execution
+          await pyodide.runPythonAsync(CLEAR_GLOBALS_CODE);
+          await pyodide.runPythonAsync(code);
+          return; // Success on retry, exit the error handler
+
+        } catch (loadOrRetryErr) {
+          if (packageLoaded) {
+            // If install worked but code still failed, show the new error
+            errorMessage = loadOrRetryErr?.message ?? String(loadOrRetryErr);
+          } else {
+            // Install failed (likely C-extension not supported in browser)
+            errorMessage = `ModuleNotFoundError: '${pkg}'\n` +
               `💡 '${pkg}' failed to install.\n` +
               `Reason: It might require C-extensions or network sockets not supported in the browser.`;
-             self.postMessage({ type: 'OUTPUT', text: '\n' + installErrorMsg + '\n' });
-             break; // Stop trying
           }
         }
-
-        // 3. Handle Other Errors (Syntax, Runtime, etc)
-        let errorMessage = rawError;
-        if (errorMessage.includes('EOFError')) {
-          errorMessage = 'EOFError: Input required.\n💡 Type your input in the terminal and press Enter.';
-        } else if (errorMessage.includes('KeyboardInterrupt')) {
-          errorMessage = 'Program interrupted (Ctrl+C)';
-        }
-
-        self.postMessage({ type: 'OUTPUT', text: '\n' + errorMessage + '\n' });
-        break; // Stop trying
       }
+
+      // 3. User-Friendly Error Formatting
+      if (errorMessage.includes('EOFError')) {
+        errorMessage = 'EOFError: Input required.\n💡 Type your input in the terminal and press Enter.';
+      } else if (errorMessage.includes('KeyboardInterrupt')) {
+        errorMessage = 'Program interrupted (Ctrl+C)';
+      }
+
+      self.postMessage({ type: 'OUTPUT', text: '\n' + errorMessage + '\n' });
+    } finally {
+      self.postMessage({ type: 'FINISHED' });
     }
-    
-    self.postMessage({ type: 'FINISHED' });
   }
   
   if (type === 'INTERRUPT') {
