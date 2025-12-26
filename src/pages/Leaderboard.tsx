@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Trophy, Medal, Calendar, History, Flame, Clock, Target, 
-  TrendingUp, Infinity, Crown, Star, ChevronUp, Search, Zap 
+  TrendingUp, Crown, Star, ChevronUp, Search, Zap 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header'; 
@@ -174,7 +174,7 @@ const Leaderboard = () => {
           <div className="flex justify-center mt-8">
             <div className="p-1 rounded-full bg-white/5 border border-white/5 backdrop-blur-xl flex gap-1">
               {[
-                { id: 'all_time', label: 'All Time', icon: Infinity },
+                { id: 'all_time', label: 'All Time', icon: History },
                 { id: 'this_month', label: 'Monthly', icon: Calendar },
                 { id: 'this_week', label: 'Weekly', icon: Zap }
               ].map((tf) => (

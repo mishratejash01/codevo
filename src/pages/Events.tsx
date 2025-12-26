@@ -5,7 +5,7 @@ import { format, differenceInDays, differenceInHours } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, MapPin, Trophy, ChevronRight, ChevronLeft, 
-  Clock, Sparkles, Loader2, Code, Zap, ArrowUpRight, Flame 
+  Clock, Sparkles, Loader2, Code, Zap, ArrowUpRight, Flame, Users 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

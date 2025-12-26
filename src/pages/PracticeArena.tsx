@@ -27,10 +27,16 @@ const getDifficultyStyle = (difficulty: string) => {
 };
 
 const FolderIcon = ({ active }: { active: boolean }) => (
-  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105 opacity-100" : "opacity-50")}>
-    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "#fff" : "none"} stroke="currentColor" strokeWidth="2">
-       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70")}>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "#f97316" : "#a3a3a3"} stroke={active ? "#ea580c" : "#737373"} strokeWidth="1.5">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
     </svg>
+  </div>
+);
+
+const HashIcon = ({ active }: { active: boolean }) => (
+  <div className={cn("transition-all duration-300 shrink-0", active ? "opacity-100" : "opacity-50")}>
+    <span className={cn("text-sm font-bold", active ? "text-[#d97706]" : "text-[#a3a3a3]")}>#</span>
   </div>
 );
 
@@ -181,7 +187,7 @@ export default function PracticeArena() {
                     className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                       selectedTopic === topic.name ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                     )}>
-                    <span className="text-[10px] tracking-widest opacity-30">#</span>
+                    <HashIcon active={selectedTopic === topic.name} />
                     <span className="tracking-tight">{topic.name}</span>
                   </div>
                 ))}
