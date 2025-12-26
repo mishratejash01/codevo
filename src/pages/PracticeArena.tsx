@@ -5,7 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, ArrowLeft, CheckCircle2, Code2 } from 'lucide-react';
+import { 
+  Search, ArrowLeft, CheckCircle2, Code2
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
 import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
@@ -16,28 +18,12 @@ const BRAND_COLORS = {
   outline: '#2d1d1a',
   accent: '#f39233',
   base: '#ffce8c',
-  sticker: '#e0e0e0',
-  activeBlue: '#3b82f6'
+  sticker: '#e0e0e0'
 };
 
 /**
- * EXACT COMPONENT: SubTopicHashtag
- */
-const SubTopicHashtag = ({ active }: { active: boolean }) => (
-  <div className={cn("relative w-5 h-5 shrink-0 transition-opacity", active ? "opacity-100" : "opacity-40")}>
-    <div className="relative w-full h-full scale-[0.25] origin-top-left">
-      <div className="marker absolute top-[2px] left-[20px] w-[25px] h-[8px] bg-[#f39233] border-[3px] border-[#2d1d1a] border-b-0 rounded-t-[4px] z-0" 
-           style={{ clipPath: 'polygon(0 0, 70% 0, 100% 100%, 0 100%)' }} />
-      <div className="bar-h absolute w-full h-[14px] bg-[#ffce8c] border-[3px] border-[#2d1d1a] rounded-[4px] z-[2] top-[20px]" />
-      <div className="bar-h absolute w-full h-[14px] bg-[#ffce8c] border-[3px] border-[#2d1d1a] rounded-[4px] z-[2] bottom-[20px]" />
-      <div className="bar-v absolute h-full w-[14px] bg-[#f39233] border-[3px] border-[#2d1d1a] rounded-[4px] z-[1] left-[20px]" />
-      <div className="bar-v absolute h-full w-[14px] bg-[#f39233] border-[3px] border-[#2d1d1a] rounded-[4px] z-[1] right-[20px]" />
-    </div>
-  </div>
-);
-
-/**
  * COMPONENT: FolderIcon (Main Category)
+ * Premium Sticker logic with the white silhouette backing.
  */
 const FolderIcon = ({ active }: { active: boolean }) => (
   <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
@@ -50,6 +36,27 @@ const FolderIcon = ({ active }: { active: boolean }) => (
           <div className="absolute top-0 left-0 w-full h-[3px] border-b-[1px]" style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
         </div>
       </div>
+    </div>
+  </div>
+);
+
+/**
+ * EXACT COMPONENT: SubTopicHashtag
+ * Direct implementation of the provided HTML/CSS design.
+ */
+const SubTopicHashtag = ({ active }: { active: boolean }) => (
+  <div className={cn("relative w-5 h-5 shrink-0 transition-opacity", active ? "opacity-100" : "opacity-40")}>
+    <div className="relative w-full h-full scale-[0.25] origin-top-left">
+      <div className="marker absolute top-[2px] left-[20px] w-[25px] h-[8px] border-[3px] border-b-0 rounded-t-[4px] z-0" 
+           style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline, clipPath: 'polygon(0 0, 70% 0, 100% 100%, 0 100%)' }} />
+      <div className="bar-h absolute w-full h-[14px] border-[3px] rounded-[4px] z-[2] top-[20px]" 
+           style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} />
+      <div className="bar-h absolute w-full h-[14px] border-[3px] rounded-[4px] z-[2] bottom-[20px]" 
+           style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} />
+      <div className="bar-v absolute h-full w-[14px] border-[3px] rounded-[4px] z-[1] left-[20px]" 
+           style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
+      <div className="bar-v absolute h-full w-[14px] border-[3px] rounded-[4px] z-[1] right-[20px]" 
+           style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
     </div>
   </div>
 );
@@ -111,6 +118,7 @@ export default function PracticeArena() {
 
   return (
     <div className="h-screen bg-[#080808] text-[#f1f5f9] flex flex-col font-sans overflow-hidden select-none">
+      {/* Navigation Layer */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1f1f1f] bg-[#080808] shrink-0 z-50">
         <div className="flex items-center gap-8">
           <div className="font-extrabold text-xl tracking-tighter">
@@ -124,7 +132,7 @@ export default function PracticeArena() {
         </div>
 
         <div className="flex-1 max-w-md mx-8 hidden sm:block">
-          <div className="relative">
+          <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
             <Input 
               placeholder="Search challenges..." 
@@ -143,7 +151,10 @@ export default function PracticeArena() {
         </div>
       </nav>
 
+      {/* Main Grid: Left, Middle (Scrollable), Right (Fixed) */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr_340px] gap-10 p-6 md:p-12 max-w-[1800px] mx-auto w-full overflow-hidden">
+        
+        {/* LEFT COLUMN: Independent Scrolling Topics */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden">
           <div className="shrink-0 space-y-4">
              <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-3 uppercase">Difficulty Level</div>
@@ -185,6 +196,7 @@ export default function PracticeArena() {
           </div>
         </aside>
 
+        {/* MIDDLE COLUMN: Independent Scrolling Challenges */}
         <main className="bg-[#121212] border border-[#1f1f1f] rounded-[32px] p-8 md:p-10 flex flex-col shadow-2xl overflow-hidden h-full">
           <div className="shrink-0 flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold tracking-tight">Recommended Challenges</h2>
@@ -222,7 +234,7 @@ export default function PracticeArena() {
                         {solvedProblemIds.has(problem.id) ? <CheckCircle2 className="w-5 h-5" /> : <Code2 className="w-5 h-5" />}
                       </div>
                       <div>
-                        <div className="font-bold text-lg group-hover:text-blue-400 transition-colors tracking-tight">{problem.title}</div>
+                        <div className="font-bold text-lg group-hover:text-blue-400 transition-colors tracking-tight font-sans">{problem.title}</div>
                         <div className="flex items-center gap-3 mt-1 text-[11px] uppercase tracking-wider text-[#64748b]">
                           <span className="font-bold">#{problem.tags?.[0] || 'General'}</span>
                           <span>•</span>
@@ -248,6 +260,7 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
+        {/* RIGHT COLUMN: User Analytics & Bluish Activity Record */}
         <aside className="hidden lg:flex flex-col gap-12 shrink-0 h-full overflow-hidden">
           <div className="space-y-6">
             <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase">User Analytics</div>
@@ -258,6 +271,7 @@ export default function PracticeArena() {
             <ActivityCalendar userId={userId} />
           </div>
         </aside>
+
       </div>
     </div>
   );
