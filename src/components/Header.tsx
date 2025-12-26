@@ -2,17 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-// Only importing icons used in the mobile bar or dropdowns
-import { LogIn, LogOut, Home, User, Code2, Trophy, LayoutDashboard } from 'lucide-react'; 
+import { LogIn, LogOut, Home, Code2, Trophy, LayoutDashboard } from 'lucide-react'; 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from '@/lib/utils';
+import { UserStatsCard } from '@/components/practice/UserStatsCard';
 
 interface HeaderProps {
   session: Session | null;
@@ -63,77 +60,55 @@ export function Header({ session, onLogout }: HeaderProps) {
         style={{ top: 'calc(1.25rem + var(--banner-height, 0px))' }}
       >
         <div className={cn(
-          "rounded-2xl border border-white/10 shadow-2xl",
-          "bg-black/60 backdrop-blur-xl supports-[backdrop-filter]:bg-black/40",
-          "transition-all duration-300 hover:border-primary/20"
+          "rounded-2xl border border-white/10 shadow-2xl bg-black/60 backdrop-blur-xl transition-all duration-300 hover:border-primary/20"
         )}>
           <nav className="flex items-center justify-between p-2 px-6">
             
             <Link to="/" className="flex items-center gap-3 group mr-8">
               <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">
-                COD
-                <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
-                VO
+                COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
               </span>
             </Link>
 
             <div className="hidden md:flex flex-1 justify-center gap-4">
               <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
-                <img 
-                  src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" 
-                  alt="IITM" 
-                  className="w-4 h-4 object-contain opacity-80" 
-                /> 
+                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-4 h-4 object-contain opacity-80" /> 
                 IITM BS
               </Link>
-
-              <Link to="/practice-arena" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
-                Practice
-              </Link>
-
-              <Link to="/events" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
-                Events
-              </Link>
-
-              <Link to="/compiler" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-purple-400 transition-colors hover:bg-purple-500/10 px-3 py-2 rounded-md border border-transparent hover:border-purple-500/20">
-                Compiler
-              </Link>
-              
-              <Link to="/leaderboard" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">
-                Leaderboard
-              </Link>
+              <Link to="/practice-arena" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">Practice</Link>
+              <Link to="/events" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">Events</Link>
+              <Link to="/compiler" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-purple-400 transition-colors hover:bg-purple-500/10 px-3 py-2 rounded-md border border-transparent hover:border-purple-500/20">Compiler</Link>
+              <Link to="/leaderboard" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors hover:bg-white/5 px-3 py-2 rounded-md">Leaderboard</Link>
             </div>
 
             <div className="flex items-center gap-2">
               {session ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <Popover>
+                  <PopoverTrigger asChild>
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md shadow-inner cursor-pointer hover:bg-white/10 transition-all">
                       <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border border-white/20">
                         {userName.charAt(0).toUpperCase()}
                       </div>
                       <span className="text-xs font-medium text-gray-200 max-w-[100px] truncate">{userName}</span>
                       <div className="relative flex h-2 w-2 ml-1" title="Online">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
                       </div>
                     </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-[#0c0c0e] border-white/10 text-white">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-white/10" />
-                    <DropdownMenuItem className="focus:bg-white/5 cursor-pointer" onClick={() => navigate('/dashboard')}>
-                      <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="focus:bg-white/5 cursor-pointer" onClick={() => navigate('/profile')}>
-                      <User className="mr-2 h-4 w-4" /> Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-white/10" />
-                    <DropdownMenuItem className="focus:bg-red-500/10 focus:text-red-400 text-red-400 cursor-pointer" onClick={onLogout}>
-                      <LogOut className="mr-2 h-4 w-4" /> Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-[400px] p-0 bg-transparent border-none shadow-none mt-4 outline-none ring-0">
+                    <div className="scale-95 origin-top-right">
+                        <UserStatsCard userId={session.user.id} />
+                        <div className="mt-3 flex items-center gap-2 px-6 pb-4">
+                            <Button variant="outline" size="sm" className="flex-1 bg-black/40 border-white/10 text-white text-[10px] uppercase tracking-widest font-bold" onClick={() => navigate('/dashboard')}>
+                                <LayoutDashboard className="w-3 h-3 mr-2" /> Dashboard
+                            </Button>
+                            <Button variant="destructive" size="sm" className="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white border-none text-[10px] uppercase tracking-widest font-bold" onClick={onLogout}>
+                                <LogOut className="w-3 h-3 mr-2" /> Logout
+                            </Button>
+                        </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               ) : (
                 <Button size="sm" className="bg-primary hover:bg-primary/90 text-white rounded-xl px-6" onClick={() => navigate('/auth')}>
                   <LogIn className="h-3.5 w-3.5 mr-2" /> Login
@@ -144,7 +119,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         </div>
       </header>
 
-      {/* Mobile Bottom Bar remains unchanged as it relies on NavItem with icons */}
+      {/* Mobile Bottom Bar */}
       <div className={cn(
         "fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform ease-in-out",
         (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none"
@@ -166,9 +141,6 @@ export function Header({ session, onLogout }: HeaderProps) {
                  <NavItem to="/auth" icon={LogIn} label="Login" active={location.pathname === "/auth"} />
               )}
             </div>
-          </div>
-          <div className="absolute -bottom-6 left-0 right-0 text-center">
-             <span className="text-[9px] font-neuropol text-white/20 tracking-widest">CODéVO</span>
           </div>
         </div>
       </div>
