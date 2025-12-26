@@ -4,21 +4,62 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { 
+  Sheet, SheetContent, SheetTrigger 
+} from "@/components/ui/sheet";
 import { 
   Search, ArrowLeft, Layers, Flame, 
-  ChevronDown, Check, User, LogOut, QrCode 
+  ChevronDown, Check, User, LogOut, QrCode,
+  Menu 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
 import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
 
-// Import New Components
-import { SubTopicIcon } from '@/components/practice/SubTopicIcon';
-import { FolderSticker } from '@/components/practice/FolderSticker';
-
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
+// --- Folder Sticker Component (Design logic from your snippet) ---
+const FolderSticker = ({ active }: { active: boolean }) => (
+  <div className={cn(
+    "relative transition-all duration-300 shrink-0", 
+    active ? "scale-105 opacity-100" : "opacity-40 hover:opacity-70"
+  )}>
+    <div className="filter 
+      drop-shadow-[1px_0_0_#e0e0e0] 
+      drop-shadow-[-1px_0_0_#e0e0e0] 
+      drop-shadow-[0_1px_0_#e0e0e0] 
+      drop-shadow-[0_-1px_0_#e0e0e0]
+      drop-shadow-[0_0_1px_rgba(255,255,255,0.2)]
+      drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+    >
+      <div className="relative w-[26px] h-[18px]">
+        {/* Folder Tab: Designs back section slanted */}
+        <div 
+          className="absolute top-[-4px] left-0 w-[16px] h-[5px] bg-[#f39233] border-[1px] border-[#2d1d1a] border-b-0 rounded-tl-[2px] rounded-tr-[3.5px]"
+          style={{ clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }}
+        />
+        {/* Main Folder Body: designs front section aligned square at top-left */}
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] border-[1px] border-[#2d1d1a] rounded-tr-[3px] rounded-br-[3px] rounded-bl-[3px] overflow-hidden">
+          {/* Interior orange section bar */}
+          <div className="absolute top-0 left-0 w-full h-[3.5px] bg-[#f39233] border-b-[1px] border-[#2d1d1a]" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// --- Sub Topic Icon ---
+const SubTopicHashtag = ({ active }: { active: boolean }) => (
+  <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
+    <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+  </div>
+);
+
+// --- Question Icons ---
 const TerminalBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -52,6 +93,7 @@ export default function PracticeArena() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [userId, setUserId] = useState<string | undefined>();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [placeholderTopic, setPlaceholderTopic] = useState("Arrays");
   
   const levelDropdownRef = useRef<HTMLDivElement>(null);
@@ -129,17 +171,43 @@ export default function PracticeArena() {
     return matchesSearch && matchesDifficulty && matchesTopic && matchesStatus;
   });
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUserId(undefined);
+    setIsProfileOpen(false);
+  };
+
   const toggleDifficulty = (diff: string) => {
     setSelectedDifficulties(prev => 
       prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]
     );
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUserId(undefined);
-    setIsProfileOpen(false);
-  };
+  const TopicNavigation = () => (
+    <nav className="flex flex-col gap-1 pb-10">
+      <div 
+        onClick={() => { setSelectedTopic(null); setIsMobileMenuOpen(false); }}
+        className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
+          selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
+        )}
+      >
+        <FolderSticker active={selectedTopic === null} />
+        <span className="tracking-tight">All Topics</span>
+      </div>
+      {topics.map((topic: any) => (
+        <div 
+          key={topic.id} 
+          onClick={() => { setSelectedTopic(topic.name); setIsMobileMenuOpen(false); }}
+          className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
+            selectedTopic === topic.name ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
+          )}
+        >
+          <SubTopicHashtag active={selectedTopic === topic.name} />
+          <span className="tracking-tight">{topic.name}</span>
+        </div>
+      ))}
+    </nav>
+  );
 
   const profileLink = profile?.username 
     ? `${window.location.origin}/u/${profile.username}` 
@@ -147,8 +215,28 @@ export default function PracticeArena() {
 
   return (
     <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
+      {/* Header */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
-        <div className="flex items-center gap-8 font-sans">
+        <div className="flex items-center gap-4 md:gap-8 font-sans">
+          {/* Mobile Menu Trigger */}
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="lg:hidden text-zinc-400 hover:text-white hover:bg-[#1a1a1a]">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="bg-[#050505] border-r border-[#1a1a1a] p-0 w-72">
+              <div className="flex flex-col h-full p-4">
+                <div className="font-neuropol text-xl font-bold text-white mb-8 px-2 pt-2">
+                  COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
+                </div>
+                <ScrollArea className="flex-1">
+                  <TopicNavigation />
+                </ScrollArea>
+              </div>
+            </SheetContent>
+          </Sheet>
+
           <div className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white cursor-pointer" onClick={() => navigate('/')}>
             COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
           </div>
@@ -225,60 +313,50 @@ export default function PracticeArena() {
         </div>
       </nav>
 
+      {/* Content */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
+        {/* Desktop Topics Sidebar */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
-              <nav className="flex flex-col gap-1 pb-10">
-                <div onClick={() => setSelectedTopic(null)}
-                  className={cn("flex items-center gap-4 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
-                    selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
-                  )}>
-                  <FolderSticker active={selectedTopic === null} />
-                  <span className="tracking-tight font-medium">All Topics</span>
-                </div>
-                {topics.map((topic: any) => (
-                  <div key={topic.id} onClick={() => setSelectedTopic(topic.name)}
-                    className={cn("flex items-center gap-4 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
-                      selectedTopic === topic.name ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
-                    )}>
-                    <SubTopicIcon active={selectedTopic === topic.name} />
-                    <span className="tracking-tight font-medium">{topic.name}</span>
-                  </div>
-                ))}
-              </nav>
+              <TopicNavigation />
             </ScrollArea>
           </div>
         </aside>
 
+        {/* Problems Main View */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
-          <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
-            <div className="flex items-center gap-2">
-               {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
-                 <button key={f} onClick={() => setStatusFilter(f)}
-                   className={cn(
-                     "px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans", 
-                     statusFilter === f ? "bg-white text-black border-white shadow-md font-bold" : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white font-medium"
-                   )}>{f}</button>
-               ))}
-               <div className="relative" ref={levelDropdownRef}>
-                  <button onClick={() => setIsLevelOpen(!isLevelOpen)} className={cn("px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans flex items-center gap-2",
-                      selectedDifficulties.length > 0 || isLevelOpen ? "bg-[#141414] text-white border-[#333]" : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white"
-                  )}>Level <ChevronDown className={cn("w-3 h-3 transition-transform", isLevelOpen && "rotate-180")} /></button>
-                  {isLevelOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-40 bg-[#0c0c0c] border border-[#333] rounded-[4px] shadow-2xl p-1 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-200">
-                      {['Easy', 'Medium', 'Hard'].map((diff) => (
-                        <div key={diff} onClick={() => toggleDifficulty(diff)} className="flex items-center gap-3 px-3 py-2.5 hover:bg-[#1a1a1a] rounded-[2px] cursor-pointer group">
-                          <div className={cn("w-3.5 h-3.5 border rounded-[2px] flex items-center justify-center transition-all",
-                            selectedDifficulties.includes(diff) ? "bg-white border-white" : "border-[#555] group-hover:border-[#777]"
-                          )}>{selectedDifficulties.includes(diff) && <Check className="w-2.5 h-2.5 text-black stroke-[4]" />}</div>
-                          <span className={cn("text-[10px] uppercase font-bold tracking-widest", selectedDifficulties.includes(diff) ? "text-white" : "text-[#777] group-hover:text-[#ccc]")}>{diff}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-               </div>
-            </div>
+          {/* Scrollable Filters */}
+          <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between overflow-hidden">
+            <ScrollArea className="w-full" orientation="horizontal">
+              <div className="flex items-center gap-2 pb-3 min-w-max px-1">
+                {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
+                  <button key={f} onClick={() => setStatusFilter(f)}
+                    className={cn(
+                      "px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans", 
+                      statusFilter === f ? "bg-white text-black border-white shadow-md font-bold" : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white font-medium"
+                    )}>{f}</button>
+                ))}
+                <div className="relative" ref={levelDropdownRef}>
+                    <button onClick={() => setIsLevelOpen(!isLevelOpen)} className={cn("px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans flex items-center gap-2",
+                        selectedDifficulties.length > 0 || isLevelOpen ? "bg-[#141414] text-white border-[#333]" : "bg-[#0c0c0c] text-zinc-500 border-[#1a1a1a] hover:border-[#333] hover:text-white"
+                    )}>Level <ChevronDown className={cn("w-3 h-3 transition-transform", isLevelOpen && "rotate-180")} /></button>
+                    {isLevelOpen && (
+                      <div className="absolute top-full left-0 mt-2 w-40 bg-[#0c0c0c] border border-[#333] rounded-[4px] shadow-2xl p-1 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-200">
+                        {['Easy', 'Medium', 'Hard'].map((diff) => (
+                          <div key={diff} onClick={() => toggleDifficulty(diff)} className="flex items-center gap-3 px-3 py-2.5 hover:bg-[#1a1a1a] rounded-[2px] cursor-pointer group">
+                            <div className={cn("w-3.5 h-3.5 border rounded-[2px] flex items-center justify-center transition-all",
+                              selectedDifficulties.includes(diff) ? "bg-white border-white" : "border-[#555] group-hover:border-[#777]"
+                            )}>{selectedDifficulties.includes(diff) && <Check className="w-2.5 h-2.5 text-black stroke-[4]" />}</div>
+                            <span className={cn("text-[10px] uppercase font-bold tracking-widest", selectedDifficulties.includes(diff) ? "text-white" : "text-[#777] group-hover:text-[#ccc]")}>{diff}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                </div>
+              </div>
+              <ScrollBar orientation="horizontal" className="h-1.5" />
+            </ScrollArea>
           </div>
 
           <ScrollArea className="flex-1">
@@ -316,6 +394,7 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
+        {/* Desktop Right Sidebar */}
         <aside className="hidden lg:flex flex-col h-full overflow-hidden">
           <ScrollArea className="h-full pr-2">
             <div className="flex flex-col gap-6 pb-10">
