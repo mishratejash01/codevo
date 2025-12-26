@@ -155,6 +155,12 @@ export default function PracticeArena() {
     return matchesSearch && matchesDifficulty && matchesTopic && matchesStatus;
   });
 
+  const toggleDifficulty = (diff: string) => {
+    setSelectedDifficulties(prev => 
+      prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]
+    );
+  };
+
   return (
     <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
@@ -336,5 +342,48 @@ export default function PracticeArena() {
         </aside>
       </div>
     </div>
+  );
+}
+
+// Named export for pages that import { Header }
+interface HeaderProps {
+  session: any;
+  onLogout: () => void;
+}
+
+export function Header({ session, onLogout }: HeaderProps) {
+  const navigate = useNavigate();
+  
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-[#09090b]/90 backdrop-blur-xl border-b border-white/5">
+      <div className="max-w-7xl mx-auto h-full px-4 md:px-6 flex items-center justify-between">
+        <div 
+          className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white cursor-pointer"
+          onClick={() => navigate('/')}
+        >
+          COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
+        </div>
+        
+        <nav className="hidden md:flex items-center gap-8">
+          <button onClick={() => navigate('/events')} className="text-sm text-zinc-400 hover:text-white transition-colors">Events</button>
+          <button onClick={() => navigate('/practice-arena')} className="text-sm text-zinc-400 hover:text-white transition-colors">Practice</button>
+          <button onClick={() => navigate('/leaderboard')} className="text-sm text-zinc-400 hover:text-white transition-colors">Leaderboard</button>
+          <button onClick={() => navigate('/about')} className="text-sm text-zinc-400 hover:text-white transition-colors">About</button>
+        </nav>
+        
+        <div className="flex items-center gap-4">
+          {session ? (
+            <>
+              <button onClick={() => navigate('/dashboard')} className="text-sm text-zinc-400 hover:text-white transition-colors">Dashboard</button>
+              <button onClick={onLogout} className="text-sm text-zinc-400 hover:text-white transition-colors">Logout</button>
+            </>
+          ) : (
+            <button onClick={() => navigate('/auth')} className="px-4 py-2 bg-white text-black text-sm font-semibold rounded-md hover:bg-zinc-200 transition-colors">
+              Sign In
+            </button>
+          )}
+        </div>
+      </div>
+    </header>
   );
 }
