@@ -14,12 +14,14 @@ import {
 import { 
   Search, ArrowLeft, Layers, Flame, 
   ChevronDown, Check, User, LogOut, QrCode,
-  Menu 
+  Menu, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
 import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
 import { QRCodeSVG } from 'qrcode.react';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
@@ -94,8 +96,11 @@ export default function PracticeArena() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [placeholderTopic, setPlaceholderTopic] = useState("Arrays");
+  const [newUsername, setNewUsername] = useState('');
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id));
@@ -172,6 +177,23 @@ export default function PracticeArena() {
     await supabase.auth.signOut();
     setUserId(undefined);
     setIsProfileOpen(false);
+  };
+
+  const handleUpdateUsername = async () => {
+    if (!newUsername || newUsername.trim().length < 3) {
+      toast.error("Username must be at least 3 characters");
+      return;
+    }
+    setIsUpdatingUsername(true);
+    const { error } = await supabase.from('profiles').update({ username: newUsername.trim() }).eq('id', userId);
+    if (error) {
+      toast.error("Error setting username");
+    } else {
+      toast.success("Username set successfully");
+      queryClient.invalidateQueries({ queryKey: ['user_profile_arena', userId] });
+      setNewUsername('');
+    }
+    setIsUpdatingUsername(false);
   };
 
   const toggleDifficulty = (diff: string) => {
@@ -285,13 +307,42 @@ export default function PracticeArena() {
                    </div>
                  </div>
 
-                 <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2">
-                    <QRCodeSVG 
-                      value={profileLink} 
-                      size={96} 
-                      level="H" 
-                      includeMargin={false}
-                    />
+                 <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2 relative">
+                    <div className={cn(
+                      "transition-all duration-300",
+                      !profile?.username && "blur-md"
+                    )}>
+                      <QRCodeSVG 
+                        value={profileLink} 
+                        size={96} 
+                        level="H" 
+                        includeMargin={false}
+                      />
+                    </div>
+                    
+                    {/* Username input overlay at bottom of QR */}
+                    {!profile?.username && (
+                      <div className="absolute inset-x-0 bottom-3 px-2 z-20">
+                        <div className="bg-black border border-white/30 rounded-md p-0.5 flex items-center shadow-xl">
+                          <Input 
+                            placeholder="Set Username" 
+                            value={newUsername}
+                            onChange={(e) => setNewUsername(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleUpdateUsername()}
+                            className="h-6 text-[9px] bg-transparent border-none text-white focus-visible:ring-0 px-2 placeholder:text-white/50"
+                          />
+                          <Button 
+                            size="icon" 
+                            className="h-5 w-5 bg-primary hover:bg-primary/90 rounded shrink-0" 
+                            onClick={handleUpdateUsername}
+                            disabled={isUpdatingUsername}
+                          >
+                            {isUpdatingUsername ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Check className="w-2.5 h-2.5" />}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center gap-1.5">
                       <QrCode className="w-3 h-3 text-black" />
                       <span className="text-[9px] text-black font-bold uppercase tracking-wider">Scan Profile Card</span>
@@ -320,7 +371,7 @@ export default function PracticeArena() {
 
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
           <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
-            <ScrollArea className="w-full" orientation="horizontal">
+            <ScrollArea className="w-full">
               <div className="flex items-center gap-2 pb-3 px-1 min-w-max">
                  {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
                    <button key={f} onClick={() => setStatusFilter(f)}

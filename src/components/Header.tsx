@@ -1,169 +1,154 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { QrCode, Check, Loader2 } from 'lucide-react';
-import { 
-  ResponsiveContainer, AreaChart, Area
-} from 'recharts';
-import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { Menu, X, User, LogOut, Home, Code2, Trophy, Calendar, FileText, Info } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface UserStatsCardProps {
-  userId: string | undefined;
+interface HeaderProps {
+  session: any;
+  onLogout: () => void;
 }
 
-export function UserStatsCard({ userId }: UserStatsCardProps) {
-  const queryClient = useQueryClient();
-  const [newUsername, setNewUsername] = useState('');
-  const [isUpdating, setIsUpdating] = useState(false);
+export function Header({ session, onLogout }: HeaderProps) {
+  const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ['user_stats_silver', userId],
-    queryFn: async () => {
-      if (!userId) return null;
-
-      // Fetch Profile for Username
-      const { data: profile } = await supabase.from('profiles').select('username').eq('id', userId).maybeSingle();
-
-      // Fetch submissions
-      const { data: submissions } = await supabase.from('practice_submissions').select('problem_id, status, score, submitted_at, practice_problems(difficulty)').eq('user_id', userId).eq('status', 'completed');
-
-      const { data: allProblems } = await supabase.from('practice_problems').select('difficulty');
-
-      const difficultyStats = {
-        Easy: { solved: 0, total: allProblems?.filter(p => p.difficulty === 'Easy').length || 0 },
-        Medium: { solved: 0, total: allProblems?.filter(p => p.difficulty === 'Medium').length || 0 },
-        Hard: { solved: 0, total: allProblems?.filter(p => p.difficulty === 'Hard').length || 0 },
-      };
-
-      submissions?.forEach((s: any) => {
-        const diff = s.practice_problems?.difficulty as keyof typeof difficultyStats;
-        if (diff) difficultyStats[diff].solved++;
-      });
-
-      const sparklineData = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - (6 - i));
-        const dateStr = date.toISOString().split('T')[0];
-        const count = submissions?.filter(s => s.submitted_at?.startsWith(dateStr)).length || 0;
-        return { day: dateStr, count };
-      });
-
-      const { data: streak } = await supabase.from('practice_streaks').select('current_streak').eq('user_id', userId).maybeSingle();
-      const points = submissions?.reduce((sum, s) => sum + (s.score || 0), 0) || 0;
-
-      return {
-        solved: submissions?.length || 0,
-        username: profile?.username,
-        points,
-        streak: streak?.current_streak || 0,
-        difficulty: difficultyStats,
-        sparkline: sparklineData,
-      };
-    },
-    enabled: !!userId,
-  });
-
-  const handleUpdateUsername = async () => {
-    if (!newUsername || newUsername.trim().length < 3) {
-      toast.error("Username must be at least 3 characters");
-      return;
-    }
-    setIsUpdating(true);
-    const { error } = await supabase.from('profiles').update({ username: newUsername }).eq('id', userId);
-    if (error) {
-      toast.error("Error setting username");
-    } else {
-      toast.success("Username set successfully");
-      queryClient.invalidateQueries({ queryKey: ['user_stats_silver', userId] });
-    }
-    setIsUpdating(false);
-  };
-
-  if (isLoading || !stats) return <div className="h-[400px] w-full animate-pulse bg-[#0c0c0c] rounded-2xl border border-[#1a1a1a]" />;
+  const navLinks = [
+    { label: 'Home', href: '/', icon: Home },
+    { label: 'Practice', href: '/practice-arena', icon: Code2 },
+    { label: 'Events', href: '/events', icon: Calendar },
+    { label: 'Leaderboard', href: '/leaderboard', icon: Trophy },
+    { label: 'About', href: '/about', icon: Info },
+  ];
 
   return (
-    <div className="relative w-full bg-[#0c0c0c] p-8 font-sans">
-      {/* Header with Solved Count and QR Logic */}
-      <div className="flex justify-between items-start mb-8">
-        <div className="flex flex-col">
-          <span className="text-[0.6rem] tracking-[2px] text-[#555555] uppercase font-bold mb-2">Solved Count</span>
-          <span className="text-5xl font-thin leading-none bg-gradient-to-b from-white to-[#999999] bg-clip-text text-transparent">
-            {stats.solved}
-          </span>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/5">
+      <nav className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white">
+          COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
+        </Link>
+
+        {/* Desktop Nav */}
+        <div className="hidden md:flex items-center gap-6">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              to={link.href}
+              className="text-sm text-zinc-400 hover:text-white transition-colors font-medium"
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
 
-        {/* QR Section */}
-        <div className="relative flex flex-col items-center">
-          <div className={cn(
-            "w-20 h-20 bg-white p-2 rounded-xl transition-all duration-700 shadow-2xl",
-            (!stats.username) && "blur-md scale-95 grayscale"
-          )}>
-            <QrCode className="w-full h-full text-black" />
-          </div>
-
-          {/* Overlapping Input Block for Username */}
-          {(!stats.username) && (
-            <div className="absolute inset-x-0 bottom-0 px-1 translate-y-3 z-20">
-              <div className="bg-black border border-white/20 rounded-lg p-0.5 flex items-center shadow-2xl ring-1 ring-primary/20">
-                <Input 
-                  placeholder="Set Username" 
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
-                  className="h-6 text-[9px] bg-transparent border-none text-white focus-visible:ring-0 px-2"
-                />
-                <Button 
-                  size="icon" 
-                  className="h-5 w-5 bg-primary hover:bg-primary/90 rounded-md shrink-0" 
-                  onClick={handleUpdateUsername}
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? <Loader2 className="w-2 h-2 animate-spin" /> : <Check className="w-2 h-2" />}
-                </Button>
-              </div>
-            </div>
+        {/* Auth Buttons */}
+        <div className="hidden md:flex items-center gap-3">
+          {session ? (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/profile')}
+                className="text-zinc-400 hover:text-white"
+              >
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onLogout}
+                className="text-zinc-400 hover:text-red-400"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/auth')}
+                className="text-zinc-400 hover:text-white"
+              >
+                Sign In
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => navigate('/auth')}
+                className="bg-white text-black hover:bg-zinc-200"
+              >
+                Get Started
+              </Button>
+            </>
           )}
-          <span className="text-[9px] font-bold text-[#333] mt-4 uppercase tracking-[0.2em]">Profile QR</span>
         </div>
-      </div>
 
-      {/* Sparkline */}
-      <div className="h-16 mb-8 opacity-60">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={stats.sparkline}>
-            <Area type="monotone" dataKey="count" stroke="#ffffff" fill="rgba(255,255,255,0.05)" strokeWidth={2} />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+        {/* Mobile Menu Toggle */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="md:hidden p-2 text-zinc-400 hover:text-white"
+        >
+          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </nav>
 
-      {/* Difficulty Grid */}
-      <div className="grid grid-cols-3 gap-2 mb-8">
-        {['Easy', 'Medium', 'Hard'].map((label) => {
-          const d = label as keyof typeof stats.difficulty;
-          return (
-            <div key={label} className="bg-white/[0.02] border border-[#1a1a1a] rounded-xl py-4 px-2 text-center transition-all hover:bg-white/[0.05]">
-              <span className="block text-[0.5rem] text-[#555555] uppercase tracking-wider mb-1">{label}</span>
-              <div className="text-xl font-light text-white">
-                {stats.difficulty[d].solved}<small className="text-[#333] text-[0.6rem] ml-0.5">/{stats.difficulty[d].total}</small>
-              </div>
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-[#09090b] border-b border-white/5 px-4 py-4">
+          <div className="flex flex-col gap-2">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <link.icon className="w-5 h-5" />
+                {link.label}
+              </Link>
+            ))}
+            <div className="border-t border-white/5 mt-2 pt-2">
+              {session ? (
+                <>
+                  <button
+                    onClick={() => {
+                      navigate('/profile');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                  >
+                    <User className="w-5 h-5" />
+                    Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      onLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/5 rounded-lg transition-colors"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    navigate('/auth');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white text-black rounded-lg font-medium"
+                >
+                  Get Started
+                </button>
+              )}
             </div>
-          );
-        })}
-      </div>
-
-      {/* Stats Footer */}
-      <div className="flex justify-between items-center pt-6 border-t border-white/5">
-        <div className="flex flex-col">
-          <span className="text-[0.5rem] tracking-[2px] text-[#555555] uppercase mb-1">Streak</span>
-          <span className="text-lg font-normal text-white">{stats.streak}</span>
+          </div>
         </div>
-        <div className="flex flex-col text-right">
-          <span className="text-[0.5rem] tracking-[2px] text-[#555555] uppercase mb-1">Points</span>
-          <span className="text-lg font-normal text-white">{stats.points}</span>
-        </div>
-      </div>
-    </div>
+      )}
+    </header>
   );
 }
