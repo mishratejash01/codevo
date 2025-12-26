@@ -16,7 +16,41 @@ import { toast } from "sonner";
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- Helper for Difficulty Styling (Italian Card Style) ---
+// --- BRAND COLORS for Custom Icons ---
+const BRAND_COLORS = {
+  outline: '#2d1d1a',
+  accent: '#f39233',
+  base: '#ffce8c',
+  sticker: '#e0e0e0',
+};
+
+// --- RESTORED: Custom Hashtag Icon ---
+const SubTopicHashtag = ({ active }: { active: boolean }) => (
+  <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
+    <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+  </div>
+);
+
+// --- RESTORED: Custom Folder Icon ---
+const CustomFolderIcon = ({ active }: { active: boolean }) => (
+  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
+    <div style={{ filter: `drop-shadow(2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(-2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(0 2px 0 ${BRAND_COLORS.sticker}) drop-shadow(0 -2px 0 ${BRAND_COLORS.sticker})` }}>
+      <div className="relative w-7 h-5">
+        <div className="absolute -top-[5px] left-0 w-[65%] h-[7px] border-[1.5px] border-b-0 rounded-t-[3px] z-10"
+          style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline, clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }} />
+        <div className="absolute inset-0 border-[1.5px] rounded-tr-[4px] rounded-br-[4px] rounded-bl-[4px] overflow-hidden z-20"
+          style={{ background: `linear-gradient(160deg, ${BRAND_COLORS.base} 0%, #f7b65d 100%)`, borderColor: BRAND_COLORS.outline }}>
+          <div className="absolute top-0 left-0 w-full h-[3px] border-b-[1px]" style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// --- Helper for Difficulty Styling ---
 const getDifficultyStyle = (difficulty: string) => {
   switch (difficulty) {
     case 'Easy': return "bg-[#00ffa3]/[0.03] text-[#00ffa3] border-[#00ffa3]/20";
@@ -25,14 +59,6 @@ const getDifficultyStyle = (difficulty: string) => {
     default: return "bg-[#333]/[0.1] text-zinc-500 border-zinc-700";
   }
 };
-
-const FolderIcon = ({ active }: { active: boolean }) => (
-  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105 opacity-100" : "opacity-50")}>
-    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "#fff" : "none"} stroke="currentColor" strokeWidth="2">
-       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-    </svg>
-  </div>
-);
 
 export default function PracticeArena() {
   const navigate = useNavigate();
@@ -173,7 +199,8 @@ export default function PracticeArena() {
                   className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                     selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                   )}>
-                  <FolderIcon active={selectedTopic === null} />
+                  {/* Restored Custom Folder Icon */}
+                  <CustomFolderIcon active={selectedTopic === null} />
                   <span className="tracking-tight">All Topics</span>
                 </div>
                 {topics.map((topic: any) => (
@@ -181,7 +208,8 @@ export default function PracticeArena() {
                     className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                       selectedTopic === topic.name ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                     )}>
-                    <span className="text-[10px] tracking-widest opacity-30">#</span>
+                    {/* Restored Custom Hashtag Icon */}
+                    <SubTopicHashtag active={selectedTopic === topic.name} />
                     <span className="tracking-tight">{topic.name}</span>
                   </div>
                 ))}
@@ -192,7 +220,7 @@ export default function PracticeArena() {
 
         {/* MIDDLE COLUMN: Question Cards */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
-          {/* Status Filters - Original Pill Design */}
+          {/* Status Filters */}
           <div className="shrink-0 py-4 mb-2 bg-[#050505]">
             <div className="flex items-center justify-start gap-2">
                {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
@@ -220,7 +248,7 @@ export default function PracticeArena() {
                   >
                     {/* Identity Group */}
                     <div className="flex items-center gap-5">
-                      {/* ORIGINAL ICONS RESTORED */}
+                      {/* Standard Icons for Question Type */}
                       <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white group-hover:scale-105 transition-transform">
                         {problem.tags?.includes('Arrays') ? <Layers size={20} /> : <Terminal size={20} />}
                       </div>
@@ -253,7 +281,7 @@ export default function PracticeArena() {
                         <span className="text-[1.4rem] font-light text-white leading-none">{problem.acceptance_rate || 0}%</span>
                       </div>
 
-                      {/* Solve Button: Premium Transparent Italian Hover */}
+                      {/* Solve Button */}
                       <button 
                         onClick={() => navigate(`/practice-arena/${problem.slug}`)}
                         className="relative bg-white text-black border border-white px-8 py-3 rounded-[3px] text-[0.65rem] font-extrabold uppercase tracking-[3px] cursor-pointer overflow-hidden flex items-center justify-center transition-all duration-400 group/btn hover:bg-transparent hover:text-white hover:pl-10"
@@ -269,7 +297,7 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN: Sidebar with Preserved Holding Section */}
+        {/* RIGHT COLUMN */}
         <aside className="hidden lg:flex flex-col h-full overflow-hidden">
           <ScrollArea className="h-full pr-2">
             <div className="flex flex-col gap-6 pb-10">
@@ -288,7 +316,7 @@ export default function PracticeArena() {
                      </button>
                   </div>
                   
-                  {/* Preserved Holding Section / Secondary Block */}
+                  {/* Preserved Holding Section */}
                   <div className="w-full h-[160px] bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] opacity-50" />
                 </>
               ) : (
