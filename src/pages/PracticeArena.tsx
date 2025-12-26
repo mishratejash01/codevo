@@ -15,13 +15,21 @@ import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// Custom Folder Icon Component
+// Custom Folder Icon with high-visibility white sticker border
 const FolderIcon = ({ active }: { active: boolean }) => (
-  <div className={cn("relative w-5 h-4 transition-all duration-300", active ? "scale-110" : "opacity-70 scale-95")}>
-    <div className="absolute -top-[5px] left-0 w-[60%] h-[6px] bg-[#f39233] border-[1px] border-[#2d1d1a] rounded-t-[3px]" 
-         style={{ clipPath: 'polygon(0 0, 80% 0, 100% 100%, 0 100%)' }} />
-    <div className="absolute top-0 left-0 w-full h-full bg-[#ffce8c] border-[1px] border-[#2d1d1a] rounded-tr-[4px] rounded-b-[4px] overflow-hidden">
-      <div className="w-full h-[3px] bg-[#f39233] border-b-[1px] border-[#2d1d1a]" />
+  <div className={cn("relative w-7 h-6 transition-all duration-300 flex items-center justify-center", active ? "scale-110" : "opacity-80 scale-95")}>
+    {/* White Sticker Border / Holding Section */}
+    <div className="absolute inset-[-3px] bg-[#e0e0e0] rounded-[6px]" 
+         style={{ clipPath: 'polygon(0% 15%, 55% 15%, 70% 0%, 100% 0%, 100% 100%, 0% 100%)' }} />
+    
+    <div className="relative w-5 h-4">
+      {/* Folder Tab */}
+      <div className="absolute -top-[5px] left-0 w-[65%] h-[7px] bg-[#f39233] border-[1.5px] border-[#2d1d1a] rounded-t-[3px] z-10" 
+           style={{ clipPath: 'polygon(0 0, 82% 0, 100% 100%, 0 100%)' }} />
+      {/* Folder Body */}
+      <div className="absolute top-0 left-0 w-full h-full bg-[#ffce8c] border-[1.5px] border-[#2d1d1a] rounded-tr-[4px] rounded-b-[4px] overflow-hidden z-20 shadow-sm">
+        <div className="w-full h-[3px] bg-[#f39233] border-b-[1px] border-[#2d1d1a]" />
+      </div>
     </div>
   </div>
 );
@@ -116,7 +124,6 @@ export default function PracticeArena() {
         </div>
       </nav>
 
-      {/* Main Layout Grid */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr_340px] gap-10 p-6 md:p-12 max-w-[1800px] mx-auto w-full overflow-hidden">
         
         {/* LEFT COLUMN: Independent Scrolling */}
@@ -141,17 +148,14 @@ export default function PracticeArena() {
              </div>
           </div>
 
-          <div className="flex-1 flex flex-col min-h-0 space-y-4">
-            <div className="flex items-center gap-2 px-3 text-[10px] font-bold text-[#64748b] tracking-widest uppercase">
-              <Sparkles className="w-3 h-3" /> Topic Selection
-            </div>
+          <div className="flex-1 flex flex-col min-h-0">
             <ScrollArea className="flex-1 pr-4">
               <nav className="flex flex-col gap-1 pb-4">
                 <div 
                   onClick={() => setSelectedTopic(null)}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-xl text-sm cursor-pointer transition-all",
-                    selectedTopic === null ? "bg-[#8b5cf6]/10 text-[#8b5cf6] font-bold" : "text-[#94a3b8] hover:bg-white/5 font-medium"
+                    selectedTopic === null ? "bg-[#8b5cf6]/10 text-[#8b5cf6] font-bold" : "text-[#94a3b8] hover:bg-white/5 font-normal"
                   )}
                 >
                   <FolderIcon active={selectedTopic === null} />
@@ -163,7 +167,7 @@ export default function PracticeArena() {
                     onClick={() => setSelectedTopic(topic.name)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer",
-                      selectedTopic === topic.name ? "bg-[#8b5cf6]/10 text-[#8b5cf6] font-bold" : "text-[#94a3b8] hover:bg-white/5 font-medium"
+                      selectedTopic === topic.name ? "bg-[#8b5cf6]/10 text-[#8b5cf6] font-bold" : "text-[#94a3b8] hover:bg-white/5 font-normal"
                     )}
                   >
                     <Hash className="w-4 h-4 opacity-50" /> {topic.name}
@@ -234,7 +238,7 @@ export default function PracticeArena() {
                     
                     <div className="flex items-center gap-8">
                       <div className="hidden md:block text-right">
-                        <div className="text-[10px] text-[#64748b] font-bold uppercase tracking-tight font-normal">Acceptance</div>
+                        <div className="text-[10px] text-[#64748b] font-normal uppercase tracking-tight">Acceptance</div>
                         <div className="text-sm font-bold font-mono">{problem.acceptance_rate || 0}%</div>
                       </div>
                       <button className="bg-[#1a1a1a] text-white border border-[#333] px-6 py-2 rounded-xl text-[11px] font-bold uppercase hover:bg-[#8b5cf6] hover:border-[#8b5cf6] transition-all">
@@ -248,7 +252,7 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN: Fixed (Implicitly via layout) */}
+        {/* RIGHT COLUMN: Fixed Layout */}
         <aside className="hidden lg:flex flex-col gap-12 shrink-0 h-full overflow-hidden">
           <div className="space-y-6">
             <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase">Your Progress</div>
@@ -267,7 +271,7 @@ export default function PracticeArena() {
               </div>
               <div>
                 <div className="text-xs font-bold uppercase">Daily Bonus</div>
-                <div className="text-[10px] text-[#64748b] font-medium">Earn bonus XP today</div>
+                <div className="text-[10px] text-[#64748b] font-normal">Earn bonus XP today</div>
               </div>
             </div>
             <Button className="w-full bg-[#8b5cf6] hover:bg-[#7c4dff] text-white font-bold rounded-xl h-10 text-xs uppercase">Start Session</Button>
