@@ -4,10 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { 
   Search, ArrowLeft, CheckCircle2, Code2, 
-  Terminal, Layers, Flame 
+  Terminal, Layers, Flame, LogIn, Calendar, Building2 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
@@ -22,15 +22,8 @@ const BRAND_COLORS = {
   sticker: '#e0e0e0',
 };
 
-/**
- * PREMIUM LOOK HASHTAG
- * Clean, flat architectural hashtag using brand palette.
- */
 const SubTopicHashtag = ({ active }: { active: boolean }) => (
-  <div className={cn(
-    "relative w-4 h-4 shrink-0 transition-opacity duration-300", 
-    active ? "opacity-100" : "opacity-30"
-  )}>
+  <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
     <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
     <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
     <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
@@ -38,10 +31,6 @@ const SubTopicHashtag = ({ active }: { active: boolean }) => (
   </div>
 );
 
-/**
- * COMPONENT: FolderIcon (Main Category)
- * Premium Sticker logic with white silhouette backing.
- */
 const FolderIcon = ({ active }: { active: boolean }) => (
   <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
     <div style={{ filter: `drop-shadow(2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(-2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(0 2px 0 ${BRAND_COLORS.sticker}) drop-shadow(0 -2px 0 ${BRAND_COLORS.sticker})` }}>
@@ -69,6 +58,7 @@ export default function PracticeArena() {
     supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id));
   }, []);
 
+  // LOGIC: Data Fetching
   const { data: topics = [] } = useQuery({
     queryKey: ['practice_topics'],
     queryFn: async () => {
@@ -87,6 +77,16 @@ export default function PracticeArena() {
     }
   });
 
+  const { data: activeEvents = [] } = useQuery({
+    queryKey: ['arena_active_events'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('events').select('*').eq('status', 'active').limit(5);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!userId
+  });
+
   const { data: userSubmissions = [] } = useQuery({
     queryKey: ['user_submissions_arena', userId],
     queryFn: async () => {
@@ -98,6 +98,7 @@ export default function PracticeArena() {
     enabled: !!userId
   });
 
+  // LOGIC: Filtering
   const solvedProblemIds = new Set(userSubmissions.filter(s => s.status === 'completed').map(s => s.problem_id));
   const attemptedProblemIds = new Set(userSubmissions.map(s => s.problem_id));
 
@@ -113,10 +114,10 @@ export default function PracticeArena() {
   });
 
   return (
-    <div className="h-screen bg-[#000000] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none transition-colors duration-200">
+    <div className="h-screen bg-[#000000] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
       {/* Navigation Layer */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-zinc-900 bg-[#000000] shrink-0 z-50">
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-8 font-sans">
           <div className="font-extrabold text-xl tracking-tighter cursor-pointer" onClick={() => navigate('/')}>
             PRACTICE<span className="text-zinc-600">ARENA</span>
           </div>
@@ -128,11 +129,11 @@ export default function PracticeArena() {
         </div>
 
         <div className="flex-1 max-w-md mx-8 hidden sm:block">
-          <div className="relative">
+          <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <Input 
               placeholder="Search challenges..." 
-              className="pl-10 bg-zinc-950 border-zinc-900 focus:border-zinc-500 rounded-xl text-sm h-10 font-normal"
+              className="pl-10 bg-zinc-950 border-zinc-900 focus:border-zinc-500 rounded-xl text-sm h-10 font-sans"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -148,7 +149,7 @@ export default function PracticeArena() {
       </nav>
 
       {/* Main Grid Layout */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[250px_1fr_320px] gap-6 p-4 md:p-6 w-full overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[250px_1fr_340px] gap-6 p-4 md:p-6 w-full overflow-hidden">
         
         {/* LEFT COLUMN: Topic Selection (Independent Scroll) */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden">
@@ -157,7 +158,7 @@ export default function PracticeArena() {
              <div className="grid grid-cols-3 gap-2 p-1 bg-zinc-950 border border-zinc-900 rounded-xl">
                {['Easy', 'Medium', 'Hard'].map((d) => (
                  <button key={d} onClick={() => setFilterDifficulty(filterDifficulty === d ? null : d)}
-                   className={cn("py-2 text-[10px] font-bold uppercase rounded-lg transition-all",
+                   className={cn("py-2 text-[10px] font-bold uppercase rounded-lg transition-all font-sans",
                      filterDifficulty === d ? "bg-zinc-900 text-white shadow-md font-bold" : "text-zinc-600 hover:text-white font-normal"
                    )}>
                    {d === 'Medium' ? 'Med' : d}
@@ -166,11 +167,11 @@ export default function PracticeArena() {
              </div>
           </div>
 
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 font-sans">
             <ScrollArea className="flex-1 pr-4">
               <nav className="flex flex-col gap-1 pb-10">
                 <div onClick={() => setSelectedTopic(null)}
-                  className={cn("flex items-center gap-4 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer",
+                  className={cn("flex items-center gap-4 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer font-sans",
                     selectedTopic === null ? "bg-zinc-900 text-white font-bold" : "text-zinc-500 hover:bg-zinc-950 font-normal"
                   )}>
                   <FolderIcon active={selectedTopic === null} />
@@ -178,7 +179,7 @@ export default function PracticeArena() {
                 </div>
                 {topics.map((topic: any) => (
                   <div key={topic.id} onClick={() => setSelectedTopic(topic.name)}
-                    className={cn("flex items-center gap-4 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer",
+                    className={cn("flex items-center gap-4 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer font-sans",
                       selectedTopic === topic.name ? "bg-zinc-900 text-white font-bold" : "text-zinc-500 hover:bg-zinc-950 font-normal"
                     )}>
                     <SubTopicHashtag active={selectedTopic === topic.name} />
@@ -190,15 +191,14 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: Maximized Pure Black/Zinc Workspace */}
-        <main className="bg-[#0a0a0a] border border-zinc-900 rounded-lg flex flex-col shadow-2xl overflow-hidden h-full font-sans">
-          {/* Filters Row - Integrated status logic */}
+        {/* MIDDLE COLUMN: Maximized Space & Sharp Transparent Blocks */}
+        <main className="bg-[#0a0a0a] border border-zinc-900 rounded-lg flex flex-col shadow-2xl overflow-hidden h-full">
+          {/* Filters Row */}
           <div className="shrink-0 p-4 border-b border-zinc-900 bg-zinc-950/20">
             <div className="flex flex-wrap items-center justify-start gap-2">
                {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
                  <button key={f} onClick={() => setStatusFilter(f)}
-                   className={cn(
-                     "px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider", 
+                   className={cn("px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans", 
                      statusFilter === f ? "bg-white text-black border-white shadow-md font-bold" : "bg-zinc-950 text-zinc-500 border-zinc-900 hover:border-zinc-700 hover:text-white font-medium"
                    )}>
                    {f}
@@ -208,23 +208,22 @@ export default function PracticeArena() {
           </div>
 
           <ScrollArea className="flex-1">
-            <div className="flex flex-col gap-0">
+            <div className="flex flex-col gap-0 font-sans">
               {isLoading ? (
-                [1,2,3,4,5,6].map(i => <div key={i} className="h-20 border-b border-zinc-900 animate-pulse" />)
+                [1,2,3,4,5,6].map(i => <div key={i} className="h-20 border-b border-zinc-900 animate-pulse font-sans" />)
               ) : (
                 filteredProblems.map((problem) => (
                   <div key={problem.id} className="group border-b border-zinc-900 hover:bg-zinc-900/30 transition-all duration-300 cursor-pointer p-5 md:p-6"
                     onClick={() => navigate(`/practice-arena/${problem.slug}`)}>
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                      <div className="flex items-center gap-6 flex-grow">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white group-hover:scale-105 transition-transform">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 font-sans">
+                      <div className="flex items-center gap-6 flex-grow font-sans">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white group-hover:scale-105 transition-transform font-sans">
                           {problem.tags?.includes('Arrays') ? <Layers size={20} /> : <Terminal size={20} />}
                         </div>
-                        <div className="flex-grow">
+                        <div className="flex-grow font-sans">
                           <h3 className="text-lg font-bold text-white group-hover:text-zinc-300 transition-colors tracking-tight font-sans">{problem.title}</h3>
                           
                           <div className="flex flex-wrap items-center gap-2 mt-2 font-sans">
-                            {/* Sharp Transparent Rectangular Difficulty Block */}
                             <div className={cn(
                               "flex items-center gap-2 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all duration-300 bg-transparent font-sans",
                               problem.difficulty === 'Easy' ? "text-emerald-500 border-emerald-500/30" :
@@ -239,17 +238,9 @@ export default function PracticeArena() {
                               )} />
                               {problem.difficulty}
                             </div>
-
-                            {/* Transparent Tag Block */}
                             {problem.tags && problem.tags[0] && (
                               <div className="px-2.5 py-1 rounded-sm text-[10px] font-bold text-zinc-400 bg-transparent border border-zinc-800 uppercase tracking-widest font-sans">
                                 {problem.tags[0]}
-                              </div>
-                            )}
-                            
-                            {problem.is_daily && (
-                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold text-orange-400 bg-transparent border border-orange-400/20 uppercase tracking-widest font-sans">
-                                <Flame className="w-3 h-3 fill-orange-400" /> Daily
                               </div>
                             )}
                           </div>
@@ -257,7 +248,7 @@ export default function PracticeArena() {
                       </div>
 
                       <div className="flex items-center justify-between w-full md:w-auto md:gap-12">
-                        <div className="flex flex-col md:items-end min-w-[100px] text-left md:text-right">
+                        <div className="flex flex-col md:items-end min-w-[100px] text-left md:text-right font-sans">
                           <p className="text-[9px] uppercase font-bold text-zinc-600 tracking-[0.2em] mb-0.5 font-sans">Acceptance</p>
                           <span className="text-base font-bold text-white font-mono">{problem.acceptance_rate || 0}%</span>
                         </div>
@@ -273,16 +264,69 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN: Analytics & Bluish Activity */}
-        <aside className="hidden lg:flex flex-col gap-12 shrink-0 h-full overflow-hidden">
-          <div className="space-y-6">
-            <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-1 uppercase font-sans">User Analytics</div>
-            <UserStatsCard userId={userId} />
-          </div>
-          <div className="space-y-6">
-            <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-1 uppercase font-sans">Activity Record</div>
-            <ActivityCalendar userId={userId} />
-          </div>
+        {/* RIGHT COLUMN: Redesigned Scrollable Sidebar */}
+        <aside className="hidden lg:flex flex-col h-full overflow-hidden">
+          <ScrollArea className="h-full pr-4">
+            <div className="space-y-6 pb-10">
+              
+              {/* AUTHENTICATION STATE Logic */}
+              {!userId ? (
+                <div className="bg-[#0f0f12] border border-white/5 rounded-[24px] p-6 text-center space-y-4 shadow-xl">
+                  <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto">
+                    <LogIn className="w-6 h-6 text-zinc-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white font-sans uppercase tracking-tight">Enterprise Access</h3>
+                    <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed font-sans">Sign in to unlock analytics, earn points, and participate in global events.</p>
+                  </div>
+                  <Button onClick={() => navigate('/auth')} className="w-full bg-white text-black font-bold h-10 text-[11px] rounded-xl hover:bg-zinc-200 font-sans tracking-widest uppercase shadow-lg">
+                    LOG IN
+                  </Button>
+                </div>
+              ) : (
+                /* EVENTS LOGIC: Only show if logged in */
+                activeEvents.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase font-sans">Ongoing Events</span>
+                      <Button variant="link" onClick={() => navigate('/events')} className="h-auto p-0 text-[10px] text-zinc-500 hover:text-white uppercase font-bold font-sans">All</Button>
+                    </div>
+                    
+                    <ScrollArea className="w-full whitespace-nowrap rounded-xl">
+                      <div className="flex gap-4 pb-4">
+                        {activeEvents.map((event) => (
+                          <div key={event.id} className="inline-block w-[280px] bg-[#0f0f12] border border-white/5 rounded-[24px] p-5 shrink-0 snap-center shadow-xl">
+                            <div className="flex justify-between items-start mb-4">
+                              <h4 className="text-xs font-bold text-white truncate max-w-[160px] font-sans uppercase tracking-tight">{event.title}</h4>
+                              <div className="flex -space-x-2">
+                                 <div className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shadow-sm"><Building2 className="w-3 h-3 text-zinc-400" /></div>
+                                 <div className="w-6 h-6 rounded-full bg-zinc-700 border border-zinc-600 flex items-center justify-center shadow-sm"><Building2 className="w-3 h-3 text-zinc-300" /></div>
+                              </div>
+                            </div>
+                            <div className="space-y-2 mb-5 text-[10px] text-zinc-500 font-medium font-sans">
+                              <div className="flex items-center gap-2"><Calendar className="w-3 h-3 text-zinc-400" /> Starts {new Date(event.start_date).toLocaleDateString()}</div>
+                              <p className="line-clamp-2 leading-relaxed whitespace-normal text-zinc-500">Solve the industry problems with top tech partners.</p>
+                            </div>
+                            <Button onClick={() => navigate(`/events/${event.slug}`)} className="w-full bg-[#a855f7] hover:bg-[#9333ea] text-white font-bold h-9 text-[10px] rounded-xl tracking-widest uppercase font-sans shadow-md">
+                              Participate
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      <ScrollBar orientation="horizontal" className="h-1.5" />
+                    </ScrollArea>
+                  </div>
+                )
+              )}
+
+              {/* UNIFIED ANALYTICS SECTION */}
+              <div className="space-y-8">
+                <UserStatsCard userId={userId} />
+                <ActivityCalendar userId={userId} />
+              </div>
+
+            </div>
+          </ScrollArea>
         </aside>
 
       </div>
