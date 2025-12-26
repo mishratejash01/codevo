@@ -6,14 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  Search, ArrowLeft, CheckCircle2, Code2, Zap
+  Search, ArrowLeft, CheckCircle2, Code2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
+import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// Shared Brand Palette
 const BRAND_COLORS = {
   outline: '#2d1d1a',
   accent: '#f39233',
@@ -23,7 +23,6 @@ const BRAND_COLORS = {
 
 /**
  * STRICT COMPONENT: FolderIcon (Main Category)
- * Premium Sticker logic from provided design
  */
 const FolderIcon = ({ active }: { active: boolean }) => (
   <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
@@ -42,19 +41,22 @@ const FolderIcon = ({ active }: { active: boolean }) => (
 
 /**
  * STRICT COMPONENT: SubTopicHashtag
- * Custom hashtag design replacing standard icons
+ * Exact logic from provided design
  */
 const SubTopicHashtag = ({ active }: { active: boolean }) => (
-  <div className={cn("relative w-5 h-5 shrink-0 transition-opacity", active ? "opacity-100" : "opacity-40")}>
-    {/* The Slanted Marker (Signature Tab) */}
-    <div className="absolute top-0 left-1 w-2.5 h-1 border-[1.5px] border-b-0 rounded-t-sm z-0"
-      style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline, clipPath: 'polygon(0 0, 70% 0, 100% 100%, 0 100%)' }} />
-    {/* Vertical Bars */}
-    <div className="absolute left-1 top-0.5 w-1 h-4 border-[1.5px]" style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
-    <div className="absolute left-3 top-0.5 w-1 h-4 border-[1.5px]" style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
-    {/* Horizontal Bars */}
-    <div className="absolute left-0 top-1.5 w-4.5 h-1 border-[1.5px]" style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} />
-    <div className="absolute left-0 top-3 w-4.5 h-1 border-[1.5px]" style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} />
+  <div className={cn("relative w-5 h-5 shrink-0 transition-all", active ? "opacity-100" : "opacity-40")}>
+    <div className="relative w-full h-full scale-[0.25] origin-top-left">
+      <div className="absolute top-0.5 left-5 w-6 h-2 border-[3px] border-b-0 rounded-t-sm z-0"
+        style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline, clipPath: 'polygon(0 0, 70% 0, 100% 100%, 0 100%)' }} />
+      <div className="absolute left-5 top-0 w-3.5 h-full border-[3px] rounded-sm z-10"
+        style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
+      <div className="absolute right-5 top-0 w-3.5 h-full border-[3px] rounded-sm z-10"
+        style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
+      <div className="absolute top-5 left-0 w-full h-3.5 border-[3px] rounded-sm z-20"
+        style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} />
+      <div className="absolute bottom-5 left-0 w-full h-3.5 border-[3px] rounded-sm z-20"
+        style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} />
+    </div>
   </div>
 );
 
@@ -150,7 +152,7 @@ export default function PracticeArena() {
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr_340px] gap-10 p-6 md:p-12 max-w-[1800px] mx-auto w-full overflow-hidden">
         
-        {/* LEFT COLUMN: Independent Scrolling (Topics) */}
+        {/* LEFT COLUMN: Topics (Independent Scroll) */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden">
           <div className="shrink-0 space-y-4">
              <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-3 uppercase">Difficulty Level</div>
@@ -192,7 +194,7 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: Independent Scrolling (Challenges) */}
+        {/* MIDDLE COLUMN: Challenges (Independent Scroll) */}
         <main className="bg-[#121212] border border-[#1f1f1f] rounded-[32px] p-8 md:p-10 flex flex-col shadow-2xl overflow-hidden h-full">
           <div className="shrink-0 flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold tracking-tight">Recommended Challenges</h2>
@@ -256,24 +258,17 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN: Progress ONLY */}
+        {/* RIGHT COLUMN: User Progress & Activity */}
         <aside className="hidden lg:flex flex-col gap-12 shrink-0 h-full overflow-hidden">
           <div className="space-y-6">
             <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase">User Analytics</div>
             <UserStatsCard userId={userId} />
           </div>
 
-          <div className="bg-gradient-to-br from-[#111] to-[#080808] p-6 rounded-[24px] border border-[#1f1f1f] space-y-4 mt-auto mb-10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-[#8b5cf6]/20 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-[#8b5cf6]" />
-              </div>
-              <div>
-                <div className="text-xs font-bold uppercase tracking-tight">Arena Bonus</div>
-                <div className="text-[10px] text-[#64748b] font-normal">Master your skills today</div>
-              </div>
-            </div>
-            <Button className="w-full bg-[#8b5cf6] hover:bg-[#7c4dff] text-white font-bold rounded-xl h-10 text-xs uppercase tracking-wider">Start Training</Button>
+          <div className="space-y-6">
+            <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase">Activity Streak</div>
+            {/* Custom ActivityCalendar logic or wrapper to force bluish colors should be inside the component */}
+            <ActivityCalendar userId={userId} />
           </div>
         </aside>
 
