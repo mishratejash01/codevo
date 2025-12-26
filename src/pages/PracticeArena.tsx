@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { 
   Search, ArrowLeft, Terminal, Layers, Flame, 
-  ChevronDown, Check, User, LogOut, Settings 
+  ChevronDown, Check, User, LogOut, Settings, QrCode 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
@@ -16,48 +16,23 @@ import { toast } from "sonner";
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- ICON DESIGN CONSTANTS ---
-const BRAND_COLORS = {
-  outline: '#2d1d1a',
-  accent: '#f39233',
-  base: '#ffce8c',
-  sticker: '#e0e0e0',
-};
-
-/**
- * PREMIUM LOOK HASHTAG (Strictly Checked from Reference)
- */
-const SubTopicHashtag = ({ active }: { active: boolean }) => (
+// --- Premium Folder Sticker Icon for Sidebar ---
+const TopicStickerIcon = ({ active }: { active: boolean }) => (
   <div className={cn(
-    "relative w-4 h-4 shrink-0 transition-opacity duration-300", 
-    active ? "opacity-100" : "opacity-30"
-  )}>
-    <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
-    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
-    <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
-    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
-  </div>
-);
-
-/**
- * COMPONENT: FolderIcon (Strictly Checked from Reference)
- */
-const FolderIcon = ({ active }: { active: boolean }) => (
-  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
-    <div style={{ filter: `drop-shadow(2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(-2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(0 2px 0 ${BRAND_COLORS.sticker}) drop-shadow(0 -2px 0 ${BRAND_COLORS.sticker})` }}>
-      <div className="relative w-7 h-5">
-        <div className="absolute -top-[5px] left-0 w-[65%] h-[7px] border-[1.5px] border-b-0 rounded-t-[3px] z-10"
-          style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline, clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }} />
-        <div className="absolute inset-0 border-[1.5px] rounded-tr-[4px] rounded-br-[4px] rounded-bl-[4px] overflow-hidden z-20"
-          style={{ background: `linear-gradient(160deg, ${BRAND_COLORS.base} 0%, #f7b65d 100%)`, borderColor: BRAND_COLORS.outline }}>
-          <div className="absolute top-0 left-0 w-full h-[3px] border-b-[1px]" style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
-        </div>
-      </div>
+    "relative w-7 h-5 transition-all duration-300 shrink-0", 
+    active ? "scale-110 rotate-[-2deg] opacity-100" : "opacity-40 grayscale"
+  )} 
+  style={{ filter: active ? 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' : 'none' }}>
+    <div className="absolute inset-[-1.5px] bg-white rounded-[4px] opacity-10 blur-[0.5px]" />
+    <div className="absolute top-[-4px] left-0 w-[60%] h-3 rounded-t-[4px] border-[2px] border-[#2d1d1a] z-0" 
+         style={{ backgroundColor: '#f39233', clipPath: 'polygon(0 0, 80% 0, 100% 100%, 0 100%)' }} />
+    <div className="absolute inset-0 rounded-[2px] border-[2px] border-[#2d1d1a] bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] z-10">
+        <div className="w-full h-1 bg-[#f39233] border-b border-[#2d1d1a]" />
     </div>
   </div>
 );
 
-// --- Question List Box Icons ---
+// --- RESTORED: Custom Question Icons (Italian Minimalist) ---
 const TerminalBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -73,6 +48,7 @@ const LayersBoxIcon = () => (
   </div>
 );
 
+// --- Helper for Difficulty Styling ---
 const getDifficultyStyle = (difficulty: string) => {
   switch (difficulty) {
     case 'Easy': return "bg-[#00ffa3]/[0.03] text-[#00ffa3] border-[#00ffa3]/20";
@@ -117,6 +93,17 @@ export default function PracticeArena() {
     };
   }, []);
 
+  // Fetch Full Profile for QR Code Link
+  const { data: profile } = useQuery({
+    queryKey: ['user_profile_arena', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+      return data;
+    },
+    enabled: !!userId
+  });
+
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -137,6 +124,11 @@ export default function PracticeArena() {
     setSelectedDifficulties(prev => prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]);
   };
 
+  // Construct Profile Link for QR
+  const profileLink = profile?.username 
+    ? `${window.location.origin}/u/${profile.username}` 
+    : `${window.location.origin}/profile`;
+
   const { data: topics = [] } = useQuery({
     queryKey: ['practice_topics'],
     queryFn: async () => {
@@ -155,16 +147,6 @@ export default function PracticeArena() {
     }
   });
 
-  const { data: activeEvents = [] } = useQuery({
-    queryKey: ['arena_active_events'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('events').select('*').eq('status', 'active').limit(5);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!userId
-  });
-
   const { data: userSubmissions = [] } = useQuery({
     queryKey: ['user_submissions_arena', userId],
     queryFn: async () => {
@@ -177,7 +159,6 @@ export default function PracticeArena() {
   });
 
   const solvedProblemIds = new Set(userSubmissions.filter(s => s.status === 'completed').map(s => s.problem_id));
-  const attemptedProblemIds = new Set(userSubmissions.map(s => s.problem_id));
 
   const filteredProblems = problems.filter(p => {
     const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -186,7 +167,6 @@ export default function PracticeArena() {
     let matchesStatus = true;
     if (statusFilter === 'solved') matchesStatus = solvedProblemIds.has(p.id);
     else if (statusFilter === 'unsolved') matchesStatus = !solvedProblemIds.has(p.id);
-    else if (statusFilter === 'attempted') matchesStatus = attemptedProblemIds.has(p.id) && !solvedProblemIds.has(p.id);
     return matchesSearch && matchesDifficulty && matchesTopic && matchesStatus;
   });
 
@@ -218,16 +198,22 @@ export default function PracticeArena() {
            <div className="w-9 h-9 rounded-full bg-[#0c0c0c] border border-[#1a1a1a] flex items-center justify-center cursor-pointer hover:border-[#333] transition-colors" onClick={() => setIsProfileOpen(!isProfileOpen)}>
              <User className="w-4 h-4 text-[#777]" />
            </div>
+           
+           {/* Profile Popover Card with QR Code */}
            {isProfileOpen && (
              <div className="absolute top-12 right-0 w-64 bg-[#0c0c0e] border border-white/10 rounded-[4px] shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
                <div className="flex flex-col gap-3">
                  <div className="flex items-center gap-3 border-b border-white/5 pb-3">
-                   <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-xs font-bold text-white">U</div>
+                   <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-xs font-bold text-white">
+                     {(profile?.full_name || "U").charAt(0)}
+                   </div>
                    <div className="flex flex-col">
-                     <span className="text-sm font-bold text-white uppercase tracking-wider">User</span>
-                     <span className="text-[10px] text-[#555] font-mono">Premium Member</span>
+                     <span className="text-sm font-bold text-white uppercase tracking-wider truncate max-w-[140px]">{profile?.full_name || "User"}</span>
+                     <span className="text-[10px] text-[#555] font-mono">@{profile?.username || "username"}</span>
                    </div>
                  </div>
+
+                 {/* Mini Stats */}
                  <div className="grid grid-cols-2 gap-2">
                    <div className="bg-white/5 rounded-[2px] p-2 text-center border border-white/5">
                      <span className="block text-[10px] text-[#555] uppercase tracking-wider">Solved</span>
@@ -238,9 +224,25 @@ export default function PracticeArena() {
                      <span className="text-[#00ffa3] font-bold">Top 5%</span>
                    </div>
                  </div>
+
+                 {/* QR Code Section */}
+                 <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2 group/qr relative overflow-hidden">
+                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover/qr:opacity-100 transition-opacity" />
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(profileLink)}&bgcolor=ffffff&color=000000`} 
+                      alt="Profile QR"
+                      className="w-24 h-24 relative z-10"
+                    />
+                    <div className="flex items-center gap-1.5 relative z-10">
+                      <QrCode className="w-3 h-3 text-black" />
+                      <span className="text-[9px] text-black font-bold uppercase tracking-wider">Scan Profile Card</span>
+                    </div>
+                 </div>
+
                  <Button variant="ghost" className="w-full justify-start text-[11px] h-8 text-[#777] hover:text-white hover:bg-white/5 uppercase tracking-widest gap-2" onClick={() => navigate('/profile')}>
                    <User className="w-3 h-3" /> Profile
                  </Button>
+
                  {userId ? (
                    <Button variant="ghost" className="w-full justify-start text-[11px] h-8 text-[#ff4d4d] hover:text-[#ff4d4d] hover:bg-[#ff4d4d]/10 uppercase tracking-widest gap-2" onClick={handleLogout}>
                      <LogOut className="w-3 h-3" /> Log Out
@@ -255,8 +257,6 @@ export default function PracticeArena() {
       </nav>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
-        
-        {/* LEFT COLUMN: Topic Sidebar with Reference Icons */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
@@ -265,7 +265,7 @@ export default function PracticeArena() {
                   className={cn("flex items-center gap-4 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                     selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                   )}>
-                  <FolderIcon active={selectedTopic === null} />
+                  <TopicStickerIcon active={selectedTopic === null} />
                   <span className="tracking-tight font-bold">All Topics</span>
                 </div>
                 {topics.map((topic: any) => (
@@ -273,7 +273,7 @@ export default function PracticeArena() {
                     className={cn("flex items-center gap-4 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                       selectedTopic === topic.name ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                     )}>
-                    <SubTopicHashtag active={selectedTopic === topic.name} />
+                    <TopicStickerIcon active={selectedTopic === topic.name} />
                     <span className="tracking-tight font-bold">{topic.name}</span>
                   </div>
                 ))}
@@ -350,41 +350,6 @@ export default function PracticeArena() {
         <aside className="hidden lg:flex flex-col h-full overflow-hidden">
           <ScrollArea className="h-full pr-2">
             <div className="flex flex-col gap-6 pb-10">
-              {!userId ? (
-                <>
-                  <div className="relative w-full bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-8 flex flex-col items-center text-center">
-                     <div className="w-12 h-12 bg-[#141414] border border-[#1a1a1a] rounded-[3px] flex items-center justify-center mb-6">
-                        <svg className="text-[#555]" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-                     </div>
-                     <h1 className="text-white text-[1rem] font-bold uppercase tracking-[2px] mb-3">Access Progress</h1>
-                     <button onClick={handleGoogleLogin} className="w-full bg-white text-black py-3 rounded-[3px] text-[0.7rem] font-extrabold uppercase tracking-[2px] mt-4 hover:bg-[#e5e5e5] transition-colors flex items-center justify-center gap-2">
-                        <svg width="14" height="14" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.49h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.89 2.69-6.62z" /><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.8.54-1.83.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.95v2.33A8.99 8.99 0 0 0 9 18z" /><path fill="#FBBC05" d="M3.96 10.71A5.41 5.41 0 0 1 3.64 9c0-.59.1-1.17.28-1.71V4.96H.95a8.99 8.99 0 0 0 0 8.08l3.01-2.33z" /><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0C5.48 0 2.44 2.02.95 4.96l3.01 2.33C4.67 5.16 6.66 3.58 9 3.58z" /></svg>
-                        Google
-                     </button>
-                  </div>
-                </>
-              ) : (
-                activeEvents.length > 0 && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between px-1 font-sans">
-                      <span className="text-[10px] font-bold text-[#555] tracking-widest uppercase">Ongoing Events</span>
-                      <Button variant="link" onClick={() => navigate('/events')} className="h-auto p-0 text-[10px] text-[#555] hover:text-white uppercase font-bold">All</Button>
-                    </div>
-                    <ScrollArea className="w-full whitespace-nowrap rounded-[3px]">
-                      <div className="flex gap-4 pb-4 snap-x snap-mandatory font-sans">
-                        {activeEvents.map((event) => (
-                          <div key={event.id} className="inline-block w-[280px] bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-6 shrink-0 snap-center">
-                            <h4 className="text-xs font-bold text-white uppercase tracking-tight mb-2">{event.title}</h4>
-                            <div className="text-[10px] text-[#555] mb-4">{new Date(event.start_date).toLocaleDateString()}</div>
-                            <Button onClick={() => navigate(`/events/${event.slug}`)} className="w-full bg-[#1a1a1a] hover:bg-[#fff] hover:text-black text-white font-bold h-8 text-[9px] rounded-[3px] tracking-[2px] uppercase transition-colors">Participate</Button>
-                          </div>
-                        ))}
-                      </div>
-                      <ScrollBar orientation="horizontal" className="h-1.5" />
-                    </ScrollArea>
-                  </div>
-                )
-              )}
               <div className="flex flex-col gap-6 font-sans">
                 <UserStatsCard userId={userId} />
                 <ActivityCalendar userId={userId} />
