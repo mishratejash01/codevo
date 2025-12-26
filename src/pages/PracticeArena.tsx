@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { 
   Search, ArrowLeft, Terminal, Layers, Flame, 
-  ChevronDown, Check 
+  ChevronDown, Check, User, LogOut, Settings 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
@@ -16,25 +16,23 @@ import { toast } from "sonner";
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- Helper for Difficulty Styling (Italian Card Style) ---
-const getDifficultyStyle = (difficulty: string) => {
-  switch (difficulty) {
-    case 'Easy': return "bg-[#00ffa3]/[0.03] text-[#00ffa3] border-[#00ffa3]/20";
-    case 'Medium': return "bg-[#ffce8c]/[0.03] text-[#ffce8c] border-[#ffce8c]/20";
-    case 'Hard': return "bg-[#ff4d4d]/[0.03] text-[#ff4d4d] border-[#ff4d4d]/20";
-    default: return "bg-[#333]/[0.1] text-zinc-500 border-zinc-700";
-  }
-};
-
-const FolderIcon = ({ active }: { active: boolean }) => (
-  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105 opacity-100" : "opacity-50")}>
-    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "#fff" : "none"} stroke="currentColor" strokeWidth="2">
-       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+// --- RESTORED: Custom Question Icons (Italian Minimalist) ---
+const TerminalBoxIcon = () => (
+  <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <polyline points="4 17 10 11 4 5"></polyline>
+      <line x1="12" y1="19" x2="20" y2="19"></line>
     </svg>
   </div>
 );
 
-// --- Custom Hashtag Icon ---
+const LayersBoxIcon = () => (
+  <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
+    <Layers size={18} strokeWidth={2.5} />
+  </div>
+);
+
+// --- RESTORED: Custom Sidebar Icons ---
 const SubTopicHashtag = ({ active }: { active: boolean }) => (
   <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
     <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
@@ -44,30 +42,71 @@ const SubTopicHashtag = ({ active }: { active: boolean }) => (
   </div>
 );
 
+const CustomFolderIcon = ({ active }: { active: boolean }) => (
+  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105 opacity-100" : "opacity-50")}>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "#fff" : "none"} stroke="currentColor" strokeWidth="2">
+       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+    </svg>
+  </div>
+);
+
+// --- Helper for Difficulty Styling ---
+const getDifficultyStyle = (difficulty: string) => {
+  switch (difficulty) {
+    case 'Easy': return "bg-[#00ffa3]/[0.03] text-[#00ffa3] border-[#00ffa3]/20";
+    case 'Medium': return "bg-[#ffce8c]/[0.03] text-[#ffce8c] border-[#ffce8c]/20";
+    case 'Hard': return "bg-[#ff4d4d]/[0.03] text-[#ff4d4d] border-[#ff4d4d]/20";
+    default: return "bg-[#333]/[0.1] text-zinc-500 border-zinc-700";
+  }
+};
+
 export default function PracticeArena() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   
-  // Updated: Multi-select Difficulty State
+  // Filter States
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [isLevelOpen, setIsLevelOpen] = useState(false);
-  const levelDropdownRef = useRef<HTMLDivElement>(null);
-
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  
+  // Auth & Profile States
   const [userId, setUserId] = useState<string | undefined>();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // Animation State
+  const [placeholderTopic, setPlaceholderTopic] = useState("Arrays");
+  
+  // Refs
+  const levelDropdownRef = useRef<HTMLDivElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id));
 
-    // Click outside handler for dropdown
+    // Outside click handler
     const handleClickOutside = (event: MouseEvent) => {
       if (levelDropdownRef.current && !levelDropdownRef.current.contains(event.target as Node)) {
         setIsLevelOpen(false);
       }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    
+    // Placeholder Animation Loop
+    const topics = ["Arrays", "Dynamic Programming", "Trees", "Graphs", "Hash Maps"];
+    let index = 0;
+    const intervalId = setInterval(() => {
+      index = (index + 1) % topics.length;
+      setPlaceholderTopic(topics[index]);
+    }, 3000); // Change every 3 seconds
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      clearInterval(intervalId);
+    };
   }, []);
 
   const handleGoogleLogin = async () => {
@@ -82,13 +121,19 @@ export default function PracticeArena() {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUserId(undefined);
+    setIsProfileOpen(false);
+  };
+
   const toggleDifficulty = (diff: string) => {
     setSelectedDifficulties(prev => 
       prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]
     );
   };
 
-  // Data Fetching Hooks
+  // Data Fetching
   const { data: topics = [] } = useQuery({
     queryKey: ['practice_topics'],
     queryFn: async () => {
@@ -133,7 +178,6 @@ export default function PracticeArena() {
 
   const filteredProblems = problems.filter(p => {
     const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase());
-    // Updated Logic: Check if array includes difficulty (or if array is empty show all)
     const matchesDifficulty = selectedDifficulties.length === 0 || selectedDifficulties.includes(p.difficulty);
     const matchesTopic = !selectedTopic || (p.tags && p.tags.includes(selectedTopic));
     let matchesStatus = true;
@@ -146,42 +190,102 @@ export default function PracticeArena() {
   return (
     <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
       
-      {/* Navigation */}
+      {/* Navigation Layer */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
+        
+        {/* LEFT: Branding */}
         <div className="flex items-center gap-8 font-sans">
           <div className="font-extrabold text-xl tracking-tighter cursor-pointer" onClick={() => navigate('/')}>
-            PRACTICE<span className="text-[#555]">ARENA</span>
-          </div>
-          <div className="hidden md:flex items-center gap-2 text-[10px] tracking-widest uppercase text-[#555]">
-            <span>DASHBOARD</span>
-            <span>/</span>
-            <span className="text-white font-bold">OVERVIEW</span>
+            CODEVO<span className="text-[#555]">ARENA</span>
           </div>
         </div>
 
+        {/* CENTER: Animated Search */}
         <div className="flex-1 max-w-md mx-8 hidden sm:block">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#555]" />
             <Input 
-              placeholder="Search challenges..." 
-              className="pl-10 bg-[#0c0c0c] border-[#1a1a1a] focus:border-[#333] rounded-[3px] text-sm h-10 font-sans text-[#ccc] placeholder:text-[#333]"
+              // Animated Placeholder
+              placeholder={`Practice ${placeholderTopic}`}
+              className="pl-10 bg-[#0c0c0c] border-[#1a1a1a] focus:border-[#333] rounded-[3px] text-sm h-10 font-sans text-[#ccc] placeholder:text-[#444] placeholder:italic transition-all duration-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* RIGHT: Profile Popover */}
+        <div className="flex items-center gap-4 relative" ref={profileDropdownRef}>
            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-[#555] hover:text-white hover:bg-[#1a1a1a] rounded-full transition-colors">
              <ArrowLeft className="w-5 h-5" />
            </Button>
-           <div className="w-9 h-9 rounded-full bg-[#0c0c0c] border border-[#1a1a1a]" />
+           
+           <div 
+             className="w-9 h-9 rounded-full bg-[#0c0c0c] border border-[#1a1a1a] flex items-center justify-center cursor-pointer hover:border-[#333] transition-colors"
+             onClick={() => setIsProfileOpen(!isProfileOpen)}
+           >
+             <User className="w-4 h-4 text-[#777]" />
+           </div>
+
+           {/* Profile Popover Card */}
+           {isProfileOpen && (
+             <div className="absolute top-12 right-0 w-64 bg-[#0c0c0c] border border-[#333] rounded-[4px] shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
+               <div className="flex flex-col gap-3">
+                 <div className="flex items-center gap-3 border-b border-[#1a1a1a] pb-3">
+                   <div className="w-10 h-10 rounded-full bg-[#141414] border border-[#1a1a1a] flex items-center justify-center">
+                     <User className="w-5 h-5 text-white" />
+                   </div>
+                   <div className="flex flex-col">
+                     <span className="text-sm font-bold text-white uppercase tracking-wider">User</span>
+                     <span className="text-[10px] text-[#555] font-mono">Premium Member</span>
+                   </div>
+                 </div>
+                 
+                 {/* Mini Stats */}
+                 <div className="grid grid-cols-2 gap-2">
+                   <div className="bg-[#141414] rounded-[2px] p-2 text-center border border-[#1a1a1a]">
+                     <span className="block text-[10px] text-[#555] uppercase tracking-wider">Solved</span>
+                     <span className="text-white font-bold">{solvedProblemIds.size}</span>
+                   </div>
+                   <div className="bg-[#141414] rounded-[2px] p-2 text-center border border-[#1a1a1a]">
+                     <span className="block text-[10px] text-[#555] uppercase tracking-wider">Rank</span>
+                     <span className="text-[#00ffa3] font-bold">#42</span>
+                   </div>
+                 </div>
+
+                 <Button 
+                   variant="ghost" 
+                   className="w-full justify-start text-[11px] h-8 text-[#777] hover:text-white hover:bg-[#1a1a1a] uppercase tracking-widest gap-2"
+                   onClick={() => navigate('/settings')}
+                 >
+                   <Settings className="w-3 h-3" /> Settings
+                 </Button>
+
+                 {userId ? (
+                   <Button 
+                     variant="ghost" 
+                     className="w-full justify-start text-[11px] h-8 text-[#ff4d4d] hover:text-[#ff4d4d] hover:bg-[#ff4d4d]/10 uppercase tracking-widest gap-2"
+                     onClick={handleLogout}
+                   >
+                     <LogOut className="w-3 h-3" /> Log Out
+                   </Button>
+                 ) : (
+                   <Button 
+                     className="w-full bg-white text-black h-8 text-[10px] uppercase tracking-widest font-bold hover:bg-[#ccc]"
+                     onClick={() => navigate('/auth')}
+                   >
+                     Log In
+                   </Button>
+                 )}
+               </div>
+             </div>
+           )}
         </div>
       </nav>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
         
-        {/* LEFT COLUMN: Topic Sidebar (Difficulty Removed) */}
+        {/* LEFT COLUMN: Topic Sidebar (Restored Icons) */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
@@ -190,7 +294,7 @@ export default function PracticeArena() {
                   className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                     selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                   )}>
-                  <FolderIcon active={selectedTopic === null} />
+                  <CustomFolderIcon active={selectedTopic === null} />
                   <span className="tracking-tight">All Topics</span>
                 </div>
                 {topics.map((topic: any) => (
@@ -207,7 +311,7 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: Question Cards & Filters */}
+        {/* MIDDLE COLUMN */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
           {/* Status Filters & Level Dropdown */}
           <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
@@ -224,7 +328,7 @@ export default function PracticeArena() {
                  </button>
                ))}
 
-               {/* LEVEL DROPDOWN - Placed beside Attempted */}
+               {/* LEVEL DROPDOWN */}
                <div className="relative" ref={levelDropdownRef}>
                   <button 
                     onClick={() => setIsLevelOpen(!isLevelOpen)}
@@ -238,7 +342,6 @@ export default function PracticeArena() {
                     Level <ChevronDown className={cn("w-3 h-3 transition-transform", isLevelOpen && "rotate-180")} />
                   </button>
 
-                  {/* Dropdown Content */}
                   {isLevelOpen && (
                     <div className="absolute top-full left-0 mt-2 w-40 bg-[#0c0c0c] border border-[#333] rounded-[4px] shadow-2xl p-1 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-200">
                       {['Easy', 'Medium', 'Hard'].map((diff) => (
@@ -249,9 +352,7 @@ export default function PracticeArena() {
                         >
                           <div className={cn(
                             "w-3.5 h-3.5 border rounded-[2px] flex items-center justify-center transition-all",
-                            selectedDifficulties.includes(diff) 
-                              ? "bg-white border-white" 
-                              : "border-[#555] group-hover:border-[#777]"
+                            selectedDifficulties.includes(diff) ? "bg-white border-white" : "border-[#555] group-hover:border-[#777]"
                           )}>
                             {selectedDifficulties.includes(diff) && <Check className="w-2.5 h-2.5 text-black stroke-[4]" />}
                           </div>
@@ -278,12 +379,9 @@ export default function PracticeArena() {
                   <div key={problem.id} 
                     className="group relative bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-5 md:px-7 md:py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-all duration-300 hover:border-[#333] hover:bg-[#0f0f0f] cursor-default"
                   >
-                    {/* Identity Group */}
                     <div className="flex items-center gap-5">
-                      {/* Standard Icons for Question Type */}
-                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white group-hover:scale-105 transition-transform">
-                        {problem.tags?.includes('Arrays') ? <Layers size={20} /> : <Terminal size={20} />}
-                      </div>
+                      {/* RESTORED: Terminal and Layers Box Icons */}
+                      {problem.tags?.includes('Arrays') ? <LayersBoxIcon /> : <TerminalBoxIcon />}
                       
                       <div className="flex flex-col gap-1.5">
                         <h3 className="text-white text-[1.1rem] font-bold tracking-[-0.01em] m-0 leading-tight group-hover:text-white transition-colors cursor-pointer" onClick={() => navigate(`/practice-arena/${problem.slug}`)}>
@@ -306,14 +404,12 @@ export default function PracticeArena() {
                       </div>
                     </div>
 
-                    {/* Action Group */}
                     <div className="flex items-center gap-8 md:gap-10 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0">
                       <div className="text-right">
                         <span className="block text-[0.55rem] font-bold text-[#555] uppercase tracking-[3px] mb-0.5">Acceptance</span>
                         <span className="text-[1.4rem] font-light text-white leading-none">{problem.acceptance_rate || 0}%</span>
                       </div>
 
-                      {/* Solve Button */}
                       <button 
                         onClick={() => navigate(`/practice-arena/${problem.slug}`)}
                         className="relative bg-white text-black border border-white px-8 py-3 rounded-[3px] text-[0.65rem] font-extrabold uppercase tracking-[3px] cursor-pointer overflow-hidden flex items-center justify-center transition-all duration-400 group/btn hover:bg-transparent hover:text-white hover:pl-10"
@@ -336,7 +432,6 @@ export default function PracticeArena() {
               
               {!userId ? (
                 <>
-                  {/* Login Card */}
                   <div className="relative w-full bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-8 flex flex-col items-center text-center">
                      <div className="w-12 h-12 bg-[#141414] border border-[#1a1a1a] rounded-[3px] flex items-center justify-center mb-6">
                         <svg className="text-[#555]" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
@@ -347,8 +442,6 @@ export default function PracticeArena() {
                         Google
                      </button>
                   </div>
-                  
-                  {/* Preserved Holding Section */}
                   <div className="w-full h-[160px] bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] opacity-50" />
                 </>
               ) : (
