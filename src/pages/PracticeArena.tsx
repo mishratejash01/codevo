@@ -5,9 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Search, ArrowLeft, CheckCircle2, Code2
-} from 'lucide-react';
+import { Search, ArrowLeft, CheckCircle2, Code2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
 import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
@@ -18,12 +16,49 @@ const BRAND_COLORS = {
   outline: '#2d1d1a',
   accent: '#f39233',
   base: '#ffce8c',
-  sticker: '#e0e0e0'
+  sticker: '#e0e0e0',
 };
 
 /**
+ * EXACT COMPONENT: SubTopicHashtag
+ * Derived ditto from the provided HTML/CSS design
+ */
+const SubTopicHashtag = ({ active }: { active: boolean }) => (
+  <div className={cn("relative w-5 h-5 shrink-0 transition-opacity", active ? "opacity-100" : "opacity-40")}>
+    <div className="relative w-full h-full scale-[0.25] origin-top-left">
+      {/* Integrated Marker */}
+      <div 
+        className="absolute top-[2px] left-[20px] w-[25px] h-[8px] border-[3px] border-b-0 rounded-t-[4px] z-0" 
+        style={{ 
+          backgroundColor: BRAND_COLORS.accent, 
+          borderColor: BRAND_COLORS.outline,
+          clipPath: 'polygon(0 0, 70% 0, 100% 100%, 0 100%)' 
+        }} 
+      />
+      {/* Horizontal Bars */}
+      <div 
+        className="absolute w-full h-[14px] border-[3px] rounded-[4px] z-[2] top-[20px]" 
+        style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} 
+      />
+      <div 
+        className="absolute w-full h-[14px] border-[3px] rounded-[4px] z-[2] bottom-[20px]" 
+        style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} 
+      />
+      {/* Vertical Bars */}
+      <div 
+        className="absolute h-full w-[14px] border-[3px] rounded-[4px] z-[1] left-[20px]" 
+        style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} 
+      />
+      <div 
+        className="absolute h-full w-[14px] border-[3px] rounded-[4px] z-[1] right-[20px]" 
+        style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} 
+      />
+    </div>
+  </div>
+);
+
+/**
  * COMPONENT: FolderIcon (Main Category)
- * Premium Sticker logic with the white silhouette backing.
  */
 const FolderIcon = ({ active }: { active: boolean }) => (
   <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
@@ -36,27 +71,6 @@ const FolderIcon = ({ active }: { active: boolean }) => (
           <div className="absolute top-0 left-0 w-full h-[3px] border-b-[1px]" style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
         </div>
       </div>
-    </div>
-  </div>
-);
-
-/**
- * EXACT COMPONENT: SubTopicHashtag
- * Direct implementation of the provided HTML/CSS design.
- */
-const SubTopicHashtag = ({ active }: { active: boolean }) => (
-  <div className={cn("relative w-5 h-5 shrink-0 transition-opacity", active ? "opacity-100" : "opacity-40")}>
-    <div className="relative w-full h-full scale-[0.25] origin-top-left">
-      <div className="marker absolute top-[2px] left-[20px] w-[25px] h-[8px] border-[3px] border-b-0 rounded-t-[4px] z-0" 
-           style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline, clipPath: 'polygon(0 0, 70% 0, 100% 100%, 0 100%)' }} />
-      <div className="bar-h absolute w-full h-[14px] border-[3px] rounded-[4px] z-[2] top-[20px]" 
-           style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} />
-      <div className="bar-h absolute w-full h-[14px] border-[3px] rounded-[4px] z-[2] bottom-[20px]" 
-           style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} />
-      <div className="bar-v absolute h-full w-[14px] border-[3px] rounded-[4px] z-[1] left-[20px]" 
-           style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
-      <div className="bar-v absolute h-full w-[14px] border-[3px] rounded-[4px] z-[1] right-[20px]" 
-           style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
     </div>
   </div>
 );
@@ -151,10 +165,10 @@ export default function PracticeArena() {
         </div>
       </nav>
 
-      {/* Main Grid: Left, Middle (Scrollable), Right (Fixed) */}
+      {/* Main Grid: Left, Middle (Independent Scroll), Right (Fixed) */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr_340px] gap-10 p-6 md:p-12 max-w-[1800px] mx-auto w-full overflow-hidden">
         
-        {/* LEFT COLUMN: Independent Scrolling Topics */}
+        {/* LEFT COLUMN: Topic Sidebar (Independent Scroll) */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden">
           <div className="shrink-0 space-y-4">
              <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-3 uppercase">Difficulty Level</div>
@@ -196,7 +210,7 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: Independent Scrolling Challenges */}
+        {/* MIDDLE COLUMN: Main Scrollable Workspace */}
         <main className="bg-[#121212] border border-[#1f1f1f] rounded-[32px] p-8 md:p-10 flex flex-col shadow-2xl overflow-hidden h-full">
           <div className="shrink-0 flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold tracking-tight">Recommended Challenges</h2>
@@ -246,10 +260,10 @@ export default function PracticeArena() {
                     </div>
                     <div className="flex items-center gap-8">
                       <div className="hidden md:block text-right">
-                        <div className="text-[10px] text-[#64748b] font-normal uppercase tracking-tight">Acceptance</div>
+                        <div className="text-[10px] text-[#64748b] font-normal uppercase tracking-tight font-sans">Acceptance</div>
                         <div className="text-sm font-bold font-mono">{problem.acceptance_rate || 0}%</div>
                       </div>
-                      <button className="bg-[#1a1a1a] text-white border border-[#333] px-6 py-2 rounded-xl text-[11px] font-bold uppercase hover:bg-blue-500 hover:border-blue-500 transition-all">
+                      <button className="bg-[#1a1a1a] text-white border border-[#333] px-6 py-2 rounded-xl text-[11px] font-bold uppercase hover:bg-blue-500 hover:border-blue-500 transition-all font-sans">
                         Solve
                       </button>
                     </div>
@@ -260,14 +274,14 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN: User Analytics & Bluish Activity Record */}
+        {/* RIGHT COLUMN: Analytics & Fixed Activity */}
         <aside className="hidden lg:flex flex-col gap-12 shrink-0 h-full overflow-hidden">
           <div className="space-y-6">
-            <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase">User Analytics</div>
+            <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase font-sans">User Analytics</div>
             <UserStatsCard userId={userId} />
           </div>
           <div className="space-y-6">
-            <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase">Activity Record</div>
+            <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase font-sans">Activity Record</div>
             <ActivityCalendar userId={userId} />
           </div>
         </aside>
