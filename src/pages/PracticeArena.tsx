@@ -5,9 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Search, ArrowLeft, CheckCircle2, Code2
-} from 'lucide-react';
+import { Search, ArrowLeft, CheckCircle2, Code2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
 import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
@@ -18,11 +16,28 @@ const BRAND_COLORS = {
   outline: '#2d1d1a',
   accent: '#f39233',
   base: '#ffce8c',
-  sticker: '#e0e0e0'
+  sticker: '#e0e0e0',
+  activeBlue: '#3b82f6'
 };
 
 /**
- * STRICT COMPONENT: FolderIcon (Main Category)
+ * EXACT COMPONENT: SubTopicHashtag
+ */
+const SubTopicHashtag = ({ active }: { active: boolean }) => (
+  <div className={cn("relative w-5 h-5 shrink-0 transition-opacity", active ? "opacity-100" : "opacity-40")}>
+    <div className="relative w-full h-full scale-[0.25] origin-top-left">
+      <div className="marker absolute top-[2px] left-[20px] w-[25px] h-[8px] bg-[#f39233] border-[3px] border-[#2d1d1a] border-b-0 rounded-t-[4px] z-0" 
+           style={{ clipPath: 'polygon(0 0, 70% 0, 100% 100%, 0 100%)' }} />
+      <div className="bar-h absolute w-full h-[14px] bg-[#ffce8c] border-[3px] border-[#2d1d1a] rounded-[4px] z-[2] top-[20px]" />
+      <div className="bar-h absolute w-full h-[14px] bg-[#ffce8c] border-[3px] border-[#2d1d1a] rounded-[4px] z-[2] bottom-[20px]" />
+      <div className="bar-v absolute h-full w-[14px] bg-[#f39233] border-[3px] border-[#2d1d1a] rounded-[4px] z-[1] left-[20px]" />
+      <div className="bar-v absolute h-full w-[14px] bg-[#f39233] border-[3px] border-[#2d1d1a] rounded-[4px] z-[1] right-[20px]" />
+    </div>
+  </div>
+);
+
+/**
+ * COMPONENT: FolderIcon (Main Category)
  */
 const FolderIcon = ({ active }: { active: boolean }) => (
   <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
@@ -35,27 +50,6 @@ const FolderIcon = ({ active }: { active: boolean }) => (
           <div className="absolute top-0 left-0 w-full h-[3px] border-b-[1px]" style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
         </div>
       </div>
-    </div>
-  </div>
-);
-
-/**
- * STRICT COMPONENT: SubTopicHashtag
- * Exact logic from provided design
- */
-const SubTopicHashtag = ({ active }: { active: boolean }) => (
-  <div className={cn("relative w-5 h-5 shrink-0 transition-all", active ? "opacity-100" : "opacity-40")}>
-    <div className="relative w-full h-full scale-[0.25] origin-top-left">
-      <div className="absolute top-0.5 left-5 w-6 h-2 border-[3px] border-b-0 rounded-t-sm z-0"
-        style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline, clipPath: 'polygon(0 0, 70% 0, 100% 100%, 0 100%)' }} />
-      <div className="absolute left-5 top-0 w-3.5 h-full border-[3px] rounded-sm z-10"
-        style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
-      <div className="absolute right-5 top-0 w-3.5 h-full border-[3px] rounded-sm z-10"
-        style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
-      <div className="absolute top-5 left-0 w-full h-3.5 border-[3px] rounded-sm z-20"
-        style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} />
-      <div className="absolute bottom-5 left-0 w-full h-3.5 border-[3px] rounded-sm z-20"
-        style={{ backgroundColor: BRAND_COLORS.base, borderColor: BRAND_COLORS.outline }} />
     </div>
   </div>
 );
@@ -117,11 +111,10 @@ export default function PracticeArena() {
 
   return (
     <div className="h-screen bg-[#080808] text-[#f1f5f9] flex flex-col font-sans overflow-hidden select-none">
-      {/* Navigation */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1f1f1f] bg-[#080808] shrink-0 z-50">
         <div className="flex items-center gap-8">
           <div className="font-extrabold text-xl tracking-tighter">
-            PRACTICE<span className="text-[#8b5cf6]">ARENA</span>
+            PRACTICE<span className="text-blue-500">ARENA</span>
           </div>
           <div className="hidden md:flex items-center gap-2 text-[10px] tracking-widest uppercase">
             <span className="text-[#64748b] font-normal">DASHBOARD</span>
@@ -135,7 +128,7 @@ export default function PracticeArena() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b]" />
             <Input 
               placeholder="Search challenges..." 
-              className="pl-10 bg-[#111] border-[#1f1f1f] focus:border-[#8b5cf6] rounded-xl text-sm h-10 font-normal"
+              className="pl-10 bg-[#111] border-[#1f1f1f] focus:border-blue-500 rounded-xl text-sm h-10 font-normal"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -151,8 +144,6 @@ export default function PracticeArena() {
       </nav>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr_340px] gap-10 p-6 md:p-12 max-w-[1800px] mx-auto w-full overflow-hidden">
-        
-        {/* LEFT COLUMN: Topics (Independent Scroll) */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden">
           <div className="shrink-0 space-y-4">
              <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-3 uppercase">Difficulty Level</div>
@@ -161,7 +152,7 @@ export default function PracticeArena() {
                  <button key={d} onClick={() => setFilterDifficulty(filterDifficulty === d ? null : d)}
                    className={cn("py-2 text-[10px] font-bold uppercase rounded-lg transition-all",
                      filterDifficulty === d 
-                       ? d === 'Easy' ? "bg-[#161616] text-[#10b981] shadow-md" : d === 'Medium' ? "bg-[#161616] text-[#f59e0b] shadow-md" : "bg-[#161616] text-[#ef4444] shadow-md"
+                       ? "bg-[#161616] text-blue-400 shadow-md" 
                        : "text-[#64748b] hover:text-white font-normal"
                    )}>
                    {d === 'Medium' ? 'Med' : d}
@@ -171,11 +162,11 @@ export default function PracticeArena() {
           </div>
 
           <div className="flex-1 flex flex-col min-h-0">
-            <ScrollArea className="flex-1 pr-4">
+            <ScrollArea className="flex-1 pr-4 font-sans">
               <nav className="flex flex-col gap-1 pb-10">
                 <div onClick={() => setSelectedTopic(null)}
                   className={cn("flex items-center gap-4 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer",
-                    selectedTopic === null ? "bg-[#8b5cf6]/10 text-[#8b5cf6] font-bold" : "text-[#94a3b8] hover:bg-white/5 font-normal"
+                    selectedTopic === null ? "bg-blue-500/10 text-blue-400 font-bold" : "text-[#94a3b8] hover:bg-white/5 font-normal"
                   )}>
                   <FolderIcon active={selectedTopic === null} />
                   <span>All Topics</span>
@@ -183,7 +174,7 @@ export default function PracticeArena() {
                 {topics.map((topic: any) => (
                   <div key={topic.id} onClick={() => setSelectedTopic(topic.name)}
                     className={cn("flex items-center gap-4 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer",
-                      selectedTopic === topic.name ? "bg-[#8b5cf6]/10 text-[#8b5cf6] font-bold" : "text-[#94a3b8] hover:bg-white/5 font-normal"
+                      selectedTopic === topic.name ? "bg-blue-500/10 text-blue-400 font-bold" : "text-[#94a3b8] hover:bg-white/5 font-normal"
                     )}>
                     <SubTopicHashtag active={selectedTopic === topic.name} /> 
                     <span>{topic.name}</span>
@@ -194,7 +185,6 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: Challenges (Independent Scroll) */}
         <main className="bg-[#121212] border border-[#1f1f1f] rounded-[32px] p-8 md:p-10 flex flex-col shadow-2xl overflow-hidden h-full">
           <div className="shrink-0 flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold tracking-tight">Recommended Challenges</h2>
@@ -227,17 +217,17 @@ export default function PracticeArena() {
                     className="group flex items-center justify-between py-5 border-b border-[#1e1e1e] last:border-0 hover:bg-white/[0.02] px-4 -mx-4 transition-all cursor-pointer">
                     <div className="flex items-center gap-5">
                       <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border transition-colors",
-                        solvedProblemIds.has(problem.id) ? "bg-[#10b981]/10 border-[#10b981]/20 text-[#10b981]" : "bg-[#1a1a1a] border-[#333] text-[#64748b]"
+                        solvedProblemIds.has(problem.id) ? "bg-blue-500/10 border-blue-500/20 text-blue-400" : "bg-[#1a1a1a] border-[#333] text-[#64748b]"
                       )}>
                         {solvedProblemIds.has(problem.id) ? <CheckCircle2 className="w-5 h-5" /> : <Code2 className="w-5 h-5" />}
                       </div>
                       <div>
-                        <div className="font-bold text-lg group-hover:text-[#8b5cf6] transition-colors tracking-tight">{problem.title}</div>
+                        <div className="font-bold text-lg group-hover:text-blue-400 transition-colors tracking-tight">{problem.title}</div>
                         <div className="flex items-center gap-3 mt-1 text-[11px] uppercase tracking-wider text-[#64748b]">
                           <span className="font-bold">#{problem.tags?.[0] || 'General'}</span>
                           <span>•</span>
                           <span className={cn("font-bold",
-                            problem.difficulty === 'Easy' ? "text-[#10b981]" : problem.difficulty === 'Medium' ? "text-[#f59e0b]" : "text-[#ef4444]"
+                            problem.difficulty === 'Easy' ? "text-emerald-400" : problem.difficulty === 'Medium' ? "text-amber-400" : "text-rose-400"
                           )}>{problem.difficulty}</span>
                         </div>
                       </div>
@@ -247,7 +237,7 @@ export default function PracticeArena() {
                         <div className="text-[10px] text-[#64748b] font-normal uppercase tracking-tight">Acceptance</div>
                         <div className="text-sm font-bold font-mono">{problem.acceptance_rate || 0}%</div>
                       </div>
-                      <button className="bg-[#1a1a1a] text-white border border-[#333] px-6 py-2 rounded-xl text-[11px] font-bold uppercase hover:bg-[#8b5cf6] hover:border-[#8b5cf6] transition-all">
+                      <button className="bg-[#1a1a1a] text-white border border-[#333] px-6 py-2 rounded-xl text-[11px] font-bold uppercase hover:bg-blue-500 hover:border-blue-500 transition-all">
                         Solve
                       </button>
                     </div>
@@ -258,20 +248,16 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN: User Progress & Activity */}
         <aside className="hidden lg:flex flex-col gap-12 shrink-0 h-full overflow-hidden">
           <div className="space-y-6">
             <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase">User Analytics</div>
             <UserStatsCard userId={userId} />
           </div>
-
           <div className="space-y-6">
-            <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase">Activity Streak</div>
-            {/* Custom ActivityCalendar logic or wrapper to force bluish colors should be inside the component */}
+            <div className="text-[10px] font-bold text-[#64748b] tracking-widest px-1 uppercase">Activity Record</div>
             <ActivityCalendar userId={userId} />
           </div>
         </aside>
-
       </div>
     </div>
   );
