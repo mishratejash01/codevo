@@ -16,25 +16,23 @@ export function UserStatsCard({ userId }: UserStatsCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['user_stats_enterprise', userId],
+    queryKey: ['user_stats_silver', userId],
     queryFn: async () => {
       if (!userId) return null;
 
-      // 1. Fetch all completed submissions with problem difficulty
-      const { data: submissions, error: subError } = await supabase
+      // 1. Fetch completed submissions
+      const { data: submissions } = await supabase
         .from('practice_submissions')
         .select('problem_id, status, score, submitted_at, practice_problems(difficulty)')
         .eq('user_id', userId)
         .eq('status', 'completed');
 
-      if (subError) throw subError;
-
-      // 2. Fetch total problem counts for denominators
+      // 2. Fetch total problem counts
       const { data: allProblems } = await supabase
         .from('practice_problems')
         .select('difficulty');
 
-      // 3. Process Difficulty Data
+      // 3. Process Difficulty Stats
       const difficultyStats = {
         Easy: { solved: 0, total: allProblems?.filter(p => p.difficulty === 'Easy').length || 0 },
         Medium: { solved: 0, total: allProblems?.filter(p => p.difficulty === 'Medium').length || 0 },
@@ -46,17 +44,17 @@ export function UserStatsCard({ userId }: UserStatsCardProps) {
         if (diff) difficultyStats[diff].solved++;
       });
 
-      // 4. Process Sparkline Data (Last 7 Days)
+      // 4. Sparkline Data (Last 7 Days)
       const sparklineData = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - (6 - i));
         const dateStr = date.toISOString().split('T')[0];
         const count = submissions?.filter(s => s.submitted_at?.startsWith(dateStr)).length || 0;
-        return { day: dateStr.split('-')[2], count };
+        return { day: dateStr, count };
       });
 
-      // 5. Process Full History Data for Modal
-      const historyMap = submissions?.reduce((acc: any, curr) => {
+      // 5. Full History Data for Modal
+      const historyMap = submissions?.reduce((acc: any, curr: any) => {
         const date = curr.submitted_at?.split('T')[0];
         acc[date] = (acc[date] || 0) + 1;
         return acc;
@@ -66,16 +64,13 @@ export function UserStatsCard({ userId }: UserStatsCardProps) {
         .sort()
         .map(date => ({ date, count: historyMap[date] }));
 
-      // 6. Points and Streak
-      const { data: streak } = await supabase
-        .from('practice_streaks')
-        .select('current_streak')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // 6. Streak & Points
+      const { data: streak } = await supabase.from('practice_streaks').select('current_streak').eq('user_id', userId).maybeSingle();
+      const points = submissions?.reduce((sum, s) => sum + (s.score || 0), 0) || 0;
 
       return {
         solved: submissions?.length || 0,
-        points: submissions?.reduce((sum, s) => sum + (s.score || 0), 0) || 0,
+        points,
         streak: streak?.current_streak || 0,
         difficulty: difficultyStats,
         sparkline: sparklineData,
@@ -85,125 +80,145 @@ export function UserStatsCard({ userId }: UserStatsCardProps) {
     enabled: !!userId,
   });
 
-  if (isLoading || !stats) return <div className="h-48 w-full animate-pulse bg-white/5 rounded-2xl" />;
+  if (isLoading || !stats) return <div className="h-[500px] w-full animate-pulse bg-[#0c0c0c] rounded-[32px] border border-[#1a1a1a]" />;
 
   return (
     <>
-      <div className="w-full bg-[#0f0f12] border border-white/5 rounded-[24px] p-6 shadow-2xl font-sans text-white relative">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-[1.1rem] font-bold tracking-tight">User Activity</h2>
+      {/* Italian Silver Professional Card */}
+      <div className="relative w-full bg-[#0c0c0c] border border-[#1a1a1a] rounded-[32px] p-10 shadow-[0_50px_100px_rgba(0,0,0,0.9)] overflow-hidden font-sans">
+        
+        {/* Subtle Silver Top-Lighting Effect */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="font-serif font-medium text-[1.1rem] tracking-[1.5px] text-[#555555] uppercase">
+            Activity Profile
+          </h2>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="p-2 bg-white/5 border border-white/5 rounded-[10px] text-zinc-500 hover:bg-[#a855f7] hover:text-white transition-all"
+            className="text-[#555555] hover:text-white transition-colors"
           >
-            <Maximize2 size={18} />
+            <Maximize2 size={18} strokeWidth={1.5} />
           </button>
         </div>
 
-        <div className="grid grid-cols-[1fr_1.5fr] gap-5 mb-6">
-          <div className="flex flex-col justify-center">
-            <span className="text-[2.5rem] font-extrabold leading-none mb-1">{stats.solved}</span>
-            <span className="text-[0.8rem] text-zinc-500 uppercase tracking-widest font-bold">Solved</span>
+        {/* Hero Section: Big Number & Sparkline */}
+        <div className="flex justify-between items-end gap-5 mb-10">
+          <div className="flex flex-col">
+            <span className="text-[5.5rem] font-thin leading-[0.8] tracking-[-4px] bg-gradient-to-b from-white to-[#999999] bg-clip-text text-transparent select-none">
+              {stats.solved}
+            </span>
+            <span className="font-serif italic text-[1.3rem] text-[#555555] mt-1 pl-1">
+              Solved
+            </span>
           </div>
-          {/* Functional Mini Sparkline Chart */}
-          <div className="h-[120px] bg-[#a855f7]/5 border border-white/5 rounded-[16px] p-2 overflow-hidden">
+
+          <div className="flex-grow h-[80px] pb-2 relative flex items-end opacity-80 hover:opacity-100 transition-opacity">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={stats.sparkline}>
                 <defs>
-                  <linearGradient id="colorSpark" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                  <linearGradient id="silverGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.2)" stopOpacity={1}/>
+                    <stop offset="100%" stopColor="rgba(255,255,255,0)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <Area 
                   type="monotone" 
                   dataKey="count" 
-                  stroke="#a855f7" 
+                  stroke="#ffffff" 
                   strokeWidth={2} 
-                  fillOpacity={1} 
-                  fill="url(#colorSpark)" 
+                  fill="url(#silverGrad)" 
+                  fillOpacity={1}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Difficulty Tags */}
-        <div className="flex gap-2 mb-6">
-          <div className="flex-1 p-3 bg-white/5 border border-white/5 rounded-[12px] text-center">
-            <span className="block text-[0.75rem] text-zinc-500 mb-1">Easy</span>
-            <span className="font-bold text-[0.9rem] text-[#22c55e]">{stats.difficulty.Easy.solved}/{stats.difficulty.Easy.total}</span>
-          </div>
-          <div className="flex-1 p-3 bg-white/5 border border-white/5 rounded-[12px] text-center">
-            <span className="block text-[0.75rem] text-zinc-500 mb-1">Med</span>
-            <span className="font-bold text-[0.9rem] text-[#eab308]">{stats.difficulty.Medium.solved}/{stats.difficulty.Medium.total}</span>
-          </div>
-          <div className="flex-1 p-3 bg-white/5 border border-white/5 rounded-[12px] text-center">
-            <span className="block text-[0.75rem] text-zinc-500 mb-1">Hard</span>
-            <span className="font-bold text-[0.9rem] text-[#ef4444]">{stats.difficulty.Hard.solved}/{stats.difficulty.Hard.total}</span>
-          </div>
+        {/* Difficulty Grid - Silver Style */}
+        <div className="grid grid-cols-3 gap-3 mb-9">
+          {['Easy', 'Medium', 'Hard'].map((label) => {
+            const d = label as keyof typeof stats.difficulty;
+            return (
+              <div key={label} className="bg-white/[0.02] border border-[#1a1a1a] rounded-[20px] py-6 px-3 text-center transition-all duration-300 hover:bg-white/[0.05] hover:border-[#444] hover:-translate-y-1">
+                <span className="block text-[0.65rem] text-[#555555] uppercase tracking-[2px] font-semibold mb-3">
+                  {label}
+                </span>
+                <div className="text-[2.2rem] font-light text-white leading-none">
+                  {stats.difficulty[d].solved}
+                  <small className="text-[#333] text-[1rem] font-normal">/{stats.difficulty[d].total}</small>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        <div className="grid grid-cols-3 pt-5 border-t border-white/5 text-center">
-          <div>
-            <span className="block text-[0.7rem] text-zinc-500 mb-1 font-bold uppercase tracking-wider">Streak</span>
-            <span className="text-[1.1rem] font-bold text-[#f97316]">{stats.streak}</span>
+        {/* Footer Metrics */}
+        <div className="flex justify-between items-center pt-8 border-t border-[#1a1a1a]">
+          <div className="flex flex-col">
+            <span className="text-[0.6rem] tracking-[2px] text-[#555555] uppercase mb-2">Streak</span>
+            <span className="text-[1.6rem] font-normal text-white">{stats.streak}</span>
           </div>
-          <div>
-            <span className="block text-[0.7rem] text-zinc-500 mb-1 font-bold uppercase tracking-wider">Points</span>
-            <span className="text-[1.1rem] font-bold text-[#a855f7]">{stats.points}</span>
+          <div className="flex flex-col">
+            <span className="text-[0.6rem] tracking-[2px] text-[#555555] uppercase mb-2">Points</span>
+            <span className="text-[1.6rem] font-normal text-white">{stats.points}</span>
           </div>
-          <div>
-            <span className="block text-[0.7rem] text-zinc-500 mb-1 font-bold uppercase tracking-wider">Rank</span>
-            <span className="text-[1.1rem] font-bold text-[#06b6d4]">Top 5%</span>
+          <div className="flex flex-col text-right">
+            <span className="text-[0.6rem] tracking-[2px] text-[#555555] uppercase mb-2">World Rank</span>
+            <span className="font-serif font-semibold italic text-[1.8rem] bg-gradient-to-b from-white to-[#999999] bg-clip-text text-transparent">
+              Top 5%
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Full-Screen Detailed Modal */}
+      {/* Full Screen History Modal - Silver Theme */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-[10px] flex justify-center items-center p-4 md:p-10 animate-in fade-in duration-300">
-          <div className="w-full max-w-[900px] bg-[#0f0f12] border border-white/5 rounded-[32px] p-6 md:p-10 relative">
-            <div className="flex justify-between items-start mb-8">
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex justify-center items-center p-4 md:p-10 animate-in fade-in duration-300">
+          <div className="w-full max-w-[1000px] bg-[#0c0c0c] border border-[#1a1a1a] rounded-[32px] p-8 md:p-12 relative shadow-2xl">
+            <div className="flex justify-between items-start mb-10">
               <div>
-                <h1 className="text-[1.8rem] font-bold text-white mb-2">Performance History</h1>
-                <p className="text-zinc-500">Detailed analysis of your coding activity over time</p>
+                <h1 className="font-serif text-[2.5rem] text-white leading-tight">Performance History</h1>
+                <p className="text-[#555555] mt-2 font-serif italic text-lg">A detailed view of your algorithmic journey.</p>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-zinc-400 hover:text-white transition-colors p-2"
+                className="text-[#555555] hover:text-white transition-colors p-2"
               >
-                <X size={32} />
+                <X size={32} strokeWidth={1} />
               </button>
             </div>
 
-            <div className="h-[300px] md:h-[400px] w-full">
+            <div className="h-[400px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={stats.history}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
                   <XAxis 
                     dataKey="date" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fill: '#71717a', fontSize: 10 }} 
+                    tick={{ fill: '#555555', fontSize: 11, fontFamily: 'Inter' }} 
                     minTickGap={30}
+                    dy={10}
                   />
                   <YAxis 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{ fill: '#71717a', fontSize: 12 }} 
+                    tick={{ fill: '#555555', fontSize: 11, fontFamily: 'Inter' }} 
                   />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#0f0f12', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                    itemStyle={{ color: '#a855f7' }}
+                    contentStyle={{ backgroundColor: '#0c0c0c', border: '1px solid #333', borderRadius: '12px', color: '#fff' }}
+                    itemStyle={{ color: '#fff' }}
+                    cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="count" 
-                    stroke="#a855f7" 
-                    strokeWidth={3} 
-                    dot={{ r: 4, fill: '#a855f7', strokeWidth: 2 }} 
-                    activeDot={{ r: 6 }} 
+                    stroke="#ffffff" 
+                    strokeWidth={2} 
+                    dot={{ r: 3, fill: '#0c0c0c', stroke: '#fff', strokeWidth: 2 }} 
+                    activeDot={{ r: 6, fill: '#fff' }} 
                   />
                 </LineChart>
               </ResponsiveContainer>
