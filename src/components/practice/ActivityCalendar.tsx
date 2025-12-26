@@ -9,19 +9,21 @@ interface ActivityCalendarProps {
 }
 
 export function ActivityCalendar({ userId }: ActivityCalendarProps) {
+  // We fetch slightly more data (approx 140 days) to accommodate more columns
   const { data: submissions = [] } = useQuery({
-    queryKey: ['user_activity', userId],
+    queryKey: ['user_activity_expanded', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const daysToFetch = 140; 
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysToFetch);
       
       const { data, error } = await supabase
         .from('practice_submissions')
         .select('submitted_at')
         .eq('user_id', userId)
         .eq('status', 'completed')
-        .gte('submitted_at', ninetyDaysAgo.toISOString());
+        .gte('submitted_at', startDate.toISOString());
       
       if (error) throw error;
       return data || [];
@@ -37,14 +39,17 @@ export function ActivityCalendar({ userId }: ActivityCalendarProps) {
     }
   });
 
+  // Calculate roughly 20 weeks to fill the full card width with small blocks
+  const totalWeeks = 20; 
   const weeks: { date: string; count: number }[][] = [];
   const today = new Date();
   
-  for (let week = 0; week < 12; week++) {
+  for (let week = 0; week < totalWeeks; week++) {
     const weekDates: { date: string; count: number }[] = [];
     for (let day = 0; day < 7; day++) {
       const date = new Date(today);
-      date.setDate(date.getDate() - (11 - week) * 7 - (6 - day));
+      // Logic to fill from right (today) to left (past)
+      date.setDate(date.getDate() - (totalWeeks - 1 - week) * 7 - (6 - day));
       const dateStr = date.toISOString().split('T')[0];
       weekDates.push({
         date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -72,18 +77,17 @@ export function ActivityCalendar({ userId }: ActivityCalendarProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="px-6 pb-6">
-        {/* Full Width Grid for Activity Blocks */}
-        <div className="flex justify-between gap-[4px] w-full">
+        {/* Container for small blocks filling the card width */}
+        <div className="flex justify-between gap-[3px] w-full">
           {weeks.map((week, weekIdx) => (
-            <div key={weekIdx} className="flex flex-col gap-[4px] flex-1">
+            <div key={weekIdx} className="flex flex-col gap-[3px]">
               {week.map((dayData, dayIdx) => (
                 <div
                   key={`${weekIdx}-${dayIdx}`}
                   className={cn(
-                    "aspect-square w-full rounded-[2px] transition-all duration-300 hover:scale-125 hover:z-10 cursor-help",
+                    "w-[11px] h-[11px] rounded-[2px] transition-all duration-300 hover:scale-150 hover:z-10 cursor-help",
                     getIntensity(dayData.count)
                   )}
-                  // Hover behavior showing date and submission count
                   title={`${dayData.date}: ${dayData.count} submissions`}
                 />
               ))}
