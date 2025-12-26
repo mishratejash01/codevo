@@ -16,26 +16,48 @@ import { toast } from "sonner";
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- UPDATED: Premium Folder Sticker Icon for Sidebar ---
-const TopicStickerIcon = ({ active }: { active: boolean }) => (
+// --- ICON DESIGN CONSTANTS ---
+const BRAND_COLORS = {
+  outline: '#2d1d1a',
+  accent: '#f39233',
+  base: '#ffce8c',
+  sticker: '#e0e0e0',
+};
+
+/**
+ * PREMIUM LOOK HASHTAG (Strictly Checked from Reference)
+ */
+const SubTopicHashtag = ({ active }: { active: boolean }) => (
   <div className={cn(
-    "relative w-7 h-5 transition-all duration-300 shrink-0", 
-    active ? "scale-110 rotate-[-2deg] opacity-100" : "opacity-40 grayscale"
-  )} 
-  style={{ filter: active ? 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' : 'none' }}>
-    {/* Sticker Border effect */}
-    <div className="absolute inset-[-1.5px] bg-white rounded-[4px] opacity-10 blur-[0.5px]" />
-    {/* Folder Tab */}
-    <div className="absolute top-[-4px] left-0 w-[60%] h-3 rounded-t-[4px] border-[2px] border-[#2d1d1a] z-0" 
-         style={{ backgroundColor: '#f39233', clipPath: 'polygon(0 0, 80% 0, 100% 100%, 0 100%)' }} />
-    {/* Folder Body */}
-    <div className="absolute inset-0 rounded-[2px] border-[2px] border-[#2d1d1a] bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] z-10">
-        <div className="w-full h-1 bg-[#f39233] border-b border-[#2d1d1a]" />
+    "relative w-4 h-4 shrink-0 transition-opacity duration-300", 
+    active ? "opacity-100" : "opacity-30"
+  )}>
+    <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
+    <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+  </div>
+);
+
+/**
+ * COMPONENT: FolderIcon (Strictly Checked from Reference)
+ */
+const FolderIcon = ({ active }: { active: boolean }) => (
+  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
+    <div style={{ filter: `drop-shadow(2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(-2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(0 2px 0 ${BRAND_COLORS.sticker}) drop-shadow(0 -2px 0 ${BRAND_COLORS.sticker})` }}>
+      <div className="relative w-7 h-5">
+        <div className="absolute -top-[5px] left-0 w-[65%] h-[7px] border-[1.5px] border-b-0 rounded-t-[3px] z-10"
+          style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline, clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }} />
+        <div className="absolute inset-0 border-[1.5px] rounded-tr-[4px] rounded-br-[4px] rounded-bl-[4px] overflow-hidden z-20"
+          style={{ background: `linear-gradient(160deg, ${BRAND_COLORS.base} 0%, #f7b65d 100%)`, borderColor: BRAND_COLORS.outline }}>
+          <div className="absolute top-0 left-0 w-full h-[3px] border-b-[1px]" style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
+        </div>
+      </div>
     </div>
   </div>
 );
 
-// --- RESTORED: Custom Question Icons (Italian Minimalist) ---
+// --- Question List Box Icons ---
 const TerminalBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -51,7 +73,6 @@ const LayersBoxIcon = () => (
   </div>
 );
 
-// --- Helper for Difficulty Styling ---
 const getDifficultyStyle = (difficulty: string) => {
   switch (difficulty) {
     case 'Easy': return "bg-[#00ffa3]/[0.03] text-[#00ffa3] border-[#00ffa3]/20";
@@ -234,6 +255,8 @@ export default function PracticeArena() {
       </nav>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
+        
+        {/* LEFT COLUMN: Topic Sidebar with Reference Icons */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
@@ -242,7 +265,7 @@ export default function PracticeArena() {
                   className={cn("flex items-center gap-4 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                     selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                   )}>
-                  <TopicStickerIcon active={selectedTopic === null} />
+                  <FolderIcon active={selectedTopic === null} />
                   <span className="tracking-tight font-bold">All Topics</span>
                 </div>
                 {topics.map((topic: any) => (
@@ -250,7 +273,7 @@ export default function PracticeArena() {
                     className={cn("flex items-center gap-4 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
                       selectedTopic === topic.name ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                     )}>
-                    <TopicStickerIcon active={selectedTopic === topic.name} />
+                    <SubTopicHashtag active={selectedTopic === topic.name} />
                     <span className="tracking-tight font-bold">{topic.name}</span>
                   </div>
                 ))}
@@ -339,7 +362,6 @@ export default function PracticeArena() {
                         Google
                      </button>
                   </div>
-                  <div className="w-full h-[160px] bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] opacity-50" />
                 </>
               ) : (
                 activeEvents.length > 0 && (
