@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Search, ArrowLeft, CheckCircle2, Code2, 
-  Terminal, Layers 
+  Terminal, Layers, Flame 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
@@ -22,6 +22,10 @@ const BRAND_COLORS = {
   sticker: '#e0e0e0',
 };
 
+/**
+ * PREMIUM LOOK HASHTAG
+ * Clean, flat architectural hashtag using brand palette.
+ */
 const SubTopicHashtag = ({ active }: { active: boolean }) => (
   <div className={cn(
     "relative w-4 h-4 shrink-0 transition-opacity duration-300", 
@@ -34,6 +38,10 @@ const SubTopicHashtag = ({ active }: { active: boolean }) => (
   </div>
 );
 
+/**
+ * COMPONENT: FolderIcon (Main Category)
+ * Premium Sticker logic with white silhouette backing.
+ */
 const FolderIcon = ({ active }: { active: boolean }) => (
   <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
     <div style={{ filter: `drop-shadow(2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(-2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(0 2px 0 ${BRAND_COLORS.sticker}) drop-shadow(0 -2px 0 ${BRAND_COLORS.sticker})` }}>
@@ -91,6 +99,7 @@ export default function PracticeArena() {
   });
 
   const solvedProblemIds = new Set(userSubmissions.filter(s => s.status === 'completed').map(s => s.problem_id));
+  const attemptedProblemIds = new Set(userSubmissions.map(s => s.problem_id));
 
   const filteredProblems = problems.filter(p => {
     const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -99,11 +108,13 @@ export default function PracticeArena() {
     let matchesStatus = true;
     if (statusFilter === 'solved') matchesStatus = solvedProblemIds.has(p.id);
     else if (statusFilter === 'unsolved') matchesStatus = !solvedProblemIds.has(p.id);
+    else if (statusFilter === 'attempted') matchesStatus = attemptedProblemIds.has(p.id) && !solvedProblemIds.has(p.id);
     return matchesSearch && matchesDifficulty && matchesTopic && matchesStatus;
   });
 
   return (
     <div className="h-screen bg-[#000000] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none transition-colors duration-200">
+      {/* Navigation Layer */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-zinc-900 bg-[#000000] shrink-0 z-50">
         <div className="flex items-center gap-8">
           <div className="font-extrabold text-xl tracking-tighter cursor-pointer" onClick={() => navigate('/')}>
@@ -136,8 +147,10 @@ export default function PracticeArena() {
         </div>
       </nav>
 
+      {/* Main Grid Layout */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[250px_1fr_320px] gap-6 p-4 md:p-6 w-full overflow-hidden">
         
+        {/* LEFT COLUMN: Topics (Independent Scroll) */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden">
           <div className="shrink-0 space-y-4">
              <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-3 uppercase">Difficulty</div>
@@ -177,9 +190,9 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: EXPANDED SPACE */}
+        {/* MIDDLE COLUMN: Maximized Space & Sharp Block Design */}
         <main className="bg-[#0a0a0a] border border-zinc-900 rounded-lg flex flex-col shadow-2xl overflow-hidden h-full">
-          {/* MAXIMIZED TOP ROW FOR FILTERS */}
+          {/* Filters Row */}
           <div className="shrink-0 p-4 border-b border-zinc-900 bg-zinc-950/20">
             <div className="flex flex-wrap items-center justify-start gap-2">
                {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
@@ -217,23 +230,36 @@ export default function PracticeArena() {
                         </div>
                         <div className="flex-grow">
                           <h3 className="text-lg font-bold text-white group-hover:text-zinc-300 transition-colors tracking-tight">{problem.title}</h3>
-                          <div className="flex flex-wrap items-center gap-3 mt-1.5 font-sans">
-                            <span className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">
-                              #{problem.tags?.[0] || 'General'}
-                            </span>
-                            <span className={cn(
-                              "flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase",
-                              problem.difficulty === 'Easy' ? "text-emerald-500" :
-                              problem.difficulty === 'Medium' ? "text-amber-500" :
-                              "text-rose-500"
+                          
+                          <div className="flex flex-wrap items-center gap-2 mt-2 font-sans">
+                            {/* Sharp Rectangular Difficulty Block */}
+                            <div className={cn(
+                              "flex items-center gap-2 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all duration-300",
+                              problem.difficulty === 'Easy' ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" :
+                              problem.difficulty === 'Medium' ? "text-amber-500 bg-amber-500/10 border-amber-500/20" :
+                              "text-rose-500 bg-rose-500/10 border-rose-500/20"
                             )}>
                               <span className={cn(
-                                "w-1.5 h-1.5 rounded-full",
-                                problem.difficulty === 'Easy' ? "bg-emerald-500" :
-                                problem.difficulty === 'Medium' ? "bg-amber-500" : "bg-rose-500"
+                                "w-1.5 h-1.5 rounded-full animate-pulse",
+                                problem.difficulty === 'Easy' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" :
+                                problem.difficulty === 'Medium' ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" :
+                                "bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"
                               )} />
                               {problem.difficulty}
-                            </span>
+                            </div>
+
+                            {/* Sharp Rectangular Tag Block */}
+                            {problem.tags && problem.tags[0] && (
+                              <div className="px-2.5 py-1 rounded-sm text-[10px] font-bold text-zinc-400 bg-zinc-900/40 border border-zinc-800 uppercase tracking-widest">
+                                {problem.tags[0]}
+                              </div>
+                            )}
+                            
+                            {problem.is_daily && (
+                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-[10px] font-bold text-orange-400 bg-orange-400/10 border border-orange-400/20 uppercase tracking-widest">
+                                <Flame className="w-3 h-3 fill-orange-400" /> Daily
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -241,10 +267,10 @@ export default function PracticeArena() {
                       <div className="flex items-center justify-between w-full md:w-auto md:gap-12">
                         <div className="flex flex-col md:items-end min-w-[100px] text-left md:text-right">
                           <p className="text-[9px] uppercase font-bold text-zinc-600 tracking-[0.2em] mb-0.5 font-sans">Acceptance</p>
-                          <span className="text-base font-bold text-white">{problem.acceptance_rate || 0}%</span>
+                          <span className="text-base font-bold text-white font-mono">{problem.acceptance_rate || 0}%</span>
                         </div>
-                        <button className="px-8 py-2.5 bg-white text-black rounded-lg text-sm font-bold shadow-md hover:bg-zinc-200 transition-all active:scale-95">
-                          SOLVE
+                        <button className="px-8 py-2.5 bg-white text-black rounded-lg text-sm font-bold shadow-md hover:bg-zinc-200 transition-all active:scale-95 uppercase tracking-widest">
+                          Solve
                         </button>
                       </div>
                     </div>
@@ -255,6 +281,7 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
+        {/* RIGHT COLUMN: Analytics & Fixed Activity */}
         <aside className="hidden lg:flex flex-col gap-12 shrink-0 h-full overflow-hidden">
           <div className="space-y-6">
             <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-1 uppercase font-sans">User Analytics</div>
