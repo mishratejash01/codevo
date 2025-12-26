@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -86,6 +86,7 @@ const getDifficultyStyle = (difficulty: string) => {
 
 export default function PracticeArena() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
@@ -94,6 +95,8 @@ export default function PracticeArena() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [placeholderTopic, setPlaceholderTopic] = useState("Arrays");
+  const [newUsername, setNewUsername] = useState('');
+  const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -178,6 +181,26 @@ export default function PracticeArena() {
     setSelectedDifficulties(prev => 
       prev.includes(diff) ? prev.filter(d => d !== diff) : [...prev, diff]
     );
+  };
+
+  const handleSetUsername = async () => {
+    if (!userId || !newUsername.trim()) return;
+    setIsUpdatingUsername(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ username: newUsername.trim() })
+        .eq('id', userId);
+      
+      if (!error) {
+        queryClient.invalidateQueries({ queryKey: ['user_profile_arena', userId] });
+        setNewUsername('');
+      }
+    } catch (err) {
+      console.error('Error updating username:', err);
+    } finally {
+      setIsUpdatingUsername(false);
+    }
   };
 
   const TopicNavigation = () => (
@@ -285,16 +308,44 @@ export default function PracticeArena() {
                    </div>
                  </div>
 
-                 <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2">
-                    <QRCodeSVG 
-                      value={profileLink} 
-                      size={96} 
-                      level="H" 
-                      includeMargin={false}
-                    />
+                 <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2 relative overflow-hidden">
+                    <div className="relative">
+                      <div className={cn("transition-all duration-500", !profile?.username && "blur-md select-none")}>
+                        <QRCodeSVG 
+                          value={profileLink} 
+                          size={96} 
+                          level="H" 
+                          includeMargin={false}
+                        />
+                      </div>
+                      
+                      {!profile?.username && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 px-1">
+                          <div className="w-full flex flex-col gap-1">
+                            <Input 
+                              placeholder="Set username"
+                              value={newUsername}
+                              onChange={(e) => setNewUsername(e.target.value)}
+                              className="h-7 text-[10px] bg-white border-black/20 text-black placeholder:text-black/40 focus-visible:ring-black/40"
+                              onKeyDown={(e) => e.key === 'Enter' && handleSetUsername()}
+                            />
+                            <Button 
+                              onClick={handleSetUsername}
+                              disabled={isUpdatingUsername || !newUsername.trim()}
+                              className="h-6 text-[8px] bg-black text-white hover:bg-black/90 font-bold uppercase tracking-widest"
+                            >
+                              {isUpdatingUsername ? "..." : "Save"}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex items-center gap-1.5">
                       <QrCode className="w-3 h-3 text-black" />
-                      <span className="text-[9px] text-black font-bold uppercase tracking-wider">Scan Profile Card</span>
+                      <span className="text-[9px] text-black font-bold uppercase tracking-wider">
+                        {!profile?.username ? "Claim Username" : "Scan Profile Card"}
+                      </span>
                     </div>
                  </div>
 
