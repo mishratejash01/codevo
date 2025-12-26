@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { 
   Search, ArrowLeft, Terminal, Layers, Flame, 
-  Calendar, Building2, LogIn, ChevronRight 
+  Calendar, Building2, ChevronRight 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
@@ -16,34 +16,37 @@ import { toast } from "sonner";
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-const BRAND_COLORS = {
-  outline: '#2d1d1a',
-  accent: '#f39233',
-  base: '#ffce8c',
-  sticker: '#e0e0e0',
-};
-
-const SubTopicHashtag = ({ active }: { active: boolean }) => (
-  <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
-    <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
-    <div className="absolute left-[65%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
-    <div className="absolute top-[30%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
-    <div className="absolute top-[65%] left-0 w-full h-[2px] bg-[#ffce8c] rounded-full" />
+// --- Custom Italian Minimalist Icons ---
+const TerminalBoxIcon = () => (
+  <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <polyline points="4 17 10 11 4 5"></polyline>
+      <line x1="12" y1="19" x2="20" y2="19"></line>
+    </svg>
   </div>
 );
 
+const LayersBoxIcon = () => (
+  <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
+    <Layers size={18} strokeWidth={2.5} />
+  </div>
+);
+
+// --- Helper for Difficulty Styling ---
+const getDifficultyStyle = (difficulty: string) => {
+  switch (difficulty) {
+    case 'Easy': return "bg-[#00ffa3]/[0.03] text-[#00ffa3] border-[#00ffa3]/20";
+    case 'Medium': return "bg-[#ffce8c]/[0.03] text-[#ffce8c] border-[#ffce8c]/20";
+    case 'Hard': return "bg-[#ff4d4d]/[0.03] text-[#ff4d4d] border-[#ff4d4d]/20";
+    default: return "bg-[#333]/[0.1] text-zinc-500 border-zinc-700";
+  }
+};
+
 const FolderIcon = ({ active }: { active: boolean }) => (
-  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
-    <div style={{ filter: `drop-shadow(2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(-2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(0 2px 0 ${BRAND_COLORS.sticker}) drop-shadow(0 -2px 0 ${BRAND_COLORS.sticker})` }}>
-      <div className="relative w-7 h-5">
-        <div className="absolute -top-[5px] left-0 w-[65%] h-[7px] border-[1.5px] border-b-0 rounded-t-[3px] z-10"
-          style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline, clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }} />
-        <div className="absolute inset-0 border-[1.5px] rounded-tr-[4px] rounded-br-[4px] rounded-bl-[4px] overflow-hidden z-20"
-          style={{ background: `linear-gradient(160deg, ${BRAND_COLORS.base} 0%, #f7b65d 100%)`, borderColor: BRAND_COLORS.outline }}>
-          <div className="absolute top-0 left-0 w-full h-[3px] border-b-[1px]" style={{ backgroundColor: BRAND_COLORS.accent, borderColor: BRAND_COLORS.outline }} />
-        </div>
-      </div>
-    </div>
+  <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105 opacity-100" : "opacity-50")}>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "#fff" : "none"} stroke="currentColor" strokeWidth="2">
+       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+    </svg>
   </div>
 );
 
@@ -71,6 +74,7 @@ export default function PracticeArena() {
     }
   };
 
+  // Data Fetching Hooks (Preserved Logic)
   const { data: topics = [] } = useQuery({
     queryKey: ['practice_topics'],
     queryFn: async () => {
@@ -126,25 +130,26 @@ export default function PracticeArena() {
 
   return (
     <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
-      {/* Navigation */}
-      <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-white/5 bg-[#050505] shrink-0 z-50">
+      
+      {/* Navigation - Minimalist Style */}
+      <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
         <div className="flex items-center gap-8 font-sans">
           <div className="font-extrabold text-xl tracking-tighter cursor-pointer" onClick={() => navigate('/')}>
-            PRACTICE<span className="text-zinc-600">ARENA</span>
+            PRACTICE<span className="text-[#555]">ARENA</span>
           </div>
-          <div className="hidden md:flex items-center gap-2 text-[10px] tracking-widest uppercase">
-            <span className="text-zinc-500 font-normal">DASHBOARD</span>
-            <span className="text-zinc-800">/</span>
+          <div className="hidden md:flex items-center gap-2 text-[10px] tracking-widest uppercase text-[#555]">
+            <span>DASHBOARD</span>
+            <span>/</span>
             <span className="text-white font-bold">OVERVIEW</span>
           </div>
         </div>
 
         <div className="flex-1 max-w-md mx-8 hidden sm:block">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#555]" />
             <Input 
               placeholder="Search challenges..." 
-              className="pl-10 bg-[#0f0f12] border-white/5 focus:border-white/20 rounded-xl text-sm h-10 font-sans"
+              className="pl-10 bg-[#0c0c0c] border-[#1a1a1a] focus:border-[#333] rounded-[3px] text-sm h-10 font-sans text-[#ccc] placeholder:text-[#333]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -152,24 +157,24 @@ export default function PracticeArena() {
         </div>
 
         <div className="flex items-center gap-4">
-           <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-zinc-500 hover:text-white hover:bg-white/5 rounded-full transition-colors">
+           <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-[#555] hover:text-white hover:bg-[#1a1a1a] rounded-full transition-colors">
              <ArrowLeft className="w-5 h-5" />
            </Button>
-           <div className="w-9 h-9 rounded-full bg-[#0f0f12] border border-white/5" />
+           <div className="w-9 h-9 rounded-full bg-[#0c0c0c] border border-[#1a1a1a]" />
         </div>
       </nav>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
         
-        {/* LEFT COLUMN */}
+        {/* LEFT COLUMN: Topic Sidebar - Minimalist */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="shrink-0 space-y-4">
-             <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-3 uppercase">Difficulty</div>
-             <div className="grid grid-cols-3 gap-2 p-1 bg-[#0f0f12] border border-white/5 rounded-xl">
+             <div className="text-[10px] font-bold text-[#555] tracking-widest px-1 uppercase">Difficulty</div>
+             <div className="grid grid-cols-3 gap-2 p-1 bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px]">
                {['Easy', 'Medium', 'Hard'].map((d) => (
                  <button key={d} onClick={() => setFilterDifficulty(filterDifficulty === d ? null : d)}
-                   className={cn("py-2 text-[10px] font-bold uppercase rounded-lg transition-all font-sans",
-                     filterDifficulty === d ? "bg-white/5 text-white shadow-md font-bold" : "text-zinc-600 hover:text-white font-normal"
+                   className={cn("py-2 text-[10px] font-bold uppercase rounded-[2px] transition-all font-sans",
+                     filterDifficulty === d ? "bg-[#1a1a1a] text-white" : "text-[#555] hover:text-[#999]"
                    )}>
                    {d === 'Medium' ? 'Med' : d}
                  </button>
@@ -178,22 +183,22 @@ export default function PracticeArena() {
           </div>
 
           <div className="flex-1 flex flex-col min-h-0">
-            <ScrollArea className="flex-1 pr-4">
+            <ScrollArea className="flex-1 pr-2">
               <nav className="flex flex-col gap-1 pb-10">
                 <div onClick={() => setSelectedTopic(null)}
-                  className={cn("flex items-center gap-4 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer font-sans",
-                    selectedTopic === null ? "bg-white/5 text-white font-bold" : "text-zinc-500 hover:bg-white/5 font-normal"
+                  className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
+                    selectedTopic === null ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                   )}>
                   <FolderIcon active={selectedTopic === null} />
-                  <span>All Topics</span>
+                  <span className="tracking-tight">All Topics</span>
                 </div>
                 {topics.map((topic: any) => (
                   <div key={topic.id} onClick={() => setSelectedTopic(topic.name)}
-                    className={cn("flex items-center gap-4 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer font-sans",
-                      selectedTopic === topic.name ? "bg-white/5 text-white font-bold" : "text-zinc-500 hover:bg-white/5 font-normal"
+                    className={cn("flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-all cursor-pointer font-sans",
+                      selectedTopic === topic.name ? "bg-[#141414] text-white border border-[#1a1a1a]" : "text-[#555] hover:text-[#999]"
                     )}>
-                    <SubTopicHashtag active={selectedTopic === topic.name} />
-                    <span>{topic.name}</span>
+                    <span className="text-[10px] tracking-widest opacity-30">#</span>
+                    <span className="tracking-tight">{topic.name}</span>
                   </div>
                 ))}
               </nav>
@@ -201,14 +206,15 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN */}
-        <main className="bg-[#0f0f12] border border-white/5 rounded-[32px] flex flex-col shadow-2xl overflow-hidden h-full">
-          <div className="shrink-0 p-4 border-b border-white/5 bg-white/[0.01]">
-            <div className="flex flex-wrap items-center justify-start gap-2">
+        {/* MIDDLE COLUMN: Italian Minimalist Question Cards */}
+        <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
+          {/* Status Filters - Minimalist Tabs */}
+          <div className="shrink-0 py-4 mb-2 bg-[#050505]">
+            <div className="flex items-center justify-start gap-2">
                {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
                  <button key={f} onClick={() => setStatusFilter(f)}
-                   className={cn("px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans", 
-                     statusFilter === f ? "bg-white text-black border-white shadow-md font-bold" : "bg-[#0f0f12] text-zinc-500 border-white/5 hover:border-white/20 hover:text-white font-medium"
+                   className={cn("px-5 py-1.5 text-[10px] font-bold rounded-[3px] transition-all duration-300 border uppercase tracking-[2px] font-sans", 
+                     statusFilter === f ? "bg-[#1a1a1a] text-white border-[#333]" : "bg-transparent text-[#444] border-transparent hover:text-[#777]"
                    )}>
                    {f}
                  </button>
@@ -217,45 +223,55 @@ export default function PracticeArena() {
           </div>
 
           <ScrollArea className="flex-1">
-            <div className="flex flex-col gap-0 font-sans">
+            <div className="flex flex-col gap-3 pb-10 font-sans">
               {isLoading ? (
-                [1,2,3,4,5,6].map(i => <div key={i} className="h-20 border-b border-white/5 animate-pulse font-sans" />)
+                [1,2,3,4,5,6].map(i => <div key={i} className="h-24 bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] animate-pulse" />)
               ) : (
                 filteredProblems.map((problem) => (
-                  <div key={problem.id} className="group border-b border-white/5 hover:bg-white/[0.02] transition-all duration-300 cursor-pointer p-5 md:p-6"
-                    onClick={() => navigate(`/practice-arena/${problem.slug}`)}>
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 font-sans">
-                      <div className="flex items-center gap-6 flex-grow">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:scale-105 transition-transform">
-                          {problem.tags?.includes('Arrays') ? <Layers size={20} /> : <Terminal size={20} />}
-                        </div>
-                        <div className="flex-grow">
-                          <h3 className="text-lg font-bold text-white group-hover:text-zinc-300 transition-colors tracking-tight font-sans">{problem.title}</h3>
-                          <div className="flex flex-wrap items-center gap-2 mt-2">
-                            <div className={cn(
-                              "flex items-center gap-2 px-2.5 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all duration-300 font-sans bg-transparent",
-                              problem.difficulty === 'Easy' ? "text-emerald-500 border-emerald-500/20" :
-                              problem.difficulty === 'Medium' ? "text-amber-500 border-amber-500/20" :
-                              "text-rose-500 border-rose-500/20"
-                            )}>
-                              <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", problem.difficulty === 'Easy' ? "bg-emerald-500" : problem.difficulty === 'Medium' ? "bg-amber-500" : "bg-rose-500")} />
-                              {problem.difficulty}
-                            </div>
-                            <div className="px-2.5 py-1 rounded-sm text-[10px] font-bold text-zinc-500 bg-transparent border border-white/10 uppercase tracking-widest font-sans">
-                              {problem.tags?.[0] || 'General'}
-                            </div>
-                          </div>
+                  <div key={problem.id} 
+                    className="group relative bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-5 md:px-7 md:py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-all duration-300 hover:border-[#333] hover:bg-[#0f0f0f] cursor-default"
+                  >
+                    {/* Identity Group */}
+                    <div className="flex items-center gap-5">
+                      {/* Terminal Box Icon */}
+                      {problem.tags?.includes('Arrays') ? <LayersBoxIcon /> : <TerminalBoxIcon />}
+                      
+                      <div className="flex flex-col gap-1.5">
+                        <h3 className="text-white text-[1.1rem] font-bold tracking-[-0.01em] m-0 leading-tight group-hover:text-white transition-colors cursor-pointer" onClick={() => navigate(`/practice-arena/${problem.slug}`)}>
+                          {problem.title}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "text-[0.55rem] font-extrabold uppercase tracking-[1.5px] px-2.5 py-[3px] rounded-[3px] border",
+                            getDifficultyStyle(problem.difficulty)
+                          )}>
+                            {problem.difficulty}
+                          </span>
+                          <span className="text-[0.55rem] font-extrabold text-[#555] bg-[#1a1a1a] border border-[#252525] uppercase tracking-[1.5px] px-2.5 py-[3px] rounded-[3px]">
+                            {problem.tags?.[0] || 'GENERAL'}
+                          </span>
+                          {problem.is_daily && (
+                            <Flame className="w-3 h-3 text-[#ff4d4d] fill-[#ff4d4d]/10 ml-1" />
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between w-full md:w-auto md:gap-12">
-                        <div className="flex flex-col md:items-end min-w-[100px] text-right font-sans">
-                          <p className="text-[9px] uppercase font-bold text-zinc-600 tracking-[0.2em] mb-0.5">Acceptance</p>
-                          <span className="text-base font-bold text-white font-mono">{problem.acceptance_rate || 0}%</span>
-                        </div>
-                        <button className="px-8 py-2.5 bg-white text-black rounded-lg text-sm font-bold shadow-md hover:bg-zinc-200 transition-all active:scale-95 uppercase tracking-widest font-sans">
-                          Solve
-                        </button>
+                    </div>
+
+                    {/* Action Group */}
+                    <div className="flex items-center gap-8 md:gap-10 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0">
+                      <div className="text-right">
+                        <span className="block text-[0.55rem] font-bold text-[#555] uppercase tracking-[3px] mb-0.5">Acceptance</span>
+                        <span className="text-[1.4rem] font-light text-white leading-none">{problem.acceptance_rate || 0}%</span>
                       </div>
+
+                      {/* Animated Solve Button */}
+                      <button 
+                        onClick={() => navigate(`/practice-arena/${problem.slug}`)}
+                        className="relative bg-white text-black border-none px-8 py-3 rounded-[3px] text-[0.65rem] font-extrabold uppercase tracking-[3px] cursor-pointer overflow-hidden flex items-center justify-center transition-all duration-400 group/btn hover:bg-[#00ffa3] hover:pl-10"
+                      >
+                        <span className="absolute left-[-20px] opacity-0 text-[1rem] transition-all duration-400 text-black group-hover/btn:left-3 group-hover/btn:opacity-100">→</span>
+                        <span className="transition-all duration-400 group-hover/btn:translate-x-2">SOLVE</span>
+                      </button>
                     </div>
                   </div>
                 ))
@@ -264,68 +280,38 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN - Updated Scaling */}
+        {/* RIGHT COLUMN: Sidebar (Preserved Logic, Updated Aesthetic) */}
         <aside className="hidden lg:flex flex-col h-full overflow-hidden">
-          <ScrollArea className="h-full pr-4">
+          <ScrollArea className="h-full pr-2">
             <div className="flex flex-col gap-6 pb-10">
               
               {!userId ? (
-                /* Premium Login Card with Scaled Design and Google Symbol */
-                <div className="relative w-full bg-[#111112] border border-white/10 rounded-[32px] p-8 md:p-9 flex flex-col items-center text-center shadow-[0_40px_80px_-15px_rgba(0,0,0,0.7)] overflow-hidden">
-                  <div className="absolute top-0 w-3/5 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-                  
-                  <div className="relative w-12 h-12 bg-white/[0.03] border border-white/10 rounded-[16px] flex items-center justify-center mb-6">
-                    <div className="absolute w-8 h-8 bg-[#a855f7] blur-[20px] opacity-15 z-0" />
-                    <svg className="relative z-10 text-white" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                      <polyline points="10 17 15 12 10 7"></polyline>
-                      <line x1="15" y1="12" x2="3" y2="12"></line>
-                    </svg>
-                  </div>
-
-                  <h1 className="text-white text-[1.1rem] font-bold uppercase tracking-[0.08em] mb-3 font-sans">Access Your Progress</h1>
-                  <p className="text-[#8e8e93] text-[0.88rem] leading-[1.5] mb-7 max-w-[260px] font-normal font-sans">
-                    Sign in to sync your data, view advanced history, and track performance milestones.
-                  </p>
-
-                  <button 
-                    onClick={handleGoogleLogin}
-                    className="w-full bg-white text-black py-3.5 rounded-[12px] text-[0.8rem] font-bold uppercase tracking-[0.08em] transition-all duration-400 flex items-center justify-center gap-3 hover:translate-y-[-2px] hover:shadow-[0_10px_20px_rgba(255,255,255,0.08)] active:scale-95 font-sans"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 18 18">
-                      <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.49h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.89 2.69-6.62z" />
-                      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.8.54-1.83.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.95v2.33A8.99 8.99 0 0 0 9 18z" />
-                      <path fill="#FBBC05" d="M3.96 10.71A5.41 5.41 0 0 1 3.64 9c0-.59.1-1.17.28-1.71V4.96H.95a8.99 8.99 0 0 0 0 8.08l3.01-2.33z" />
-                      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A8.96 8.96 0 0 0 9 0C5.48 0 2.44 2.02.95 4.96l3.01 2.33C4.67 5.16 6.66 3.58 9 3.58z" />
-                    </svg>
-                    Log In with Google
-                  </button>
+                /* Login Card - Scaled for Sidebar */
+                <div className="relative w-full bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-8 flex flex-col items-center text-center">
+                   {/* ... (Preserved Login Logic with Minimalist Styles) ... */}
+                   <div className="w-12 h-12 bg-[#141414] border border-[#1a1a1a] rounded-[3px] flex items-center justify-center mb-6">
+                      <svg className="text-[#555]" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+                   </div>
+                   <h1 className="text-white text-[1rem] font-bold uppercase tracking-[2px] mb-3">Access Progress</h1>
+                   <button onClick={handleGoogleLogin} className="w-full bg-white text-black py-3 rounded-[3px] text-[0.7rem] font-extrabold uppercase tracking-[2px] mt-4 hover:bg-[#00ffa3] transition-colors">
+                     Log In with Google
+                   </button>
                 </div>
               ) : (
-                /* Ongoing Events Logic */
+                /* Events Section - Minimalist */
                 activeEvents.length > 0 && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between px-1 font-sans">
-                      <span className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">Ongoing Events</span>
-                      <Button variant="link" onClick={() => navigate('/events')} className="h-auto p-0 text-[10px] text-zinc-500 hover:text-white uppercase font-bold">All</Button>
+                      <span className="text-[10px] font-bold text-[#555] tracking-widest uppercase">Ongoing Events</span>
+                      <Button variant="link" onClick={() => navigate('/events')} className="h-auto p-0 text-[10px] text-[#555] hover:text-white uppercase font-bold">All</Button>
                     </div>
-                    
-                    <ScrollArea className="w-full whitespace-nowrap rounded-[28px]">
+                    <ScrollArea className="w-full whitespace-nowrap rounded-[3px]">
                       <div className="flex gap-4 pb-4 snap-x snap-mandatory font-sans">
                         {activeEvents.map((event) => (
-                          <div key={event.id} className="inline-block w-[300px] bg-[#111112] border border-white/10 rounded-[28px] p-6 shrink-0 snap-center shadow-xl">
-                            <div className="flex justify-between items-start mb-4">
-                              <h4 className="text-xs font-bold text-white truncate max-w-[160px] uppercase tracking-tight">{event.title}</h4>
-                              <div className="flex -space-x-2">
-                                 <div className="w-6 h-6 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center shadow-sm"><Building2 className="w-3 h-3 text-zinc-500" /></div>
-                                 <div className="w-6 h-6 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center shadow-sm"><Building2 className="w-3 h-3 text-zinc-400" /></div>
-                              </div>
-                            </div>
-                            <div className="space-y-2 mb-6 text-[10px] text-[#8e8e93] font-medium">
-                              <div className="flex items-center gap-2"><Calendar className="w-3 h-3 text-zinc-500" /> {new Date(event.start_date).toLocaleDateString()}</div>
-                              <p className="line-clamp-2 leading-relaxed whitespace-normal">Join specialized tracks with enterprise partners.</p>
-                            </div>
-                            <Button onClick={() => navigate(`/events/${event.slug}`)} className="w-full bg-[#a855f7] hover:bg-[#9333ea] text-white font-bold h-9 text-[10px] rounded-xl tracking-[0.1em] uppercase shadow-lg transition-transform active:scale-95">
+                          <div key={event.id} className="inline-block w-[280px] bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-6 shrink-0 snap-center">
+                            <h4 className="text-xs font-bold text-white uppercase tracking-tight mb-2">{event.title}</h4>
+                            <div className="text-[10px] text-[#555] mb-4">{new Date(event.start_date).toLocaleDateString()}</div>
+                            <Button onClick={() => navigate(`/events/${event.slug}`)} className="w-full bg-[#1a1a1a] hover:bg-[#00ffa3] hover:text-black text-white font-bold h-8 text-[9px] rounded-[3px] tracking-[2px] uppercase transition-colors">
                               Participate
                             </Button>
                           </div>
@@ -336,9 +322,6 @@ export default function PracticeArena() {
                   </div>
                 )
               )}
-
-              {/* Wireframe Placeholder for Non-Logged Users */}
-              {!userId && <div className="w-full h-[160px] bg-white/[0.01] border border-white/[0.02] rounded-[28px]" />}
 
               {/* Analytics Section */}
               <div className="flex flex-col gap-6 font-sans">
