@@ -19,7 +19,6 @@ import {
 import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
 import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
-// Import local QR library
 import { QRCodeSVG } from 'qrcode.react';
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
@@ -39,15 +38,11 @@ const FolderSticker = ({ active }: { active: boolean }) => (
       drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)]"
     >
       <div className="relative w-[26px] h-[18px]">
-        {/* Folder Tab (Back Section) */}
         <div 
           className="absolute top-[-4.2px] left-0 w-[16px] h-[5.2px] bg-[#f39233] border-[1px] border-[#2d1d1a] border-b-0 rounded-tl-[2.2px] rounded-tr-[3.4px]"
           style={{ clipPath: 'polygon(0 0, 78% 0, 100% 100%, 0 100%)' }}
         />
-
-        {/* Folder Body (Front Section) - Square top-left for alignment */}
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#ffce8c] to-[#f7b65d] border-[1px] border-[#2d1d1a] rounded-tr-[3px] rounded-br-[3px] rounded-bl-[3px] overflow-hidden box-border">
-          {/* Interior orange section bar */}
           <div className="absolute top-0 left-0 w-full h-[3.8px] bg-[#f39233] border-b-[1px] border-[#2d1d1a]" />
         </div>
       </div>
@@ -65,7 +60,6 @@ const SubTopicHashtag = ({ active }: { active: boolean }) => (
   </div>
 );
 
-// --- QUESTION LIST ICONS ---
 const TerminalBoxIcon = () => (
   <div className="w-[42px] h-[42px] bg-[#141414] rounded-[3px] flex items-center justify-center text-[#555] border border-[#1a1a1a]">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -218,10 +212,8 @@ export default function PracticeArena() {
 
   return (
     <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
-      {/* Header */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
         <div className="flex items-center gap-4 md:gap-8 font-sans">
-          {/* Mobile Sheet Trigger */}
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="lg:hidden text-[#555] hover:text-white hover:bg-[#141414]">
@@ -293,7 +285,6 @@ export default function PracticeArena() {
                    </div>
                  </div>
 
-                 {/* LOCAL QR GENERATOR - Instant Load */}
                  <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2">
                     <QRCodeSVG 
                       value={profileLink} 
@@ -318,9 +309,7 @@ export default function PracticeArena() {
         </div>
       </nav>
 
-      {/* Main Layout */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[240px_1fr_360px] gap-6 p-4 md:p-6 w-full overflow-hidden">
-        {/* Desktop Topics Sidebar */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden font-sans">
           <div className="flex-1 flex flex-col min-h-0 pt-2">
             <ScrollArea className="flex-1 pr-2">
@@ -329,9 +318,7 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* Problems Main View */}
         <main className="flex flex-col h-full overflow-hidden rounded-[3px]">
-          {/* Filters Row */}
           <div className="shrink-0 py-4 mb-2 bg-[#050505] flex items-center justify-between">
             <ScrollArea className="w-full" orientation="horizontal">
               <div className="flex items-center gap-2 pb-3 px-1 min-w-max">
@@ -343,7 +330,6 @@ export default function PracticeArena() {
                      )}>{f}</button>
                  ))}
                  
-                 {/* Portaled Popover to prevent filter row clipping */}
                  <Popover>
                     <PopoverTrigger asChild>
                       <button className={cn("px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider font-sans flex items-center gap-2",
@@ -405,13 +391,35 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* Desktop Stats Sidebar */}
         <aside className="hidden lg:flex flex-col h-full overflow-hidden">
           <ScrollArea className="h-full pr-2">
             <div className="flex flex-col gap-6 pb-10">
               <div className="flex flex-col gap-6 font-sans">
-                <UserStatsCard userId={userId} />
-                <ActivityCalendar userId={userId} />
+                {/* Conditionally render Guest Card or User Stats */}
+                {!userId ? (
+                  <div className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-[3px] p-6 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="w-12 h-12 rounded-full bg-[#141414] border border-[#1a1a1a] flex items-center justify-center">
+                      <User className="w-6 h-6 text-[#555]" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <h3 className="text-white font-bold tracking-tight">Track Your Progress</h3>
+                      <p className="text-xs text-[#555] leading-relaxed">
+                        Sign in to save your solutions, track your daily activity, and compete on the leaderboard.
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={() => navigate('/auth')}
+                      className="w-full bg-white text-black hover:bg-zinc-200 text-[10px] font-bold uppercase tracking-[2px] h-9 rounded-[2px]"
+                    >
+                      Get Started
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <UserStatsCard userId={userId} />
+                    <ActivityCalendar userId={userId} />
+                  </>
+                )}
               </div>
             </div>
           </ScrollArea>
