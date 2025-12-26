@@ -22,10 +22,6 @@ const BRAND_COLORS = {
   sticker: '#e0e0e0',
 };
 
-/**
- * PREMIUM LOOK HASHTAG
- * Clean, flat architectural hashtag using brand palette.
- */
 const SubTopicHashtag = ({ active }: { active: boolean }) => (
   <div className={cn(
     "relative w-4 h-4 shrink-0 transition-opacity duration-300", 
@@ -38,10 +34,6 @@ const SubTopicHashtag = ({ active }: { active: boolean }) => (
   </div>
 );
 
-/**
- * COMPONENT: FolderIcon (Main Category)
- * Premium Sticker logic with white silhouette backing.
- */
 const FolderIcon = ({ active }: { active: boolean }) => (
   <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105" : "opacity-70 grayscale-[20%]")}>
     <div style={{ filter: `drop-shadow(2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(-2px 0 0 ${BRAND_COLORS.sticker}) drop-shadow(0 2px 0 ${BRAND_COLORS.sticker}) drop-shadow(0 -2px 0 ${BRAND_COLORS.sticker})` }}>
@@ -112,7 +104,6 @@ export default function PracticeArena() {
 
   return (
     <div className="h-screen bg-[#000000] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none transition-colors duration-200">
-      {/* Fixed Navigation Bar */}
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-zinc-900 bg-[#000000] shrink-0 z-50">
         <div className="flex items-center gap-8">
           <div className="font-extrabold text-xl tracking-tighter cursor-pointer" onClick={() => navigate('/')}>
@@ -145,20 +136,16 @@ export default function PracticeArena() {
         </div>
       </nav>
 
-      {/* Main Grid Layout */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr_340px] gap-10 p-6 md:p-12 max-w-[1800px] mx-auto w-full overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[250px_1fr_320px] gap-6 p-4 md:p-6 w-full overflow-hidden">
         
-        {/* LEFT COLUMN: Topic Selection (Independent Scroll) */}
         <aside className="hidden lg:flex flex-col gap-8 h-full overflow-hidden">
           <div className="shrink-0 space-y-4">
-             <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-3 uppercase">Difficulty Level</div>
+             <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-3 uppercase">Difficulty</div>
              <div className="grid grid-cols-3 gap-2 p-1 bg-zinc-950 border border-zinc-900 rounded-xl">
                {['Easy', 'Medium', 'Hard'].map((d) => (
                  <button key={d} onClick={() => setFilterDifficulty(filterDifficulty === d ? null : d)}
                    className={cn("py-2 text-[10px] font-bold uppercase rounded-lg transition-all",
-                     filterDifficulty === d 
-                       ? "bg-zinc-900 text-white shadow-md font-bold" 
-                       : "text-zinc-600 hover:text-white font-normal"
+                     filterDifficulty === d ? "bg-zinc-900 text-white shadow-md font-bold" : "text-zinc-600 hover:text-white font-normal"
                    )}>
                    {d === 'Medium' ? 'Med' : d}
                  </button>
@@ -190,56 +177,55 @@ export default function PracticeArena() {
           </div>
         </aside>
 
-        {/* MIDDLE COLUMN: REDESIGNED QUESTIONS SECTION (Independent Scroll) */}
-        <main className="bg-[#0a0a0a] border border-zinc-900 rounded-lg p-8 flex flex-col shadow-2xl overflow-hidden h-full">
-          <div className="shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight text-white uppercase">Recommended Challenges</h2>
-              <p className="text-zinc-500 mt-2 text-sm leading-relaxed max-w-xl font-medium">
-                Expand your algorithmic knowledge with our curated selection of coding problems.
-              </p>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-2">
+        {/* MIDDLE COLUMN: EXPANDED SPACE */}
+        <main className="bg-[#0a0a0a] border border-zinc-900 rounded-lg flex flex-col shadow-2xl overflow-hidden h-full">
+          {/* MAXIMIZED TOP ROW FOR FILTERS */}
+          <div className="shrink-0 p-4 border-b border-zinc-900 bg-zinc-950/20">
+            <div className="flex flex-wrap items-center justify-start gap-2">
                {(['all', 'solved', 'unsolved', 'attempted'] as StatusFilter[]).map((f) => (
-                 <button key={f} onClick={() => setStatusFilter(f)}
+                 <button 
+                   key={f} 
+                   onClick={() => setStatusFilter(f)}
                    className={cn(
-                     "px-5 py-2 text-xs font-semibold rounded-full transition-all duration-200 border", 
+                     "px-6 py-2 text-xs font-semibold rounded-full transition-all duration-200 border uppercase tracking-wider", 
                      statusFilter === f 
-                       ? "bg-white text-black border-white shadow-sm" 
-                       : "bg-zinc-950 text-zinc-500 border-zinc-900 hover:border-zinc-700 hover:text-white font-normal"
-                   )}>
-                   {f.charAt(0).toUpperCase() + f.slice(1)}
+                       ? "bg-white text-black border-white shadow-md" 
+                       : "bg-zinc-950 text-zinc-500 border-zinc-900 hover:border-zinc-700 hover:text-white font-medium"
+                   )}
+                 >
+                   {f}
                  </button>
                ))}
             </div>
           </div>
 
-          <ScrollArea className="flex-1 -mr-2 pr-4">
-            <div className="flex flex-col gap-4 pb-10">
+          <ScrollArea className="flex-1">
+            <div className="flex flex-col gap-0">
               {isLoading ? (
-                [1,2,3,4].map(i => <div key={i} className="h-24 bg-zinc-900/30 border border-zinc-800 rounded-lg animate-pulse" />)
+                [1,2,3,4,5,6].map(i => <div key={i} className="h-20 border-b border-zinc-900 animate-pulse" />)
               ) : (
                 filteredProblems.map((problem) => (
-                  <div key={problem.id} onClick={() => navigate(`/practice-arena/${problem.slug}`)}
-                    className="group bg-zinc-950/30 border border-zinc-900 hover:border-zinc-600 rounded-lg p-4 transition-all duration-300 cursor-pointer">
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                      <div className="flex items-center gap-5 w-full md:w-auto flex-grow">
-                        {/* Status Icon Wrapper */}
-                        <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-zinc-900 flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-300">
-                          {problem.tags?.includes('Arrays') ? <Layers size={24} /> : <Terminal size={24} />}
+                  <div 
+                    key={problem.id}
+                    className="group border-b border-zinc-900 hover:bg-zinc-900/30 transition-all duration-300 cursor-pointer p-5 md:p-6"
+                    onClick={() => navigate(`/practice-arena/${problem.slug}`)}
+                  >
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-6 flex-grow">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white group-hover:scale-105 transition-transform">
+                          {problem.tags?.includes('Arrays') ? <Layers size={20} /> : <Terminal size={20} />}
                         </div>
                         <div className="flex-grow">
-                          <h3 className="text-lg font-bold text-white group-hover:text-zinc-400 transition-colors tracking-tight">{problem.title}</h3>
-                          <div className="flex flex-wrap items-center gap-3 mt-2 font-sans">
-                            <span className="text-[11px] font-bold text-zinc-400 bg-zinc-800/80 px-2 py-1 rounded border border-zinc-700 tracking-wider uppercase">
-                              {problem.tags?.[0] || 'General'}
+                          <h3 className="text-lg font-bold text-white group-hover:text-zinc-300 transition-colors tracking-tight">{problem.title}</h3>
+                          <div className="flex flex-wrap items-center gap-3 mt-1.5 font-sans">
+                            <span className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">
+                              #{problem.tags?.[0] || 'General'}
                             </span>
                             <span className={cn(
-                              "flex items-center gap-1.5 text-[11px] font-bold px-2 py-1 rounded border tracking-wider uppercase",
-                              problem.difficulty === 'Easy' ? "text-emerald-500 bg-emerald-950/20 border-emerald-900/30" :
-                              problem.difficulty === 'Medium' ? "text-amber-500 bg-amber-950/20 border-amber-900/30" :
-                              "text-rose-500 bg-rose-950/20 border-rose-900/30"
+                              "flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase",
+                              problem.difficulty === 'Easy' ? "text-emerald-500" :
+                              problem.difficulty === 'Medium' ? "text-amber-500" :
+                              "text-rose-500"
                             )}>
                               <span className={cn(
                                 "w-1.5 h-1.5 rounded-full",
@@ -252,16 +238,14 @@ export default function PracticeArena() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between w-full md:w-auto md:gap-10 pl-1 md:pl-0 mt-2 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-zinc-900">
-                        <div className="flex items-center gap-10">
-                          <div className="flex flex-col md:items-end min-w-[100px] text-right">
-                            <p className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest mb-0.5">Acceptance</p>
-                            <span className="text-base font-bold text-white">{problem.acceptance_rate || 0}%</span>
-                          </div>
-                          <button className="px-6 py-2.5 bg-white text-black rounded-lg text-sm font-bold shadow-md hover:bg-zinc-200 transition-all duration-200 transform active:scale-95">
-                            Solve
-                          </button>
+                      <div className="flex items-center justify-between w-full md:w-auto md:gap-12">
+                        <div className="flex flex-col md:items-end min-w-[100px] text-left md:text-right">
+                          <p className="text-[9px] uppercase font-bold text-zinc-600 tracking-[0.2em] mb-0.5 font-sans">Acceptance</p>
+                          <span className="text-base font-bold text-white">{problem.acceptance_rate || 0}%</span>
                         </div>
+                        <button className="px-8 py-2.5 bg-white text-black rounded-lg text-sm font-bold shadow-md hover:bg-zinc-200 transition-all active:scale-95">
+                          SOLVE
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -271,14 +255,13 @@ export default function PracticeArena() {
           </ScrollArea>
         </main>
 
-        {/* RIGHT COLUMN: Analytics & Fixed Activity */}
         <aside className="hidden lg:flex flex-col gap-12 shrink-0 h-full overflow-hidden">
           <div className="space-y-6">
-            <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-1 uppercase">User Analytics</div>
+            <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-1 uppercase font-sans">User Analytics</div>
             <UserStatsCard userId={userId} />
           </div>
           <div className="space-y-6">
-            <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-1 uppercase">Activity Record</div>
+            <div className="text-[10px] font-bold text-zinc-500 tracking-widest px-1 uppercase font-sans">Activity Record</div>
             <ActivityCalendar userId={userId} />
           </div>
         </aside>
