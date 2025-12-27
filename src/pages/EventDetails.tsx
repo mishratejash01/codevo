@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { EventRegistrationModal } from '@/components/EventRegistrationModal';
 
-// --- Types based on your Schema ---
+// --- Types ---
 interface EventStage {
   id: string;
   title: string;
@@ -35,7 +35,7 @@ interface EventReview {
   id: string;
   rating: number;
   review_text: string;
-  user_id: string; // In a real app, you'd join this with profiles to get the name
+  user_id: string;
 }
 
 interface Event {
@@ -43,17 +43,21 @@ interface Event {
   title: string;
   slug: string;
   short_description: string;
-  content: string | null;
+  content: string | null; // Mapped to "Concept & Rigor"
   start_date: string;
   end_date: string;
+  registration_deadline?: string;
   created_at: string;
   image_url: string;
   category: string;
   mode: string;
   location: string;
   prize_pool: string;
-  event_type: string;
+  is_featured: boolean;
+  event_type: 'hackathon' | 'normal';
   max_team_size: number | null;
+  registration_fee: number | null;
+  is_paid: boolean | null;
   
   // Relations
   event_stages: EventStage[];
@@ -68,8 +72,6 @@ export default function EventDetails() {
   const { toast } = useToast();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // State for Modal
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
   useEffect(() => {
@@ -99,7 +101,7 @@ export default function EventDetails() {
         return;
       }
 
-      // Sort nested arrays for display
+      // Sort related data for correct display order
       const eventData = data as unknown as Event;
       
       if (eventData.event_stages) {
@@ -129,7 +131,7 @@ export default function EventDetails() {
 
   if (!event) return null;
 
-  const isEventOpen = new Date(event.end_date) > new Date();
+  const isEventActive = new Date(event.end_date) > new Date();
 
   return (
     <div className="min-h-screen bg-[#000000] text-white selection:bg-white/20 font-sans">
@@ -148,39 +150,91 @@ export default function EventDetails() {
             --titanium: #e0e0e0;
         }
 
+        /* Base Styles */
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); }
         h1, h2, h3, .serif { font-family: 'Playfair Display', serif; letter-spacing: -1px; }
         
         .container-custom { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
 
-        .hero { padding: 100px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+        /* Hero */
+        .hero {
+            padding: 100px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
         .category-tag { text-transform: uppercase; font-size: 0.7rem; letter-spacing: 3px; color: var(--text-muted); margin-bottom: 20px; display: block; }
         .hero h1 { font-size: 4.5rem; line-height: 1; margin-bottom: 25px; font-weight: 700; }
-        .hero-image { width: 100%; height: 500px; background-color: #0a0a0a; background-size: cover; background-position: center; filter: grayscale(1); opacity: 0.8; }
+        .hero-image {
+            width: 100%;
+            height: 500px;
+            background-color: #0a0a0a;
+            background-size: cover;
+            background-position: center;
+            filter: grayscale(1);
+            opacity: 0.8;
+        }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); padding: 50px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 100px; }
+        /* Stats Bar */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            padding: 50px 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 100px;
+        }
         .stat-item span { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 2px; }
         .stat-item strong { font-size: 1.4rem; font-weight: 200; color: var(--titanium); }
 
-        .main-grid { display: grid; grid-template-columns: 1fr 350px; gap: 100px; margin-bottom: 100px; }
+        /* Layout Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 100px;
+            margin-bottom: 100px;
+        }
         .section-title { font-size: 2.2rem; margin-bottom: 40px; position: relative; font-weight: 400; }
         .section-title::after { content: ""; display: block; width: 60px; height: 1px; background: var(--text-muted); margin-top: 20px; }
 
+        /* Animations & Timeline */
         @keyframes lineGrow { from { height: 0; } to { height: 100%; } }
         .roadmap { position: relative; padding-left: 40px; margin-bottom: 80px; }
         .roadmap-line { position: absolute; left: 0; top: 0; width: 1px; height: 100%; background: var(--border); }
         .roadmap-progress { position: absolute; left: 0; top: 0; width: 1px; background: var(--titanium); animation: lineGrow 3s ease-in-out forwards; }
         .stage-item { position: relative; margin-bottom: 50px; }
-        .stage-item::before { content: ""; position: absolute; left: -43.5px; top: 10px; width: 8px; height: 8px; background: var(--titanium); border-radius: 50%; }
+        .stage-item::before {
+            content: ""; position: absolute; left: -43.5px; top: 10px;
+            width: 8px; height: 8px; background: var(--titanium); border-radius: 50%;
+        }
 
+        /* Prizes */
         .prize-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 80px; }
         .prize-card { border: 1px solid var(--border); padding: 40px; text-align: left; transition: 0.3s; }
         .prize-card:hover { border-color: var(--titanium); }
         .prize-pos { font-size: 3rem; font-weight: 200; margin-bottom: 10px; color: var(--titanium); }
 
-        .patrons-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 100px; }
-        .patron-logo { background: var(--bg); padding: 30px; text-align: center; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 3px; color: var(--text-muted); }
+        /* Patrons */
+        .patrons-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            margin-bottom: 100px;
+        }
+        .patron-logo {
+            background: var(--bg);
+            padding: 30px;
+            text-align: center;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-muted);
+        }
 
+        /* QA & Insights */
         .qa-item { margin-bottom: 40px; }
         .qa-q { font-weight: 400; font-size: 1.1rem; margin-bottom: 12px; color: var(--titanium); border-left: 1px solid var(--titanium); padding-left: 20px; }
         .qa-a { color: var(--text-muted); font-size: 0.95rem; padding-left: 21px; }
@@ -190,8 +244,22 @@ export default function EventDetails() {
         .insight-quote { font-style: italic; color: var(--text-muted); margin-bottom: 20px; font-weight: 300; }
         .insight-author { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--titanium); }
 
-        .sidebar-card { background: var(--surface); padding: 40px; border: 1px solid var(--border); position: sticky; top: 120px; }
-        .btn-participate { display: block; width: 100%; padding: 22px; background: var(--text-main); color: #000; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 3px; font-size: 0.8rem; font-weight: 700; margin-bottom: 30px; transition: 0.4s; cursor: pointer; border: none; }
+        /* Sidebar Styling */
+        .sidebar-card {
+            background: var(--surface);
+            padding: 40px;
+            border: 1px solid var(--border);
+            position: sticky;
+            top: 120px; /* Offset for existing header */
+        }
+        .btn-participate {
+            display: block; width: 100%; padding: 22px;
+            background: var(--text-main); color: #000;
+            text-align: center; text-decoration: none; text-transform: uppercase;
+            letter-spacing: 3px; font-size: 0.8rem; font-weight: 700;
+            margin-bottom: 30px; transition: 0.4s;
+            cursor: pointer; border: none;
+        }
         .btn-participate:hover { background: transparent; color: #fff; box-shadow: inset 0 0 0 1px #fff; }
         
         .meta-list { list-style: none; padding: 0; margin: 0; }
@@ -209,6 +277,7 @@ export default function EventDetails() {
       {/* Global Header */}
       <Header />
 
+      {/* Registration Modal */}
       <EventRegistrationModal 
         event={{ id: event.id, title: event.title }} 
         isOpen={isRegistrationOpen} 
@@ -217,32 +286,46 @@ export default function EventDetails() {
 
       <div className="container-custom pt-24">
         
-        {/* HERO */}
+        {/* HERO SECTION */}
         <section className="hero">
             <div>
-                <span className="category-tag">{event.category} • {event.event_type}</span>
+                <span className="category-tag">
+                    {event.category} • {event.event_type}
+                </span>
                 <h1 className="serif">{event.title}</h1>
                 <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', fontWeight: 200, marginBottom: '40px', lineHeight: 1.6 }}>
                     {event.short_description}
                 </p>
-                <button onClick={() => setIsRegistrationOpen(true)} className="btn-participate" style={{ width: '250px' }}>
+                
+                <button 
+                    onClick={() => setIsRegistrationOpen(true)} 
+                    className="btn-participate" 
+                    style={{ width: '250px' }}
+                >
                     Apply for Entry
                 </button>
             </div>
-            <div className="hero-image" style={{ backgroundImage: `url(${event.image_url})` }} />
+            <div 
+                className="hero-image"
+                style={{ backgroundImage: `url(${event.image_url})` }}
+            />
         </section>
 
-        {/* STATS */}
+        {/* STATS BAR */}
         <div className="stats-grid">
             <div className="stat-item"><span>Treasury Pool</span><strong>{event.prize_pool || "TBA"}</strong></div>
-            <div className="stat-item"><span>Status</span><strong>{isEventOpen ? 'Active' : 'Closed'}</strong></div>
+            <div className="stat-item"><span>Status</span><strong>{isEventActive ? 'Active' : 'Closed'}</strong></div>
             <div className="stat-item"><span>Team Limit</span><strong>{event.max_team_size ? `Max ${event.max_team_size}` : "Solo"}</strong></div>
             <div className="stat-item"><span>Mode</span><strong>{event.mode}</strong></div>
         </div>
 
-        {/* MAIN CONTENT */}
+        {/* MAIN LAYOUT */}
         <div className="main-grid">
+            
+            {/* CONTENT COLUMN */}
             <div className="content-col">
+                
+                {/* Concept / Description */}
                 <section>
                     <h2 className="section-title">Concept & Rigor</h2>
                     <div style={{ color: 'var(--text-muted)', fontWeight: 300, marginBottom: '80px', maxWidth: '600px', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
@@ -250,13 +333,13 @@ export default function EventDetails() {
                     </div>
                 </section>
 
+                {/* Roadmap - Dynamic Data */}
                 <section>
                     <h2 className="section-title">The Roadmap</h2>
                     <div className="roadmap">
                         <div className="roadmap-line"></div>
                         <div className="roadmap-progress"></div>
                         
-                        {/* Dynamic Stages */}
                         {event.event_stages && event.event_stages.length > 0 ? (
                             event.event_stages.map((stage) => (
                                 <div key={stage.id} className="stage-item">
@@ -274,23 +357,25 @@ export default function EventDetails() {
                                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '2px', display: 'block', marginBottom: '5px' }}>
                                         {format(new Date(event.start_date), 'MMM dd')}
                                     </span>
-                                    <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>Event Start</h3>
+                                    <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>Initiation</h3>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Event kick-off.</p>
                                 </div>
                                 <div className="stage-item">
                                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '2px', display: 'block', marginBottom: '5px' }}>
                                         {format(new Date(event.end_date), 'MMM dd')}
                                     </span>
-                                    <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>Event End</h3>
+                                    <h3 style={{ fontSize: '1.2rem', marginBottom: '5px' }}>Submission Deadline</h3>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Final submission date.</p>
                                 </div>
                             </>
                         )}
                     </div>
                 </section>
 
+                {/* Prizes - Dynamic Data */}
                 <section>
                     <h2 className="section-title">Prizes</h2>
                     <div className="prize-grid">
-                        {/* Dynamic Prizes */}
                         {event.event_prizes && event.event_prizes.length > 0 ? (
                             event.event_prizes.map((prize) => (
                                 <div key={prize.id} className="prize-card">
@@ -312,7 +397,7 @@ export default function EventDetails() {
                     </div>
                 </section>
 
-                {/* Static Patrons (Design Element) */}
+                {/* Patrons (Static as requested/designed) */}
                 <section>
                     <h2 className="section-title">Patrons</h2>
                     <div className="patrons-grid">
@@ -325,7 +410,7 @@ export default function EventDetails() {
                     </div>
                 </section>
 
-                {/* Dynamic FAQs */}
+                {/* FAQs - Dynamic Data */}
                 {event.event_faqs && event.event_faqs.length > 0 && (
                     <section>
                         <h2 className="section-title">Curated FAQ</h2>
@@ -338,7 +423,7 @@ export default function EventDetails() {
                     </section>
                 )}
 
-                {/* Dynamic Reviews */}
+                {/* Reviews - Dynamic Data */}
                 {event.event_reviews && event.event_reviews.length > 0 && (
                     <section>
                         <h2 className="section-title">Member Insights</h2>
@@ -354,12 +439,15 @@ export default function EventDetails() {
                 )}
             </div>
 
-            {/* SIDEBAR */}
+            {/* SIDEBAR COLUMN */}
             <aside className="sidebar-col">
                 <div className="sidebar-card">
                     <h3 className="serif" style={{ fontSize: '1.5rem', marginBottom: '30px', fontWeight: 400 }}>Event Summary</h3>
                     
-                    <button onClick={() => setIsRegistrationOpen(true)} className="btn-participate">
+                    <button 
+                        onClick={() => setIsRegistrationOpen(true)} 
+                        className="btn-participate"
+                    >
                         Participate Now
                     </button>
 
