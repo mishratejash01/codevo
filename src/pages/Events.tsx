@@ -5,6 +5,7 @@ import { Loader2, Search, SlidersHorizontal } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Types ---
 interface Event {
@@ -116,6 +117,9 @@ export default function Events() {
   const [selectedMode, setSelectedMode] = useState<string>('All');
   const [selectedPrice, setSelectedPrice] = useState<string>('All');
 
+  // Placeholder Animation State
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+
   // Auth state management
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
@@ -162,30 +166,43 @@ export default function Events() {
 
   // --- Derived Data for Filters & Placeholders ---
   
-  // 1. Categories
   const categories = useMemo(() => {
     const cats = new Set(events.map(e => e.category).filter(Boolean));
     return ['All', ...Array.from(cats)];
   }, [events]);
 
-  // 2. Modes
   const modes = useMemo(() => {
     const ms = new Set(events.map(e => e.mode).filter(Boolean));
     return ['All', ...Array.from(ms)];
   }, [events]);
 
-  // 3. Dynamic Search Placeholder (based on Locations)
-  const searchPlaceholder = useMemo(() => {
-    // Extract unique locations, filter out empty ones
-    const locs = Array.from(new Set(events.map(e => e.location).filter(Boolean)));
-    // Take first 3 for brevity
-    const preview = locs.slice(0, 3).join(', ');
-    
-    if (preview) {
-      return `Search events in ${preview}${locs.length > 3 ? '...' : ''}`;
-    }
-    return "Search events by title, description or location...";
+  // Generate dynamic placeholders based on available data
+  const placeholders = useMemo(() => {
+    const uniqueLocations = Array.from(new Set(events.map(e => e.location).filter(Boolean)));
+    const uniqueCategories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
+    const uniqueModes = Array.from(new Set(events.map(e => e.mode).filter(Boolean)));
+
+    // Create a diverse mix of search prompts
+    const prompts = [
+      "Search events by title...",
+      ...uniqueLocations.map(l => `Search events in ${l}...`),
+      ...uniqueCategories.map(c => `Browse ${c}...`),
+      ...uniqueModes.map(m => `Find ${m} events...`),
+      "Search by description..."
+    ];
+
+    return prompts.length > 0 ? prompts : ["Search events..."];
   }, [events]);
+
+  // Cycle through placeholders
+  useEffect(() => {
+    if (placeholders.length <= 1) return;
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+    }, 3000); // Change every 3 seconds
+    return () => clearInterval(interval);
+  }, [placeholders]);
+
 
   // --- Filter Logic ---
   const filteredEvents = events.filter(event => {
@@ -232,15 +249,34 @@ export default function Events() {
           {/* Filter Row - Squared Inputs (rounded-none) */}
           <div className="flex flex-col lg:flex-row gap-4 w-full">
             
-            {/* Search Input - Dynamic Placeholder */}
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+            {/* Animated Search Input */}
+            <div className="relative flex-1 min-w-[200px] bg-zinc-900/50 border border-zinc-800 focus-within:border-zinc-600 transition-colors h-12 flex items-center rounded-none group">
+              <Search className="absolute left-3 w-4 h-4 text-zinc-500 z-10" />
+              
+              {/* Animation Container - Behind Input */}
+              <div className="absolute left-10 right-4 h-full flex items-center pointer-events-none overflow-hidden">
+                <AnimatePresence mode="wait">
+                  {!searchQuery && (
+                    <motion.span
+                      key={placeholders[placeholderIndex]}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -20, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      className="text-sm text-zinc-500 truncate w-full"
+                    >
+                      {placeholders[placeholderIndex]}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </div>
+
               <input 
                 type="text" 
-                placeholder={searchPlaceholder} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-none pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 transition-colors placeholder:text-zinc-600"
+                className="w-full h-full bg-transparent border-none outline-none pl-10 pr-4 text-sm text-white z-20 placeholder-transparent"
+                placeholder="" // Empty because we use the animated span
               />
             </div>
 
@@ -249,7 +285,7 @@ export default function Events() {
               <select 
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer"
+                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer h-12"
               >
                 {categories.map(cat => (
                   <option key={cat} value={cat} className="bg-zinc-900 text-white">
@@ -265,7 +301,7 @@ export default function Events() {
               <select 
                 value={selectedMode}
                 onChange={(e) => setSelectedMode(e.target.value)}
-                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer"
+                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer h-12"
               >
                 {modes.map(mode => (
                   <option key={mode} value={mode} className="bg-zinc-900 text-white">
@@ -281,7 +317,7 @@ export default function Events() {
               <select 
                 value={selectedPrice}
                 onChange={(e) => setSelectedPrice(e.target.value)}
-                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer"
+                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer h-12"
               >
                 <option value="All" className="bg-zinc-900 text-white">All Prices</option>
                 <option value="Free" className="bg-zinc-900 text-white">Free</option>
@@ -300,7 +336,7 @@ export default function Events() {
                    setSelectedPrice('All');
                    setSearchQuery('');
                  }}
-                 className="text-zinc-400 hover:text-white rounded-none"
+                 className="text-zinc-400 hover:text-white rounded-none h-12 px-6"
                >
                  Reset
                </Button>
