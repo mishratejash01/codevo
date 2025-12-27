@@ -2,8 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Loader2, Search, SlidersHorizontal, ChevronDown, ChevronRight, // Added ChevronRight back
-  Timer, MapPin, LayoutGrid
+  Loader2, Search, SlidersHorizontal, ChevronDown, ChevronRight, 
+  MapPin, LayoutGrid
 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Session } from '@supabase/supabase-js';
@@ -45,10 +45,11 @@ interface Event {
   status?: string; 
 }
 
-// --- 1. Custom Status Icons ---
+// --- 1. Custom Status Icons (From your CSS) ---
 const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
   if (type === 'success') {
     return (
+      // Checkmark
       <div style={{
         width: '25px',
         height: '12px',
@@ -60,6 +61,7 @@ const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
     );
   }
   return (
+    // Cross
     <div style={{ position: 'relative', width: '30px', height: '30px' }}>
       <div style={{
         position: 'absolute', width: '34px', height: '6px', backgroundColor: '#000',
@@ -78,10 +80,10 @@ const EventCard = ({ event }: { event: Event }) => {
   const isOpen = new Date(event.end_date) >= new Date();
 
   return (
-    <article className="flex flex-col gap-8 py-12 border-b border-zinc-800 last:border-0 w-full">
+    <article className="flex flex-col gap-6 md:gap-8 py-8 md:py-12 border-b border-zinc-800 last:border-0 w-full">
       
       {/* Image Section */}
-      <div className="h-[260px] w-full rounded-none overflow-hidden border border-zinc-800 bg-zinc-950 group relative">
+      <div className="h-[200px] md:h-[260px] w-full rounded-none overflow-hidden border border-zinc-800 bg-zinc-950 group relative">
         <img 
           src={event.image_url} 
           alt={event.title}
@@ -103,66 +105,82 @@ const EventCard = ({ event }: { event: Event }) => {
       {/* Content Section */}
       <div className="flex flex-col justify-between h-full">
         <div>
-          <span className="font-mono text-[11px] tracking-[0.2em] text-zinc-400 uppercase mb-3 block">
+          <span className="font-mono text-[10px] md:text-[11px] tracking-[0.2em] text-zinc-400 uppercase mb-2 md:mb-3 block">
             {event.category} • {event.event_type}
           </span>
-          <h2 className="text-4xl font-bold tracking-tight text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-3 md:mb-4">
             {event.title}
           </h2>
-          <p className="text-zinc-300 text-lg leading-relaxed mb-8 max-w-3xl line-clamp-3">
+          <p className="text-zinc-300 text-base md:text-lg leading-relaxed mb-6 md:mb-8 max-w-3xl line-clamp-3">
             {event.short_description}
           </p>
         </div>
 
         {/* Info Strip with Custom Status Box */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 py-6 border-y border-dashed border-zinc-700 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 py-4 md:py-6 border-y border-dashed border-zinc-700 mb-6 md:mb-8">
           
           {/* Status Box Implementation */}
-          <div className="flex w-full h-[80px] border-[6px] border-black rounded-none overflow-hidden bg-[#edf5ff]">
+          <div className="flex w-full h-[70px] md:h-[80px] border-[4px] md:border-[6px] border-black rounded-none overflow-hidden bg-[#edf5ff]">
              {/* Left Icon Area */}
-             <div className={`w-[80px] h-full border-r-[6px] border-black flex items-center justify-center shrink-0 ${isOpen ? 'bg-[#88d66c]' : 'bg-[#ff8a8a]'}`}>
-                <StatusIcon type={isOpen ? 'success' : 'fail'} />
+             <div className={`w-[70px] md:w-[80px] h-full border-r-[4px] md:border-r-[6px] border-black flex items-center justify-center shrink-0 ${isOpen ? 'bg-[#88d66c]' : 'bg-[#ff8a8a]'}`}>
+                <div className="scale-75 md:scale-100">
+                   <StatusIcon type={isOpen ? 'success' : 'fail'} />
+                </div>
              </div>
              {/* Right Content Area */}
-             <div className="flex-grow flex flex-col justify-center px-5 gap-2">
-                <div className="h-[8px] bg-black rounded-[4px] w-[50%]" />
+             <div className="flex-grow flex flex-col justify-center px-4 md:px-5 gap-1.5 md:gap-2">
+                <div className="h-[6px] md:h-[8px] bg-black rounded-[4px] w-[50%]" />
                 <div className="flex items-center justify-between">
-                   <span className="font-bold text-black uppercase tracking-wider text-xs">
+                   <span className="font-bold text-black uppercase tracking-wider text-[10px] md:text-xs truncate">
                       {isOpen ? 'Registration Open' : 'Registration Closed'}
                    </span>
                 </div>
-                <div className="h-[8px] bg-black/20 rounded-[4px] w-[90%]" />
+                <div className="h-[6px] md:h-[8px] bg-black/20 rounded-[4px] w-[90%]" />
              </div>
           </div>
 
-          <div className="flex flex-col gap-1.5 justify-center pl-4 md:border-l border-dashed border-zinc-800">
+          <div className="hidden md:flex flex-col gap-1.5 justify-center pl-4 border-l border-dashed border-zinc-800">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Prizes</span>
             <span className="font-mono text-sm text-white font-medium">{event.prize_pool || "N/A"}</span>
           </div>
 
-          <div className="flex flex-col gap-1.5 justify-center pl-4 border-l border-dashed border-zinc-800">
+          <div className="hidden md:flex flex-col gap-1.5 justify-center pl-4 border-l border-dashed border-zinc-800">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Team Size</span>
             <span className="font-mono text-sm text-white font-medium">
               {(event.max_team_size && event.max_team_size > 1) ? `Up to ${event.max_team_size}` : "Solo"}
             </span>
           </div>
 
-          <div className="flex flex-col gap-1.5 justify-center pl-4 border-l border-dashed border-zinc-800">
+          <div className="hidden md:flex flex-col gap-1.5 justify-center pl-4 border-l border-dashed border-zinc-800">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Ends On</span>
             <span className="font-mono text-sm text-white font-medium">
               {new Date(event.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           </div>
+          
+          {/* Mobile Only Info Row */}
+          <div className="flex md:hidden justify-between items-center px-1">
+             <div className="flex flex-col">
+               <span className="font-mono text-[9px] text-zinc-500 uppercase">Prize Pool</span>
+               <span className="font-mono text-xs text-white">{event.prize_pool || "N/A"}</span>
+             </div>
+             <div className="flex flex-col text-right">
+               <span className="font-mono text-[9px] text-zinc-500 uppercase">Ends</span>
+               <span className="font-mono text-xs text-white">
+                 {new Date(event.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+               </span>
+             </div>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-5">
+        <div className="flex flex-col sm:flex-row gap-3 md:gap-5">
           <a 
             href={`/events/${event.slug}`}
-            className="flex items-center justify-center bg-white text-black border border-white h-14 px-12 font-mono text-sm font-bold uppercase tracking-widest rounded-none hover:bg-transparent hover:text-white transition-all duration-300"
+            className="flex items-center justify-center bg-white text-black border border-white h-12 md:h-14 px-8 md:px-12 font-mono text-xs md:text-sm font-bold uppercase tracking-widest rounded-none hover:bg-transparent hover:text-white transition-all duration-300 w-full sm:w-auto"
           >
             View Details —
           </a>
-          <button className="flex items-center justify-center border border-zinc-500 text-white h-14 px-12 font-mono text-sm font-bold uppercase tracking-widest rounded-none hover:border-white hover:bg-white/10 transition-all duration-200">
+          <button className="flex items-center justify-center border border-zinc-500 text-white h-12 md:h-14 px-8 md:px-12 font-mono text-xs md:text-sm font-bold uppercase tracking-widest rounded-none hover:border-white hover:bg-white/10 transition-all duration-200 w-full sm:w-auto">
             Register Now
           </button>
         </div>
@@ -331,18 +349,25 @@ export default function Events() {
     <div className="min-h-screen bg-[#050505] text-white font-inter selection:bg-white/20">
       <Header session={session} onLogout={handleLogout} />
 
-      <main className="pt-32 pb-24 px-8 md:px-16 w-full">
-        <div className="mb-12">
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white mb-10">
+      <main className="pt-24 md:pt-32 pb-24 px-4 md:px-16 w-full relative">
+        
+        {/* Title - Scrolls away */}
+        <div className="mb-8 md:mb-12">
+          <h1 className="text-4xl md:text-7xl font-bold tracking-tighter text-white mb-2 md:mb-4">
             Events
           </h1>
+          <p className="text-zinc-400 text-sm md:text-xl max-w-2xl leading-relaxed">
+            Discover hackathons, workshops, and challenges to elevate your craft.
+          </p>
+        </div>
 
-          {/* --- FILTER BAR --- */}
-          <div className="flex flex-col lg:flex-row gap-4 w-full">
+        {/* --- STICKY FILTER BAR --- */}
+        <div className="sticky top-16 md:top-20 z-30 bg-[#050505]/95 backdrop-blur-md py-4 -mx-4 px-4 md:mx-0 md:px-0 border-b border-white/5 md:border-none mb-8 transition-all duration-300">
+          <div className="flex flex-row gap-3 w-full">
             
             {/* Search */}
-            <div className="relative flex-[2] min-w-[200px] bg-zinc-900 border border-zinc-700 focus-within:border-zinc-500 transition-colors h-12 flex items-center rounded-none group">
-              <Search className="absolute left-3 w-4 h-4 text-zinc-400 z-10" />
+            <div className="relative flex-1 min-w-0 bg-zinc-900 border border-zinc-700 focus-within:border-zinc-500 transition-colors h-12 flex items-center rounded-none group">
+              <Search className="absolute left-3 w-4 h-4 text-zinc-400 z-10 shrink-0" />
               <div className="absolute left-10 right-4 h-full flex items-center pointer-events-none overflow-hidden">
                 <AnimatePresence mode="wait">
                   {!searchQuery && (
@@ -368,64 +393,67 @@ export default function Events() {
               />
             </div>
 
-            {/* Category Filter */}
-            <div className="hidden md:block relative min-w-[150px]">
-              <select 
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-10 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
-              >
-                {categories.map(cat => (
-                  <option key={cat} value={cat} className="bg-zinc-900 text-white">
-                    {cat === 'All' ? 'Category' : cat}
-                  </option>
-                ))}
-              </select>
-              <LayoutGrid className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+            {/* Desktop Filters (Hidden on Mobile) */}
+            <div className="hidden md:flex gap-3">
+              {/* Category */}
+              <div className="relative min-w-[150px]">
+                <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-10 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
+                >
+                  {categories.map(cat => (
+                    <option key={cat} value={cat} className="bg-zinc-900 text-white">
+                      {cat === 'All' ? 'Category' : cat}
+                    </option>
+                  ))}
+                </select>
+                <LayoutGrid className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+              </div>
+
+              {/* Location */}
+              <div className="relative min-w-[150px]">
+                <select 
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-10 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
+                >
+                  {locations.map(loc => (
+                    <option key={loc} value={loc} className="bg-zinc-900 text-white">
+                      {loc === 'All' ? 'Location' : loc}
+                    </option>
+                  ))}
+                </select>
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+              </div>
+
+               {/* Status - Timer Icon Removed */}
+               <div className="relative min-w-[150px]">
+                <select 
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
+                >
+                  <option value="All" className="bg-zinc-900 text-white">Status</option>
+                  <option value="Open" className="bg-zinc-900 text-white">Open</option>
+                  <option value="Closed" className="bg-zinc-900 text-white">Closed</option>
+                </select>
+                {/* No Icon on left as requested for this specific filter or kept consistent? Assuming removal of the specific "timer" icon as requested */}
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+              </div>
             </div>
 
-            {/* Location Filter */}
-            <div className="hidden md:block relative min-w-[150px]">
-              <select 
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-10 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
-              >
-                {locations.map(loc => (
-                  <option key={loc} value={loc} className="bg-zinc-900 text-white">
-                    {loc === 'All' ? 'Location' : loc}
-                  </option>
-                ))}
-              </select>
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-            </div>
-
-             {/* Status Filter */}
-             <div className="hidden md:block relative min-w-[150px]">
-              <select 
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-10 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
-              >
-                <option value="All" className="bg-zinc-900 text-white">Status</option>
-                <option value="Open" className="bg-zinc-900 text-white">Open</option>
-                <option value="Closed" className="bg-zinc-900 text-white">Closed</option>
-              </select>
-              <Timer className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-            </div>
-
-            {/* Sidebar Trigger */}
+            {/* Sidebar Trigger - Visible on both Mobile and Desktop */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button 
                    variant="outline" 
-                   className="h-12 px-6 bg-zinc-900 border-zinc-700 rounded-none hover:bg-zinc-800 hover:text-white gap-2"
+                   className="h-12 px-4 md:px-6 bg-zinc-900 border-zinc-700 rounded-none hover:bg-zinc-800 hover:text-white gap-2 shrink-0"
                 >
                    <SlidersHorizontal className="w-4 h-4" />
-                   Filters 
+                   <span className="hidden md:inline">All Filters</span>
                    {activeFiltersCount > 0 && (
                      <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center bg-white text-black rounded-full text-[10px]">
                        {activeFiltersCount}
@@ -433,9 +461,9 @@ export default function Events() {
                    )}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:w-[400px] bg-[#0a0a0a] border-l border-zinc-800 p-0">
+              <SheetContent side="right" className="w-full sm:w-[400px] bg-[#0a0a0a] border-l border-zinc-800 p-0 z-50">
                  <div className="flex flex-col h-full">
-                    <div className="p-6 border-b border-zinc-800">
+                    <div className="p-6 border-b border-zinc-800 mt-8 md:mt-0">
                       <SheetTitle className="text-xl font-bold text-white mb-2">Filter Events</SheetTitle>
                       <SheetDescription className="text-zinc-500">
                         Refine your search with specific criteria.
@@ -518,7 +546,7 @@ export default function Events() {
         {/* Events List */}
         <div className="flex flex-col w-full"> 
           {loading ? (
-             <div className="min-h-[400px] flex items-center justify-start">
+             <div className="min-h-[400px] flex items-center justify-center md:justify-start">
                 <Loader2 className="animate-spin h-10 w-10 text-zinc-500" />
              </div>
           ) : filteredEvents.length > 0 ? (
@@ -526,7 +554,7 @@ export default function Events() {
               <EventCard key={event.id} event={event} />
             ))
           ) : (
-             <div className="py-20 text-zinc-500 font-mono text-sm uppercase tracking-widest">
+             <div className="py-20 text-center md:text-left text-zinc-500 font-mono text-sm uppercase tracking-widest">
                 No events found matching your criteria.
              </div>
           )}
