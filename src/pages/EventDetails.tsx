@@ -8,7 +8,11 @@ import { format } from 'date-fns';
 import { EventRegistrationModal } from '@/components/EventRegistrationModal';
 import { Session } from '@supabase/supabase-js';
 
-// --- Types based on your Schema ---
+// --- NEW IMPORTS ---
+import { useEventRegistration } from '@/hooks/useEventRegistration';
+import { AlreadyRegisteredCard } from '@/components/events/AlreadyRegisteredCard';
+
+// --- Types (Same as before) ---
 interface EventStage {
   id: string;
   title: string;
@@ -53,7 +57,7 @@ interface Event {
   title: string;
   slug: string;
   short_description: string;
-  content: string | null; // Mapped to "Concept & Rigor"
+  content: string | null;
   start_date: string;
   end_date: string;
   registration_deadline?: string;
@@ -86,17 +90,19 @@ export default function EventDetails() {
   const [loading, setLoading] = useState(true);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   
-  // --- ADDED: Session State ---
+  // Auth Session State
   const [session, setSession] = useState<Session | null>(null);
 
-  // --- ADDED: Auth Listener ---
+  // --- 1. Registration Check Hook ---
+  // We pass event?.id. If event is null, the hook handles it gracefully.
+  const { isRegistered, loading: regLoading, refetch: refetchRegistration } = useEventRegistration(event?.id);
+
+  // Auth Listener
   useEffect(() => {
-    // 1. Check current session immediately
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
 
-    // 2. Listen for changes (e.g., if multiple tabs update auth)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
@@ -110,6 +116,7 @@ export default function EventDetails() {
     navigate('/auth');
   };
 
+  // Fetch Event Data
   useEffect(() => {
     const fetchEvent = async () => {
       if (!slug) return;
@@ -138,7 +145,7 @@ export default function EventDetails() {
         return;
       }
 
-      // Sort related data for correct display order
+      // Sort related data
       const eventData = data as unknown as Event;
       
       if (eventData.event_stages) {
@@ -173,7 +180,7 @@ export default function EventDetails() {
   return (
     <div className="min-h-screen bg-[#000000] text-white selection:bg-white/20 font-sans">
       
-      {/* --- INJECTED CSS FROM TEMPLATE --- */}
+      {/* --- INJECTED CSS --- */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@200;300;400;600&display=swap');
 
@@ -187,7 +194,6 @@ export default function EventDetails() {
             --titanium: #e0e0e0;
         }
 
-        /* Base Styles */
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); }
         h1, h2, h3, .serif { font-family: 'Playfair Display', serif; letter-spacing: -1px; }
         
@@ -302,7 +308,7 @@ export default function EventDetails() {
             padding: 40px;
             border: 1px solid var(--border);
             position: sticky;
-            top: 120px; /* Offset for existing header */
+            top: 120px; 
         }
         .btn-participate {
             display: block; width: 100%; padding: 22px;
@@ -313,6 +319,7 @@ export default function EventDetails() {
             cursor: pointer; border: none;
         }
         .btn-participate:hover { background: transparent; color: #fff; box-shadow: inset 0 0 0 1px #fff; }
+        .btn-participate:disabled { opacity: 0.5; cursor: not-allowed; background: #333; color: #777; box-shadow: none; }
         
         .meta-list { list-style: none; padding: 0; margin: 0; }
         .meta-list li { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
@@ -326,14 +333,18 @@ export default function EventDetails() {
         }
       `}</style>
 
-      {/* Global Header with Session Passed */}
+      {/* Header with Session */}
       <Header session={session} onLogout={handleLogout} />
 
       {/* Registration Modal */}
       <EventRegistrationModal 
         event={{ id: event.id, title: event.title }} 
         isOpen={isRegistrationOpen} 
-        onOpenChange={setIsRegistrationOpen} 
+        onOpenChange={(open) => {
+          setIsRegistrationOpen(open);
+          // If modal closed, refetch registration to verify if they joined
+          if (!open) refetchRegistration();
+        }}
       />
 
       <div className="container-custom pt-24">
@@ -349,13 +360,20 @@ export default function EventDetails() {
                     {event.short_description}
                 </p>
                 
-                <button 
-                    onClick={() => setIsRegistrationOpen(true)} 
-                    className="btn-participate" 
-                    style={{ width: '250px' }}
-                >
-                    Apply for Entry
-                </button>
+                {/* 2. Logic: Show Apply button ONLY if not registered */}
+                {!isRegistered ? (
+                  <button 
+                      onClick={() => setIsRegistrationOpen(true)} 
+                      className="btn-participate" 
+                      style={{ width: '250px' }}
+                  >
+                      Apply for Entry
+                  </button>
+                ) : (
+                  <button className="btn-participate" disabled style={{ width: '250px' }}>
+                     Already Registered
+                  </button>
+                )}
             </div>
             <div 
                 className="hero-image"
@@ -377,6 +395,19 @@ export default function EventDetails() {
             {/* CONTENT COLUMN */}
             <div className="content-col">
                 
+                {/* 3. Logic: Show Already Registered Card if registered */}
+                {isRegistered && (
+                  <div className="mb-12">
+                     <AlreadyRegisteredCard 
+                       eventId={event.id}
+                       eventTitle={event.title}
+                       eventType={event.event_type}
+                       isPaid={event.is_paid ?? false}
+                       registrationFee={event.registration_fee ?? 0}
+                     />
+                  </div>
+                )}
+                
                 {/* Concept / Description */}
                 <section>
                     <h2 className="section-title">Concept & Rigor</h2>
@@ -385,7 +416,7 @@ export default function EventDetails() {
                     </div>
                 </section>
 
-                {/* Roadmap - Dynamic Data */}
+                {/* Roadmap */}
                 <section>
                     <h2 className="section-title">The Roadmap</h2>
                     <div className="roadmap">
@@ -423,7 +454,7 @@ export default function EventDetails() {
                     </div>
                 </section>
 
-                {/* Prizes - Dynamic Data */}
+                {/* Prizes */}
                 <section>
                     <h2 className="section-title">Prizes</h2>
                     <div className="prize-grid">
@@ -448,7 +479,7 @@ export default function EventDetails() {
                     </div>
                 </section>
 
-                {/* --- DYNAMIC PATRONS SECTION (Connected to event_sponsors) --- */}
+                {/* Patrons */}
                 {event.event_sponsors && event.event_sponsors.length > 0 && (
                     <section>
                         <h2 className="section-title">Patrons</h2>
@@ -466,7 +497,7 @@ export default function EventDetails() {
                     </section>
                 )}
 
-                {/* FAQs - Dynamic Data */}
+                {/* FAQs */}
                 {event.event_faqs && event.event_faqs.length > 0 && (
                     <section>
                         <h2 className="section-title">Curated FAQ</h2>
@@ -479,7 +510,7 @@ export default function EventDetails() {
                     </section>
                 )}
 
-                {/* Reviews - Dynamic Data */}
+                {/* Reviews */}
                 {event.event_reviews && event.event_reviews.length > 0 && (
                     <section>
                         <h2 className="section-title">Member Insights</h2>
@@ -500,12 +531,19 @@ export default function EventDetails() {
                 <div className="sidebar-card">
                     <h3 className="serif" style={{ fontSize: '1.5rem', marginBottom: '30px', fontWeight: 400 }}>Event Summary</h3>
                     
-                    <button 
-                        onClick={() => setIsRegistrationOpen(true)} 
-                        className="btn-participate"
-                    >
-                        Participate Now
-                    </button>
+                    {/* 4. Logic: Hide/Change Sidebar button if registered */}
+                    {!isRegistered ? (
+                      <button 
+                          onClick={() => setIsRegistrationOpen(true)} 
+                          className="btn-participate"
+                      >
+                          Participate Now
+                      </button>
+                    ) : (
+                       <button className="btn-participate" disabled>
+                          Registered
+                       </button>
+                    )}
 
                     <ul className="meta-list">
                         <li><span>Starts</span> <strong>{format(new Date(event.start_date), 'dd MMM yyyy')}</strong></li>
