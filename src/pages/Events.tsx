@@ -1,7 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Search, SlidersHorizontal, X, ChevronRight, Calendar, ArrowUpDown } from 'lucide-react';
+import { 
+  Loader2, Search, SlidersHorizontal, X, ChevronRight, 
+  Timer, MapPin, Layers, Users, ArrowUpDown 
+} from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
@@ -13,7 +16,6 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-  SheetFooter,
   SheetClose
 } from "@/components/ui/sheet";
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +43,7 @@ interface Event {
   max_team_size: number | null;
   registration_fee: number | null;
   is_paid: boolean | null;
-  status?: string; // e.g., 'published'
+  status?: string; 
 }
 
 // --- Event Card Component ---
@@ -49,17 +51,22 @@ const EventCard = ({ event }: { event: Event }) => {
   return (
     <article className="flex flex-col gap-8 py-12 border-b border-zinc-800 last:border-0 w-full">
       
-      {/* 1. Image Section - Squared Corners */}
+      {/* 1. Image Section */}
       <div className="h-[260px] w-full rounded-none overflow-hidden border border-zinc-800 bg-zinc-950 group relative">
         <img 
           src={event.image_url} 
           alt={event.title}
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
         />
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 flex gap-2">
            <Badge className="bg-black/50 backdrop-blur-md text-white border-zinc-700 rounded-none uppercase tracking-widest text-[10px]">
              {event.mode}
            </Badge>
+           {event.location && event.mode !== 'Online' && (
+             <Badge className="bg-black/50 backdrop-blur-md text-white border-zinc-700 rounded-none uppercase tracking-widest text-[10px]">
+               {event.location}
+             </Badge>
+           )}
         </div>
       </div>
 
@@ -68,7 +75,7 @@ const EventCard = ({ event }: { event: Event }) => {
         <div>
           {/* Category Tag */}
           <span className="font-mono text-[11px] tracking-[0.2em] text-zinc-400 uppercase mb-3 block">
-            {event.category}
+            {event.category} • {event.event_type}
           </span>
 
           {/* Title */}
@@ -82,15 +89,15 @@ const EventCard = ({ event }: { event: Event }) => {
           </p>
         </div>
 
-        {/* 3. Human-Friendly Information Strip */}
+        {/* 3. Info Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 py-5 border-y border-dashed border-zinc-800 mb-8">
           <div className="flex flex-col gap-1.5">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Prizes</span>
             <span className="font-mono text-sm text-white font-medium">{event.prize_pool || "N/A"}</span>
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Where</span>
-            <span className="font-mono text-sm text-white font-medium">{event.mode}</span>
+            <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Location</span>
+            <span className="font-mono text-sm text-white font-medium">{event.mode === 'Online' ? 'Remote' : event.location || event.mode}</span>
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Team Size</span>
@@ -106,7 +113,7 @@ const EventCard = ({ event }: { event: Event }) => {
           </div>
         </div>
 
-        {/* 4. Action Buttons - Squared Corners */}
+        {/* 4. Action Buttons */}
         <div className="flex flex-wrap gap-5">
           <a 
             href={`/events/${event.slug}`}
@@ -136,8 +143,11 @@ export default function Events() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedMode, setSelectedMode] = useState<string>('All');
   const [selectedPrice, setSelectedPrice] = useState<string>('All');
-  const [selectedStatus, setSelectedStatus] = useState<string>('All'); // New Filter
-  const [sortBy, setSortBy] = useState<string>('newest'); // New Filter
+  const [selectedStatus, setSelectedStatus] = useState<string>('All');
+  const [selectedLocation, setSelectedLocation] = useState<string>('All'); // New
+  const [selectedType, setSelectedType] = useState<string>('All'); // New (Format)
+  const [selectedTeamSize, setSelectedTeamSize] = useState<string>('All'); // New
+  const [sortBy, setSortBy] = useState<string>('newest');
 
   // Placeholder Animation State
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -186,7 +196,7 @@ export default function Events() {
     navigate('/auth');
   };
 
-  // --- Derived Data ---
+  // --- Derived Filter Options ---
   
   const categories = useMemo(() => {
     const cats = new Set(events.map(e => e.category).filter(Boolean));
@@ -198,23 +208,30 @@ export default function Events() {
     return ['All', ...Array.from(ms)];
   }, [events]);
 
+  const locations = useMemo(() => {
+    // Filter out 'Online' from locations list if it appears there redundantly, usually Location implies city
+    const locs = new Set(events.map(e => e.location).filter(l => l && l !== 'Online'));
+    return ['All', ...Array.from(locs)];
+  }, [events]);
+
+  const eventTypes = useMemo(() => {
+    const types = new Set(events.map(e => e.event_type).filter(Boolean));
+    return ['All', ...Array.from(types)];
+  }, [events]);
+
   // Randomized Placeholders
   const placeholders = useMemo(() => {
     const uniqueLocations = Array.from(new Set(events.map(e => e.location).filter(Boolean)));
     const uniqueCategories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
-    const uniqueModes = Array.from(new Set(events.map(e => e.mode).filter(Boolean)));
-
-    // Create a pool of prompts
+    
     let pool = [
       ...uniqueLocations.map(l => `Search events in ${l}...`),
       ...uniqueCategories.map(c => `Browse ${c}...`),
-      ...uniqueModes.map(m => `Find ${m} events...`),
       "Search by title...",
-      "Search by description...",
-      "Search for prizes..."
+      "Search for hackathons...",
+      "Find free workshops..."
     ];
 
-    // Shuffle the pool (Fisher-Yates)
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -223,7 +240,6 @@ export default function Events() {
     return pool.length > 0 ? pool : ["Search events..."];
   }, [events]);
 
-  // Cycle through placeholders
   useEffect(() => {
     if (placeholders.length <= 1) return;
     const interval = setInterval(() => {
@@ -237,31 +253,32 @@ export default function Events() {
   const filteredEvents = events.filter(event => {
     const query = searchQuery.toLowerCase();
     
-    // Search
     const matchesSearch = 
         event.title.toLowerCase().includes(query) || 
         event.short_description?.toLowerCase().includes(query) ||
         event.location?.toLowerCase().includes(query);
 
-    // Filters
     const matchesCategory = selectedCategory === 'All' || event.category === selectedCategory;
     const matchesMode = selectedMode === 'All' || event.mode === selectedMode;
+    const matchesLocation = selectedLocation === 'All' || event.location === selectedLocation;
+    const matchesType = selectedType === 'All' || event.event_type === selectedType;
     
-    // Price
     let matchesPrice = true;
     if (selectedPrice === 'Free') matchesPrice = !event.is_paid || event.registration_fee === 0;
     else if (selectedPrice === 'Paid') matchesPrice = event.is_paid === true && (event.registration_fee || 0) > 0;
 
-    // Status (Mock logic - comparing dates)
     let matchesStatus = true;
     const now = new Date();
     const end = new Date(event.end_date);
     if (selectedStatus === 'Open') matchesStatus = end >= now;
     if (selectedStatus === 'Closed') matchesStatus = end < now;
 
-    return matchesSearch && matchesCategory && matchesMode && matchesPrice && matchesStatus;
+    let matchesTeam = true;
+    if (selectedTeamSize === 'Solo') matchesTeam = !event.max_team_size || event.max_team_size === 1;
+    if (selectedTeamSize === 'Team') matchesTeam = (event.max_team_size || 0) > 1;
+
+    return matchesSearch && matchesCategory && matchesMode && matchesLocation && matchesType && matchesPrice && matchesStatus && matchesTeam;
   }).sort((a, b) => {
-    // Sort Logic
     if (sortBy === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     if (sortBy === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
     if (sortBy === 'deadline') return new Date(a.end_date).getTime() - new Date(b.end_date).getTime();
@@ -273,13 +290,18 @@ export default function Events() {
      setSelectedMode('All');
      setSelectedPrice('All');
      setSelectedStatus('All');
+     setSelectedLocation('All');
+     setSelectedType('All');
+     setSelectedTeamSize('All');
      setSortBy('newest');
      setSearchQuery('');
   };
 
   const activeFiltersCount = [
     selectedCategory !== 'All', selectedMode !== 'All', 
-    selectedPrice !== 'All', selectedStatus !== 'All', searchQuery !== ''
+    selectedPrice !== 'All', selectedStatus !== 'All', 
+    selectedLocation !== 'All', selectedType !== 'All',
+    selectedTeamSize !== 'All', searchQuery !== ''
   ].filter(Boolean).length;
 
   if (authLoading) {
@@ -295,23 +317,19 @@ export default function Events() {
       
       <Header session={session} onLogout={handleLogout} />
 
-      {/* Main Container */}
       <main className="pt-32 pb-24 px-8 md:px-16 w-full">
         
-        {/* Page Title */}
         <div className="mb-12">
           <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white mb-10">
             Events
           </h1>
 
-          {/* Filter Bar */}
+          {/* --- TOP FILTER BAR --- */}
           <div className="flex flex-col lg:flex-row gap-4 w-full">
             
-            {/* Animated Search Input */}
+            {/* Search */}
             <div className="relative flex-[2] min-w-[200px] bg-zinc-900/50 border border-zinc-800 focus-within:border-zinc-600 transition-colors h-12 flex items-center rounded-none group">
               <Search className="absolute left-3 w-4 h-4 text-zinc-500 z-10" />
-              
-              {/* Animation Container */}
               <div className="absolute left-10 right-4 h-full flex items-center pointer-events-none overflow-hidden">
                 <AnimatePresence mode="wait">
                   {!searchQuery && (
@@ -328,7 +346,6 @@ export default function Events() {
                   )}
                 </AnimatePresence>
               </div>
-
               <input 
                 type="text" 
                 value={searchQuery}
@@ -338,7 +355,7 @@ export default function Events() {
               />
             </div>
 
-            {/* Quick Filter: Category */}
+            {/* Category */}
             <div className="hidden md:block relative min-w-[150px]">
               <select 
                 value={selectedCategory}
@@ -354,7 +371,23 @@ export default function Events() {
               <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
 
-             {/* Quick Filter: Status */}
+            {/* Location (New) */}
+            <div className="hidden md:block relative min-w-[150px]">
+              <select 
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer h-12"
+              >
+                {locations.map(loc => (
+                  <option key={loc} value={loc} className="bg-zinc-900 text-white">
+                    {loc === 'All' ? 'Location' : loc}
+                  </option>
+                ))}
+              </select>
+              <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+            </div>
+
+             {/* Status (Icon Updated) */}
              <div className="hidden md:block relative min-w-[150px]">
               <select 
                 value={selectedStatus}
@@ -365,10 +398,11 @@ export default function Events() {
                 <option value="Open" className="bg-zinc-900 text-white">Open</option>
                 <option value="Closed" className="bg-zinc-900 text-white">Closed</option>
               </select>
-              <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+              {/* Changed Icon to Timer */}
+              <Timer className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
 
-            {/* --- RIGHT COLUMN SLIDE-IN TRIGGER --- */}
+            {/* --- SIDEBAR TRIGGER --- */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button 
@@ -376,7 +410,7 @@ export default function Events() {
                    className="h-12 px-6 bg-zinc-900/50 border-zinc-800 rounded-none hover:bg-zinc-800 hover:text-white gap-2"
                 >
                    <SlidersHorizontal className="w-4 h-4" />
-                   Filters 
+                   All Filters 
                    {activeFiltersCount > 0 && (
                      <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center bg-white text-black rounded-full text-[10px]">
                        {activeFiltersCount}
@@ -386,7 +420,6 @@ export default function Events() {
               </SheetTrigger>
               <SheetContent side="right" className="w-full sm:w-[400px] bg-[#0a0a0a] border-l border-zinc-800 p-0">
                  <div className="flex flex-col h-full">
-                    {/* Header */}
                     <div className="p-6 border-b border-zinc-800">
                       <SheetTitle className="text-xl font-bold text-white mb-2">Filter Events</SheetTitle>
                       <SheetDescription className="text-zinc-500">
@@ -394,10 +427,9 @@ export default function Events() {
                       </SheetDescription>
                     </div>
 
-                    {/* Scrollable Content */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-8">
                        
-                       {/* Sort By */}
+                       {/* Sort */}
                        <div className="space-y-4">
                           <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Sort By</Label>
                           <RadioGroup value={sortBy} onValueChange={setSortBy} className="gap-3">
@@ -410,6 +442,25 @@ export default function Events() {
                           </RadioGroup>
                        </div>
                        
+                       <Separator className="bg-zinc-800" />
+
+                       {/* Event Type (Format) */}
+                       <div className="space-y-4">
+                          <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Event Format</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                             {eventTypes.map(type => (
+                                <Button 
+                                  key={type} 
+                                  variant="outline" 
+                                  onClick={() => setSelectedType(type)}
+                                  className={`rounded-none justify-start border-zinc-800 capitalize ${selectedType === type ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 hover:text-white'}`}
+                                >
+                                  {type === 'All' ? 'All Formats' : type}
+                                </Button>
+                             ))}
+                          </div>
+                       </div>
+
                        <Separator className="bg-zinc-800" />
 
                        {/* Categories */}
@@ -431,19 +482,57 @@ export default function Events() {
 
                        <Separator className="bg-zinc-800" />
 
+                        {/* Location (Sidebar) */}
+                        <div className="space-y-4">
+                          <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Location</Label>
+                          <div className="flex flex-col gap-2">
+                             {locations.map(loc => (
+                                <Button 
+                                  key={loc} 
+                                  variant="ghost" 
+                                  onClick={() => setSelectedLocation(loc)}
+                                  className={`rounded-none justify-between h-10 px-4 ${selectedLocation === loc ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-white'}`}
+                                >
+                                  {loc === 'All' ? 'All Locations' : loc}
+                                  {selectedLocation === loc && <ChevronRight className="w-4 h-4" />}
+                                </Button>
+                             ))}
+                          </div>
+                       </div>
+                       
+                       <Separator className="bg-zinc-800" />
+
                        {/* Mode */}
                        <div className="space-y-4">
-                          <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Event Mode</Label>
-                          <div className="flex flex-col gap-2">
+                          <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Mode</Label>
+                          <div className="flex gap-2">
                              {modes.map(mode => (
                                 <Button 
                                   key={mode} 
-                                  variant="ghost" 
+                                  variant="outline" 
                                   onClick={() => setSelectedMode(mode)}
-                                  className={`rounded-none justify-between h-10 px-4 ${selectedMode === mode ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-white'}`}
+                                  className={`flex-1 rounded-none border-zinc-800 ${selectedMode === mode ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 hover:text-white'}`}
                                 >
-                                  {mode === 'All' ? 'All Modes' : mode}
-                                  {selectedMode === mode && <ChevronRight className="w-4 h-4" />}
+                                  {mode === 'All' ? 'All' : mode}
+                                </Button>
+                             ))}
+                          </div>
+                       </div>
+
+                       <Separator className="bg-zinc-800" />
+
+                       {/* Team Size */}
+                       <div className="space-y-4">
+                          <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Team Size</Label>
+                          <div className="flex gap-2">
+                             {['All', 'Solo', 'Team'].map(size => (
+                                <Button 
+                                  key={size} 
+                                  variant="outline" 
+                                  onClick={() => setSelectedTeamSize(size)}
+                                  className={`flex-1 rounded-none border-zinc-800 ${selectedTeamSize === size ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 hover:text-white'}`}
+                                >
+                                  {size}
                                 </Button>
                              ))}
                           </div>
@@ -469,7 +558,6 @@ export default function Events() {
                        </div>
                     </div>
 
-                    {/* Footer Actions */}
                     <div className="p-6 border-t border-zinc-800 bg-zinc-900/30 backdrop-blur-sm">
                        <div className="flex gap-4">
                           <Button 
@@ -481,7 +569,7 @@ export default function Events() {
                           </Button>
                           <SheetClose asChild>
                              <Button className="flex-[2] rounded-none bg-white text-black hover:bg-zinc-200">
-                               Show Results
+                               View {filteredEvents.length} Events
                              </Button>
                           </SheetClose>
                        </div>
@@ -493,7 +581,7 @@ export default function Events() {
           </div>
         </div>
 
-        {/* Events List Container */}
+        {/* Events List */}
         <div className="flex flex-col w-full"> 
           {loading ? (
              <div className="min-h-[400px] flex items-center justify-start">
