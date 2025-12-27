@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -75,114 +75,72 @@ export function NormalEventRegistrationModal({ event, isOpen, onOpenChange }: No
   // Pre-fill from user profile
   useEffect(() => {
     async function loadProfile() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          form.setValue('email', session.user.email || '');
-          
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          
-          if (profile) {
-            form.setValue('full_name', profile.full_name || '');
-            form.setValue('mobile_number', profile.contact_no || '');
-            form.setValue('college_org_name', profile.institute_name || '');
-            form.setValue('country_city', profile.country || '');
-            form.setValue('experience_level', (profile.experience_level as any) || 'Beginner');
-          }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        form.setValue('email', session.user.email || '');
+        
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        
+        if (profile) {
+          form.setValue('full_name', profile.full_name || '');
+          form.setValue('mobile_number', profile.contact_no || '');
+          form.setValue('college_org_name', profile.institute_name || '');
+          form.setValue('country_city', profile.country || '');
+          form.setValue('experience_level', (profile.experience_level as any) || 'Beginner');
         }
-      } catch (error) {
-        console.error("Error loading profile:", error);
       }
     }
     if (isOpen) loadProfile();
   }, [isOpen, form]);
 
-  const formatSbError = (error: any) => {
-    if (!error) return 'Unknown error';
-    const message = error.message || 'Request failed';
-    return `${message}`;
-  };
-
   async function onSubmit(values: FormValues) {
-    console.log("Submitting form...", values);
     setIsSubmitting(true);
-    
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
 
-      if (!session?.user) {
-        toast.error("Please login to register");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Check if already registered
-      const { data: existingReg } = await supabase
-        .from('event_registrations')
-        .select('id')
-        .eq('event_id', event.id)
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-
-      if (existingReg) {
-        toast.info("You are already registered for this event.");
-        setIsSuccess(true);
-        setIsSubmitting(false);
-        return;
-      }
-
-      const registrationData = {
-        event_id: event.id,
-        user_id: session.user.id,
-        full_name: values.full_name.trim(),
-        email: values.email.trim().toLowerCase(),
-        mobile_number: values.mobile_number.trim(),
-        college_org_name: values.college_org_name.trim(),
-        current_status: values.current_status,
-        country_city: values.country_city.trim(),
-        experience_level: values.experience_level,
-        motivation_answer: values.motivation_answer.trim(),
-        custom_answers: values.custom_answers || {},
-        agreed_to_rules: values.agreed_to_rules,
-        agreed_to_privacy: values.agreed_to_privacy,
-        participation_type: 'Solo', // Capitalized 'Solo' likely matches DB constraint
-        team_role: 'Attendee',
-        payment_status: event.is_paid ? 'pending' : 'exempt',
-        status: event.is_paid ? 'pending_payment' : 'confirmed',
-      };
-
-      console.log("Payload:", registrationData);
-
-      const { error } = await supabase
-        .from('event_registrations')
-        .insert(registrationData);
-
-      if (error) {
-        console.error("Supabase Error:", error);
-        if (error.code === '23505') {
-          toast.info("You're already registered for this event!");
-          setIsSuccess(true);
-        } else {
-          toast.error(`Registration failed: ${formatSbError(error)}`);
-        }
-        setIsSubmitting(false);
-        return;
-      }
-
-      console.log("Registration successful");
+    if (!session?.user) {
+      toast.error("Please login to register");
       setIsSubmitting(false);
-      setIsSuccess(true);
-      toast.success("Registration successful!");
-
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      toast.error("Something went wrong. Please check console.");
-      setIsSubmitting(false);
+      return;
     }
+
+    const registrationData = {
+      event_id: event.id,
+      user_id: session.user.id,
+      full_name: values.full_name.trim(),
+      email: values.email.trim().toLowerCase(),
+      mobile_number: values.mobile_number.trim(),
+      college_org_name: values.college_org_name.trim(),
+      current_status: values.current_status,
+      country_city: values.country_city.trim(),
+      experience_level: values.experience_level,
+      motivation_answer: values.motivation_answer.trim(),
+      custom_answers: values.custom_answers || {},
+      agreed_to_rules: values.agreed_to_rules,
+      agreed_to_privacy: values.agreed_to_privacy,
+      participation_type: 'Solo',
+      team_role: 'Attendee',
+      payment_status: event.is_paid ? 'pending' : 'exempt',
+      status: event.is_paid ? 'pending_payment' : 'confirmed',
+    };
+
+    const { error } = await supabase
+      .from('event_registrations')
+      .insert(registrationData as any);
+
+    if (error) {
+      if (error.code === '23505') toast.error("You're already registered for this event!");
+      else toast.error("Registration failed. Please try again.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    setIsSubmitting(false);
+    setIsSuccess(true);
+    toast.success("Registration successful!");
   }
 
   const nextStep = async () => {
