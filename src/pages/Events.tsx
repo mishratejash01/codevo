@@ -1,10 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Search, Filter } from 'lucide-react';
+import { Loader2, Search, SlidersHorizontal } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Session } from '@supabase/supabase-js';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 // --- Types ---
@@ -34,8 +33,8 @@ const EventCard = ({ event }: { event: Event }) => {
   return (
     <article className="flex flex-col gap-8 py-12 border-b border-zinc-800 last:border-0 w-full">
       
-      {/* 1. Image Section */}
-      <div className="h-[260px] w-full rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950">
+      {/* 1. Image Section - Squared Corners (rounded-none) */}
+      <div className="h-[260px] w-full rounded-none overflow-hidden border border-zinc-800 bg-zinc-950">
         <img 
           src={event.image_url} 
           alt={event.title}
@@ -86,16 +85,16 @@ const EventCard = ({ event }: { event: Event }) => {
           </div>
         </div>
 
-        {/* 4. Action Buttons */}
+        {/* 4. Action Buttons - Squared Corners (rounded-none) */}
         <div className="flex flex-wrap gap-5">
           <a 
             href={`/events/${event.slug}`}
-            className="flex items-center justify-center bg-white text-black border border-white h-14 px-12 font-mono text-sm font-bold uppercase tracking-widest rounded-sm hover:bg-transparent hover:text-white transition-all duration-300"
+            className="flex items-center justify-center bg-white text-black border border-white h-14 px-12 font-mono text-sm font-bold uppercase tracking-widest rounded-none hover:bg-transparent hover:text-white transition-all duration-300"
           >
             View Details —
           </a>
 
-          <button className="flex items-center justify-center border border-zinc-600 text-white h-14 px-12 font-mono text-sm font-bold uppercase tracking-widest rounded-sm hover:border-white hover:bg-white/5 transition-all duration-200">
+          <button className="flex items-center justify-center border border-zinc-600 text-white h-14 px-12 font-mono text-sm font-bold uppercase tracking-widest rounded-none hover:border-white hover:bg-white/5 transition-all duration-200">
             Register Now
           </button>
         </div>
@@ -207,7 +206,7 @@ export default function Events() {
             Events
           </h1>
 
-          {/* Filter Row */}
+          {/* Filter Row - Squared Inputs (rounded-none) */}
           <div className="flex flex-col lg:flex-row gap-4 w-full">
             
             {/* Search Input */}
@@ -218,7 +217,7 @@ export default function Events() {
                 placeholder="Search events..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 transition-colors"
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-none pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 transition-colors"
               />
             </div>
 
@@ -227,13 +226,14 @@ export default function Events() {
               <select 
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-lg pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer"
+                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer"
               >
                 {categories.map(cat => (
                   <option key={cat} value={cat} className="bg-zinc-900 text-white">{cat === 'All' ? 'All Categories' : cat}</option>
                 ))}
               </select>
-              <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+              {/* Premium Icon: SlidersHorizontal */}
+              <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
 
             {/* Mode Filter */}
@@ -241,13 +241,13 @@ export default function Events() {
               <select 
                 value={selectedMode}
                 onChange={(e) => setSelectedMode(e.target.value)}
-                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-lg pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer"
+                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer"
               >
                 {modes.map(mode => (
                   <option key={mode} value={mode} className="bg-zinc-900 text-white">{mode === 'All' ? 'All Modes' : mode}</option>
                 ))}
               </select>
-              <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+              <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
 
             {/* Price Filter */}
@@ -255,13 +255,13 @@ export default function Events() {
               <select 
                 value={selectedPrice}
                 onChange={(e) => setSelectedPrice(e.target.value)}
-                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-lg pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer"
+                className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer"
               >
                 <option value="All" className="bg-zinc-900 text-white">All Prices</option>
                 <option value="Free" className="bg-zinc-900 text-white">Free</option>
                 <option value="Paid" className="bg-zinc-900 text-white">Paid</option>
               </select>
-              <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+              <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
 
             {/* Clear Filters Button (Visible if any filter is active) */}
@@ -274,7 +274,7 @@ export default function Events() {
                    setSelectedPrice('All');
                    setSearchQuery('');
                  }}
-                 className="text-zinc-400 hover:text-white"
+                 className="text-zinc-400 hover:text-white rounded-none"
                >
                  Reset
                </Button>
