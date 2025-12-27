@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 
-// --- 1. Import All Registration Modals ---
+// --- Import All Registration Modals ---
 import { HackathonRegistrationModal } from '@/components/events/HackathonRegistrationModal';
 import { NormalEventRegistrationModal } from '@/components/events/NormalEventRegistrationModal';
 import { WorkshopRegistrationModal } from '@/components/events/WorkshopRegistrationModal';
@@ -93,9 +93,9 @@ export default function EventDetailsPage() {
     navigate('/auth');
   };
 
-  // --- 2. Dynamic Registration Logic ---
+  // --- STRICT REGISTRATION LOGIC ---
   const handleRegisterClick = () => {
-    // A. Check Sidebar/Invitation Status First
+    // 1. INVITATION CHECK: Don't open anything if user has pending actions
     if (hasPendingInvitation) { 
       toast.info("You have a pending team invitation. Please check the sidebar."); 
       return; 
@@ -109,23 +109,25 @@ export default function EventDetailsPage() {
       return; 
     }
 
-    // B. Determine Form Type (Check 'form_type' column first, then 'event_type')
-    const effectiveType = (event.form_type || event.event_type || '').toLowerCase();
+    // 2. DETERMINE TYPE (Sanitize the string to remove spaces)
+    const rawType = event.form_type || event.event_type || '';
+    const effectiveType = rawType.trim().toLowerCase(); // .trim() fixes "Workshop " issue
+    
     const internalTypes = ['hackathon', 'workshop', 'webinar', 'meetup', 'contest'];
 
-    // C. If it matches an internal form, OPEN MODAL (Ignore external link)
+    // 3. PRIORITY CHECK: If it matches a known internal type, OPEN MODAL
     if (internalTypes.includes(effectiveType)) {
       setIsRegisterOpen(true);
       return;
     }
 
-    // D. If no internal form match, check for external link
+    // 4. SECONDARY CHECK: Only if NOT internal type, check for link
     if (event.registration_link) {
        window.open(event.registration_link, '_blank');
        return;
     }
 
-    // E. Default Fallback
+    // 5. FALLBACK: Default to normal modal
     setIsRegisterOpen(true);
   };
 
@@ -135,12 +137,13 @@ export default function EventDetailsPage() {
     } catch { toast.info("Link copied!"); navigator.clipboard.writeText(window.location.href); }
   };
 
-  // --- 3. Render Correct Modal Helper ---
+  // --- Modal Renderer ---
   const renderRegistrationModal = () => {
     if (!event) return null;
 
-    // Logic: use form_type if present, else event_type, else default to 'normal'
-    const type = (event.form_type || event.event_type || 'normal').toLowerCase();
+    // Use the same sanitized logic here
+    const rawType = event.form_type || event.event_type || 'normal';
+    const type = rawType.trim().toLowerCase();
 
     const commonProps = {
       event,
@@ -173,7 +176,7 @@ export default function EventDetailsPage() {
 
   const isHackathon = event?.event_type === 'hackathon';
 
-  // --- 4. Sidebar Content (Preserving Invitation Logic) ---
+  // --- Sidebar Content ---
   const renderSidebarContent = () => {
     if (regLoading) return <div className="flex justify-center py-6"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>;
     
@@ -452,7 +455,7 @@ export default function EventDetailsPage() {
         </div>
       </div>
 
-      {/* 5. Render Modal Dynamically */}
+      {/* Modals - Dynamically Rendered based on form_type */}
       {renderRegistrationModal()}
     </div>
   );
