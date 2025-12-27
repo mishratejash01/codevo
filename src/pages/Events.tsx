@@ -30,10 +30,9 @@ interface Event {
 // --- Event Card Component ---
 const EventCard = ({ event }: { event: Event }) => {
   return (
-    // Width set to 100% (w-full)
     <article className="flex flex-col gap-8 py-12 border-b border-zinc-800 last:border-0 w-full">
       
-      {/* 1. Image Section - Stacked on top, full width */}
+      {/* 1. Image Section */}
       <div className="h-[260px] w-full rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950">
         <img 
           src={event.image_url} 
@@ -86,15 +85,17 @@ const EventCard = ({ event }: { event: Event }) => {
         </div>
 
         {/* 4. Action Buttons */}
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-5">
+          {/* View Details: Increased size, hover becomes transparent with white border */}
           <a 
             href={`/events/${event.slug}`}
-            className="bg-white text-black px-10 py-3.5 font-mono text-xs font-bold uppercase tracking-widest rounded-sm hover:bg-zinc-200 transition-colors duration-200 text-center"
+            className="flex items-center justify-center bg-white text-black border border-white h-14 px-12 font-mono text-sm font-bold uppercase tracking-widest rounded-sm hover:bg-transparent hover:text-white transition-all duration-300"
           >
             View Details —
           </a>
 
-          <button className="border border-zinc-600 text-white px-10 py-3.5 font-mono text-xs font-bold uppercase tracking-widest rounded-sm hover:border-white hover:bg-white/5 transition-all duration-200">
+          {/* Register Now: Increased size to match */}
+          <button className="flex items-center justify-center border border-zinc-600 text-white h-14 px-12 font-mono text-sm font-bold uppercase tracking-widest rounded-sm hover:border-white hover:bg-white/5 transition-all duration-200">
             Register Now
           </button>
         </div>
@@ -167,7 +168,7 @@ export default function Events() {
       
       <Header session={session} onLogout={handleLogout} />
 
-      {/* Main Container: Left aligned, padding maintained */}
+      {/* Main Container */}
       <main className="pt-32 pb-24 px-8 md:px-16 w-full">
         
         {/* Page Title */}
