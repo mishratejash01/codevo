@@ -33,7 +33,7 @@ const EventCard = ({ event }: { event: Event }) => {
   return (
     <article className="flex flex-col gap-8 py-12 border-b border-zinc-800 last:border-0 w-full">
       
-      {/* 1. Image Section - Squared Corners (rounded-none) */}
+      {/* 1. Image Section - Squared Corners */}
       <div className="h-[260px] w-full rounded-none overflow-hidden border border-zinc-800 bg-zinc-950">
         <img 
           src={event.image_url} 
@@ -85,7 +85,7 @@ const EventCard = ({ event }: { event: Event }) => {
           </div>
         </div>
 
-        {/* 4. Action Buttons - Squared Corners (rounded-none) */}
+        {/* 4. Action Buttons - Squared Corners */}
         <div className="flex flex-wrap gap-5">
           <a 
             href={`/events/${event.slug}`}
@@ -160,20 +160,43 @@ export default function Events() {
     navigate('/auth');
   };
 
-  // Derive unique options for filters from the fetched events
+  // --- Derived Data for Filters & Placeholders ---
+  
+  // 1. Categories
   const categories = useMemo(() => {
     const cats = new Set(events.map(e => e.category).filter(Boolean));
     return ['All', ...Array.from(cats)];
   }, [events]);
 
+  // 2. Modes
   const modes = useMemo(() => {
     const ms = new Set(events.map(e => e.mode).filter(Boolean));
     return ['All', ...Array.from(ms)];
   }, [events]);
 
-  // Filter Logic
+  // 3. Dynamic Search Placeholder (based on Locations)
+  const searchPlaceholder = useMemo(() => {
+    // Extract unique locations, filter out empty ones
+    const locs = Array.from(new Set(events.map(e => e.location).filter(Boolean)));
+    // Take first 3 for brevity
+    const preview = locs.slice(0, 3).join(', ');
+    
+    if (preview) {
+      return `Search events in ${preview}${locs.length > 3 ? '...' : ''}`;
+    }
+    return "Search events by title, description or location...";
+  }, [events]);
+
+  // --- Filter Logic ---
   const filteredEvents = events.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase();
+    
+    // Updated search logic to include Location
+    const matchesSearch = 
+        event.title.toLowerCase().includes(query) || 
+        event.short_description?.toLowerCase().includes(query) ||
+        event.location?.toLowerCase().includes(query);
+
     const matchesCategory = selectedCategory === 'All' || event.category === selectedCategory;
     const matchesMode = selectedMode === 'All' || event.mode === selectedMode;
     
@@ -209,15 +232,15 @@ export default function Events() {
           {/* Filter Row - Squared Inputs (rounded-none) */}
           <div className="flex flex-col lg:flex-row gap-4 w-full">
             
-            {/* Search Input */}
+            {/* Search Input - Dynamic Placeholder */}
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input 
                 type="text" 
-                placeholder="Search events..." 
+                placeholder={searchPlaceholder} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-none pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 transition-colors"
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-none pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 transition-colors placeholder:text-zinc-600"
               />
             </div>
 
@@ -229,10 +252,11 @@ export default function Events() {
                 className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer"
               >
                 {categories.map(cat => (
-                  <option key={cat} value={cat} className="bg-zinc-900 text-white">{cat === 'All' ? 'All Categories' : cat}</option>
+                  <option key={cat} value={cat} className="bg-zinc-900 text-white">
+                    {cat === 'All' ? 'All Categories' : cat}
+                  </option>
                 ))}
               </select>
-              {/* Premium Icon: SlidersHorizontal */}
               <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
 
@@ -244,7 +268,9 @@ export default function Events() {
                 className="w-full appearance-none bg-zinc-900/50 border border-zinc-800 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-600 cursor-pointer"
               >
                 {modes.map(mode => (
-                  <option key={mode} value={mode} className="bg-zinc-900 text-white">{mode === 'All' ? 'All Modes' : mode}</option>
+                  <option key={mode} value={mode} className="bg-zinc-900 text-white">
+                    {mode === 'All' ? 'All Modes' : mode}
+                  </option>
                 ))}
               </select>
               <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
@@ -264,7 +290,7 @@ export default function Events() {
               <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
 
-            {/* Clear Filters Button (Visible if any filter is active) */}
+            {/* Clear Filters Button */}
             {(selectedCategory !== 'All' || selectedMode !== 'All' || selectedPrice !== 'All' || searchQuery) && (
                <Button 
                  variant="ghost" 
