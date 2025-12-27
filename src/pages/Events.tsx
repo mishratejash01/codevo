@@ -2,8 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Loader2, Search, SlidersHorizontal, X, ChevronRight, 
-  Timer, MapPin, Layers, Users, ArrowUpDown 
+  Loader2, Search, SlidersHorizontal, ChevronRight, 
+  Timer, MapPin 
 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Session } from '@supabase/supabase-js';
@@ -13,7 +13,6 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
-  SheetHeader,
   SheetTitle,
   SheetTrigger,
   SheetClose
@@ -46,8 +45,27 @@ interface Event {
   status?: string; 
 }
 
+// --- Status Icon Components (Based on your HTML) ---
+const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
+  if (type === 'success') {
+    // Pure CSS Checkmark converted to Tailwind
+    return (
+      <div className="w-[25px] h-[12px] border-l-[6px] border-b-[6px] border-black -rotate-45 -mt-1" />
+    );
+  }
+  // Pure CSS Cross converted to Tailwind
+  return (
+    <div className="relative w-[30px] h-[30px]">
+      <div className="absolute top-[12px] left-[-2px] w-[34px] h-[6px] bg-black rotate-45 rounded-[3px]" />
+      <div className="absolute top-[12px] left-[-2px] w-[34px] h-[6px] bg-black -rotate-45 rounded-[3px]" />
+    </div>
+  );
+};
+
 // --- Event Card Component ---
 const EventCard = ({ event }: { event: Event }) => {
+  const isOpen = new Date(event.end_date) >= new Date();
+
   return (
     <article className="flex flex-col gap-8 py-12 border-b border-zinc-800 last:border-0 w-full">
       
@@ -62,8 +80,10 @@ const EventCard = ({ event }: { event: Event }) => {
            <Badge className="bg-black/50 backdrop-blur-md text-white border-zinc-700 rounded-none uppercase tracking-widest text-[10px]">
              {event.mode}
            </Badge>
+           {/* MapPin Icon added here for Location */}
            {event.location && event.mode !== 'Online' && (
-             <Badge className="bg-black/50 backdrop-blur-md text-white border-zinc-700 rounded-none uppercase tracking-widest text-[10px]">
+             <Badge className="bg-black/50 backdrop-blur-md text-white border-zinc-700 rounded-none uppercase tracking-widest text-[10px] flex items-center gap-1">
+               <MapPin className="w-3 h-3" />
                {event.location}
              </Badge>
            )}
@@ -91,21 +111,31 @@ const EventCard = ({ event }: { event: Event }) => {
 
         {/* 3. Info Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 py-5 border-y border-dashed border-zinc-800 mb-8">
-          <div className="flex flex-col gap-1.5">
+          
+          {/* Custom Status Box (Replacing generic text if desired, or acting as status indicator) */}
+          <div className="flex items-center gap-3">
+             <div className={`w-[60px] h-[60px] border-[4px] border-black flex items-center justify-center shrink-0 ${isOpen ? 'bg-[#88d66c]' : 'bg-[#ff8a8a]'}`}>
+                <StatusIcon type={isOpen ? 'success' : 'fail'} />
+             </div>
+             <div className="flex flex-col gap-1">
+                <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Status</span>
+                <span className="font-mono text-sm text-white font-medium">{isOpen ? 'Open' : 'Closed'}</span>
+             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5 justify-center">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Prizes</span>
             <span className="font-mono text-sm text-white font-medium">{event.prize_pool || "N/A"}</span>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Location</span>
-            <span className="font-mono text-sm text-white font-medium">{event.mode === 'Online' ? 'Remote' : event.location || event.mode}</span>
-          </div>
-          <div className="flex flex-col gap-1.5">
+
+          <div className="flex flex-col gap-1.5 justify-center">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Team Size</span>
             <span className="font-mono text-sm text-white font-medium">
               {(event.max_team_size && event.max_team_size > 1) ? `Up to ${event.max_team_size}` : "Solo"}
             </span>
           </div>
-          <div className="flex flex-col gap-1.5">
+
+          <div className="flex flex-col gap-1.5 justify-center">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Ends On</span>
             <span className="font-mono text-sm text-white font-medium">
               {new Date(event.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -144,9 +174,9 @@ export default function Events() {
   const [selectedMode, setSelectedMode] = useState<string>('All');
   const [selectedPrice, setSelectedPrice] = useState<string>('All');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
-  const [selectedLocation, setSelectedLocation] = useState<string>('All'); // New
-  const [selectedType, setSelectedType] = useState<string>('All'); // New (Format)
-  const [selectedTeamSize, setSelectedTeamSize] = useState<string>('All'); // New
+  const [selectedLocation, setSelectedLocation] = useState<string>('All');
+  const [selectedType, setSelectedType] = useState<string>('All');
+  const [selectedTeamSize, setSelectedTeamSize] = useState<string>('All');
   const [sortBy, setSortBy] = useState<string>('newest');
 
   // Placeholder Animation State
@@ -209,7 +239,6 @@ export default function Events() {
   }, [events]);
 
   const locations = useMemo(() => {
-    // Filter out 'Online' from locations list if it appears there redundantly, usually Location implies city
     const locs = new Set(events.map(e => e.location).filter(l => l && l !== 'Online'));
     return ['All', ...Array.from(locs)];
   }, [events]);
@@ -387,7 +416,7 @@ export default function Events() {
               <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
 
-             {/* Status (Icon Updated) */}
+             {/* Status */}
              <div className="hidden md:block relative min-w-[150px]">
               <select 
                 value={selectedStatus}
@@ -398,7 +427,6 @@ export default function Events() {
                 <option value="Open" className="bg-zinc-900 text-white">Open</option>
                 <option value="Closed" className="bg-zinc-900 text-white">Closed</option>
               </select>
-              {/* Changed Icon to Timer */}
               <Timer className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
 
