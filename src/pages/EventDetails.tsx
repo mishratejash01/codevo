@@ -1,175 +1,255 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/Header';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { Session } from '@supabase/supabase-js';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2, Code, 
   Users, Clock, Star, MessageCircle, HelpCircle, CheckCircle, 
-  Sparkles, Zap, ChevronRight, Globe 
+  Sparkles, Zap, ChevronRight, Globe, Lock 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import { Session } from '@supabase/supabase-js';
+import { Button } from '@/components/ui/button';
 
-// Internal Component Imports
-import { HackathonRegistrationModal } from '@/components/events/HackathonRegistrationModal';
-import { NormalEventRegistrationModal } from '@/components/events/NormalEventRegistrationModal';
-import { WorkshopRegistrationModal } from '@/components/events/WorkshopRegistrationModal';
-import { WebinarRegistrationModal } from '@/components/events/WebinarRegistrationModal';
-import { MeetupRegistrationModal } from '@/components/events/MeetupRegistrationModal';
-import { ContestRegistrationModal } from '@/components/events/ContestRegistrationModal';
+// --- COMPONENTS ---
+import { EventRegistrationModal } from '@/components/EventRegistrationModal';
 import { AlreadyRegisteredCard } from '@/components/events/AlreadyRegisteredCard';
-import { PendingInvitationCard, InvitationBanner } from '@/components/events/InvitationBanner';
-import { InviteeRegistrationForm } from '@/components/events/InviteeRegistrationForm';
-import { useEventRegistration } from '@/hooks/useEventRegistration';
-import { EventStagesTimeline } from '@/components/events/EventStagesTimeline';
-import { EventDetailsContent } from '@/components/events/EventDetails';
-import { EventDatesDeadlines } from '@/components/events/EventDatesDeadlines';
-import { EventPrizes } from '@/components/events/EventPrizes';
-import { EventReviews } from '@/components/events/EventReviews';
-import { EventFAQs } from '@/components/events/EventFAQs';
-import { EventDiscussions } from '@/components/events/EventDiscussions';
-import { EventEligibility } from '@/components/events/EventEligibility';
+import { PendingInvitationCard } from '@/components/events/InvitationBanner';
 
-export default function EventDetailsPage() {
+// --- HOOKS ---
+import { useEventRegistration } from '@/hooks/useEventRegistration';
+
+// --- Types based on your Schema (UNCHANGED) ---
+interface EventStage {
+  id: string;
+  title: string;
+  description: string | null;
+  start_date: string;
+  order_index: number;
+}
+
+interface EventPrize {
+  id: string;
+  position: number;
+  title: string;
+  prize_value: string | null;
+  description: string | null;
+}
+
+interface EventFAQ {
+  id: string;
+  question: string;
+  answer: string;
+  order_index: number;
+}
+
+interface EventReview {
+  id: string;
+  rating: number;
+  review_text: string;
+  user_id: string;
+}
+
+interface EventSponsor {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  website_url: string | null;
+  type: string;
+  tier: string | null;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  slug: string;
+  short_description: string;
+  content: string | null;
+  start_date: string;
+  end_date: string;
+  registration_deadline?: string;
+  created_at: string;
+  image_url: string;
+  category: string;
+  mode: string;
+  location: string;
+  prize_pool: string;
+  is_featured: boolean;
+  event_type: 'hackathon' | 'normal';
+  max_team_size: number | null;
+  registration_fee: number | null;
+  is_paid: boolean | null;
+  
+  // Relations
+  event_stages: EventStage[];
+  event_prizes: EventPrize[];
+  event_faqs: EventFAQ[];
+  event_reviews: EventReview[];
+  event_sponsors: EventSponsor[];
+}
+
+export default function EventDetails() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const [event, setEvent] = useState<any>(null);
+  const { toast } = useToast();
+  
+  const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  
+  // UI State for the new design
   const [activeTab, setActiveTab] = useState('stages');
-  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // --- 1. Hook to check Registration & Invitation Status ---
   const { 
     isRegistered, 
+    hasPendingInvitation, 
     invitation, 
-    hasPendingInvitation,
-    hasAcceptedInvitation,
-    loading: regLoading,
-    refetch: refetchRegistration
+    loading: regLoading, 
+    refetch: refetchRegistration 
   } = useEventRegistration(event?.id);
 
-  // Auth & Data Fetching
+  // Auth Listener
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setAuthLoading(false);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!authLoading && !session) navigate('/auth');
-  }, [authLoading, session, navigate]);
-
-  useEffect(() => {
-    if (session) getEvent();
-  }, [slug, session]);
-
-  async function getEvent() {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('slug', slug)
-      .single();
-    if (error) { navigate('/events'); return; }
-    setEvent(data);
-    setLoading(false);
-  }
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    setSession(null);
     navigate('/auth');
   };
 
-  const handleRegisterClick = () => {
-    if (hasPendingInvitation) { toast.info("You have a pending team invitation."); return; }
-    if (hasAcceptedInvitation) { toast.info("Please complete your team registration."); return; }
-    if (isRegistered) { toast.info("You're already registered!"); return; }
-    if (event.registration_link) window.open(event.registration_link, '_blank');
-    else setIsRegisterOpen(true);
-  };
+  // Fetch Event Data
+  useEffect(() => {
+    const fetchEvent = async () => {
+      if (!slug) return;
+      
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          event_stages(*),
+          event_prizes(*),
+          event_faqs(*),
+          event_reviews(*),
+          event_sponsors(*)
+        `)
+        .eq('slug', slug)
+        .single();
 
-  const handleShare = async () => {
-    try {
-      await navigator.share({ title: event.title, text: `Check out ${event.title}!`, url: window.location.href });
-    } catch { toast.info("Link copied!"); navigator.clipboard.writeText(window.location.href); }
-  };
+      if (error) {
+        console.error('Error fetching event:', error);
+        toast({
+          title: "Error",
+          description: "Could not find the requested event.",
+          variant: "destructive"
+        });
+        navigate('/events');
+        return;
+      }
 
-  if (authLoading || loading) return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-      <Loader2 className="animate-spin h-8 w-8 text-primary" />
-    </div>
-  );
+      const eventData = data as unknown as Event;
+      
+      // Sort data
+      if (eventData.event_stages) eventData.event_stages.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+      if (eventData.event_prizes) eventData.event_prizes.sort((a, b) => a.position - b.position);
+      if (eventData.event_faqs) eventData.event_faqs.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
 
-  const isHackathon = event?.event_type === 'hackathon';
+      setEvent(eventData);
+      setLoading(false);
+    };
 
-  // --- Dynamic Content Renders ---
-  const renderSidebarContent = () => {
-    if (regLoading) return <div className="flex justify-center py-6"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>;
-    
-    if (isRegistered) {
-      return (
-        <div className="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
-          <div className="absolute inset-0 bg-emerald-500/10 blur-xl opacity-50" />
-          <AlreadyRegisteredCard 
-            eventId={event.id} 
-            eventTitle={event.title} 
-            eventType={event.event_type || 'normal'} 
-            isPaid={event.is_paid} 
-            registrationFee={event.registration_fee} 
-            currency={event.currency} 
-          />
-        </div>
-      );
-    }
-    
-    if (hasPendingInvitation && invitation) return <PendingInvitationCard invitation={invitation as any} eventTitle={event.title} onAccept={refetchRegistration} onDecline={refetchRegistration} />;
-    
-    if (hasAcceptedInvitation && invitation) return <InviteeRegistrationForm eventId={event.id} eventTitle={event.title} isPaid={event.is_paid} registrationFee={event.registration_fee} currency={event.currency} invitation={{ id: invitation.id, team_name: invitation.team_name, inviter_name: invitation.inviter_name, role: invitation.role, registration_id: invitation.registration_id }} onComplete={refetchRegistration} />;
-    
+    fetchEvent();
+  }, [slug, navigate, toast]);
+
+  if (loading) {
     return (
-      <div className="space-y-4 pt-2">
-        <Button 
-          onClick={handleRegisterClick} 
-          className="w-full h-14 text-base font-bold bg-white text-black hover:bg-zinc-200 hover:scale-[1.02] transition-all duration-300 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]"
-        >
-          {isHackathon && <Code className="w-5 h-5 mr-2" />} 
-          Initialize Registration
-        </Button>
-        <Button 
-          variant="outline" 
-          onClick={handleShare} 
-          className="w-full h-12 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
-        >
-          <Share2 className="w-4 h-4 mr-2" /> Share Protocol
-        </Button>
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <Loader2 className="animate-spin h-8 w-8 text-primary" />
       </div>
     );
-  };
+  }
 
+  if (!event) return null;
+
+  const isEventActive = new Date(event.end_date) > new Date();
+
+  // Tabs Configuration
   const tabs = [
     { id: 'stages', label: 'Timeline', icon: Clock },
     { id: 'details', label: 'Briefing', icon: Zap },
-    { id: 'dates', label: 'Deadlines', icon: Calendar },
     { id: 'prizes', label: 'Bounties', icon: Trophy },
-    { id: 'eligibility', label: 'Criteria', icon: CheckCircle },
-    { id: 'reviews', label: 'Intel', icon: Star },
+    { id: 'sponsors', label: 'Patrons', icon: Users },
     { id: 'faqs', label: 'Comms', icon: MessageCircle },
+    { id: 'reviews', label: 'Intel', icon: Star },
   ];
 
+  // Logic helper for share
+  const handleShare = async () => {
+    try {
+      await navigator.share({ title: event.title, text: `Check out ${event.title}!`, url: window.location.href });
+    } catch { 
+      toast({ title: "Link copied!", description: "Event link copied to clipboard." });
+      navigator.clipboard.writeText(window.location.href); 
+    }
+  };
+
+  // Logic helper for Scroll to invite
+  const scrollToInvite = () => {
+      const el = document.getElementById('invitation-card');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // --- RENDER HELPERS (extracted from original sidebar logic) ---
+  const renderSidebarButtons = () => {
+    if (regLoading) return <Loader2 className="animate-spin h-6 w-6 text-primary mx-auto" />;
+
+    if (isRegistered) {
+      return (
+        <Button disabled className="w-full h-14 text-base font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/50">
+           <CheckCircle className="w-5 h-5 mr-2" /> Registered
+        </Button>
+      );
+    }
+
+    if (hasPendingInvitation) {
+      return (
+         <Button 
+            onClick={scrollToInvite}
+            className="w-full h-14 text-base font-bold bg-amber-500 hover:bg-amber-600 text-black transition-all"
+         >
+            <Users className="w-5 h-5 mr-2" /> View Invitation
+         </Button>
+      );
+    }
+
+    return (
+      <Button 
+        onClick={() => setIsRegistrationOpen(true)} 
+        disabled={!isEventActive}
+        className="w-full h-14 text-base font-bold bg-white text-black hover:bg-zinc-200 hover:scale-[1.02] transition-all duration-300 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]"
+      >
+        {event.event_type === 'hackathon' && <Code className="w-5 h-5 mr-2" />} 
+        {isEventActive ? 'Initialize Registration' : 'Event Closed'}
+      </Button>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30 font-inter relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30 font-sans relative overflow-x-hidden">
       <Header session={session} onLogout={handleLogout} />
       
       {/* Background Noise & Ambient Light */}
@@ -177,6 +257,15 @@ export default function EventDetailsPage() {
          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
          <div className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-purple-900/20 rounded-full blur-[150px] animate-pulse opacity-40" />
       </div>
+
+      <EventRegistrationModal 
+        event={{ id: event.id, title: event.title }} 
+        isOpen={isRegistrationOpen} 
+        onOpenChange={(open) => {
+          setIsRegistrationOpen(open);
+          if (!open) refetchRegistration();
+        }}
+      />
 
       {/* --- CINEMATIC HERO --- */}
       <div className="relative h-[60vh] md:h-[70vh] w-full flex items-end pb-20 overflow-hidden border-b border-white/5">
@@ -218,7 +307,7 @@ export default function EventDetailsPage() {
                </span>
                {event.is_featured && (
                  <span className="flex items-center gap-1 text-amber-400 text-[10px] font-bold uppercase tracking-widest animate-pulse">
-                   <Sparkles className="w-3 h-3" /> Featured Event
+                   <Sparkles className="w-3 h-3" /> Featured
                  </span>
                )}
              </div>
@@ -265,7 +354,6 @@ export default function EventDetailsPage() {
               ))}
             </div>
             
-            {/* Desktop Quick Action (Hidden on Mobile) */}
             <div className="hidden md:block">
               <Button size="sm" onClick={handleShare} variant="ghost" className="text-zinc-500 hover:text-white">
                 <Share2 className="w-4 h-4 mr-2" /> Share
@@ -280,11 +368,9 @@ export default function EventDetailsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
           
           {/* LEFT COLUMN: Content */}
-          <div className="lg:col-span-8 space-y-12">
-             <InvitationBanner />
+          <div className="lg:col-span-8 space-y-12 min-h-[500px]">
              
-             <div className="min-h-[500px]">
-               <AnimatePresence mode="wait">
+             <AnimatePresence mode="wait">
                  <motion.div
                    key={activeTab}
                    initial={{ opacity: 0, y: 10 }}
@@ -292,23 +378,126 @@ export default function EventDetailsPage() {
                    exit={{ opacity: 0, y: -10 }}
                    transition={{ duration: 0.3 }}
                  >
-                   {activeTab === 'stages' && <EventStagesTimeline eventId={event.id} eventStartDate={event.start_date} eventEndDate={event.end_date} registrationDeadline={event.registration_deadline} />}
-                   {activeTab === 'details' && <EventDetailsContent event={event} />}
-                   {activeTab === 'dates' && <EventDatesDeadlines startDate={event.start_date} endDate={event.end_date} registrationDeadline={event.registration_deadline} />}
-                   {activeTab === 'prizes' && <EventPrizes eventId={event.id} prizePool={event.prize_pool} />}
-                   {activeTab === 'eligibility' && <EventEligibility eligibilityCriteria={event.eligibility_criteria} minTeamSize={event.min_team_size} maxTeamSize={event.max_team_size} allowSolo={event.allow_solo} mode={event.mode} location={event.location} />}
-                   {activeTab === 'reviews' && <EventReviews eventId={event.id} />}
-                   {activeTab === 'faqs' && <div className="space-y-12"><EventFAQs eventId={event.id} /><EventDiscussions eventId={event.id} /></div>}
+                   {/* TAB: TIMELINE */}
+                   {activeTab === 'stages' && (
+                     <div className="space-y-8 pl-8 border-l border-white/10 relative">
+                       {event.event_stages && event.event_stages.length > 0 ? (
+                         event.event_stages.map((stage) => (
+                           <div key={stage.id} className="relative group">
+                              <div className="absolute -left-[41px] top-2 w-5 h-5 rounded-full bg-[#050505] border border-white/20 group-hover:border-white transition-colors flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-white/50 group-hover:bg-white transition-colors" />
+                              </div>
+                              <span className="text-xs font-mono text-zinc-500 mb-1 block uppercase tracking-widest">{format(new Date(stage.start_date), 'MMM dd, yyyy')}</span>
+                              <h3 className="text-xl font-bold text-white mb-2">{stage.title}</h3>
+                              <p className="text-zinc-400 leading-relaxed">{stage.description}</p>
+                           </div>
+                         ))
+                       ) : (
+                         <div className="text-zinc-500 italic">Timeline to be announced.</div>
+                       )}
+                     </div>
+                   )}
+
+                   {/* TAB: BRIEFING (Details) */}
+                   {activeTab === 'details' && (
+                     <div className="prose prose-invert prose-lg max-w-none">
+                       <h2 className="text-3xl font-bold mb-6">Concept & Rigor</h2>
+                       <div className="text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                         {event.content || event.short_description}
+                       </div>
+                     </div>
+                   )}
+
+                   {/* TAB: BOUNTIES (Prizes) */}
+                   {activeTab === 'prizes' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {event.event_prizes && event.event_prizes.length > 0 ? (
+                          event.event_prizes.map((prize) => (
+                             <div key={prize.id} className="bg-white/5 border border-white/10 p-6 rounded-xl hover:bg-white/10 transition-colors">
+                                <div className="text-4xl font-light text-white/20 mb-4">{String(prize.position).padStart(2, '0')}</div>
+                                <h3 className="text-xl font-bold text-white mb-2 uppercase tracking-wide">{prize.title}</h3>
+                                <p className="text-emerald-400 font-mono text-lg">{prize.prize_value}</p>
+                                {prize.description && <p className="text-sm text-zinc-500 mt-2">{prize.description}</p>}
+                             </div>
+                          ))
+                        ) : (
+                           <div className="col-span-2 bg-white/5 border border-white/10 p-8 rounded-xl text-center">
+                              <Trophy className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+                              <h3 className="text-xl font-bold">Prize Pool</h3>
+                              <p className="text-2xl text-emerald-400 font-mono mt-2">{event.prize_pool || "TBA"}</p>
+                           </div>
+                        )}
+                      </div>
+                   )}
+
+                   {/* TAB: PATRONS (Sponsors) */}
+                   {activeTab === 'sponsors' && (
+                     <div className="grid grid-cols-2 md:grid-cols-3 gap-1 bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+                       {event.event_sponsors && event.event_sponsors.length > 0 ? (
+                         event.event_sponsors.map((sponsor) => (
+                           <div key={sponsor.id} className="aspect-video bg-[#050505] flex items-center justify-center p-6 group hover:bg-[#0a0a0a] transition-colors">
+                              {sponsor.logo_url ? (
+                                <img src={sponsor.logo_url} alt={sponsor.name} className="max-w-full max-h-12 opacity-50 grayscale group-hover:opacity-100 group-hover:grayscale-0 transition-all" />
+                              ) : (
+                                <span className="text-zinc-500 font-bold uppercase tracking-widest text-xs">{sponsor.name}</span>
+                              )}
+                           </div>
+                         ))
+                       ) : (
+                         <div className="col-span-3 p-12 text-center text-zinc-500">No public sponsors listed.</div>
+                       )}
+                     </div>
+                   )}
+
+                   {/* TAB: COMMS (FAQs) */}
+                   {activeTab === 'faqs' && (
+                     <div className="space-y-4">
+                        {event.event_faqs && event.event_faqs.length > 0 ? (
+                          event.event_faqs.map((faq) => (
+                            <div key={faq.id} className="bg-white/5 border border-white/10 rounded-lg p-6 hover:border-white/20 transition-colors">
+                               <h4 className="text-lg font-semibold text-white mb-2 flex items-start gap-3">
+                                 <HelpCircle className="w-5 h-5 text-primary mt-1 shrink-0" />
+                                 {faq.question}
+                               </h4>
+                               <p className="text-zinc-400 pl-8">{faq.answer}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-zinc-500 italic">No FAQs available.</div>
+                        )}
+                     </div>
+                   )}
+
+                   {/* TAB: INTEL (Reviews) */}
+                   {activeTab === 'reviews' && (
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {event.event_reviews && event.event_reviews.length > 0 ? (
+                          event.event_reviews.map((review) => (
+                            <div key={review.id} className="bg-white/5 p-6 rounded-xl border border-white/5">
+                               <div className="flex gap-1 mb-3">
+                                 {[...Array(5)].map((_, i) => (
+                                   <Star key={i} className={cn("w-4 h-4", i < review.rating ? "text-amber-400 fill-amber-400" : "text-zinc-700")} />
+                                 ))}
+                               </div>
+                               <p className="text-zinc-300 italic mb-4">"{review.review_text}"</p>
+                               <div className="text-xs font-bold uppercase tracking-widest text-zinc-500">— Member</div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-zinc-500 italic col-span-2">No intel gathered yet.</div>
+                        )}
+                     </div>
+                   )}
+
                  </motion.div>
-               </AnimatePresence>
-             </div>
+             </AnimatePresence>
           </div>
 
-          {/* RIGHT COLUMN: Sidebar / "Mission Card" */}
+          {/* RIGHT COLUMN: Sidebar */}
           <div className="lg:col-span-4 relative">
             <div className="sticky top-32 space-y-6">
               
-              {/* Glass Card */}
+              {/* Mission Status Card */}
               <div className="relative overflow-hidden rounded-[2rem] bg-[#0c0c0e]/80 backdrop-blur-xl border border-white/10 p-8 shadow-[0_0_50px_-20px_rgba(0,0,0,0.5)]">
                 {/* Decorative Elements */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[50px] pointer-events-none" />
@@ -334,7 +523,9 @@ export default function EventDetailsPage() {
                    <div className="col-span-2 bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/10 transition-colors group flex items-center justify-between">
                       <div>
                         <div className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mb-1">Squad Size</div>
-                        <div className="text-sm font-bold text-white">{event.min_team_size} - {event.max_team_size} Operatives</div>
+                        <div className="text-sm font-bold text-white">
+                          {event.max_team_size ? (event.max_team_size === 1 ? 'Solo Operative' : `Max ${event.max_team_size} Operatives`) : 'Solo'}
+                        </div>
                       </div>
                       <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-zinc-500 group-hover:text-white transition-colors">
                         <Users className="w-5 h-5" />
@@ -344,8 +535,43 @@ export default function EventDetailsPage() {
 
                 <div className="w-full h-px bg-white/10 mb-8" />
                 
-                {renderSidebarContent()}
+                {/* ACTION BUTTONS (Logic from Target) */}
+                <div className="space-y-4">
+                  {renderSidebarButtons()}
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={handleShare} 
+                    className="w-full h-12 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
+                  >
+                    <Share2 className="w-4 h-4 mr-2" /> Share Protocol
+                  </Button>
+                </div>
               </div>
+
+              {/* Already Registered Card / Invitation Card (Logic: If present, show here) */}
+              {isRegistered && (
+                 <div className="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+                    <AlreadyRegisteredCard 
+                       eventId={event.id} 
+                       eventTitle={event.title} 
+                       eventType={event.event_type} 
+                       isPaid={event.is_paid || false} 
+                       registrationFee={event.registration_fee || 0}
+                    />
+                 </div>
+              )}
+
+              {hasPendingInvitation && invitation && (
+                 <div id="invitation-card">
+                   <PendingInvitationCard 
+                     invitation={invitation as any}
+                     eventTitle={event.title}
+                     onAccept={() => refetchRegistration()}
+                     onDecline={() => refetchRegistration()}
+                   />
+                 </div>
+              )}
 
               {/* Support Card */}
               <div className="rounded-2xl border border-white/5 bg-[#0c0c0e]/50 p-6 flex items-center gap-4">
@@ -365,13 +591,6 @@ export default function EventDetailsPage() {
           </div>
         </div>
       </div>
-
-      {/* Modals */}
-      {event && isHackathon ? (
-        <HackathonRegistrationModal event={event} isOpen={isRegisterOpen} onOpenChange={setIsRegisterOpen} />
-      ) : event && (
-        <NormalEventRegistrationModal event={event} isOpen={isRegisterOpen} onOpenChange={setIsRegisterOpen} />
-      )}
     </div>
   );
 }
