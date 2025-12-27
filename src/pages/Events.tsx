@@ -2,8 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Loader2, Search, SlidersHorizontal, ChevronRight, 
-  Timer, MapPin 
+  Loader2, Search, SlidersHorizontal, ChevronDown, 
+  Timer, MapPin, LayoutGrid, Check, X 
 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Session } from '@supabase/supabase-js';
@@ -45,10 +45,11 @@ interface Event {
   status?: string; 
 }
 
-// --- 1. ROBUST STATUS ICONS (Direct CSS Implementation) ---
+// --- 1. Custom Status Icons (From your CSS) ---
 const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
   if (type === 'success') {
     return (
+      // Checkmark
       <div style={{
         width: '25px',
         height: '12px',
@@ -60,6 +61,7 @@ const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
     );
   }
   return (
+    // Cross
     <div style={{ position: 'relative', width: '30px', height: '30px' }}>
       <div style={{
         position: 'absolute', width: '34px', height: '6px', backgroundColor: '#000',
@@ -114,30 +116,29 @@ const EventCard = ({ event }: { event: Event }) => {
           </p>
         </div>
 
-        {/* Info Strip with VISIBLE STATUS BOX */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 py-6 border-y border-dashed border-zinc-700 mb-8">
+        {/* Info Strip with Custom Status Box */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 py-6 border-y border-dashed border-zinc-700 mb-8">
           
-          {/* Status Box - High Contrast & Exact Sizing */}
-          <div className="flex items-center gap-4">
-             <div 
-               className="shrink-0 flex items-center justify-center border-[4px] border-black"
-               style={{ 
-                 width: '60px', 
-                 height: '60px', 
-                 backgroundColor: isOpen ? '#88d66c' : '#ff8a8a' 
-               }}
-             >
+          {/* Status Box Implementation */}
+          <div className="flex w-full h-[80px] border-[6px] border-black rounded-none overflow-hidden bg-[#edf5ff]">
+             {/* Left Icon Area */}
+             <div className={`w-[80px] h-full border-r-[6px] border-black flex items-center justify-center shrink-0 ${isOpen ? 'bg-[#88d66c]' : 'bg-[#ff8a8a]'}`}>
                 <StatusIcon type={isOpen ? 'success' : 'fail'} />
              </div>
-             <div className="flex flex-col gap-1">
-                <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Status</span>
-                <span className={`font-mono text-sm font-bold ${isOpen ? 'text-[#88d66c]' : 'text-[#ff8a8a]'}`}>
-                  {isOpen ? 'Open' : 'Closed'}
-                </span>
+             {/* Right Content Area */}
+             <div className="flex-grow flex flex-col justify-center px-5 gap-2">
+                {/* Visual Lines from your CSS, reused as loading/status bars or just kept as visual elements */}
+                <div className="h-[8px] bg-black rounded-[4px] w-[50%]" />
+                <div className="flex items-center justify-between">
+                   <span className="font-bold text-black uppercase tracking-wider text-xs">
+                      {isOpen ? 'Registration Open' : 'Registration Closed'}
+                   </span>
+                </div>
+                <div className="h-[8px] bg-black/20 rounded-[4px] w-[90%]" />
              </div>
           </div>
 
-          <div className="flex flex-col gap-1.5 justify-center pl-4 border-l border-dashed border-zinc-800">
+          <div className="flex flex-col gap-1.5 justify-center pl-4 md:border-l border-dashed border-zinc-800">
             <span className="font-mono text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Prizes</span>
             <span className="font-mono text-sm text-white font-medium">{event.prize_pool || "N/A"}</span>
           </div>
@@ -370,12 +371,12 @@ export default function Events() {
               />
             </div>
 
-            {/* Category */}
+            {/* Category Filter */}
             <div className="hidden md:block relative min-w-[150px]">
               <select 
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
+                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-10 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
               >
                 {categories.map(cat => (
                   <option key={cat} value={cat} className="bg-zinc-900 text-white">
@@ -383,15 +384,17 @@ export default function Events() {
                   </option>
                 ))}
               </select>
-              <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+              {/* Icon Moved to Left for uniformity */}
+              <LayoutGrid className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
             </div>
 
-            {/* Location */}
+            {/* Location Filter */}
             <div className="hidden md:block relative min-w-[150px]">
               <select 
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
+                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-10 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
               >
                 {locations.map(loc => (
                   <option key={loc} value={loc} className="bg-zinc-900 text-white">
@@ -399,21 +402,23 @@ export default function Events() {
                   </option>
                 ))}
               </select>
-              <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
             </div>
 
-             {/* Status */}
+             {/* Status Filter */}
              <div className="hidden md:block relative min-w-[150px]">
               <select 
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
+                className="w-full appearance-none bg-zinc-900 border border-zinc-700 rounded-none pl-10 pr-10 py-3 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer h-12"
               >
                 <option value="All" className="bg-zinc-900 text-white">Status</option>
                 <option value="Open" className="bg-zinc-900 text-white">Open</option>
                 <option value="Closed" className="bg-zinc-900 text-white">Closed</option>
               </select>
-              <Timer className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+              <Timer className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
             </div>
 
             {/* Sidebar Trigger */}
