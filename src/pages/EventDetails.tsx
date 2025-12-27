@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { EventRegistrationModal } from '@/components/EventRegistrationModal';
+import { Session } from '@supabase/supabase-js';
 
 // --- Types based on your Schema ---
 interface EventStage {
@@ -80,9 +81,34 @@ export default function EventDetails() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+  
+  // --- ADDED: Session State ---
+  const [session, setSession] = useState<Session | null>(null);
+
+  // --- ADDED: Auth Listener ---
+  useEffect(() => {
+    // 1. Check current session immediately
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // 2. Listen for changes (e.g., if multiple tabs update auth)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    navigate('/auth');
+  };
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -300,8 +326,8 @@ export default function EventDetails() {
         }
       `}</style>
 
-      {/* Global Header */}
-      <Header />
+      {/* Global Header with Session Passed */}
+      <Header session={session} onLogout={handleLogout} />
 
       {/* Registration Modal */}
       <EventRegistrationModal 
