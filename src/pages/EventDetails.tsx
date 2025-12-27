@@ -2,27 +2,26 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/Header';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, MapPin, Share2, Trophy, ArrowLeft, Loader2, Code, 
   Users, Clock, Star, MessageCircle, HelpCircle, CheckCircle, 
-  Sparkles, Zap, ChevronRight, Globe 
+  Sparkles, Zap, ChevronRight, Globe, Handshake // Added Handshake
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 
-// --- Import All Registration Modals ---
+// Internal Component Imports
 import { HackathonRegistrationModal } from '@/components/events/HackathonRegistrationModal';
 import { NormalEventRegistrationModal } from '@/components/events/NormalEventRegistrationModal';
 import { WorkshopRegistrationModal } from '@/components/events/WorkshopRegistrationModal';
 import { WebinarRegistrationModal } from '@/components/events/WebinarRegistrationModal';
 import { MeetupRegistrationModal } from '@/components/events/MeetupRegistrationModal';
 import { ContestRegistrationModal } from '@/components/events/ContestRegistrationModal';
-
-// Internal Component Imports
 import { AlreadyRegisteredCard } from '@/components/events/AlreadyRegisteredCard';
 import { PendingInvitationCard, InvitationBanner } from '@/components/events/InvitationBanner';
 import { InviteeRegistrationForm } from '@/components/events/InviteeRegistrationForm';
@@ -35,6 +34,7 @@ import { EventReviews } from '@/components/events/EventReviews';
 import { EventFAQs } from '@/components/events/EventFAQs';
 import { EventDiscussions } from '@/components/events/EventDiscussions';
 import { EventEligibility } from '@/components/events/EventEligibility';
+import { EventSponsors } from '@/components/events/EventSponsors'; // Added Import
 
 export default function EventDetailsPage() {
   const { slug } = useParams();
@@ -93,41 +93,28 @@ export default function EventDetailsPage() {
     navigate('/auth');
   };
 
-  // --- STRICT REGISTRATION LOGIC ---
   const handleRegisterClick = () => {
-    // 1. INVITATION CHECK: Don't open anything if user has pending actions
-    if (hasPendingInvitation) { 
-      toast.info("You have a pending team invitation. Please check the sidebar."); 
-      return; 
-    }
-    if (hasAcceptedInvitation) { 
-      toast.info("Please complete your team registration in the sidebar."); 
-      return; 
-    }
-    if (isRegistered) { 
-      toast.info("You're already registered!"); 
-      return; 
-    }
+    if (hasPendingInvitation) { toast.info("You have a pending team invitation."); return; }
+    if (hasAcceptedInvitation) { toast.info("Please complete your team registration."); return; }
+    if (isRegistered) { toast.info("You're already registered!"); return; }
 
-    // 2. DETERMINE TYPE (Sanitize the string to remove spaces)
-    const rawType = event.form_type || event.event_type || '';
-    const effectiveType = rawType.trim().toLowerCase(); // .trim() fixes "Workshop " issue
-    
+    // Logic to determine if we should open modal or external link
+    const effectiveType = (event.form_type || event.event_type || '').toLowerCase();
     const internalTypes = ['hackathon', 'workshop', 'webinar', 'meetup', 'contest'];
 
-    // 3. PRIORITY CHECK: If it matches a known internal type, OPEN MODAL
+    // 1. If it matches a known internal type (like 'workshop'), ALWAYS open the modal
     if (internalTypes.includes(effectiveType)) {
       setIsRegisterOpen(true);
       return;
     }
 
-    // 4. SECONDARY CHECK: Only if NOT internal type, check for link
+    // 2. If no internal type matched, but we have a link, go to the link (External events)
     if (event.registration_link) {
        window.open(event.registration_link, '_blank');
        return;
     }
 
-    // 5. FALLBACK: Default to normal modal
+    // 3. Fallback to normal registration modal
     setIsRegisterOpen(true);
   };
 
@@ -137,13 +124,12 @@ export default function EventDetailsPage() {
     } catch { toast.info("Link copied!"); navigator.clipboard.writeText(window.location.href); }
   };
 
-  // --- Modal Renderer ---
+  // Helper function to render the correct modal based on form_type
   const renderRegistrationModal = () => {
     if (!event) return null;
 
-    // Use the same sanitized logic here
-    const rawType = event.form_type || event.event_type || 'normal';
-    const type = rawType.trim().toLowerCase();
+    // Logic: Use form_type if available, otherwise fallback to event_type, default to 'normal'
+    const type = (event.form_type || event.event_type || 'normal').toLowerCase();
 
     const commonProps = {
       event,
@@ -176,7 +162,7 @@ export default function EventDetailsPage() {
 
   const isHackathon = event?.event_type === 'hackathon';
 
-  // --- Sidebar Content ---
+  // --- Dynamic Content Renders ---
   const renderSidebarContent = () => {
     if (regLoading) return <div className="flex justify-center py-6"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>;
     
@@ -196,36 +182,9 @@ export default function EventDetailsPage() {
       );
     }
     
-    if (hasPendingInvitation && invitation) {
-      return (
-        <PendingInvitationCard 
-          invitation={invitation as any} 
-          eventTitle={event.title} 
-          onAccept={refetchRegistration} 
-          onDecline={refetchRegistration} 
-        />
-      );
-    }
+    if (hasPendingInvitation && invitation) return <PendingInvitationCard invitation={invitation as any} eventTitle={event.title} onAccept={refetchRegistration} onDecline={refetchRegistration} />;
     
-    if (hasAcceptedInvitation && invitation) {
-      return (
-        <InviteeRegistrationForm 
-          eventId={event.id} 
-          eventTitle={event.title} 
-          isPaid={event.is_paid} 
-          registrationFee={event.registration_fee} 
-          currency={event.currency} 
-          invitation={{ 
-            id: invitation.id, 
-            team_name: invitation.team_name, 
-            inviter_name: invitation.inviter_name, 
-            role: invitation.role, 
-            registration_id: invitation.registration_id 
-          }} 
-          onComplete={refetchRegistration} 
-        />
-      );
-    }
+    if (hasAcceptedInvitation && invitation) return <InviteeRegistrationForm eventId={event.id} eventTitle={event.title} isPaid={event.is_paid} registrationFee={event.registration_fee} currency={event.currency} invitation={{ id: invitation.id, team_name: invitation.team_name, inviter_name: invitation.inviter_name, role: invitation.role, registration_id: invitation.registration_id }} onComplete={refetchRegistration} />;
     
     return (
       <div className="space-y-4 pt-2">
@@ -252,6 +211,7 @@ export default function EventDetailsPage() {
     { id: 'details', label: 'Briefing', icon: Zap },
     { id: 'dates', label: 'Deadlines', icon: Calendar },
     { id: 'prizes', label: 'Bounties', icon: Trophy },
+    { id: 'sponsors', label: 'Partners', icon: Handshake }, // Added Tab
     { id: 'eligibility', label: 'Criteria', icon: CheckCircle },
     { id: 'reviews', label: 'Intel', icon: Star },
     { id: 'faqs', label: 'Comms', icon: MessageCircle },
@@ -385,6 +345,7 @@ export default function EventDetailsPage() {
                    {activeTab === 'details' && <EventDetailsContent event={event} />}
                    {activeTab === 'dates' && <EventDatesDeadlines startDate={event.start_date} endDate={event.end_date} registrationDeadline={event.registration_deadline} />}
                    {activeTab === 'prizes' && <EventPrizes eventId={event.id} prizePool={event.prize_pool} />}
+                   {activeTab === 'sponsors' && <EventSponsors eventId={event.id} />} {/* Added Render */}
                    {activeTab === 'eligibility' && <EventEligibility eligibilityCriteria={event.eligibility_criteria} minTeamSize={event.min_team_size} maxTeamSize={event.max_team_size} allowSolo={event.allow_solo} mode={event.mode} location={event.location} />}
                    {activeTab === 'reviews' && <EventReviews eventId={event.id} />}
                    {activeTab === 'faqs' && <div className="space-y-12"><EventFAQs eventId={event.id} /><EventDiscussions eventId={event.id} /></div>}
