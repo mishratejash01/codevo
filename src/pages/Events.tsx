@@ -1,19 +1,11 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { format, differenceInDays, differenceInHours } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Calendar, MapPin, Trophy, ChevronRight, ChevronLeft, 
-  Clock, Sparkles, Loader2, Code, Zap, ArrowUpRight, Flame, Users 
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { Header } from '@/components/Header';
-import { InvitationBanner } from '@/components/events/InvitationBanner';
+import { format } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 
+// Database interface based on your Supabase types
 interface Event {
   id: string;
   title: string;
@@ -25,11 +17,16 @@ interface Event {
   created_at: string;
   image_url: string;
   category: string;
-  mode: 'Online' | 'Offline' | 'Hybrid';
+  mode: string; // 'Online' | 'Offline' | 'Hybrid'
   location: string;
   prize_pool: string;
   is_featured: boolean;
-  event_type: 'hackathon' | 'normal';
+  event_type: string; // 'hackathon' | 'normal'
+  min_team_size: number | null;
+  max_team_size: number | null;
+  registration_fee: number | null;
+  is_paid: boolean | null;
+  max_participants: number | null;
 }
 
 export default function Events() {
@@ -37,343 +34,466 @@ export default function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'hackathon' | 'normal'>('all');
-  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auth state management
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set(['Hackathon']));
+  const [selectedLocation, setSelectedLocation] = useState<string>('All');
+  const [selectedPrice, setSelectedPrice] = useState<string>('All');
+
+  // Auth & Data Fetching
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setAuthLoading(false);
+      if (!session) navigate('/auth');
     });
 
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setSession(session);
+      if (!session) navigate('/auth');
+    });
+
+    fetchEvents();
+
     return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!authLoading && !session) {
-      navigate('/auth');
-    }
-  }, [authLoading, session, navigate]);
-
-  useEffect(() => {
-    if (session) {
-      fetchEvents();
-    }
-  }, [session]);
+  }, [navigate]);
 
   const fetchEvents = async () => {
+    setLoading(true);
     const { data, error } = await supabase
       .from('events')
       .select('*')
       .eq('status', 'published')
       .order('start_date', { ascending: true });
 
-    if (!error && data) setEvents(data as unknown as Event[]);
+    if (!error && data) {
+      setEvents(data as unknown as Event[]);
+    }
     setLoading(false);
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    navigate('/auth');
-  };
+  // Filter Logic
+  const filteredEvents = events.filter(event => {
+    // 1. Search
+    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
 
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const { scrollLeft, clientWidth } = scrollRef.current;
-      const scrollTo = direction === 'left' ? scrollLeft - clientWidth : scrollLeft + clientWidth;
-      scrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
+    // 2. Categories (Mapping DB types to UI filters)
+    // We treat 'hackathon' as Hackathon, everything else loosely mapped or strictly checked
+    const isHackathon = event.event_type === 'hackathon' || event.category?.toLowerCase().includes('hackathon');
+    const isWorkshop = event.event_type === 'normal' || event.category?.toLowerCase().includes('workshop');
+    
+    let matchesCategory = false;
+    if (selectedCategories.size === 0) matchesCategory = true;
+    else {
+      if (selectedCategories.has('Hackathons') && isHackathon) matchesCategory = true;
+      if (selectedCategories.has('Workshops') && isWorkshop) matchesCategory = true;
+      if (selectedCategories.has('Meetups') && event.category?.toLowerCase().includes('meetup')) matchesCategory = true;
+      if (selectedCategories.has('Contests') && event.category?.toLowerCase().includes('contest')) matchesCategory = true;
     }
+
+    // 3. Location
+    let matchesLocation = true;
+    if (selectedLocation !== 'All') {
+      if (selectedLocation === 'Online' && event.mode === 'Online') matchesLocation = true;
+      else if (selectedLocation === 'In-Person' && (event.mode === 'Offline' || event.mode === 'In-Person')) matchesLocation = true;
+      else if (selectedLocation === 'Hybrid' && event.mode === 'Hybrid') matchesLocation = true;
+      else matchesLocation = false;
+    }
+
+    // 4. Price
+    let matchesPrice = true;
+    if (selectedPrice === 'Free') matchesPrice = !event.is_paid || event.registration_fee === 0;
+    if (selectedPrice === 'Paid') matchesPrice = event.is_paid === true && (event.registration_fee || 0) > 0;
+
+    return matchesSearch && matchesCategory && matchesLocation && matchesPrice;
+  });
+
+  const toggleCategory = (category: string) => {
+    const next = new Set(selectedCategories);
+    if (next.has(category)) next.delete(category);
+    else next.add(category);
+    setSelectedCategories(next);
   };
 
-  if (authLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <Loader2 className="animate-spin h-8 w-8 text-primary" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="animate-spin h-8 w-8 text-white" />
       </div>
     );
   }
 
-  const filteredEvents = filter === 'all' ? events : events.filter(e => e.event_type === filter);
-  const featuredEvent = filteredEvents.find(e => e.is_featured) || filteredEvents[0];
-  const regularEvents = filteredEvents.filter(e => e.id !== featuredEvent?.id);
-
-  const getCountdownData = (event: Event) => {
-    if (!event) return { text: "Closed", percent: 100 };
-    const now = new Date();
-    const deadline = new Date(event.registration_deadline || event.start_date);
-    const created = new Date(event.created_at);
-    const daysLeft = differenceInDays(deadline, now);
-    const hoursLeft = differenceInHours(deadline, now) % 24;
-
-    let text = now > deadline ? "Closed" : daysLeft > 0 ? `${daysLeft} Days left` : `${hoursLeft} Hours left`;
-    const totalDuration = deadline.getTime() - created.getTime();
-    const elapsed = now.getTime() - created.getTime();
-    let percent = Math.max(5, Math.min(100, (elapsed / totalDuration) * 100));
-
-    return { text, percent };
-  };
-
-  const featuredStats = featuredEvent ? getCountdownData(featuredEvent) : { text: "", percent: 0 };
-
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-primary/30 font-inter relative overflow-x-hidden">
-      
-      {/* Ambient Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] opacity-30 animate-pulse delay-700" />
-        <div className="absolute bottom-[10%] left-[-10%] w-[30%] h-[30%] bg-primary/10 rounded-full blur-[100px] opacity-20" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-      </div>
+    <div className="events-page-wrapper">
+      <style>{`
+        :root {
+            --bg: #000000;
+            --surface: #0a0a0a;
+            --border: #1a1a1a;
+            --border-heavy: #333333;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --accent: #ffffff;
+            --font-main: 'Inter', sans-serif;
+            --font-mono: 'Space Grotesk', sans-serif;
+        }
 
-      <Header session={session} onLogout={handleLogout} />
+        .events-page-wrapper {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: fixed; /* Ensures it takes over the view */
+            top: 0;
+            left: 0;
+            z-index: 50;
+        }
 
-      <main className="relative z-10 pt-24 pb-20 px-4 md:px-8 max-w-[1600px] mx-auto space-y-12">
+        .app-shell {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* --- LEFT COLUMN: EVENTS (SCROLLABLE) --- */
+        .feed-container {
+            overflow-y: scroll;
+            padding: 40px 60px;
+            border-right: 1px solid var(--border);
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-heavy) var(--bg);
+        }
+
+        .feed-container::-webkit-scrollbar { width: 4px; }
+        .feed-container::-webkit-scrollbar-track { background: var(--bg); }
+        .feed-container::-webkit-scrollbar-thumb { background: var(--border-heavy); border-radius: 2px; }
+
+        .feed-header { margin-bottom: 50px; }
+
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        /* Active Filter Selection Row */
+        .selection-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding-bottom: 25px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .choice-chip {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            padding: 8px 16px;
+            border: 1px solid var(--border-heavy);
+            color: var(--text-main);
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .choice-chip:hover { border-color: var(--text-muted); }
+        .choice-chip.active { background: var(--text-main); color: #000; border-color: var(--text-main); }
+        .choice-chip span { opacity: 0.5; font-size: 14px; }
+
+        /* --- EVENT CARDS --- */
+        .event-entry {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 50px;
+            padding: 60px 0;
+            border-bottom: 1px solid var(--border);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .entry-visual {
+            height: 220px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            background: #050505;
+        }
+
+        .entry-visual img {
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover;
+        }
+
+        .entry-body { display: flex; flex-direction: column; }
+
+        .category-tag {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .entry-title {
+            font-size: 30px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 18px;
+            letter-spacing: -0.02em;
+        }
+
+        .entry-desc {
+            color: var(--text-muted);
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            max-width: 600px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Information Strip (Human labels) */
+        .info-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+            padding: 18px 0;
+            border-top: 1px dashed var(--border-heavy);
+            border-bottom: 1px dashed var(--border-heavy);
+        }
+
+        .info-point { display: flex; flex-direction: column; }
+        .info-label { font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
+        .info-val { font-family: var(--font-mono); font-size: 12px; color: var(--text-main); }
+
+        /* BUTTONS */
+        .cta-row { display: flex; gap: 15px; margin-top: auto; }
+
+        .btn {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-decoration: none;
+            padding: 14px 32px;
+            letter-spacing: 0.1em;
+            transition: 0.2s;
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Highlighted Primary */
+        .btn-details { background: var(--accent); color: #000; border: 1px solid var(--accent); }
+        .btn-details:hover { opacity: 0.8; }
+
+        /* Secondary Outlined */
+        .btn-reg { background: transparent; color: var(--accent); border: 1px solid var(--border-heavy); }
+        .btn-reg:hover { border-color: var(--accent); }
+
+        /* --- RIGHT COLUMN: SIDEBAR FILTERS (FIXED) --- */
+        .sidebar {
+            background: var(--surface);
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            border-left: 1px solid var(--border);
+        }
+
+        .filter-group { margin-bottom: 35px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+        .filter-heading { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 20px; display: block; }
+
+        .search-box { width: 100%; background: #000; border: 1px solid var(--border-heavy); padding: 12px; color: white; font-family: var(--font-main); font-size: 13px; outline: none; border-radius: 4px; transition: border-color 0.2s; }
+        .search-box:focus { border-color: var(--text-muted); }
+
+        .list-unstyled { list-style: none; padding: 0; }
+        .list-item { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 13px; color: var(--text-muted); cursor: pointer; transition: color 0.2s; }
+        .list-item input { appearance: none; width: 14px; height: 14px; border: 1px solid var(--border-heavy); cursor: pointer; border-radius: 2px; position: relative; }
+        .list-item input:checked { background: var(--accent); border-color: var(--accent); }
+        .list-item:hover { color: white; }
+
+        .footer-text { margin-top: auto; font-family: var(--font-mono); font-size: 10px; color: #444; line-height: 1.6; }
+
+        @media (max-width: 1200px) {
+            .app-shell { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .event-entry { grid-template-columns: 1fr; }
+        }
+      `}</style>
+
+      <div className="app-shell">
         
-        <InvitationBanner />
-        
-        {/* Header & Filter Bar */}
-        <div className="flex flex-col md:flex-row items-end justify-between gap-6 border-b border-white/5 pb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <span className="h-px w-8 bg-primary/50"></span>
-              <span className="text-[10px] uppercase tracking-[0.4em] text-primary/80 font-bold glow-text">Global Events</span>
+        {/* LEFT FEED */}
+        <main className="feed-container">
+          <header className="feed-header">
+            <div className="section-label">Currently Showing</div>
+            
+            <div className="selection-row">
+              {Array.from(selectedCategories).map(cat => (
+                <div key={cat} className="choice-chip active" onClick={() => toggleCategory(cat)}>
+                  {cat} <span>×</span>
+                </div>
+              ))}
+              {selectedLocation !== 'All' && (
+                <div className="choice-chip active" onClick={() => setSelectedLocation('All')}>
+                  {selectedLocation} <span>×</span>
+                </div>
+              )}
+               {selectedPrice !== 'All' && (
+                <div className="choice-chip active" onClick={() => setSelectedPrice('All')}>
+                  {selectedPrice} <span>×</span>
+                </div>
+              )}
+              {selectedCategories.size === 0 && selectedLocation === 'All' && selectedPrice === 'All' && (
+                 <div className="text-xs text-zinc-600 py-2 uppercase tracking-widest">All Events</div>
+              )}
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/50">
-              Discover <span className="text-white">Events</span>
-            </h1>
-          </div>
-          
-          <div className="flex p-1 rounded-full bg-white/5 border border-white/5 backdrop-blur-md">
-            {[
-              { id: 'all', label: 'All Events', icon: Sparkles },
-              { id: 'hackathon', label: 'Hackathons', icon: Code },
-              { id: 'normal', label: 'Workshops', icon: Zap }
-            ].map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setFilter(item.id as any)}
-                className={cn(
-                  "relative px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all duration-300",
-                  filter === item.id 
-                    ? "text-black" 
-                    : "text-muted-foreground hover:text-white hover:bg-white/5"
-                )}
-              >
-                {filter === item.id && (
-                  <motion.div 
-                    layoutId="filter-pill"
-                    className="absolute inset-0 bg-white rounded-full"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-2">
-                  <item.icon className={cn("w-3.5 h-3.5", filter === item.id ? "text-black" : "text-current")} />
-                  {item.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+          </header>
 
-        {/* --- HERO: Featured Event --- */}
-        <AnimatePresence mode='wait'>
-          {loading ? (
-             <div className="w-full h-[500px] rounded-[2rem] bg-white/5 animate-pulse border border-white/5" />
-          ) : featuredEvent && (
-            <motion.div 
-              key={featuredEvent.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="relative w-full rounded-[2.5rem] overflow-hidden border border-white/10 group cursor-pointer"
-              onClick={() => navigate(`/events/${featuredEvent.slug}`)}
-            >
-              {/* Background Image & Overlay */}
-              <div className="absolute inset-0">
-                <img 
-                  src={featuredEvent.image_url} 
-                  className="w-full h-full object-cover transition-transform duration-[1.5s] ease-in-out group-hover:scale-105"
-                  alt={featuredEvent.title}
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
-              </div>
-
-              {/* Content */}
-              <div className="relative z-10 p-8 md:p-16 flex flex-col justify-between min-h-[500px] md:min-h-[600px]">
-                
-                {/* Top Badge */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/20 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 backdrop-blur-md shadow-[0_0_15px_-3px_rgba(var(--primary),0.5)]">
-                      <Flame className="w-3 h-3 fill-current animate-pulse" /> Featured
-                    </span>
-                    <span className="px-3 py-1 rounded-full bg-white/5 text-white/80 border border-white/10 text-[10px] font-bold uppercase tracking-widest backdrop-blur-md">
-                      {featuredEvent.category}
-                    </span>
-                  </div>
-                  
-                  <div className="hidden md:flex flex-col items-end">
-                     <span className="text-4xl font-mono font-bold text-white/20 tracking-tighter">01</span>
-                     <span className="text-[10px] uppercase tracking-widest text-white/40">Featured Selection</span>
-                  </div>
-                </div>
-
-                {/* Main Text */}
-                <div className="max-w-3xl space-y-6 mt-10 md:mt-0">
-                  <h2 className="text-4xl md:text-7xl font-bold leading-[0.9] tracking-tighter text-white drop-shadow-2xl">
-                    {featuredEvent.title}
-                  </h2>
-                  <p className="text-lg text-white/60 leading-relaxed max-w-xl line-clamp-3">
-                    {featuredEvent.short_description}
-                  </p>
-                  
-                  <div className="flex flex-wrap gap-8 pt-4">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold">Prize Pool</div>
-                      <div className="text-2xl font-mono text-white flex items-center gap-2">
-                        <Trophy className="w-5 h-5 text-yellow-500" />
-                        {featuredEvent.prize_pool || "N/A"}
-                      </div>
+          {filteredEvents.length === 0 ? (
+            <div className="text-center py-20 text-zinc-600 font-mono text-sm uppercase">
+                No events found matching criteria.
+            </div>
+          ) : (
+            filteredEvents.map(event => (
+                <article key={event.id} className="event-entry">
+                    <div className="entry-visual">
+                        <img 
+                            src={event.image_url || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800"} 
+                            alt={event.title} 
+                        />
                     </div>
-                    <div className="w-px h-10 bg-white/10 hidden sm:block" />
-                    <div>
-                      <div className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold">Deadline</div>
-                      <div className="text-2xl font-mono text-white flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-blue-400" />
-                        {featuredStats.text}
-                      </div>
+                    <div className="entry-body">
+                        <div className="category-tag">{event.category || event.event_type}</div>
+                        <h2 className="entry-title">{event.title}</h2>
+                        <p className="entry-desc">{event.short_description}</p>
+                        
+                        <div className="info-strip">
+                            <div className="info-point">
+                                <span className="info-label">Prizes</span>
+                                <span className="info-val">{event.prize_pool || "None"}</span>
+                            </div>
+                            <div className="info-point">
+                                <span className="info-label">Where</span>
+                                <span className="info-val">{event.mode}</span>
+                            </div>
+                            <div className="info-point">
+                                <span className="info-label">Team Size</span>
+                                <span className="info-val">
+                                    {event.min_team_size && event.max_team_size 
+                                        ? `${event.min_team_size} - ${event.max_team_size}`
+                                        : "Solo"}
+                                </span>
+                            </div>
+                            <div className="info-point">
+                                <span className="info-label">Ends On</span>
+                                <span className="info-val">{format(new Date(event.end_date), 'MMM dd, yyyy')}</span>
+                            </div>
+                        </div>
+
+                        <div className="cta-row">
+                            <button onClick={() => navigate(`/events/${event.slug}`)} className="btn btn-details">
+                                View Details —
+                            </button>
+                            <button onClick={() => navigate(`/events/${event.slug}`)} className="btn btn-reg">
+                                Register Now
+                            </button>
+                        </div>
                     </div>
-                  </div>
-                </div>
-
-                {/* Bottom Actions */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-10 border-t border-white/10 mt-10">
-                  <div className="w-full sm:w-auto">
-                     <div className="flex items-center justify-between mb-2">
-                       <span className="text-[10px] uppercase tracking-widest text-white/60 font-bold">Registration</span>
-                       <span className="text-[10px] font-mono text-primary">{featuredStats.percent.toFixed(0)}%</span>
-                     </div>
-                     <div className="h-1.5 w-full sm:w-64 bg-white/10 rounded-full overflow-hidden">
-                       <motion.div 
-                         initial={{ width: 0 }} 
-                         animate={{ width: `${featuredStats.percent}%` }} 
-                         transition={{ duration: 1.5, ease: "easeOut" }}
-                         className="h-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" 
-                       />
-                     </div>
-                  </div>
-
-                  <Button className="w-full sm:w-auto h-14 px-8 rounded-full bg-white text-black font-bold text-sm tracking-wide hover:bg-zinc-200 transition-all group/btn">
-                    Register Now <ArrowUpRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
-                  </Button>
-                </div>
-
-              </div>
-            </motion.div>
+                </article>
+            ))
           )}
-        </AnimatePresence>
+        </main>
 
-        {/* --- CAROUSEL HEADER --- */}
-        <div className="flex items-center justify-between pt-8">
-          <h3 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <span className="w-2 h-8 bg-primary rounded-full mr-2" />
-            Upcoming Opportunities
-          </h3>
-          <div className="flex gap-2">
-            <Button onClick={() => scroll('left')} variant="outline" size="icon" className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20">
-              <ChevronLeft className="w-5 h-5" />
-            </Button>
-            <Button onClick={() => scroll('right')} variant="outline" size="icon" className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20">
-              <ChevronRight className="w-5 h-5" />
-            </Button>
+        {/* RIGHT SIDEBAR */}
+        <aside className="sidebar">
+          <div className="filter-group">
+            <span className="filter-heading">Find an Event</span>
+            <input 
+                type="text" 
+                className="search-box" 
+                placeholder="Search by name..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        </div>
 
-        {/* --- CAROUSEL SCROLL --- */}
-        <div 
-          ref={scrollRef}
-          className="flex gap-6 overflow-x-auto pb-12 pt-4 px-1 no-scrollbar snap-x snap-mandatory"
-        >
-          {loading ? [1,2,3,4].map(i => (
-             <div key={i} className="min-w-[350px] h-[420px] rounded-[2rem] bg-white/5 animate-pulse border border-white/5" />
-          )) : regularEvents.map((event, idx) => (
-            <motion.div 
-              key={event.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              onClick={() => navigate(`/events/${event.slug}`)}
-              className="min-w-[320px] md:min-w-[400px] snap-start group relative rounded-[2rem] bg-[#0c0c0e] border border-white/10 overflow-hidden cursor-pointer hover:border-white/20 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)]"
-            >
-              {/* Image Area */}
-              <div className="h-56 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] to-transparent z-10" />
-                <img 
-                  src={event.image_url} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0" 
-                  alt={event.title}
-                />
-                
-                {/* Floating Date Badge */}
-                <div className="absolute top-4 left-4 z-20 bg-black/50 backdrop-blur-md border border-white/10 rounded-xl px-3 py-2 flex flex-col items-center text-center min-w-[60px]">
-                  <span className="text-[10px] uppercase text-white/60 font-bold">{format(new Date(event.start_date), 'MMM')}</span>
-                  <span className="text-xl font-bold text-white leading-none">{format(new Date(event.start_date), 'dd')}</span>
-                </div>
+          <div className="filter-group">
+            <span className="filter-heading">Categories</span>
+            <ul className="list-unstyled">
+                {['Hackathons', 'Workshops', 'Meetups', 'Contests'].map(cat => (
+                    <li key={cat} className="list-item" onClick={() => toggleCategory(cat)}>
+                        <input 
+                            type="checkbox" 
+                            checked={selectedCategories.has(cat)} 
+                            readOnly 
+                        /> 
+                        {cat}
+                    </li>
+                ))}
+            </ul>
+          </div>
 
-                {/* Category Tag */}
-                <div className="absolute top-4 right-4 z-20">
-                   <Badge className="bg-white/10 hover:bg-white/20 backdrop-blur-md border-white/10 text-[10px] uppercase tracking-wider font-bold">
-                      {event.category}
-                   </Badge>
-                </div>
-              </div>
+          <div className="filter-group">
+            <span className="filter-heading">Location</span>
+            <ul className="list-unstyled">
+               {['All', 'Online', 'In-Person', 'Hybrid'].map(loc => (
+                    <li key={loc} className="list-item" onClick={() => setSelectedLocation(loc)}>
+                        <input 
+                            type="radio" 
+                            name="loc" 
+                            checked={selectedLocation === loc} 
+                            readOnly 
+                        /> 
+                        {loc}
+                    </li>
+               ))}
+            </ul>
+          </div>
 
-              {/* Content Area */}
-              <div className="p-6 relative z-20 -mt-6">
-                 <h4 className="text-xl font-bold text-white mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-                   {event.title}
-                 </h4>
-                 
-                 <div className="flex items-center gap-4 text-xs text-white/40 font-mono mb-4">
-                    <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3" /> {event.mode}</span>
-                    <span className="w-1 h-1 bg-white/20 rounded-full" />
-                    <span className="flex items-center gap-1.5"><Trophy className="w-3 h-3" /> {event.prize_pool || "Certificate"}</span>
-                 </div>
+          <div className="filter-group">
+            <span className="filter-heading">Price</span>
+            <ul className="list-unstyled">
+                {['All', 'Free', 'Paid'].map(price => (
+                    <li key={price} className="list-item" onClick={() => setSelectedPrice(price)}>
+                        <input 
+                            type="radio" 
+                            name="price" 
+                            checked={selectedPrice === price} 
+                            readOnly 
+                        /> 
+                        {price}
+                    </li>
+                ))}
+            </ul>
+          </div>
 
-                 <p className="text-sm text-white/50 line-clamp-2 leading-relaxed mb-6 h-10">
-                   {event.short_description}
-                 </p>
-
-                 <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                    <div className="flex -space-x-2">
-                       {[1,2,3].map((_, i) => (
-                         <div key={i} className="w-6 h-6 rounded-full bg-zinc-800 border border-[#0c0c0e] flex items-center justify-center text-[8px] text-white/40">
-                           <Users className="w-3 h-3" />
-                         </div>
-                       ))}
-                       <div className="w-6 h-6 rounded-full bg-zinc-800 border border-[#0c0c0e] flex items-center justify-center text-[8px] text-white/60 font-bold pl-1">
-                         +
-                       </div>
-                    </div>
-                    
-                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary group-hover:text-black transition-all duration-300">
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
-                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </main>
+          <div className="footer-text">
+            © 2025 Event Portal<br />
+            Updated daily at 09:00 AM
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
