@@ -17,7 +17,7 @@ import { AppRoutes } from "./routes";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import AvailabilityGuard from "@/components/AvailabilityGuard";
 
-// 1. IMPORT THE NEW VERIFICATION PAGE
+// --- IMPORT THE VERIFICATION PAGE ---
 import VerifyRegistration from "@/pages/VerifyRegistration";
 
 const queryClient = new QueryClient();
@@ -55,14 +55,14 @@ const AppContent = () => {
     syncRoutes();
   }, []);
 
-  // 2. UPDATED ROUTE LISTS TO HIDE DOCK/FOOTER ON VERIFY PAGE
+  // --- HIDE NAVIGATION ON VERIFICATION PAGE ---
   const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth', '/verify']; 
   const showDock = !hideDockRoutes.some(path => 
     location.pathname === path || 
     location.pathname.startsWith('/practice') || 
     location.pathname.startsWith('/exam') || 
     location.pathname.startsWith('/compiler') ||
-    location.pathname.startsWith('/verify') // Added check
+    location.pathname.startsWith('/verify')
   );
   
   const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth', '/u/', '/profile', '/verify'];
@@ -83,7 +83,7 @@ const AppContent = () => {
   const getSectionKey = (path: string): string | null => {
     if (path.startsWith('/degree') || path === '/exam' || path.startsWith('/exam/')) return 'iitm_bs';
     if (path === '/practice-arena' || path.startsWith('/practice-arena/') || path === '/practice' || path.startsWith('/practice/')) return 'practice';
-    // 3. MAP VERIFY PAGE TO THE EVENTS AVAILABILITY GUARD
+    // --- MAP VERIFY PAGE TO EVENTS GUARD ---
     if (path === '/events' || path.startsWith('/events/') || path.startsWith('/verify/')) return 'events';
     if (path === '/compiler') return 'compiler';
     if (path === '/leaderboard') return 'leaderboard';
@@ -95,7 +95,7 @@ const AppContent = () => {
     <AvailabilityGuard sectionKey="main_website">
       <AnnouncementBanner />
       <Routes>
-        {/* 4. MANUAL ROUTE FOR THE QR SCAN VERIFICATION */}
+        {/* --- MANUAL ROUTE FOR QR SCAN VERIFICATION --- */}
         <Route 
           path="/verify/:registrationId" 
           element={
