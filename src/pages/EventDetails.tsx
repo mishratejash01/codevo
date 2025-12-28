@@ -6,18 +6,7 @@ import { format, differenceInDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Loader2, 
-  CheckCircle, 
-  Mail, 
-  Globe, 
-  User, 
   CreditCard,
-  MapPin,
-  Building2,
-  Lock,
-  ShieldCheck,
-  ChevronRight,
-  Zap,
-  Info
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
@@ -47,12 +36,13 @@ export default function EventDetailsPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
   
-  // --- RESTORED ALL ORIGINAL STATES ---
+  // --- STATES ---
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userProfile, setUserProfile] = useState<any>(null);
 
   // Deep registration state logic from hook
@@ -94,10 +84,11 @@ export default function EventDetailsPage() {
   // --- DATA FETCHING ---
   useEffect(() => {
     if (!authLoading && !session) navigate('/auth');
-  }, [authLoading, session]);
+  }, [authLoading, session, navigate]);
 
   useEffect(() => {
     if (session) getEvent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, session]);
 
   async function getEvent() {
@@ -263,7 +254,8 @@ export default function EventDetailsPage() {
           
           <div className="content-col space-y-[120px]">
             
-            <InvitationBanner />
+            {/* FIX: Only show banner if we don't have a pending invitation handled below */}
+            {!hasPendingInvitation && <InvitationBanner />}
 
             {/* --- CRITICAL REGISTRATION LOGIC INJECTION --- */}
             <AnimatePresence mode="wait">
@@ -432,7 +424,7 @@ export default function EventDetailsPage() {
               {(event.organizer_name || event.organizer_logo) && (
                 <div className="mt-12 pt-[30px] border-t border-[#1a1a1a] flex items-center gap-4">
                   {event.organizer_logo ? (
-                    <img src={event.organizer_logo} className="w-10 h-10 border border-[#1a1a1a] filter grayscale rounded object-cover" />
+                    <img src={event.organizer_logo} className="w-10 h-10 border border-[#1a1a1a] filter grayscale rounded object-cover" alt="Organizer Logo" />
                   ) : (
                     <div className="w-10 h-10 bg-[#1a1a1a] rounded flex items-center justify-center text-[0.5rem] text-[#777777]">LOGO</div>
                   )}
