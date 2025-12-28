@@ -48,7 +48,7 @@ const formSchema = z.object({
   portfolio_url: z.string().optional().or(z.literal("")),
   prior_experience: z.boolean().default(false),
   participation_type: z.enum(['Solo', 'Team']),
-  team_action: z.enum(['create', 'join']).optional(), // Added to distinguish creating vs joining
+  team_action: z.enum(['create', 'join']).optional(),
   team_name: z.string().optional(),
   team_members: z.array(z.object({
     name: z.string().min(1, "Member Name required"),
@@ -89,7 +89,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       current_status: "Student", experience_level: "Beginner",
       primary_languages: "", tech_stack_skills: "", prior_experience: false,
       participation_type: event.allow_solo ? "Solo" : "Team",
-      team_action: "create", // Default to create
+      team_action: "create",
       team_name: "", team_members: [],
       preferred_track: tracks[0] || "",
       motivation_answer: "", custom_answers: {},
@@ -131,9 +131,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Please log in to register");
 
-      // --- CRITICAL FIX: DIRECT DB CHECK AND INSERT ---
-      
-      // 1. Check for existing registration
+      // 1. Check for existing registration (User's own row is visible via RLS)
       const { data: existingReg, error: checkError } = await supabase
         .from('event_registrations')
         .select('id')
@@ -144,51 +142,48 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       if (checkError) throw checkError;
       if (existingReg) {
         toast.error("You are already registered for this event.");
+        setIsSubmitting(false);
         return;
       }
 
-      // 2. Validate Team if Joining
-      let finalTeamRole = 'Member'; // Default
+      // 2. Validate Team Logic
+      let finalTeamRole = 'Member';
+      
       if (values.participation_type === 'Team') {
         if (values.team_action === 'join') {
-           // Verify team exists
-           const { data: teamData, error: teamError } = await supabase
-             .from('event_registrations')
-             .select('id')
-             .eq('event_id', event.id)
-             .eq('team_name', values.team_name)
-             .eq('team_role', 'Leader')
-             .maybeSingle();
-             
-           if (teamError || !teamData) {
-             toast.error(`Team "${values.team_name}" not found. Please check the name.`);
+           // --- FIX: Use RPC to bypass RLS for Team Verification ---
+           const { data: teamMembers, error: rpcError } = await supabase.rpc('get_event_team_members', { 
+             p_event_id: event.id, 
+             p_team_name: values.team_name 
+           });
+
+           if (rpcError) {
+             console.error("RPC Error:", rpcError);
+             throw rpcError;
+           }
+
+           // Check if any member with role 'Leader' exists in the returned data
+           const leaderExists = teamMembers && teamMembers.some((m: any) => m.team_role === 'Leader');
+
+           if (!leaderExists) {
+             toast.error(`Team "${values.team_name}" does not exist or has no leader. Please check the name.`);
              setIsSubmitting(false);
              return;
            }
            finalTeamRole = 'Member';
+
         } else {
            // Creating a team
            finalTeamRole = 'Leader';
-           // Optional: Check if team name is taken
-           const { data: nameTaken } = await supabase
-             .from('event_registrations')
-             .select('id')
-             .eq('event_id', event.id)
-             .eq('team_name', values.team_name)
-             .maybeSingle();
-             
-           if (nameTaken) {
-             toast.error("Team name already taken. Please choose another.");
-             setIsSubmitting(false);
-             return;
-           }
+           // We rely on the DB Unique Constraint to catch duplicate team names here
+           // because checking via SELECT is unreliable due to RLS hiding other teams.
         }
       } else {
-        // Solo
-        finalTeamRole = 'Individual'; // Or whatever your schema uses for solo (often null or 'Solo')
+        // Solo Participation
+        finalTeamRole = 'Individual';
       }
 
-      // 3. Prepare Payload for Direct Insert
+      // 3. Prepare Payload
       const payload = {
         event_id: event.id,
         user_id: session.user.id,
@@ -199,17 +194,16 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         current_status: values.current_status,
         country_city: values.country_city.trim(),
         experience_level: values.experience_level,
-        primary_languages: values.primary_languages.split(',').map(s => s.trim()).filter(Boolean), // Cast to JSON
+        primary_languages: values.primary_languages.split(',').map(s => s.trim()).filter(Boolean),
         tech_stack_skills: values.tech_stack_skills ? values.tech_stack_skills.split(',').map(s => s.trim()).filter(Boolean) : [],
         github_link: values.github_link || null,
         linkedin_link: values.linkedin_link || null,
         resume_url: values.resume_url || null,
-        // portfolio_url: values.portfolio_url || null, // Ensure this column exists in DB, if not remove
         prior_experience: values.prior_experience,
         participation_type: values.participation_type,
         team_name: values.participation_type === 'Team' ? values.team_name : null,
-        team_role: values.participation_type === 'Team' ? finalTeamRole : null,
-        team_members_data: (values.participation_type === 'Team' && values.team_members) ? values.team_members : [], // Store JSON data
+        team_role: values.participation_type === 'Team' ? finalTeamRole : null, // Set role correctly
+        team_members_data: (values.participation_type === 'Team' && values.team_members) ? values.team_members : [],
         preferred_track: values.preferred_track || null,
         motivation_answer: values.motivation_answer.trim(),
         custom_answers: values.custom_answers || {},
@@ -223,22 +217,27 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
 
       const { error: insertError } = await supabase
         .from('event_registrations')
-        .insert(payload as any); // Type casting to avoid strict strict TS issues with Json fields
+        .insert(payload as any);
 
       if (insertError) {
         console.error("Supabase insert error:", insertError);
         throw insertError;
       }
 
-      // Success!
       setIsSuccess(true);
       toast.success("Registration successful!");
       
     } catch (err: any) {
       console.error("Registration process error:", err);
       const errorMessage = err.message || "Unknown error";
+      
+      // Handle Specific DB Constraint Errors
       if (errorMessage.includes('duplicate key') || errorMessage.includes('unique constraint')) {
-        toast.error("You are already registered for this event.");
+        if (errorMessage.includes('team_name')) {
+           toast.error("That Team Name is already taken. Please choose another.");
+        } else {
+           toast.error("You are already registered for this event.");
+        }
       } else {
         toast.error(`Registration failed: ${errorMessage}`);
       }
