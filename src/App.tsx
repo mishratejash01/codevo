@@ -10,13 +10,15 @@ import { toast } from "sonner";
 import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
-// Added Calendar and User icons here
 import { Home, Code2, Calendar, User } from "lucide-react"; 
 
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { AppRoutes } from "./routes";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import AvailabilityGuard from "@/components/AvailabilityGuard";
+
+// 1. IMPORT THE NEW VERIFICATION PAGE
+import VerifyRegistration from "@/pages/VerifyRegistration";
 
 const queryClient = new QueryClient();
 
@@ -53,18 +55,19 @@ const AppContent = () => {
     syncRoutes();
   }, []);
 
-  const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth']; 
+  // 2. UPDATED ROUTE LISTS TO HIDE DOCK/FOOTER ON VERIFY PAGE
+  const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth', '/verify']; 
   const showDock = !hideDockRoutes.some(path => 
     location.pathname === path || 
     location.pathname.startsWith('/practice') || 
     location.pathname.startsWith('/exam') || 
-    location.pathname.startsWith('/compiler')
+    location.pathname.startsWith('/compiler') ||
+    location.pathname.startsWith('/verify') // Added check
   );
   
-  const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth', '/u/', '/profile'];
+  const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth', '/u/', '/profile', '/verify'];
   const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
-  // UPDATED DOCK ITEMS
   const dockItems = [
     { icon: <Home size={20} />, label: 'Home', onClick: () => navigate('/') },
     { 
@@ -73,14 +76,15 @@ const AppContent = () => {
       onClick: () => navigate('/degree') 
     },
     { icon: <Code2 size={20} />, label: 'Practice', onClick: () => navigate('/practice-arena') },
-    { icon: <Calendar size={20} />, label: 'Events', onClick: () => navigate('/events') }, // Replaced Compiler
-    { icon: <User size={20} />, label: 'Profile', onClick: () => navigate('/profile') }, // Replaced Ranks
+    { icon: <Calendar size={20} />, label: 'Events', onClick: () => navigate('/events') }, 
+    { icon: <User size={20} />, label: 'Profile', onClick: () => navigate('/profile') },
   ];
 
   const getSectionKey = (path: string): string | null => {
     if (path.startsWith('/degree') || path === '/exam' || path.startsWith('/exam/')) return 'iitm_bs';
     if (path === '/practice-arena' || path.startsWith('/practice-arena/') || path === '/practice' || path.startsWith('/practice/')) return 'practice';
-    if (path === '/events' || path.startsWith('/events/')) return 'events';
+    // 3. MAP VERIFY PAGE TO THE EVENTS AVAILABILITY GUARD
+    if (path === '/events' || path.startsWith('/events/') || path.startsWith('/verify/')) return 'events';
     if (path === '/compiler') return 'compiler';
     if (path === '/leaderboard') return 'leaderboard';
     if (path === '/about') return 'about';
@@ -91,6 +95,16 @@ const AppContent = () => {
     <AvailabilityGuard sectionKey="main_website">
       <AnnouncementBanner />
       <Routes>
+        {/* 4. MANUAL ROUTE FOR THE QR SCAN VERIFICATION */}
+        <Route 
+          path="/verify/:registrationId" 
+          element={
+            <AvailabilityGuard sectionKey="events">
+              <VerifyRegistration />
+            </AvailabilityGuard>
+          } 
+        />
+
         {AppRoutes.map((route) => {
           const sectionKey = getSectionKey(route.path);
           const RouteElement = <route.component />;
