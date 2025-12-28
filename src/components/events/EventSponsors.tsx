@@ -8,7 +8,7 @@ interface Sponsor {
   logo_url: string | null;
   website_url: string | null;
   description: string | null;
-  type: 'sponsor' | 'partner'; 
+  type: string;
   tier: string | null;
 }
 
@@ -27,7 +27,7 @@ export function EventSponsors({ eventId }: { eventId: string }) {
       .eq("event_id", eventId);
 
     if (!error && data) {
-      setItems(data);
+      setItems(data as unknown as Sponsor[]);
     }
     setLoading(false);
   }

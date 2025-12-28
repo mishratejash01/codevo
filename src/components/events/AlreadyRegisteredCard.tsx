@@ -19,10 +19,13 @@ import { Label } from "@/components/ui/label";
 
 interface TeamInvitation {
   id: string;
-  invitee_name: string;
+  invitee_name: string | null;
   invitee_email: string;
-  role: string;
-  status: 'pending' | 'accepted' | 'declined' | 'expired' | 'completed';
+  role: string | null;
+  status: string | null;
+  created_at: string | null;
+  event_id: string;
+  token: string;
 }
 
 interface Registration {
@@ -41,12 +44,18 @@ interface AlreadyRegisteredCardProps {
   eventId: string;
   eventTitle: string;
   maxTeamSize?: number;
+  isPaid?: boolean;
+  registrationFee?: number;
+  currency?: string;
 }
 
 export function AlreadyRegisteredCard({ 
   eventId, 
   eventTitle, 
-  maxTeamSize = 4
+  maxTeamSize = 4,
+  isPaid,
+  registrationFee,
+  currency
 }: AlreadyRegisteredCardProps) {
   const [currentUserReg, setCurrentUserReg] = useState<Registration | null>(null);
   const [leaderReg, setLeaderReg] = useState<Registration | null>(null);
@@ -92,12 +101,33 @@ export function AlreadyRegisteredCard({
 
     setLeaderReg(leaderRes.data);
     setTeamMembers(membersRes.data || []);
-    setInvitations(invitesRes.data || []);
+    setInvitations((invitesRes.data || []) as TeamInvitation[]);
     setLoading(false);
   }
 
-  const confirmedCount = teamMembers.length + 1;
+  const confirmedCount = teamMembers.length + 1; // +1 for leader
+  const pendingInvitations = invitations.filter(inv => inv.status === 'pending');
   const isTeamFull = confirmedCount >= maxTeamSize;
+
+  const handleDeleteInvitation = async (inviteId: string) => {
+    const { error } = await supabase.from('team_invitations').delete().eq('id', inviteId);
+    if (error) {
+      toast.error("Delete failed: " + error.message);
+    } else {
+      toast.success("Invitation removed");
+      fetchTeamData();
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    const { error } = await supabase.from('event_registrations').delete().eq('id', memberId);
+    if (error) {
+      toast.error("Remove failed: " + error.message);
+    } else {
+      toast.success("Team member removed");
+      fetchTeamData();
+    }
+  };
 
   const handleEditOpen = (id: string, name: string, role: string, type: 'reg' | 'invite') => {
     setEditingMember({ id, name, role, type });
@@ -249,23 +279,23 @@ export function AlreadyRegisteredCard({
               </div>
             ))}
 
-            {/* 3. Invitations (Pending/Rejected) */}
-            {invitations.filter(inv => inv.status !== 'completed').map((invite) => {
-              // Non-leaders do NOT see the pending/rejected list
-              if (!isLeader) return null;
-
+            {/* 3. Invitations (Pending/Accepted/Rejected - Leader Only) */}
+            {isLeader && invitations.filter(inv => inv.status !== 'completed').map((invite) => {
+              const statusVal = invite.status || 'pending';
+              
               return (
                 <div key={invite.id} className="p-6 flex justify-between items-center gap-5 text-white bg-white/[0.02]">
                   <div className="flex gap-4 items-center flex-1 opacity-60">
                     <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">--</div>
                     <div>
-                      <h4 className="text-sm font-medium">{invite.invitee_name}</h4>
-                      <p className="text-[11px] text-[#777777] uppercase tracking-tighter">{invite.role}</p>
+                      <h4 className="text-sm font-medium">{invite.invitee_name || invite.invitee_email}</h4>
+                      <p className="text-[11px] text-[#777777] uppercase tracking-tighter">{invite.role || 'Member'}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <StatusBadge status={invite.status} />
-                    <button onClick={() => handleEditOpen(invite.id, invite.invitee_name, invite.role, 'invite')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
+                  <div className="flex items-center gap-4">
+                    <StatusBadge status={statusVal} />
+                    <button onClick={() => handleEditOpen(invite.id, invite.invitee_name || '', invite.role || 'Member', 'invite')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => handleDeleteInvitation(invite.id)} className="text-[#777777] hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
               );

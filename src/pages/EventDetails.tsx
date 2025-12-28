@@ -221,9 +221,9 @@ export default function EventDetailsPage() {
           </motion.div>
           
           <motion.div 
-            initial={{ opacity: 0, grayscale: 1 }} 
-            animate={{ opacity: 0.7, grayscale: 1 }} 
-            whileHover={{ opacity: 1, grayscale: 0 }}
+            initial={{ opacity: 0, filter: 'grayscale(1)' }} 
+            animate={{ opacity: 0.7, filter: 'grayscale(1)' }} 
+            whileHover={{ opacity: 1, filter: 'grayscale(0)' }}
             className="w-full h-[500px] bg-cover bg-center border border-[#1a1a1a] transition-all duration-1000 ease-in-out cursor-crosshair" 
             style={{ backgroundImage: `url(${event.image_url})` }}
           />
@@ -295,8 +295,8 @@ export default function EventDetailsPage() {
                   <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">Team Composition</h2>
                   <AlreadyRegisteredCard 
                     eventId={event.id} 
-                    eventTitle={event.title} 
-                    eventType={event.event_type || 'normal'} 
+                    eventTitle={event.title}
+                    maxTeamSize={event.max_team_size || 4}
                     isPaid={event.is_paid} 
                     registrationFee={event.registration_fee} 
                     currency={event.currency} 

@@ -177,11 +177,21 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
 
       setIsSuccess(true);
     } catch (err: any) {
-      toast.error(err.code === '23505' ? "Entry already exists" : "Registration failure");
+      console.error("Registration error:", err);
+      toast.error(err.code === '23505' ? "Entry already exists" : (err.message || "Registration failure"));
     } finally {
       setIsSubmitting(false);
     }
   }
+
+  // Log form errors for debugging
+  const onFormError = (errors: any) => {
+    console.error("Form validation errors:", errors);
+    const firstError = Object.values(errors)[0] as any;
+    if (firstError?.message) {
+      toast.error(firstError.message);
+    }
+  };
 
   const nextStep = async () => {
     let fieldsToValidate: (keyof FormValues)[] = [];
@@ -193,13 +203,15 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[700px] p-0 bg-transparent border-none outline-none overflow-hidden">
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!isSubmitting) onOpenChange(open);
+    }}>
+      <DialogContent className="max-w-[700px] max-h-[90vh] p-0 bg-transparent border-none outline-none overflow-y-auto">
         <div className="w-full bg-[#050505] border border-[#1a1a1a] font-sans selection:bg-orange-500/30">
           
           {!isSuccess ? (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
+              <form onSubmit={form.handleSubmit(onSubmit, onFormError)}>
                 {/* --- Header --- */}
                 <header className="p-[40px] bg-[#0a0a0a] border-b border-[#1a1a1a]">
                   <div className="flex justify-between items-start mb-[40px]">

@@ -103,6 +103,43 @@ export function InviteeRegistrationForm({
         return;
       }
 
+      // Check if team is already full before registration
+      if (invitation.registration_id) {
+        const { data: leaderReg } = await supabase
+          .from('event_registrations')
+          .select('id, team_name')
+          .eq('id', invitation.registration_id)
+          .single();
+
+        if (leaderReg) {
+          const { count } = await supabase
+            .from('event_registrations')
+            .select('id', { count: 'exact', head: true })
+            .eq('invited_by_registration_id', leaderReg.id);
+
+          // Get event max team size
+          const { data: eventData } = await supabase
+            .from('events')
+            .select('max_team_size')
+            .eq('id', eventId)
+            .single();
+
+          const maxTeamSize = eventData?.max_team_size || 4;
+          const currentCount = (count || 0) + 1; // +1 for leader
+
+          if (currentCount >= maxTeamSize) {
+            toast.error('Sorry, the team is already full. You cannot join at this time.');
+            // Mark invitation as expired since team is full
+            await supabase
+              .from('team_invitations')
+              .update({ status: 'expired', responded_at: new Date().toISOString() })
+              .eq('id', invitation.id);
+            onComplete();
+            return;
+          }
+        }
+      }
+
       const { data: existingReg } = await supabase
         .from('event_registrations')
         .select('id')

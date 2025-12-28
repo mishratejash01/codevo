@@ -331,6 +331,7 @@ export type Database = {
           motivation_answer: string | null
           participation_type: string | null
           payment_status: string | null
+          pending_leader_updates: Json | null
           preferred_track: string | null
           primary_languages: Json | null
           prior_experience: boolean | null
@@ -364,6 +365,7 @@ export type Database = {
           motivation_answer?: string | null
           participation_type?: string | null
           payment_status?: string | null
+          pending_leader_updates?: Json | null
           preferred_track?: string | null
           primary_languages?: Json | null
           prior_experience?: boolean | null
@@ -397,6 +399,7 @@ export type Database = {
           motivation_answer?: string | null
           participation_type?: string | null
           payment_status?: string | null
+          pending_leader_updates?: Json | null
           preferred_track?: string | null
           primary_languages?: Json | null
           prior_experience?: boolean | null
@@ -450,6 +453,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "event_reviews_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_sponsors: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_id: string
+          id: string
+          logo_url: string | null
+          name: string
+          tier: string | null
+          type: string
+          website_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_id: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          tier?: string | null
+          type?: string
+          website_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_id?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          tier?: string | null
+          type?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_sponsors_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"

@@ -136,8 +136,10 @@ export function NormalEventRegistrationModal({ event, isOpen, onOpenChange }: No
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[650px] p-0 bg-transparent border-none outline-none overflow-hidden">
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!loading) onOpenChange(open);
+    }}>
+      <DialogContent className="max-w-[650px] max-h-[90vh] p-0 bg-transparent border-none outline-none overflow-y-auto">
         <div className="w-full bg-[#050505] border border-[#1a1a1a] font-sans selection:bg-orange-500/30">
           
           {!isSuccess ? (
