@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { Loader2, Check, ChevronRight, Trash2, ExternalLink, AlertCircle } from 'lucide-react';
+import { Loader2, Check, ChevronRight, Trash2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
@@ -122,10 +122,14 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
 
   async function onSubmit(values: FormValues) {
     setIsSubmitting(true);
+    console.log("Submitting registration...", values);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Please log in to register");
 
+      // 1. Prepare registration data for 'event_registrations' table
+      // REMOVED: 'team_members_data' to prevent DB error if column doesn't exist
       const registrationData = {
         event_id: event.id,
         user_id: session.user.id,
@@ -141,10 +145,10 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         github_link: values.github_link || null,
         linkedin_link: values.linkedin_link || null,
         resume_url: values.resume_url || null,
+        portfolio_url: values.portfolio_url || null,
         prior_experience: values.prior_experience,
         participation_type: values.participation_type,
         team_name: values.participation_type === 'Team' ? values.team_name : null,
-        team_members_data: values.participation_type === 'Team' ? values.team_members : [],
         team_role: 'Leader',
         preferred_track: values.preferred_track || null,
         motivation_answer: values.motivation_answer.trim(),
@@ -155,10 +159,20 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         status: event.is_paid ? 'pending_payment' : 'confirmed',
       };
 
-      const { data: registration, error } = await supabase.from('event_registrations').insert(registrationData as any).select().single();
-      if (error) throw error;
+      // 2. Insert into event_registrations
+      const { data: registration, error } = await supabase
+        .from('event_registrations')
+        .insert(registrationData)
+        .select()
+        .single();
 
-      if (values.participation_type === 'Team' && values.team_members && values.team_members.length > 0) {
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
+
+      // 3. Handle Team Invitations (if applicable)
+      if (values.participation_type === 'Team' && values.team_members && values.team_members.length > 0 && values.team_name) {
         const invitations = values.team_members.map(member => ({
           registration_id: registration.id,
           event_id: event.id,
@@ -173,21 +187,29 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
           status: 'pending',
           token: crypto.randomUUID(),
         }));
-        await supabase.from('team_invitations').insert(invitations);
+
+        const { error: inviteError } = await supabase.from('team_invitations').insert(invitations);
+        if (inviteError) {
+          console.error("Invitation error (registration succeeded though):", inviteError);
+          toast.error("Registration succeeded, but failed to send some team invites.");
+        }
       }
 
       setIsSuccess(true);
       toast.success("Registration successful!");
     } catch (err: any) {
-      console.error("Registration error:", err);
-      toast.error(err.code === '23505' ? "You are already registered for this event." : (err.message || "Registration failure"));
+      console.error("Registration process error:", err);
+      toast.error(
+        err.code === '23505' 
+          ? "You are already registered for this event." 
+          : (err.message || "Registration failure. Please try again.")
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  // --- FIXED ERROR LOGGING ---
-  // This helper function extracts all error messages from nested objects
+  // --- ERROR LOGGING ---
   const getErrorMessages = (errors: any): string[] => {
     let messages: string[] = [];
     Object.entries(errors).forEach(([key, value]: [string, any]) => {
@@ -493,7 +515,6 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                         <FormField control={form.control} name="agreed_to_rules" render={({ field }) => (
                           <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer">
                             <FormControl>
-                                {/* FIXED: Explicitly handle checkbox change to pass boolean */}
                                 <input 
                                     type="checkbox" 
                                     checked={field.value} 
@@ -511,7 +532,6 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                         <FormField control={form.control} name="agreed_to_privacy" render={({ field }) => (
                           <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer">
                             <FormControl>
-                                {/* FIXED: Explicitly handle checkbox change to pass boolean */}
                                 <input 
                                     type="checkbox" 
                                     checked={field.value} 
