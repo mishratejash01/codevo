@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-// --- Interfaces (Restored to prevent TS errors in components) ---
 export interface TeamInvitation {
   id: string;
   event_id: string;
@@ -11,7 +10,7 @@ export interface TeamInvitation {
   role: string;
   status: string;
   registration_id: string | null;
-  token?: string; // Added optional token as it comes from RPC
+  token?: string; 
 }
 
 export interface Registration {
@@ -21,6 +20,9 @@ export interface Registration {
   participation_type: string;
   payment_status: string;
   status: string;
+  user_id: string;
+  full_name: string;
+  email: string;
 }
 
 export interface RegistrationStatus {
@@ -33,7 +35,6 @@ export interface RegistrationStatus {
   state: 'registered' | 'invited_pending' | 'invited_accepted' | 'none' | 'loading' | 'error';
 }
 
-// --- Main Hook: useEventRegistration ---
 export function useEventRegistration(eventId: string | undefined, refreshKey?: number): RegistrationStatus & { refetch: () => void } {
   const [status, setStatus] = useState<RegistrationStatus>({
     isRegistered: false,
@@ -46,13 +47,11 @@ export function useEventRegistration(eventId: string | undefined, refreshKey?: n
   });
 
   const checkRegistration = useCallback(async () => {
-    // 1. Basic validation
     if (!eventId) return;
 
     setStatus(prev => ({ ...prev, loading: true }));
 
     try {
-      // 2. Check Session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
@@ -68,7 +67,7 @@ export function useEventRegistration(eventId: string | undefined, refreshKey?: n
         return;
       }
 
-      // 3. Call the SAFE RPC function (The Fix)
+      // Call the safer RPC function
       const { data, error } = await supabase.rpc('get_my_event_access_status', {
         p_event_id: eventId
       });
@@ -79,17 +78,15 @@ export function useEventRegistration(eventId: string | undefined, refreshKey?: n
         return;
       }
 
-      // 4. Map RPC response to your App's expected format
-      // The RPC returns { state: string, registration: object, invitation: object }
-      const responseState = data.state as 'registered' | 'invited_pending' | 'invited_accepted' | 'none';
-      
       console.log('[useEventRegistration] RPC response:', data);
+
+      const responseState = data.state as 'registered' | 'invited_pending' | 'invited_accepted' | 'none';
 
       setStatus({
         isRegistered: responseState === 'registered',
         registration: data.registration || null,
         hasPendingInvitation: responseState === 'invited_pending',
-        hasAcceptedInvitation: responseState === 'invited_accepted', // New state logic support
+        hasAcceptedInvitation: responseState === 'invited_accepted',
         invitation: data.invitation || null,
         loading: false,
         state: responseState
@@ -101,7 +98,6 @@ export function useEventRegistration(eventId: string | undefined, refreshKey?: n
     }
   }, [eventId]);
 
-  // 5. Trigger on mount or refreshKey change
   useEffect(() => {
     checkRegistration();
   }, [checkRegistration, refreshKey]);
@@ -109,8 +105,6 @@ export function useEventRegistration(eventId: string | undefined, refreshKey?: n
   return { ...status, refetch: checkRegistration };
 }
 
-// --- Secondary Hook: useCheckPendingInvitations (Restored) ---
-// This was missing in the previous step but is needed for your header/dashboard notifications
 export function useCheckPendingInvitations() {
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -123,7 +117,6 @@ export function useCheckPendingInvitations() {
         return;
       }
 
-      // Simple count query - this should be safe now with the new RLS policies
       const { count, error } = await supabase
         .from('team_invitations')
         .select('*', { count: 'exact', head: true })
