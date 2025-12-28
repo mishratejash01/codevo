@@ -1,19 +1,16 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Star, Loader2, User, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Star, Loader2, User, CheckCircle2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface Review {
   id: string;
+  content: string;
   rating: number;
-  review_text: string | null;
-  is_verified: boolean;
   created_at: string;
-  user_id: string | null;
+  user_id: string;
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -28,11 +25,9 @@ export function EventReviews({ eventId }: EventReviewsProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [newReview, setNewReview] = useState('');
-  const [rating, setRating] = useState(0);
-  const [hoveredRating, setHoveredRating] = useState(0);
+  const [rating, setRating] = useState(5);
   const [submitting, setSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [hasReviewed, setHasReviewed] = useState(false);
 
   useEffect(() => {
     fetchReviews();
@@ -42,17 +37,6 @@ export function EventReviews({ eventId }: EventReviewsProps) {
   async function checkAuth() {
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user?.id || null);
-
-    if (user) {
-      const { data } = await supabase
-        .from('event_reviews')
-        .select('id')
-        .eq('event_id', eventId)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      setHasReviewed(!!data);
-    }
   }
 
   async function fetchReviews() {
@@ -63,8 +47,7 @@ export function EventReviews({ eventId }: EventReviewsProps) {
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      // Fetch profiles separately
-      const userIds = data.filter(r => r.user_id).map(r => r.user_id as string);
+      const userIds = data.map(r => r.user_id);
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url')
@@ -80,7 +63,7 @@ export function EventReviews({ eventId }: EventReviewsProps) {
   }
 
   async function handleSubmit() {
-    if (rating === 0 || !userId) return;
+    if (!newReview.trim() || !userId) return;
 
     setSubmitting(true);
     const { error } = await supabase
@@ -88,8 +71,8 @@ export function EventReviews({ eventId }: EventReviewsProps) {
       .insert({
         event_id: eventId,
         user_id: userId,
+        content: newReview.trim(),
         rating,
-        review_text: newReview.trim() || null,
       });
 
     if (error) {
@@ -97,146 +80,159 @@ export function EventReviews({ eventId }: EventReviewsProps) {
     } else {
       toast.success('Review submitted!');
       setNewReview('');
-      setRating(0);
-      setHasReviewed(true);
+      setRating(5);
       fetchReviews();
     }
     setSubmitting(false);
   }
 
-  const averageRating = reviews.length > 0 
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+  const averageRating = reviews.length > 0
+    ? (reviews.reduce((acc, rev) => acc + rev.rating, 0) / reviews.length).toFixed(1)
     : '0.0';
+
+  const StarRow = ({ score, size = 14, className = "" }: { score: number, size?: number, className?: string }) => (
+    <div className={cn("flex gap-1 text-[#ff8c00]", className)}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <Star
+          key={s}
+          size={size}
+          fill={s <= score ? "currentColor" : "none"}
+          className={cn(s > score && "text-[#222]")}
+        />
+      ))}
+    </div>
+  );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin h-6 w-6 text-purple-500" />
+        <Loader2 className="animate-spin h-6 w-6 text-[#ff8c00]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-        <div className="w-1 h-6 bg-pink-500 rounded-full" />
-        Reviews & Feedback
-      </h3>
+    <div className="w-full max-w-[800px] mx-auto font-sans selection:bg-orange-500/30">
+      
+      {/* --- Section Header --- */}
+      <div className="flex items-center gap-[15px] mb-[40px]">
+        <div className="w-[2px] h-[24px] bg-[#ff8c00]" />
+        <h3 className="font-serif text-[2.2rem] font-normal tracking-[-0.5px] text-white">
+          Participant Feedback
+        </h3>
+      </div>
 
-      {/* Rating summary */}
-      <div className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 border border-pink-500/20 rounded-xl p-6 flex items-center gap-6">
-        <div className="text-center">
-          <div className="text-4xl font-bold text-white">{averageRating}</div>
-          <div className="flex items-center gap-1 mt-1">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Star
-                key={i}
-                className={`w-4 h-4 ${i <= Math.round(parseFloat(averageRating)) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500'}`}
-              />
-            ))}
-          </div>
-          <div className="text-gray-400 text-sm mt-1">{reviews.length} reviews</div>
+      {/* --- Rating Summary Card --- */}
+      <div className="bg-[#050505] border border-[#1a1a1a] p-[40px] flex flex-col md:flex-row items-center gap-[40px] mb-[40px]">
+        <div className="font-serif text-[4rem] font-bold text-white leading-none">
+          {averageRating}
+        </div>
+        <div className="flex flex-col gap-2 items-center md:items-start text-center md:text-left">
+          <span className="text-[0.7rem] uppercase tracking-[2px] text-[#666666]">Overall Rating</span>
+          <StarRow score={Math.round(Number(averageRating))} />
+          <span className="text-[0.7rem] uppercase tracking-[2px] text-[#666666] mt-1">
+            Based on {reviews.length} reviews
+          </span>
         </div>
       </div>
 
-      {/* New review form */}
-      {userId && !hasReviewed && (
-        <div className="bg-[#151518] border border-white/10 rounded-xl p-5">
-          <h4 className="text-white font-medium mb-4">Leave a Review</h4>
+      {/* --- New Review Form (Auth Protected) --- */}
+      {userId ? (
+        <div className="border border-[#1a1a1a] p-[30px] mb-[60px] relative">
+          <span className="block text-[0.7rem] uppercase tracking-[2px] text-[#666666] mb-[20px] font-bold">
+            Share your experience
+          </span>
           
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-gray-400 text-sm mr-2">Your rating:</span>
-            {[1, 2, 3, 4, 5].map((i) => (
+          <div className="flex gap-[10px] mb-[25px]">
+            {[1, 2, 3, 4, 5].map((s) => (
               <button
-                key={i}
-                onMouseEnter={() => setHoveredRating(i)}
-                onMouseLeave={() => setHoveredRating(0)}
-                onClick={() => setRating(i)}
-                className="transition-transform hover:scale-110"
+                key={s}
+                onClick={() => setRating(s)}
+                className={cn(
+                  "bg-none border-none cursor-pointer transition-colors duration-200",
+                  s <= rating ? "text-[#ff8c00]" : "text-[#222] hover:text-[#ff8c00]/50"
+                )}
               >
-                <Star
-                  className={`w-6 h-6 ${
-                    i <= (hoveredRating || rating) 
-                      ? 'text-yellow-400 fill-yellow-400' 
-                      : 'text-gray-500'
-                  }`}
-                />
+                <Star size={24} fill={s <= rating ? "currentColor" : "none"} />
               </button>
             ))}
           </div>
 
-          <Textarea
-            placeholder="Share your experience (optional)..."
+          <textarea
+            placeholder="Write a few words about the assembly..."
             value={newReview}
             onChange={(e) => setNewReview(e.target.value)}
-            className="bg-[#09090b] border-white/10 text-white min-h-[80px] mb-3"
+            className="w-full bg-transparent border-none border-b border-[#1a1a1a] focus:border-[#ff8c00] text-white font-inter text-[1rem] min-h-[60px] resize-none outline-none pb-[15px] mb-[25px] font-light placeholder:text-[#333] transition-colors"
           />
 
-          <Button 
-            onClick={handleSubmit} 
-            disabled={submitting || rating === 0}
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            Submit Review
-          </Button>
+          <div className="flex justify-end">
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || !newReview.trim()}
+              className="bg-[#ff8c00] hover:bg-white text-black border-none px-[30px] py-[14px] text-[0.75rem] font-extrabold uppercase tracking-[3px] cursor-pointer transition-all duration-300 disabled:opacity-50"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit Review'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="border border-[#1a1a1a] p-[40px] mb-[60px] text-center bg-[#050505]">
+          <p className="text-[#666666] text-xs uppercase tracking-widest">
+            Authorization required to submit feedback
+          </p>
         </div>
       )}
 
-      {/* Reviews list */}
+      {/* --- Reviews List --- */}
       {reviews.length > 0 ? (
-        <div className="space-y-4">
+        <div className="divide-y divide-[#1a1a1a]">
           {reviews.map((review) => (
-            <div
-              key={review.id}
-              className="bg-[#151518] border border-white/10 rounded-xl p-5"
-            >
-              <div className="flex items-start gap-4">
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={review.profiles?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-purple-500/20 text-purple-400">
-                    <User className="w-5 h-5" />
-                  </AvatarFallback>
-                </Avatar>
+            <div key={review.id} className="py-[40px] flex flex-col md:flex-row gap-[25px] first:pt-0">
+              {/* Avatar */}
+              <div className="w-[50px] h-[50px] border border-[#1a1a1a] shrink-0 bg-[#080808] overflow-hidden flex items-center justify-center">
+                {review.profiles?.avatar_url ? (
+                  <img 
+                    src={review.profiles.avatar_url} 
+                    alt="Avatar" 
+                    className="w-full h-full object-cover grayscale"
+                  />
+                ) : (
+                  <User size={20} className="text-[#333]" />
+                )}
+              </div>
 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium text-white">
-                      {review.profiles?.full_name || 'Anonymous'}
-                    </span>
-                    {review.is_verified && (
-                      <span className="inline-flex items-center gap-1 text-xs text-green-400">
-                        <CheckCircle className="w-3 h-3" />
-                        Verified
-                      </span>
-                    )}
-                    <span className="text-gray-500 text-sm">
-                      {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
-                    </span>
+              {/* Review Content */}
+              <div className="grow">
+                <div className="flex justify-between items-start mb-[15px]">
+                  <div className="flex flex-col gap-1.5">
+                    <h4 className="text-[1rem] font-medium text-white">
+                      {review.profiles?.full_name || 'Anonymous Operative'}
+                    </h4>
+                    <div className="inline-flex items-center gap-[6px] px-[10px] py-[4px] border border-[#1a1a1a] bg-white/[0.02] text-[0.6rem] uppercase tracking-[1px] text-[#00ff88] w-fit">
+                      <CheckCircle2 size={10} strokeWidth={3} />
+                      Verified Participant
+                    </div>
                   </div>
-
-                  <div className="flex items-center gap-1 mb-2">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${i <= review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500'}`}
-                      />
-                    ))}
-                  </div>
-
-                  {review.review_text && (
-                    <p className="text-gray-300">{review.review_text}</p>
-                  )}
+                  <span className="text-[0.7rem] text-[#666666] uppercase tracking-[1px]">
+                    {formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}
+                  </span>
                 </div>
+
+                <StarRow score={review.rating} size={12} className="mb-[15px]" />
+                
+                <p className="text-[#e0e0e0] text-[1rem] leading-[1.6] font-light whitespace-pre-wrap">
+                  {review.content}
+                </p>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 bg-[#151518] rounded-2xl border border-white/10">
-          <Star className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400 mb-2">No reviews yet</p>
-          <p className="text-gray-500 text-sm">Be the first to share your experience!</p>
+        <div className="text-center py-20 border border-dashed border-[#1a1a1a]">
+          <p className="text-[#666666] uppercase tracking-widest text-xs font-bold">
+            No Records Found
+          </p>
+          <p className="text-[#333] text-sm mt-2">Historical data for this event is currently pending.</p>
         </div>
       )}
     </div>
