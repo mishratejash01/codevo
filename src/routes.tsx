@@ -1,4 +1,4 @@
-import Landing from "./pages/Landing";
+
 import Practice from "./pages/Practice";
 import Exam from "./pages/Exam";
 import ExamResult from "./pages/ExamResult";
