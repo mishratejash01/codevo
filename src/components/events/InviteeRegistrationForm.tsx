@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CheckCircle2, GraduationCap, Briefcase, User, Sparkles } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 interface InviteeRegistrationFormProps {
   eventId: string;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   eventTitle: string;
   isPaid?: boolean;
   registrationFee?: number;
@@ -22,7 +22,6 @@ interface InviteeRegistrationFormProps {
 
 export function InviteeRegistrationForm({ 
   eventId, 
-  eventTitle,
   isPaid = false,
   registrationFee = 0,
   currency = 'INR',
@@ -69,7 +68,7 @@ export function InviteeRegistrationForm({
             country_city: profile.country || '',
             github_link: profile.github_handle ? `https://github.com/${profile.github_handle}` : '',
             linkedin_link: profile.linkedin_url || '',
-            experience_level: profile.experience_level || 'Beginner',
+            experience_level: (profile.experience_level as string) || 'Beginner',
           }));
         }
       } catch (err) {
@@ -103,7 +102,7 @@ export function InviteeRegistrationForm({
         return;
       }
 
-      // Check if team is already full before registration
+      // 1. Check Capacity
       if (invitation.registration_id) {
         const { data: leaderReg } = await supabase
           .from('event_registrations')
@@ -117,7 +116,6 @@ export function InviteeRegistrationForm({
             .select('id', { count: 'exact', head: true })
             .eq('invited_by_registration_id', leaderReg.id);
 
-          // Get event max team size
           const { data: eventData } = await supabase
             .from('events')
             .select('max_team_size')
@@ -128,8 +126,7 @@ export function InviteeRegistrationForm({
           const currentCount = (count || 0) + 1; // +1 for leader
 
           if (currentCount >= maxTeamSize) {
-            toast.error('Sorry, the team is already full. You cannot join at this time.');
-            // Mark invitation as expired since team is full
+            toast.error('Sorry, the team is already full.');
             await supabase
               .from('team_invitations')
               .update({ status: 'expired', responded_at: new Date().toISOString() })
@@ -140,6 +137,7 @@ export function InviteeRegistrationForm({
         }
       }
 
+      // 2. Check Existing Registration
       const { data: existingReg } = await supabase
         .from('event_registrations')
         .select('id')
@@ -163,6 +161,7 @@ export function InviteeRegistrationForm({
         return;
       }
 
+      // 3. Register User
       const { error: regError } = await supabase.from('event_registrations').insert({
         event_id: eventId,
         user_id: session.user.id,
@@ -175,10 +174,14 @@ export function InviteeRegistrationForm({
         experience_level: formData.experience_level,
         github_link: formData.github_link.trim() || null,
         linkedin_link: formData.linkedin_link.trim() || null,
+        
+        // --- CRITICAL TEAM LINKING ---
         participation_type: 'Team',
-        team_name: invitation.team_name,
+        team_name: invitation.team_name.trim(), // <--- TRIM ENSURES EXACT MATCH
         team_role: invitation.role,
         invited_by_registration_id: invitation.registration_id,
+        // ----------------------------
+
         status: isPaid ? 'pending_payment' : 'confirmed',
         payment_status: isPaid ? 'pending' : 'exempt',
         agreed_to_rules: true,
@@ -186,9 +189,9 @@ export function InviteeRegistrationForm({
       });
 
       if (regError) {
-        if (regError.code === '23505') {
+        if (regError.code === '23505') { // Duplicate entry
           if (await completeInvitation()) {
-            toast.success("Already registered. Invitation marked complete.");
+            toast.success("Already registered. Team joined.");
             onComplete();
           }
           return;
@@ -200,6 +203,7 @@ export function InviteeRegistrationForm({
       if (await completeInvitation()) toast.success("Successfully joined the team!");
       onComplete();
     } catch (err) {
+      console.error(err);
       toast.error('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
