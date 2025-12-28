@@ -165,6 +165,8 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         : [];
 
       // 3. Call the RPC function (Atomic Transaction)
+      console.log("Calling RPC 'register_team_event' with:", { registrationData, teamMembersPayload });
+      
       const { data: rpcResult, error: rpcError } = await supabase.rpc('register_team_event', {
         p_registration: registrationData,
         p_team_members: teamMembersPayload
@@ -188,7 +190,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       if (err.code === '23505' || errorMessage.includes('duplicate key') || errorMessage.includes('unique constraint')) {
         toast.error("You are already registered for this event.");
       } else {
-        toast.error("Registration failed. Please try again.");
+        toast.error(`Registration failed: ${errorMessage}`);
       }
     } finally {
       setIsSubmitting(false);
@@ -209,7 +211,9 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
   };
 
   const onFormError = (errors: any) => {
-    console.log("Full Form Validation Errors:", errors);
+    // THIS LOG WILL SHOW YOU EXACTLY WHICH FIELD IS FAILING
+    console.error("VALIDATION ERROR BREAKDOWN:", JSON.stringify(errors, null, 2));
+
     const messages = getErrorMessages(errors);
     const uniqueMessages = Array.from(new Set(messages));
     
@@ -237,6 +241,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
     if (isValid) {
       setStep(s => Math.min(s + 1, totalSteps));
     } else {
+       console.log("Step validation failed", form.formState.errors);
        toast.error("Please complete the required fields in this step.");
     }
   };
