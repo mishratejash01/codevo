@@ -64,13 +64,27 @@ export default function VerifyRegistration() {
   const now = new Date();
   const eventEndTime = event.end_date ? parseISO(event.end_date) : null;
   
-  // LOGIC: Verified if confirmed. Valid if current time is before event end time.
-  const isVerified = data.current_status === 'confirmed' || data.current_status === 'completed';
+  // LOGIC: Verified if confirmed, completed, or attended. 
+  const isVerified = ['confirmed', 'completed', 'attended'].includes(data.current_status);
   const isValid = eventEndTime ? isBefore(now, eventEndTime) : true;
+  const isAttended = data.current_status === 'attended'; // Check for attended status
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans p-4 md:p-10 flex flex-col items-center">
-      <div className="w-full max-w-[450px] space-y-6">
+    <div className="min-h-screen bg-black text-white font-sans p-4 md:p-10 flex flex-col items-center relative overflow-hidden">
+      
+      {/* Permanent Non-Removable Watermark */}
+      {isAttended && (
+        <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center rotate-[-35deg] opacity-20 select-none">
+          <h1 className="text-[80px] md:text-[120px] font-black border-[12px] border-red-500 text-red-500 px-12 py-6 uppercase tracking-tighter">
+            Attended
+          </h1>
+        </div>
+      )}
+
+      <div className={cn(
+        "w-full max-w-[450px] space-y-6 transition-all duration-500",
+        isAttended && "opacity-40 grayscale blur-[1px]" // Visual indication of used pass
+      )}>
         
         {/* Verification Status Banner */}
         <div className={cn(
@@ -82,20 +96,20 @@ export default function VerifyRegistration() {
           {isValid && isVerified ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
           <div className="flex-1">
             <p className="text-[10px] uppercase tracking-[2px] font-bold">
-              {isValid && isVerified ? 'Pass Active & Valid' : 'Pass Invalid or Expired'}
+              {isAttended ? 'Pass Already Used' : isValid && isVerified ? 'Pass Active & Valid' : 'Pass Invalid or Expired'}
             </p>
           </div>
           <Badge className={cn(
             "text-[9px] uppercase font-bold rounded-none border-none",
-            isValid && isVerified ? "bg-[#00ff88] text-black" : "bg-red-500 text-white"
+            isValid && isVerified && !isAttended ? "bg-[#00ff88] text-black" : "bg-red-500 text-white"
           )}>
-            {isValid ? 'VALID' : 'EXPIRED'}
+            {isAttended ? 'USED' : isValid ? 'VALID' : 'EXPIRED'}
           </Badge>
         </div>
 
         {/* Digital Pass Card */}
         <div className="relative border border-[#1a1a1a] bg-[#0a0a0a] overflow-hidden shadow-2xl">
-          <div className={cn("h-1.5 w-full", isValid ? "bg-[#00ff88]" : "bg-red-500")} />
+          <div className={cn("h-1.5 w-full", isAttended ? "bg-red-500" : isValid ? "bg-[#00ff88]" : "bg-red-500")} />
           
           <div className="p-6 md:p-8 space-y-6">
             <header className="flex justify-between items-start">
@@ -137,7 +151,7 @@ export default function VerifyRegistration() {
               </div>
             </div>
 
-            {/* BARCODE LIBRARY IMPLEMENTATION */}
+            {/* Barcode Section */}
             <div className="pt-6 border-t border-[#1a1a1a] flex flex-col items-center">
               <div className="bg-white p-4 w-full flex justify-center overflow-hidden">
                 <Barcode 
@@ -162,12 +176,14 @@ export default function VerifyRegistration() {
           </footer>
         </div>
 
-        <Button 
-          onClick={() => window.print()} 
-          className="w-full bg-white text-black font-bold uppercase tracking-[3px] rounded-none hover:bg-[#00ff88] transition-colors h-12 text-[10px]"
-        >
-          Download Pass
-        </Button>
+        {!isAttended && (
+          <Button 
+            onClick={() => window.print()} 
+            className="w-full bg-white text-black font-bold uppercase tracking-[3px] rounded-none hover:bg-[#00ff88] transition-colors h-12 text-[10px]"
+          >
+            Download Pass
+          </Button>
+        )}
       </div>
     </div>
   );
