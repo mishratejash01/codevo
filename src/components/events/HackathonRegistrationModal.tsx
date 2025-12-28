@@ -3,13 +3,14 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, Check, ChevronRight, ChevronLeft, Trash2, Plus, Users, User, Github, Linkedin, ExternalLink } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Loader2, Check, ChevronRight, Trash2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
-// --- DATA SCHEMA (Preserved Logic) ---
+// --- DATA SCHEMA ---
 interface HackathonEvent {
   id: string;
   title: string;
@@ -56,16 +57,16 @@ const formSchema = z.object({
   preferred_track: z.string().optional(),
   motivation_answer: z.string().min(20, "Please provide more details").max(1000),
   custom_answers: z.record(z.string()).optional(),
-  agreed_to_rules: z.boolean().refine(val => val === true, "Required"),
-  agreed_to_privacy: z.boolean().refine(val => val === true, "Required"),
+  agreed_to_rules: z.boolean().refine(val => val === true, "You must agree to the rules"),
+  agreed_to_privacy: z.boolean().refine(val => val === true, "You must agree to the privacy policy"),
 }).superRefine((data, ctx) => {
   if (data.participation_type === 'Team') {
     if (!data.team_name || data.team_name.length < 2) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Team Name required", path: ["team_name"] });
     }
-    if (!data.team_members || data.team_members.length === 0) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Add at least one member", path: ["team_members"] });
-    }
+    // Logic: Leader is member 1, so need at least 0 extra members? Usually team means > 1
+    // Adjusted logic: If "Team" is selected, just ensure team name is there.
+    // Member count validation can be added here if you strictly enforce >1 person.
   }
 });
 
@@ -176,6 +177,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       }
 
       setIsSuccess(true);
+      toast.success("Registration successful!");
     } catch (err: any) {
       console.error("Registration error:", err);
       toast.error(err.code === '23505' ? "Entry already exists" : (err.message || "Registration failure"));
@@ -184,13 +186,11 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
     }
   }
 
-  // Log form errors for debugging
+  // Improved Error Logging
   const onFormError = (errors: any) => {
     console.error("Form validation errors:", errors);
-    const firstError = Object.values(errors)[0] as any;
-    if (firstError?.message) {
-      toast.error(firstError.message);
-    }
+    const errorMessages = Object.values(errors).map((e: any) => e.message).join(", ");
+    toast.error(`Please fix errors: ${errorMessages}`);
   };
 
   const nextStep = async () => {
@@ -199,14 +199,26 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
     if (step === 2) fieldsToValidate = ['primary_languages', 'experience_level'];
     if (step === 3) fieldsToValidate = watchParticipation === 'Team' ? ['participation_type', 'team_name', 'team_members'] : ['participation_type'];
     if (step === 4) fieldsToValidate = ['motivation_answer'];
-    if (await form.trigger(fieldsToValidate)) setStep(s => Math.min(s + 1, totalSteps));
+    
+    const isValid = await form.trigger(fieldsToValidate);
+    if (isValid) {
+      setStep(s => Math.min(s + 1, totalSteps));
+    } else {
+       toast.error("Please complete all required fields correctly.");
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!isSubmitting) onOpenChange(open);
     }}>
-      <DialogContent className="max-w-[700px] max-h-[90vh] p-0 bg-transparent border-none outline-none overflow-y-auto">
+      <DialogContent className="max-w-[700px] max-h-[90vh] p-0 bg-transparent border-none outline-none overflow-y-auto block">
+        {/* FIX: Add Visually Hidden Title for Accessibility */}
+        <VisuallyHidden>
+          <DialogTitle>Hackathon Registration</DialogTitle>
+          <DialogDescription>Register for the 2025 event</DialogDescription>
+        </VisuallyHidden>
+
         <div className="w-full bg-[#050505] border border-[#1a1a1a] font-sans selection:bg-orange-500/30">
           
           {!isSuccess ? (
@@ -268,21 +280,21 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                         <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Phone Number</label>
                           <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="+91 00000 00000" /></FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="country_city" render={({ field }) => (
                         <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">City & Country</label>
                           <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="e.g. New York, USA" /></FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="college_org_name" render={({ field }) => (
                         <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">College or Company</label>
                           <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="Where do you study or work?" /></FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="current_status" render={({ field }) => (
@@ -321,7 +333,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                         <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Main Languages</label>
                           <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="e.g. JavaScript, Python" /></FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="github_link" render={({ field }) => (
@@ -345,7 +357,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                     </div>
                   )}
 
-                  {/* Step 3: Team Setup (Solo vs Team cards preserved) */}
+                  {/* Step 3: Team Setup */}
                   {step === 3 && (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <div className="grid grid-cols-2 gap-[20px]">
@@ -373,7 +385,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                             <FormItem className="space-y-2.5">
                               <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Your Team Name</label>
                               <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#ff8c00]" {...field} /></FormControl>
-                              <FormMessage />
+                              <FormMessage className="text-red-500 text-xs" />
                             </FormItem>
                           )} />
 
@@ -423,7 +435,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                         <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Why do you want to join this hackathon?</label>
                           <FormControl><textarea className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none h-[120px] focus:border-[#777777] resize-none" {...field} placeholder="Tell us what you hope to learn or build..." /></FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       {customQuestions.map((q: any) => (
@@ -450,13 +462,19 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                         <FormField control={form.control} name="agreed_to_rules" render={({ field }) => (
                           <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer">
                             <FormControl><input type="checkbox" checked={field.value} onChange={field.onChange} className="w-4 h-4 mt-1 accent-[#ff8c00]" /></FormControl>
-                            <span className="text-[0.75rem] text-white leading-relaxed">I agree to follow the event rules and assembly code of conduct protocol.</span>
+                            <div className="flex flex-col">
+                              <span className="text-[0.75rem] text-white leading-relaxed">I agree to follow the event rules and assembly code of conduct protocol.</span>
+                              <FormMessage className="text-red-500 text-[10px]" />
+                            </div>
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="agreed_to_privacy" render={({ field }) => (
                           <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer">
                             <FormControl><input type="checkbox" checked={field.value} onChange={field.onChange} className="w-4 h-4 mt-1 accent-[#ff8c00]" /></FormControl>
-                            <span className="text-[0.75rem] text-white leading-relaxed">I authorize event organizers to process my data for assembly communication.</span>
+                            <div className="flex flex-col">
+                              <span className="text-[0.75rem] text-white leading-relaxed">I authorize event organizers to process my data for assembly communication.</span>
+                              <FormMessage className="text-red-500 text-[10px]" />
+                            </div>
                           </FormItem>
                         )} />
                       </div>
