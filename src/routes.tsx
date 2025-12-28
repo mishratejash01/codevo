@@ -20,6 +20,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
 import Dashboard from "./pages/Dashboard";
+
 // --- ATTENDANCE SYSTEM IMPORTS ---
 import VerifyRegistration from "./pages/VerifyRegistration";
 import AdminScanner from "./pages/AdminScanner";
@@ -34,7 +35,7 @@ export const AppRoutes = [
   
   // --- ATTENDANCE & VERIFICATION ROUTES ---
   { path: "/verify/:registrationId", component: VerifyRegistration, name: "Verify Registration" },
-  { path: "/admin/scanner", component: AdminScanner, name: "Admin Terminal" },
+  { path: "/AdminScanner", component: AdminScanner, name: "Admin Terminal" },
   
   // --- EVENT ROUTES ---
   { path: "/events", component: Events, name: "Events" },
