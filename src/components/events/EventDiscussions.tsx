@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageCircle, ThumbsUp, Send, Loader2, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { MessageCircle, ThumbsUp, Loader2, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface Discussion {
   id: string;
@@ -50,7 +48,6 @@ export function EventDiscussions({ eventId }: EventDiscussionsProps) {
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      // Fetch profiles separately
       const userIds = data.filter(d => d.user_id).map(d => d.user_id as string);
       const { data: profiles } = await supabase
         .from('profiles')
@@ -109,90 +106,111 @@ export function EventDiscussions({ eventId }: EventDiscussionsProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin h-6 w-6 text-purple-500" />
+        <Loader2 className="animate-spin h-6 w-6 text-[#ff8c00]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-        <div className="w-1 h-6 bg-cyan-500 rounded-full" />
-        Discussions
-      </h3>
+    <div className="w-full max-w-[800px] mx-auto font-sans selection:bg-orange-500/30">
+      
+      {/* --- Section Header --- */}
+      <div className="flex items-center gap-[15px] mb-[40px]">
+        <div className="w-[2px] h-[24px] bg-[#ff8c00]" />
+        <h3 className="font-serif text-[2.2rem] font-normal tracking-[-0.5px] text-white">
+          Join the Conversation
+        </h3>
+      </div>
 
-      {/* New comment form */}
-      {userId && (
-        <div className="bg-[#151518] border border-white/10 rounded-xl p-4">
-          <Textarea
-            placeholder="Start a discussion or ask a question..."
+      {/* --- Write a comment (Auth Protected) --- */}
+      {userId ? (
+        <div className="border border-[#1a1a1a] bg-[#050505] p-[30px] mb-[60px] relative overflow-hidden group">
+          <label className="block text-[0.7rem] uppercase tracking-[2px] text-[#666666] mb-[15px] font-bold">
+            Write your message
+          </label>
+          <textarea
+            placeholder="Share your thoughts or ask a question..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            className="bg-[#09090b] border-white/10 text-white min-h-[100px] mb-3"
+            className="w-full bg-transparent border-none border-b border-[#1a1a1a] focus:border-[#ff8c00] text-white font-inter text-[1.1rem] min-h-[60px] resize-none outline-none pb-[15px] mb-[25px] font-light placeholder:text-[#333] transition-colors"
           />
           <div className="flex justify-end">
-            <Button 
-              onClick={handleSubmit} 
+            <button 
+              onClick={handleSubmit}
               disabled={submitting || !newComment.trim()}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-[#ff8c00] hover:bg-white text-black border-none px-[40px] py-[16px] text-[0.75rem] font-extrabold uppercase tracking-[3px] cursor-pointer transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Send className="w-4 h-4 mr-2" />
+                'Post Comment'
               )}
-              Post
-            </Button>
+            </button>
           </div>
+        </div>
+      ) : (
+        <div className="border border-[#1a1a1a] bg-[#050505] p-[40px] mb-[60px] text-center">
+          <p className="text-[#666666] text-sm uppercase tracking-widest">
+            Authentication Required to Join the Assembly
+          </p>
         </div>
       )}
 
-      {/* Discussions list */}
+      {/* --- Conversations List --- */}
       {discussions.length > 0 ? (
-        <div className="space-y-4">
+        <div className="divide-y divide-[#1a1a1a]">
           {discussions.map((discussion) => (
             <div
               key={discussion.id}
-              className="bg-[#151518] border border-white/10 rounded-xl p-5"
+              className="py-[40px] flex flex-col md:flex-row gap-[25px] first:pt-0"
             >
-              <div className="flex items-start gap-4">
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={discussion.profiles?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-purple-500/20 text-purple-400">
-                    <User className="w-5 h-5" />
-                  </AvatarFallback>
-                </Avatar>
+              {/* Avatar */}
+              <div className="w-[45px] h-[45px] border border-[#1a1a1a] flex items-center justify-center bg-[#080808] text-[0.8rem] text-[#666666] shrink-0 overflow-hidden">
+                {discussion.profiles?.avatar_url ? (
+                  <img 
+                    src={discussion.profiles.avatar_url} 
+                    alt="Avatar" 
+                    className="w-full h-full object-cover grayscale"
+                  />
+                ) : (
+                  discussion.profiles?.full_name?.substring(0, 2).toUpperCase() || <User className="w-4 h-4" />
+                )}
+              </div>
 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium text-white">
-                      {discussion.profiles?.full_name || 'Anonymous'}
-                    </span>
-                    <span className="text-gray-500 text-sm">
-                      {formatDistanceToNow(new Date(discussion.created_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                  <p className="text-gray-300">{discussion.content}</p>
-
-                  <div className="flex items-center gap-4 mt-4">
-                    <button 
-                      onClick={() => handleUpvote(discussion.id, discussion.upvotes)}
-                      className="flex items-center gap-1.5 text-gray-400 hover:text-purple-400 transition-colors"
-                    >
-                      <ThumbsUp className="w-4 h-4" />
-                      <span className="text-sm">{discussion.upvotes}</span>
-                    </button>
-                  </div>
+              {/* Comment Content */}
+              <div className="grow">
+                <div className="flex justify-between items-center mb-[10px]">
+                  <span className="font-medium text-[1rem] text-white">
+                    {discussion.profiles?.full_name || 'Anonymous Operative'}
+                  </span>
+                  <span className="text-[0.7rem] text-[#666666] uppercase tracking-[1px]">
+                    {formatDistanceToNow(new Date(discussion.created_at), { addSuffix: true })}
+                  </span>
                 </div>
+                
+                <p className="text-[#e0e0e0] text-[1rem] leading-[1.6] font-light mb-[20px] whitespace-pre-wrap">
+                  {discussion.content}
+                </p>
+
+                {/* Upvote Action */}
+                <button 
+                  onClick={() => handleUpvote(discussion.id, discussion.upvotes)}
+                  className="inline-flex items-center gap-[8px] bg-transparent border border-[#1a1a1a] px-[16px] py-[8px] text-[#666666] hover:border-white hover:text-white transition-all cursor-pointer text-[0.75rem]"
+                >
+                  <ThumbsUp className="w-[14px] h-[14px] stroke-[2px]" />
+                  <span>{discussion.upvotes} Likes</span>
+                </button>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 bg-[#151518] rounded-2xl border border-white/10">
-          <MessageCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400 mb-2">No discussions yet</p>
-          <p className="text-gray-500 text-sm">Be the first to start a conversation!</p>
+        <div className="text-center py-20 bg-[#050505] border border-[#1a1a1a]">
+          <MessageCircle className="w-12 h-12 text-[#1a1a1a] mx-auto mb-4" />
+          <p className="text-[#666666] uppercase tracking-widest text-xs font-bold">
+            No Intel Shared Yet
+          </p>
+          <p className="text-[#333] text-sm mt-2">Initiate the protocol by sharing your thoughts.</p>
         </div>
       )}
     </div>
