@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { HelpCircle, ChevronDown, Loader2, MessageSquarePlus } from 'lucide-react';
+import { ChevronDown, Loader2, HelpCircle } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { cn } from '@/lib/utils';
 
 interface FAQ {
   id: string;
@@ -40,45 +41,62 @@ export function EventFAQs({ eventId }: EventFAQsProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin h-6 w-6 text-purple-500" />
+        <Loader2 className="animate-spin h-6 w-6 text-[#ff8c00]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-        <div className="w-1 h-6 bg-blue-500 rounded-full" />
-        Frequently Asked Questions
-      </h3>
+    <div className="w-full max-w-[850px] mx-auto font-sans selection:bg-orange-500/30">
+      
+      {/* --- Section Header --- */}
+      <div className="flex items-center gap-[15px] mb-[50px]">
+        <div className="w-[2px] h-[24px] bg-[#ff8c00]" />
+        <h3 className="font-serif text-[2.2rem] font-normal tracking-[-0.5px] text-white">
+          Questions & Answers
+        </h3>
+      </div>
 
       {faqs.length > 0 ? (
-        <Accordion type="single" collapsible className="space-y-3">
+        <Accordion type="single" collapsible className="border-t border-[#1a1a1a]">
           {faqs.map((faq, index) => (
             <AccordionItem
               key={faq.id}
               value={faq.id}
-              className="bg-[#151518] border border-white/10 rounded-xl overflow-hidden px-6"
+              className="border-b border-[#1a1a1a] transition-all duration-300"
             >
-              <AccordionTrigger className="text-left hover:no-underline py-5">
-                <div className="flex items-start gap-3">
-                  <span className="text-purple-400 font-mono text-sm mt-0.5">
+              <AccordionTrigger 
+                className={cn(
+                  "flex items-center justify-between py-[35px] hover:no-underline transition-all duration-300 group",
+                  "data-[state=open]:text-[#ff8c00] hover:pl-[10px]"
+                )}
+              >
+                <div className="flex items-center gap-[25px] text-left">
+                  <span className="text-[0.7rem] text-[#666666] font-mono tracking-[1px] mt-1">
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <span className="text-white font-medium">{faq.question}</span>
+                  <span className="font-serif text-[1.3rem] font-normal group-data-[state=open]:text-[#ff8c00] transition-colors">
+                    {faq.question}
+                  </span>
                 </div>
+                <ChevronDown className="h-[12px] w-[12px] text-[#666666] group-data-[state=open]:rotate-180 group-data-[state=open]:text-[#ff8c00] transition-transform duration-400" />
               </AccordionTrigger>
-              <AccordionContent className="text-gray-400 pb-5 pl-9">
-                {faq.answer}
+              
+              <AccordionContent className="pl-[55px] pb-[35px]">
+                <p className="text-[#666666] text-[0.95rem] leading-[1.7] font-light max-w-[700px]">
+                  {faq.answer}
+                </p>
               </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
       ) : (
-        <div className="text-center py-12 bg-[#151518] rounded-2xl border border-white/10">
-          <HelpCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400 mb-2">No FAQs added yet</p>
-          <p className="text-gray-500 text-sm">Check back later for answers to common questions.</p>
+        <div className="py-[100px] text-center border border-dashed border-[#1a1a1a] bg-[#050505]/50">
+          <HelpCircle className="w-8 h-8 text-[#1a1a1a] mx-auto mb-4" />
+          <p className="text-[0.8rem] text-[#666666] uppercase tracking-[2px] font-bold">
+            No Intel Logged
+          </p>
+          <p className="text-[#333] text-sm mt-2">Check the mission brief for standard protocols.</p>
         </div>
       )}
     </div>
