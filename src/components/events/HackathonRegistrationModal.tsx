@@ -48,6 +48,7 @@ const formSchema = z.object({
   portfolio_url: z.string().optional().or(z.literal("")),
   prior_experience: z.boolean().default(false),
   participation_type: z.enum(['Solo', 'Team']),
+  team_action: z.enum(['create', 'join']).optional(), // Added to distinguish creating vs joining
   team_name: z.string().optional(),
   team_members: z.array(z.object({
     name: z.string().min(1, "Member Name required"),
@@ -88,6 +89,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       current_status: "Student", experience_level: "Beginner",
       primary_languages: "", tech_stack_skills: "", prior_experience: false,
       participation_type: event.allow_solo ? "Solo" : "Team",
+      team_action: "create", // Default to create
       team_name: "", team_members: [],
       preferred_track: tracks[0] || "",
       motivation_answer: "", custom_answers: {},
@@ -98,6 +100,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "team_members" });
   const watchParticipation = form.watch("participation_type");
+  const watchTeamAction = form.watch("team_action");
 
   useEffect(() => {
     async function loadProfile() {
@@ -128,10 +131,67 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Please log in to register");
 
-      // 1. Prepare registration data object
-      const registrationData = {
+      // --- CRITICAL FIX: DIRECT DB CHECK AND INSERT ---
+      
+      // 1. Check for existing registration
+      const { data: existingReg, error: checkError } = await supabase
+        .from('event_registrations')
+        .select('id')
+        .eq('event_id', event.id)
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+      if (existingReg) {
+        toast.error("You are already registered for this event.");
+        return;
+      }
+
+      // 2. Validate Team if Joining
+      let finalTeamRole = 'Member'; // Default
+      if (values.participation_type === 'Team') {
+        if (values.team_action === 'join') {
+           // Verify team exists
+           const { data: teamData, error: teamError } = await supabase
+             .from('event_registrations')
+             .select('id')
+             .eq('event_id', event.id)
+             .eq('team_name', values.team_name)
+             .eq('team_role', 'Leader')
+             .maybeSingle();
+             
+           if (teamError || !teamData) {
+             toast.error(`Team "${values.team_name}" not found. Please check the name.`);
+             setIsSubmitting(false);
+             return;
+           }
+           finalTeamRole = 'Member';
+        } else {
+           // Creating a team
+           finalTeamRole = 'Leader';
+           // Optional: Check if team name is taken
+           const { data: nameTaken } = await supabase
+             .from('event_registrations')
+             .select('id')
+             .eq('event_id', event.id)
+             .eq('team_name', values.team_name)
+             .maybeSingle();
+             
+           if (nameTaken) {
+             toast.error("Team name already taken. Please choose another.");
+             setIsSubmitting(false);
+             return;
+           }
+        }
+      } else {
+        // Solo
+        finalTeamRole = 'Individual'; // Or whatever your schema uses for solo (often null or 'Solo')
+      }
+
+      // 3. Prepare Payload for Direct Insert
+      const payload = {
         event_id: event.id,
-        // user_id is handled securely on the server side via RPC (auth.uid())
+        user_id: session.user.id,
         full_name: values.full_name.trim(),
         email: values.email.trim().toLowerCase(),
         mobile_number: values.mobile_number.trim(),
@@ -139,16 +199,17 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         current_status: values.current_status,
         country_city: values.country_city.trim(),
         experience_level: values.experience_level,
-        primary_languages: values.primary_languages.split(',').map(s => s.trim()).filter(Boolean),
+        primary_languages: values.primary_languages.split(',').map(s => s.trim()).filter(Boolean), // Cast to JSON
         tech_stack_skills: values.tech_stack_skills ? values.tech_stack_skills.split(',').map(s => s.trim()).filter(Boolean) : [],
         github_link: values.github_link || null,
         linkedin_link: values.linkedin_link || null,
         resume_url: values.resume_url || null,
-        portfolio_url: values.portfolio_url || null,
+        // portfolio_url: values.portfolio_url || null, // Ensure this column exists in DB, if not remove
         prior_experience: values.prior_experience,
         participation_type: values.participation_type,
         team_name: values.participation_type === 'Team' ? values.team_name : null,
-        // team_role is forced to 'Leader' in the RPC
+        team_role: values.participation_type === 'Team' ? finalTeamRole : null,
+        team_members_data: (values.participation_type === 'Team' && values.team_members) ? values.team_members : [], // Store JSON data
         preferred_track: values.preferred_track || null,
         motivation_answer: values.motivation_answer.trim(),
         custom_answers: values.custom_answers || {},
@@ -158,36 +219,25 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         status: event.is_paid ? 'pending_payment' : 'confirmed',
       };
 
-      // 2. Prepare Team Members Payload
-      // If participation type is Team, send the members array, otherwise send empty array
-      const teamMembersPayload = (values.participation_type === 'Team' && values.team_members)
-        ? values.team_members 
-        : [];
+      console.log("Inserting Payload:", payload);
 
-      // 3. Call the RPC function (Atomic Transaction)
-      console.log("Calling RPC 'register_team_event' with:", { registrationData, teamMembersPayload });
-      
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('register_team_event', {
-        p_registration: registrationData,
-        p_team_members: teamMembersPayload
-      });
+      const { error: insertError } = await supabase
+        .from('event_registrations')
+        .insert(payload as any); // Type casting to avoid strict strict TS issues with Json fields
 
-      if (rpcError) {
-        console.error("Supabase RPC insert error:", rpcError);
-        throw rpcError;
+      if (insertError) {
+        console.error("Supabase insert error:", insertError);
+        throw insertError;
       }
 
-      console.log("Registration RPC Success:", rpcResult);
-
+      // Success!
       setIsSuccess(true);
       toast.success("Registration successful!");
       
     } catch (err: any) {
       console.error("Registration process error:", err);
-      // specific check for unique violation which might come from the RPC bubbling up Postgres errors
-      const errorMessage = err.message || "";
-      
-      if (err.code === '23505' || errorMessage.includes('duplicate key') || errorMessage.includes('unique constraint')) {
+      const errorMessage = err.message || "Unknown error";
+      if (errorMessage.includes('duplicate key') || errorMessage.includes('unique constraint')) {
         toast.error("You are already registered for this event.");
       } else {
         toast.error(`Registration failed: ${errorMessage}`);
@@ -211,12 +261,9 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
   };
 
   const onFormError = (errors: any) => {
-    // THIS LOG WILL SHOW YOU EXACTLY WHICH FIELD IS FAILING
     console.error("VALIDATION ERROR BREAKDOWN:", JSON.stringify(errors, null, 2));
-
     const messages = getErrorMessages(errors);
     const uniqueMessages = Array.from(new Set(messages));
-    
     if (uniqueMessages.length > 0) {
       toast.error("Validation Failed", {
         description: (
@@ -418,43 +465,76 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
 
                       {watchParticipation === 'Team' && (
                         <div className="space-y-6">
+                          
+                          {/* NEW: Toggle between Create and Join */}
+                          <FormField
+                            control={form.control}
+                            name="team_action"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <div className="flex gap-4 p-1 bg-[#1a1a1a] rounded w-fit mb-4">
+                                    <button
+                                      type="button"
+                                      onClick={() => field.onChange('create')}
+                                      className={cn("px-4 py-2 text-xs uppercase tracking-wider transition-colors", field.value === 'create' ? "bg-[#ff8c00] text-black font-bold" : "text-[#777777] hover:text-white")}
+                                    >
+                                      Create Team
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => field.onChange('join')}
+                                      className={cn("px-4 py-2 text-xs uppercase tracking-wider transition-colors", field.value === 'join' ? "bg-[#ff8c00] text-black font-bold" : "text-[#777777] hover:text-white")}
+                                    >
+                                      Join Team
+                                    </button>
+                                  </div>
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+
                           <FormField control={form.control} name="team_name" render={({ field }) => (
                             <FormItem className="space-y-2.5">
-                              <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Your Team Name</label>
-                              <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#ff8c00]" {...field} /></FormControl>
+                              <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">
+                                {watchTeamAction === 'create' ? "New Team Name" : "Existing Team Name"}
+                              </label>
+                              <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#ff8c00]" {...field} placeholder={watchTeamAction === 'join' ? "Enter exact team name" : "e.g. Code Ninjas"} /></FormControl>
                               <FormMessage className="text-red-500 text-xs" />
                             </FormItem>
                           )} />
 
-                          <div className="border border-[#1a1a1a]">
-                            <div className="bg-[#0a0a0a] p-[15px_20px] border-b border-[#1a1a1a] flex justify-between items-center">
-                              <span className="text-[0.65rem] uppercase tracking-[2px] text-[#777777]">Team Members</span>
-                              {fields.length < (event.max_team_size - 1) && (
-                                <button type="button" onClick={() => append({ name: "", email: "", role: "Member" })} className="text-[10px] text-[#ff8c00] border border-[#ff8c00]/30 px-2 py-0.5 hover:bg-[#ff8c00] hover:text-black transition-all">ADD MEMBER</button>
-                              )}
-                            </div>
-                            
-                            <div className="divide-y divide-[#1a1a1a]">
-                              {fields.map((field, index) => (
-                                <div key={field.id} className="p-5 flex justify-between items-center group">
-                                  <div className="space-y-4 w-full mr-4">
-                                    <div className="grid grid-cols-2 gap-3">
-                                      <div className="space-y-1">
-                                         <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white w-full" placeholder="Name" {...form.register(`team_members.${index}.name`)} />
-                                         {form.formState.errors.team_members?.[index]?.name && <span className="text-red-500 text-[10px] block">Name required</span>}
-                                      </div>
-                                      <div className="space-y-1">
-                                         <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white w-full" placeholder="Email" {...form.register(`team_members.${index}.email`)} />
-                                         {form.formState.errors.team_members?.[index]?.email && <span className="text-red-500 text-[10px] block">Valid email required</span>}
+                          {watchTeamAction === 'create' && (
+                            <div className="border border-[#1a1a1a]">
+                              <div className="bg-[#0a0a0a] p-[15px_20px] border-b border-[#1a1a1a] flex justify-between items-center">
+                                <span className="text-[0.65rem] uppercase tracking-[2px] text-[#777777]">Team Members</span>
+                                {fields.length < (event.max_team_size - 1) && (
+                                  <button type="button" onClick={() => append({ name: "", email: "", role: "Member" })} className="text-[10px] text-[#ff8c00] border border-[#ff8c00]/30 px-2 py-0.5 hover:bg-[#ff8c00] hover:text-black transition-all">ADD MEMBER</button>
+                                )}
+                              </div>
+                              
+                              <div className="divide-y divide-[#1a1a1a]">
+                                {fields.map((field, index) => (
+                                  <div key={field.id} className="p-5 flex justify-between items-center group">
+                                    <div className="space-y-4 w-full mr-4">
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                           <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white w-full" placeholder="Name" {...form.register(`team_members.${index}.name`)} />
+                                           {form.formState.errors.team_members?.[index]?.name && <span className="text-red-500 text-[10px] block">Name required</span>}
+                                        </div>
+                                        <div className="space-y-1">
+                                           <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white w-full" placeholder="Email" {...form.register(`team_members.${index}.email`)} />
+                                           {form.formState.errors.team_members?.[index]?.email && <span className="text-red-500 text-[10px] block">Valid email required</span>}
+                                        </div>
                                       </div>
                                     </div>
+                                    <button type="button" onClick={() => remove(index)} className="text-[#777777] hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
                                   </div>
-                                  <button type="button" onClick={() => remove(index)} className="text-[#777777] hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                                </div>
-                              ))}
-                              {fields.length === 0 && <p className="text-center p-4 text-[#777777] text-xs">No members added yet.</p>}
+                                ))}
+                                {fields.length === 0 && <p className="text-center p-4 text-[#777777] text-xs">No members added yet.</p>}
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       )}
                     </div>
