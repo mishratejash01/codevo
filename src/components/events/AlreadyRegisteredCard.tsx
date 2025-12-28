@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Check, Users, RefreshCw, ChevronDown, ChevronUp, Layers } from 'lucide-react';
+import { Check, Users, RefreshCw, ChevronDown, ChevronUp, Layers, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -31,7 +31,7 @@ interface Registration {
 interface AlreadyRegisteredCardProps {
   eventId: string;
   eventTitle: string;
-  eventType: string; // Changed to string for more flexible checking
+  eventType: string; 
   isPaid: boolean;
   registrationFee?: number;
   currency?: string;
@@ -40,7 +40,6 @@ interface AlreadyRegisteredCardProps {
 export function AlreadyRegisteredCard({ 
   eventId, 
   eventTitle, 
-  eventType,
   isPaid,
   registrationFee,
   currency = 'INR'
@@ -62,7 +61,6 @@ export function AlreadyRegisteredCard({
       return;
     }
 
-    // Fetch registration
     const { data: reg, error } = await supabase
       .from('event_registrations')
       .select('*')
@@ -77,8 +75,7 @@ export function AlreadyRegisteredCard({
 
     setRegistration(reg as any);
 
-    // Fetch team invitations
-    // Removed strict 'hackathon' check to ensure team logic runs if participation_type is 'Team'
+    // FIX: Fetch invitations if participation is 'Team', ignore the eventType string filter
     if (reg.participation_type === 'Team') {
       const { data: invites } = await supabase
         .from('team_invitations')
@@ -94,7 +91,6 @@ export function AlreadyRegisteredCard({
 
   async function resendInvitation(invitationId: string) {
     setResendingId(invitationId);
-    // Simulate API call as per original logic
     await new Promise(resolve => setTimeout(resolve, 1000));
     toast.success("Invitation resent successfully!");
     setResendingId(null);
@@ -136,19 +132,19 @@ export function AlreadyRegisteredCard({
       </header>
 
       {/* Info Grid */}
-      <div className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10">
+      <div className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10 text-white">
         <div className="space-y-3">
           <label className="block text-[10px] tracking-[2px] uppercase text-[#777777]">Full Identity</label>
-          <p className="text-base text-[#e0e0e0] font-light leading-relaxed">{registration.full_name}</p>
+          <p className="text-base font-light leading-relaxed">{registration.full_name}</p>
         </div>
         <div className="space-y-3">
           <label className="block text-[10px] tracking-[2px] uppercase text-[#777777]">Protocol Email</label>
-          <p className="text-base text-[#e0e0e0] font-light leading-relaxed break-all">{registration.email}</p>
+          <p className="text-base font-light leading-relaxed break-all">{registration.email}</p>
         </div>
         {registration.team_name && (
           <div className="space-y-3">
             <label className="block text-[10px] tracking-[2px] uppercase text-[#777777]">Squad Identification</label>
-            <p className="text-base text-[#e0e0e0] font-light leading-relaxed">{registration.team_name}</p>
+            <p className="text-base font-light leading-relaxed">{registration.team_name}</p>
           </div>
         )}
         <div className="space-y-3">
@@ -160,7 +156,7 @@ export function AlreadyRegisteredCard({
         </div>
       </div>
 
-      {/* Team Manifest Section - Simplified trigger conditions */}
+      {/* Team Manifest Section */}
       {registration.participation_type === 'Team' && (
         <div className="mx-6 md:mx-10 mb-10 border border-[#1a1a1a]">
           <button
@@ -179,33 +175,27 @@ export function AlreadyRegisteredCard({
 
           {showTeamDetails && (
             <div className="bg-[#050505] border-t border-[#1a1a1a]">
-              {/* Leader (User) Row */}
-              <div className="p-6 border-b border-[#1a1a1a] flex justify-between items-center gap-5">
+              {/* Leader (Current User) Row */}
+              <div className="p-6 border-b border-[#1a1a1a] flex justify-between items-center gap-5 text-white">
                 <div className="flex gap-4 items-start flex-1">
                   <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1 mt-0.5">01</div>
                   <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-white">{registration.full_name} (Leader)</h4>
+                    <h4 className="text-sm font-medium">{registration.full_name} (Leader)</h4>
                     <p className="text-[12px] text-[#777777] break-all">{registration.email}</p>
                   </div>
                 </div>
                 <div className="text-[10px] tracking-[1px] uppercase text-[#00ff88]">Confirmed</div>
               </div>
 
-              {/* Invitation Rows */}
-              {invitations.length === 0 && (
-                <div className="p-6 text-center text-[10px] uppercase tracking-widest text-[#777777]">
-                  No squad members identified
-                </div>
-              )}
-              
+              {/* Invited Members Rows */}
               {invitations.map((invite, index) => (
-                <div key={invite.id} className="p-6 border-b border-[#1a1a1a] last:border-b-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+                <div key={invite.id} className="p-6 border-b border-[#1a1a1a] last:border-b-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 text-white">
                   <div className={cn("flex gap-4 items-start flex-1", invite.status === 'pending' && "opacity-50")}>
                     <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1 mt-0.5">
                       {String(index + 2).padStart(2, '0')}
                     </div>
                     <div className="space-y-1">
-                      <h4 className="text-sm font-medium text-white">{invite.invitee_name || 'Protocol Subject'}</h4>
+                      <h4 className="text-sm font-medium">{invite.invitee_name || 'Protocol Subject'}</h4>
                       <p className="text-[12px] text-[#777777] break-all">{invite.invitee_email}</p>
                     </div>
                   </div>
@@ -224,6 +214,12 @@ export function AlreadyRegisteredCard({
                   )}
                 </div>
               ))}
+              
+              {invitations.length === 0 && (
+                 <div className="p-10 text-center text-[10px] uppercase tracking-[3px] text-[#777777]">
+                    No invitations dispatched
+                 </div>
+              )}
             </div>
           )}
         </div>
