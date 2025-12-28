@@ -128,11 +128,10 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Please log in to register");
 
-      // 1. Prepare registration data for 'event_registrations' table
-      // REMOVED: 'team_members_data' to prevent DB error if column doesn't exist
+      // 1. Prepare registration data object
       const registrationData = {
         event_id: event.id,
-        user_id: session.user.id,
+        // user_id is handled securely on the server side via RPC (auth.uid())
         full_name: values.full_name.trim(),
         email: values.email.trim().toLowerCase(),
         mobile_number: values.mobile_number.trim(),
@@ -149,7 +148,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         prior_experience: values.prior_experience,
         participation_type: values.participation_type,
         team_name: values.participation_type === 'Team' ? values.team_name : null,
-        team_role: 'Leader',
+        // team_role is forced to 'Leader' in the RPC
         preferred_track: values.preferred_track || null,
         motivation_answer: values.motivation_answer.trim(),
         custom_answers: values.custom_answers || {},
@@ -159,51 +158,38 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         status: event.is_paid ? 'pending_payment' : 'confirmed',
       };
 
-      // 2. Insert into event_registrations
-      const { data: registration, error } = await supabase
-        .from('event_registrations')
-        .insert(registrationData)
-        .select()
-        .single();
+      // 2. Prepare Team Members Payload
+      // If participation type is Team, send the members array, otherwise send empty array
+      const teamMembersPayload = (values.participation_type === 'Team' && values.team_members)
+        ? values.team_members 
+        : [];
 
-      if (error) {
-        console.error("Supabase insert error:", error);
-        throw error;
+      // 3. Call the RPC function (Atomic Transaction)
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('register_team_event', {
+        p_registration: registrationData,
+        p_team_members: teamMembersPayload
+      });
+
+      if (rpcError) {
+        console.error("Supabase RPC insert error:", rpcError);
+        throw rpcError;
       }
 
-      // 3. Handle Team Invitations (if applicable)
-      if (values.participation_type === 'Team' && values.team_members && values.team_members.length > 0 && values.team_name) {
-        const invitations = values.team_members.map(member => ({
-          registration_id: registration.id,
-          event_id: event.id,
-          team_name: values.team_name!,
-          inviter_user_id: session.user.id,
-          inviter_name: values.full_name,
-          inviter_email: values.email,
-          invitee_email: member.email.toLowerCase(),
-          invitee_mobile: member.mobile || null,
-          invitee_name: member.name,
-          role: member.role || 'Member',
-          status: 'pending',
-          token: crypto.randomUUID(),
-        }));
-
-        const { error: inviteError } = await supabase.from('team_invitations').insert(invitations);
-        if (inviteError) {
-          console.error("Invitation error (registration succeeded though):", inviteError);
-          toast.error("Registration succeeded, but failed to send some team invites.");
-        }
-      }
+      console.log("Registration RPC Success:", rpcResult);
 
       setIsSuccess(true);
       toast.success("Registration successful!");
+      
     } catch (err: any) {
       console.error("Registration process error:", err);
-      toast.error(
-        err.code === '23505' 
-          ? "You are already registered for this event." 
-          : (err.message || "Registration failure. Please try again.")
-      );
+      // specific check for unique violation which might come from the RPC bubbling up Postgres errors
+      const errorMessage = err.message || "";
+      
+      if (err.code === '23505' || errorMessage.includes('duplicate key') || errorMessage.includes('unique constraint')) {
+        toast.error("You are already registered for this event.");
+      } else {
+        toast.error("Registration failed. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
