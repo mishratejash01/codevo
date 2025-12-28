@@ -21,6 +21,10 @@ import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
 import Dashboard from "./pages/Dashboard";
 
+// NEW IMPORTS
+import VerifyRegistration from "./pages/VerifyRegistration";
+import AdminScanner from "./pages/AdminScanner";
+
 export const AppRoutes = [
   { path: "/", component: Landing, name: "Landing Page" },
   { path: "/auth", component: Auth, name: "Authentication" },
@@ -29,10 +33,12 @@ export const AppRoutes = [
   { path: "/terms", component: TermsOfService, name: "Terms of Service" },
   { path: "/privacy", component: PrivacyPolicy, name: "Privacy Policy" },
   
-  // --- NEW ROUTES ---
+  // --- GATE & VERIFICATION ---
+  { path: "/verify/:registrationId", component: VerifyRegistration, name: "Pass Verification" },
+  { path: "/admin/checkin", component: AdminScanner, name: "Admin Check-in" },
+  
   { path: "/events", component: Events, name: "Events" },
   { path: "/events/:slug", component: EventDetails, name: "Event Details" },
-  
   { path: "/practice", component: Practice, name: "Practice Dashboard" },
   { path: "/exam", component: Exam, name: "Exam Interface" },
   { path: "/exam/result", component: ExamResult, name: "Exam Result" },
