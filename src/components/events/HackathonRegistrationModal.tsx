@@ -31,41 +31,40 @@ interface HackathonRegistrationModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// --- VALIDATION SCHEMA ---
+// --- UPDATED VALIDATION SCHEMA ---
 const formSchema = z.object({
   full_name: z.string().min(2, "Name is required").max(100),
   email: z.string().email("Invalid email").max(255),
+  // FIX: Relaxed validation to min(3) so "123" works during testing
   mobile_number: z.string().min(3, "Valid mobile required").max(20),
-  college_org_name: z.string().min(2, "College/Org required").max(200),
+  college_org_name: z.string().min(2, "Required").max(200),
   current_status: z.enum(['Student', 'Working Professional', 'Freelancer', 'Founder']),
   country_city: z.string().min(2, "Location required").max(100),
   experience_level: z.enum(['Beginner', 'Intermediate', 'Advanced', 'Expert']),
   primary_languages: z.string().min(1, "Enter at least one language"),
   tech_stack_skills: z.string().optional(),
-  github_link: z.string().optional().or(z.literal("")),
-  linkedin_link: z.string().optional().or(z.literal("")),
-  resume_url: z.string().optional().or(z.literal("")),
-  portfolio_url: z.string().optional().or(z.literal("")),
+  github_link: z.string().url().optional().or(z.literal("")),
+  linkedin_link: z.string().url().optional().or(z.literal("")),
+  resume_url: z.string().url().optional().or(z.literal("")),
+  portfolio_url: z.string().url().optional().or(z.literal("")),
   prior_experience: z.boolean().default(false),
   participation_type: z.enum(['Solo', 'Team']),
-  team_action: z.enum(['create', 'join']).optional(),
   team_name: z.string().optional(),
   team_members: z.array(z.object({
-    name: z.string().min(1, "Member Name required"),
-    email: z.string().email("Member Email required"),
+    name: z.string().min(1, "Name required"),
+    email: z.string().email("Email required"),
     mobile: z.string().optional(),
     role: z.string().default("Member")
   })).optional(),
   preferred_track: z.string().optional(),
-  motivation_answer: z.string().min(10, "Please provide more details (min 10 chars)").max(1000),
+  motivation_answer: z.string().min(20, "Please provide more details").max(1000),
   custom_answers: z.record(z.string()).optional(),
-  // Checkbox validation must be strictly true
   agreed_to_rules: z.boolean().refine(val => val === true, "You must agree to the rules"),
   agreed_to_privacy: z.boolean().refine(val => val === true, "You must agree to the privacy policy"),
 }).superRefine((data, ctx) => {
   if (data.participation_type === 'Team') {
-    if (!data.team_name || data.team_name.trim().length < 2) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Team Name is required for teams", path: ["team_name"] });
+    if (!data.team_name || data.team_name.length < 2) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Team Name required", path: ["team_name"] });
     }
   }
 });
@@ -89,7 +88,6 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       current_status: "Student", experience_level: "Beginner",
       primary_languages: "", tech_stack_skills: "", prior_experience: false,
       participation_type: event.allow_solo ? "Solo" : "Team",
-      team_action: "create",
       team_name: "", team_members: [],
       preferred_track: tracks[0] || "",
       motivation_answer: "", custom_answers: {},
@@ -100,91 +98,34 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "team_members" });
   const watchParticipation = form.watch("participation_type");
-  const watchTeamAction = form.watch("team_action");
 
   useEffect(() => {
     async function loadProfile() {
-      if (!isOpen) return;
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         form.setValue('email', session.user.email || '');
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
         if (profile) {
-          if(profile.full_name) form.setValue('full_name', profile.full_name);
-          if(profile.contact_no) form.setValue('mobile_number', profile.contact_no);
-          if(profile.institute_name) form.setValue('college_org_name', profile.institute_name);
-          if(profile.country) form.setValue('country_city', profile.country);
-          if(profile.github_handle) form.setValue('github_link', `https://github.com/${profile.github_handle}`);
-          if(profile.linkedin_url) form.setValue('linkedin_link', profile.linkedin_url);
-          if(profile.experience_level) form.setValue('experience_level', (profile.experience_level as any));
+          form.setValue('full_name', profile.full_name || '');
+          form.setValue('mobile_number', profile.contact_no || '');
+          form.setValue('college_org_name', profile.institute_name || '');
+          form.setValue('country_city', profile.country || '');
+          form.setValue('github_link', profile.github_handle ? `https://github.com/${profile.github_handle}` : '');
+          form.setValue('linkedin_link', profile.linkedin_url || '');
+          form.setValue('experience_level', (profile.experience_level as any) || 'Beginner');
         }
       }
     }
-    loadProfile();
+    if (isOpen) loadProfile();
   }, [isOpen, form]);
 
   async function onSubmit(values: FormValues) {
     setIsSubmitting(true);
-    console.log("Submitting registration...", values);
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error("Please log in to register");
+      if (!session?.user) throw new Error("Auth Required");
 
-      // 1. Check for existing registration (User's own row is visible via RLS)
-      const { data: existingReg, error: checkError } = await supabase
-        .from('event_registrations')
-        .select('id')
-        .eq('event_id', event.id)
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-
-      if (checkError) throw checkError;
-      if (existingReg) {
-        toast.error("You are already registered for this event.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 2. Validate Team Logic
-      let finalTeamRole = 'Member';
-      
-      if (values.participation_type === 'Team') {
-        if (values.team_action === 'join') {
-           // --- FIX: Use RPC to bypass RLS for Team Verification ---
-           const { data: teamMembers, error: rpcError } = await supabase.rpc('get_event_team_members', { 
-             p_event_id: event.id, 
-             p_team_name: values.team_name 
-           });
-
-           if (rpcError) {
-             console.error("RPC Error:", rpcError);
-             throw rpcError;
-           }
-
-           // Check if any member with role 'Leader' exists in the returned data
-           const leaderExists = teamMembers && teamMembers.some((m: any) => m.team_role === 'Leader');
-
-           if (!leaderExists) {
-             toast.error(`Team "${values.team_name}" does not exist or has no leader. Please check the name.`);
-             setIsSubmitting(false);
-             return;
-           }
-           finalTeamRole = 'Member';
-
-        } else {
-           // Creating a team
-           finalTeamRole = 'Leader';
-           // We rely on the DB Unique Constraint to catch duplicate team names here
-           // because checking via SELECT is unreliable due to RLS hiding other teams.
-        }
-      } else {
-        // Solo Participation
-        finalTeamRole = 'Individual';
-      }
-
-      // 3. Prepare Payload
-      const payload = {
+      const registrationData = {
         event_id: event.id,
         user_id: session.user.id,
         full_name: values.full_name.trim(),
@@ -194,16 +135,16 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         current_status: values.current_status,
         country_city: values.country_city.trim(),
         experience_level: values.experience_level,
-        primary_languages: values.primary_languages.split(',').map(s => s.trim()).filter(Boolean),
-        tech_stack_skills: values.tech_stack_skills ? values.tech_stack_skills.split(',').map(s => s.trim()).filter(Boolean) : [],
+        primary_languages: values.primary_languages.split(',').map(s => s.trim()),
+        tech_stack_skills: values.tech_stack_skills ? values.tech_stack_skills.split(',').map(s => s.trim()) : [],
         github_link: values.github_link || null,
         linkedin_link: values.linkedin_link || null,
         resume_url: values.resume_url || null,
         prior_experience: values.prior_experience,
         participation_type: values.participation_type,
         team_name: values.participation_type === 'Team' ? values.team_name : null,
-        team_role: values.participation_type === 'Team' ? finalTeamRole : null, // Set role correctly
-        team_members_data: (values.participation_type === 'Team' && values.team_members) ? values.team_members : [],
+        team_members_data: values.participation_type === 'Team' ? values.team_members : [],
+        team_role: 'Leader',
         preferred_track: values.preferred_track || null,
         motivation_answer: values.motivation_answer.trim(),
         custom_answers: values.custom_answers || {},
@@ -213,82 +154,56 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         status: event.is_paid ? 'pending_payment' : 'confirmed',
       };
 
-      console.log("Inserting Payload:", payload);
+      const { data: registration, error } = await supabase.from('event_registrations').insert(registrationData as any).select().single();
+      if (error) throw error;
 
-      const { error: insertError } = await supabase
-        .from('event_registrations')
-        .insert(payload as any);
-
-      if (insertError) {
-        console.error("Supabase insert error:", insertError);
-        throw insertError;
+      if (values.participation_type === 'Team' && values.team_members && values.team_members.length > 0) {
+        const invitations = values.team_members.map(member => ({
+          registration_id: registration.id,
+          event_id: event.id,
+          team_name: values.team_name!,
+          inviter_user_id: session.user.id,
+          inviter_name: values.full_name,
+          inviter_email: values.email,
+          invitee_email: member.email.toLowerCase(),
+          invitee_mobile: member.mobile || null,
+          invitee_name: member.name,
+          role: member.role || 'Member',
+          status: 'pending',
+          token: crypto.randomUUID(),
+        }));
+        await supabase.from('team_invitations').insert(invitations);
       }
 
       setIsSuccess(true);
       toast.success("Registration successful!");
-      
     } catch (err: any) {
-      console.error("Registration process error:", err);
-      const errorMessage = err.message || "Unknown error";
-      
-      // Handle Specific DB Constraint Errors
-      if (errorMessage.includes('duplicate key') || errorMessage.includes('unique constraint')) {
-        if (errorMessage.includes('team_name')) {
-           toast.error("That Team Name is already taken. Please choose another.");
-        } else {
-           toast.error("You are already registered for this event.");
-        }
-      } else {
-        toast.error(`Registration failed: ${errorMessage}`);
-      }
+      console.error("Registration error:", err);
+      toast.error(err.code === '23505' ? "Entry already exists" : (err.message || "Registration failure"));
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  // --- ERROR LOGGING ---
-  const getErrorMessages = (errors: any): string[] => {
-    let messages: string[] = [];
-    Object.entries(errors).forEach(([key, value]: [string, any]) => {
-      if (value?.message) {
-        messages.push(value.message);
-      } else if (typeof value === 'object' && value !== null) {
-        messages = [...messages, ...getErrorMessages(value)];
-      }
-    });
-    return messages;
-  };
-
+  // Improved Error Logging
   const onFormError = (errors: any) => {
-    console.error("VALIDATION ERROR BREAKDOWN:", JSON.stringify(errors, null, 2));
-    const messages = getErrorMessages(errors);
-    const uniqueMessages = Array.from(new Set(messages));
-    if (uniqueMessages.length > 0) {
-      toast.error("Validation Failed", {
-        description: (
-          <ul className="list-disc pl-4 text-xs mt-2 space-y-1">
-            {uniqueMessages.slice(0, 5).map((m, i) => <li key={i}>{m}</li>)}
-          </ul>
-        )
-      });
-    } else {
-      toast.error("Please fill in all required fields correctly.");
-    }
+    console.error("Form validation errors:", errors);
+    const errorMessages = Object.values(errors).map((e: any) => e.message).join(", ");
+    toast.error(`Please fix errors: ${errorMessages}`);
   };
 
   const nextStep = async () => {
     let fieldsToValidate: (keyof FormValues)[] = [];
     if (step === 1) fieldsToValidate = ['full_name', 'email', 'mobile_number', 'college_org_name', 'country_city', 'current_status'];
     if (step === 2) fieldsToValidate = ['primary_languages', 'experience_level'];
-    if (step === 3) fieldsToValidate = watchParticipation === 'Team' ? ['participation_type', 'team_name'] : ['participation_type'];
+    if (step === 3) fieldsToValidate = watchParticipation === 'Team' ? ['participation_type', 'team_name', 'team_members'] : ['participation_type'];
     if (step === 4) fieldsToValidate = ['motivation_answer'];
     
     const isValid = await form.trigger(fieldsToValidate);
     if (isValid) {
       setStep(s => Math.min(s + 1, totalSteps));
     } else {
-       console.log("Step validation failed", form.formState.errors);
-       toast.error("Please complete the required fields in this step.");
+       toast.error("Please complete all required fields correctly.");
     }
   };
 
@@ -297,9 +212,10 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
       if (!isSubmitting) onOpenChange(open);
     }}>
       <DialogContent className="max-w-[700px] max-h-[90vh] p-0 bg-transparent border-none outline-none overflow-y-auto block">
+        {/* FIX: Visually Hidden Title for Accessibility */}
         <VisuallyHidden>
-          <DialogTitle>Registration</DialogTitle>
-          <DialogDescription>Event Registration</DialogDescription>
+          <DialogTitle>Hackathon Registration</DialogTitle>
+          <DialogDescription>Register for the 2025 event</DialogDescription>
         </VisuallyHidden>
 
         <div className="w-full bg-[#050505] border border-[#1a1a1a] font-sans selection:bg-orange-500/30">
@@ -343,13 +259,13 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
 
                 {/* --- Body --- */}
                 <div className="p-[40px] min-h-[480px]">
-                  {/* Step 1: Personal */}
+                  {/* Step 1: Identity */}
                   {step === 1 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-[25px] gap-y-[25px] animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <FormField control={form.control} name="full_name" render={({ field }) => (
                         <FormItem className="md:col-span-2 space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Your Full Name</label>
-                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="e.g. John Doe" /></FormControl>
+                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777] transition-all" {...field} placeholder="e.g. John Doe" /></FormControl>
                           <FormMessage className="text-[10px] uppercase text-red-500" />
                         </FormItem>
                       )} />
@@ -369,14 +285,14 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                       <FormField control={form.control} name="country_city" render={({ field }) => (
                         <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">City & Country</label>
-                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} /></FormControl>
+                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="e.g. New York, USA" /></FormControl>
                           <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="college_org_name" render={({ field }) => (
                         <FormItem className="space-y-2.5">
                           <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">College or Company</label>
-                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} /></FormControl>
+                          <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="Where do you study or work?" /></FormControl>
                           <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
                       )} />
@@ -427,7 +343,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                       )} />
                       <FormField control={form.control} name="linkedin_link" render={({ field }) => (
                         <FormItem className="space-y-2.5">
-                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">LinkedIn</label>
+                          <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">LinkedIn or Portfolio</label>
                           <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#777777]" {...field} placeholder="https://linkedin.com/..." /></FormControl>
                         </FormItem>
                       )} />
@@ -440,7 +356,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                     </div>
                   )}
 
-                  {/* Step 3: Team */}
+                  {/* Step 3: Team Setup */}
                   {step === 3 && (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                       <div className="grid grid-cols-2 gap-[20px]">
@@ -464,76 +380,36 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
 
                       {watchParticipation === 'Team' && (
                         <div className="space-y-6">
-                          
-                          {/* NEW: Toggle between Create and Join */}
-                          <FormField
-                            control={form.control}
-                            name="team_action"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <div className="flex gap-4 p-1 bg-[#1a1a1a] rounded w-fit mb-4">
-                                    <button
-                                      type="button"
-                                      onClick={() => field.onChange('create')}
-                                      className={cn("px-4 py-2 text-xs uppercase tracking-wider transition-colors", field.value === 'create' ? "bg-[#ff8c00] text-black font-bold" : "text-[#777777] hover:text-white")}
-                                    >
-                                      Create Team
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => field.onChange('join')}
-                                      className={cn("px-4 py-2 text-xs uppercase tracking-wider transition-colors", field.value === 'join' ? "bg-[#ff8c00] text-black font-bold" : "text-[#777777] hover:text-white")}
-                                    >
-                                      Join Team
-                                    </button>
-                                  </div>
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-
                           <FormField control={form.control} name="team_name" render={({ field }) => (
                             <FormItem className="space-y-2.5">
-                              <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">
-                                {watchTeamAction === 'create' ? "New Team Name" : "Existing Team Name"}
-                              </label>
-                              <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#ff8c00]" {...field} placeholder={watchTeamAction === 'join' ? "Enter exact team name" : "e.g. Code Ninjas"} /></FormControl>
+                              <label className="text-[0.65rem] uppercase tracking-[2px] text-[#777777] font-semibold">Your Team Name</label>
+                              <FormControl><input className="w-full bg-transparent border border-[#1a1a1a] text-white p-[14px] text-[0.9rem] outline-none focus:border-[#ff8c00]" {...field} /></FormControl>
                               <FormMessage className="text-red-500 text-xs" />
                             </FormItem>
                           )} />
 
-                          {watchTeamAction === 'create' && (
-                            <div className="border border-[#1a1a1a]">
-                              <div className="bg-[#0a0a0a] p-[15px_20px] border-b border-[#1a1a1a] flex justify-between items-center">
-                                <span className="text-[0.65rem] uppercase tracking-[2px] text-[#777777]">Team Members</span>
-                                {fields.length < (event.max_team_size - 1) && (
-                                  <button type="button" onClick={() => append({ name: "", email: "", role: "Member" })} className="text-[10px] text-[#ff8c00] border border-[#ff8c00]/30 px-2 py-0.5 hover:bg-[#ff8c00] hover:text-black transition-all">ADD MEMBER</button>
-                                )}
-                              </div>
-                              
-                              <div className="divide-y divide-[#1a1a1a]">
-                                {fields.map((field, index) => (
-                                  <div key={field.id} className="p-5 flex justify-between items-center group">
-                                    <div className="space-y-4 w-full mr-4">
-                                      <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                           <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white w-full" placeholder="Name" {...form.register(`team_members.${index}.name`)} />
-                                           {form.formState.errors.team_members?.[index]?.name && <span className="text-red-500 text-[10px] block">Name required</span>}
-                                        </div>
-                                        <div className="space-y-1">
-                                           <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white w-full" placeholder="Email" {...form.register(`team_members.${index}.email`)} />
-                                           {form.formState.errors.team_members?.[index]?.email && <span className="text-red-500 text-[10px] block">Valid email required</span>}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <button type="button" onClick={() => remove(index)} className="text-[#777777] hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                                  </div>
-                                ))}
-                                {fields.length === 0 && <p className="text-center p-4 text-[#777777] text-xs">No members added yet.</p>}
-                              </div>
+                          <div className="border border-[#1a1a1a]">
+                            <div className="bg-[#0a0a0a] p-[15px_20px] border-b border-[#1a1a1a] flex justify-between items-center">
+                              <span className="text-[0.65rem] uppercase tracking-[2px] text-[#777777]">Team Members to Invite</span>
+                              {fields.length < (event.max_team_size - 1) && (
+                                <button type="button" onClick={() => append({ name: "", email: "", role: "Member" })} className="text-[10px] text-[#ff8c00] border border-[#ff8c00]/30 px-2 py-0.5 hover:bg-[#ff8c00] hover:text-black transition-all">ADD MEMBER</button>
+                              )}
                             </div>
-                          )}
+                            
+                            <div className="divide-y divide-[#1a1a1a]">
+                              {fields.map((field, index) => (
+                                <div key={field.id} className="p-5 flex justify-between items-center group">
+                                  <div className="space-y-4 w-full mr-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white" placeholder="Name" {...form.register(`team_members.${index}.name`)} />
+                                      <input className="bg-transparent border border-[#1a1a1a] p-2 text-[0.8rem] text-white" placeholder="Email" {...form.register(`team_members.${index}.email`)} />
+                                    </div>
+                                  </div>
+                                  <button type="button" onClick={() => remove(index)} className="text-[#777777] hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -584,35 +460,19 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
                       <div className="space-y-4">
                         <FormField control={form.control} name="agreed_to_rules" render={({ field }) => (
                           <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer">
-                            <FormControl>
-                                <input 
-                                    type="checkbox" 
-                                    checked={field.value} 
-                                    onChange={(e) => field.onChange(e.target.checked)} 
-                                    className={cn("w-4 h-4 mt-1 accent-[#ff8c00] cursor-pointer", form.formState.errors.agreed_to_rules && "outline outline-1 outline-red-500")}
-                                />
-                            </FormControl>
+                            <FormControl><input type="checkbox" checked={field.value} onChange={field.onChange} className="w-4 h-4 mt-1 accent-[#ff8c00]" /></FormControl>
                             <div className="flex flex-col">
-                              <span className={cn("text-[0.75rem] leading-relaxed", form.formState.errors.agreed_to_rules ? "text-red-400" : "text-white")}>
-                                I agree to follow the event rules and assembly code of conduct protocol.
-                              </span>
+                              <span className="text-[0.75rem] text-white leading-relaxed">I agree to follow the event rules and assembly code of conduct protocol.</span>
+                              <FormMessage className="text-red-500 text-[10px]" />
                             </div>
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="agreed_to_privacy" render={({ field }) => (
                           <FormItem className="flex items-start space-x-3 space-y-0 cursor-pointer">
-                            <FormControl>
-                                <input 
-                                    type="checkbox" 
-                                    checked={field.value} 
-                                    onChange={(e) => field.onChange(e.target.checked)} 
-                                    className={cn("w-4 h-4 mt-1 accent-[#ff8c00] cursor-pointer", form.formState.errors.agreed_to_privacy && "outline outline-1 outline-red-500")}
-                                />
-                            </FormControl>
+                            <FormControl><input type="checkbox" checked={field.value} onChange={field.onChange} className="w-4 h-4 mt-1 accent-[#ff8c00]" /></FormControl>
                             <div className="flex flex-col">
-                              <span className={cn("text-[0.75rem] leading-relaxed", form.formState.errors.agreed_to_privacy ? "text-red-400" : "text-white")}>
-                                I authorize event organizers to process my data for assembly communication.
-                              </span>
+                              <span className="text-[0.75rem] text-white leading-relaxed">I authorize event organizers to process my data for assembly communication.</span>
+                              <FormMessage className="text-red-500 text-[10px]" />
                             </div>
                           </FormItem>
                         )} />
