@@ -1,4 +1,4 @@
-
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Html5Qrcode, Html5QrcodeScanType } from 'html5-qrcode';
 import { ShieldCheck, Loader2, UserCheck, XCircle, RefreshCw, Scan, Camera, CheckCircle, Mail, Building, Users } from 'lucide-react';
