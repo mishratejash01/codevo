@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Html5Qrcode, Html5QrcodeScanType } from 'html5-qrcode';
-import { Loader2, ShieldCheck, XCircle, AlertTriangle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 export default function AdminScanner() {
   const [isScanning, setIsScanning] = useState(false);
@@ -15,6 +14,7 @@ export default function AdminScanner() {
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
+    // Initialize scanner instance
     html5QrCodeRef.current = new Html5Qrcode("reader");
     return () => {
       if (html5QrCodeRef.current?.isScanning) {
@@ -59,37 +59,35 @@ export default function AdminScanner() {
     }
 
     setVerifying(true);
-
+    
     // ---------------------------------------------------------
-    // STRICT SECURITY CHECK: Reject Public/Dashboard URLs
+    // SECURITY: Reject Public/Dashboard URLs
     // ---------------------------------------------------------
     if (decodedText.includes('http') || decodedText.includes('/verify/')) {
-        toast.error("INVALID QR: This is a Public Dashboard Link.");
-        toast.warning("Please scan the secure ID on the Official Event Pass.");
-        
+        toast.error("INVALID QR: Public Dashboard Link");
         setTimeout(() => {
             resetState();
             if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
-        }, 2500);
+        }, 2000);
         return;
     }
-    // ---------------------------------------------------------
 
     const cleanId = decodedText.trim();
 
     try {
-      // 1. Fetch Record
+      // 1. Fetch Record with EVENT DETAILS
       const { data, error } = await supabase
         .from('event_registrations')
         .select(`
           id, full_name, email, college_org_name, 
           current_status, status, participation_type, 
-          team_name, is_attended, attended_at
+          team_name, is_attended, attended_at,
+          events ( title, venue )
         `)
         .eq('id', cleanId)
         .single();
 
-      if (error || !data) throw new Error("Invalid Pass ID: Record not found");
+      if (error || !data) throw new Error("Invalid Pass ID");
 
       setGuestData(data);
       
@@ -334,25 +332,27 @@ export default function AdminScanner() {
             font-weight: 600;
         }
 
-        .next-prompt {
-            text-align: center;
-            font-size: 9px;
-            color: #555555;
-            margin-top: 25px;
+        .reset-btn {
+            width: 100%;
+            background: #222;
+            color: #e2e2e2;
+            border: 1px solid #333;
+            padding: 16px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 2px;
             cursor: pointer;
-            background: none;
-            border: none;
-            width: 100%;
+            margin-top: 25px;
+            transition: all 0.2s ease;
         }
-        .next-prompt:hover { color: #e2e2e2; }
+        .reset-btn:hover { background: #333; border-color: #e2e2e2; }
       `}</style>
 
       <div className="gate-container">
+        {/* Dynamic Header: Shows Venue Name if available, otherwise generic */}
         <header className="gate-header">
-          <h1>Entry Gate</h1>
-          <p>Milan Event Center • Entrance A</p>
+          <h1>{guestData ? (guestData.events?.title || 'Event Entry') : 'Entry Gate'}</h1>
+          <p>{guestData ? (guestData.events?.venue || 'Venue Not Set') : 'Secure Terminal'} • Check-in Point</p>
         </header>
 
         <div className="viewfinder">
@@ -411,7 +411,7 @@ export default function AdminScanner() {
                </div>
             )}
 
-            {/* ONLY SHOW DECISION BUTTONS IF NOT ALREADY SCANNED */}
+            {/* ACTION AREA */}
             {!alreadyScanned ? (
                 <div className="gate-actions">
                   <button 
@@ -430,7 +430,7 @@ export default function AdminScanner() {
                   </button>
                 </div>
             ) : (
-                <button className="next-prompt" onClick={handleReset}>
+                <button className="reset-btn" onClick={handleReset}>
                    SCAN NEXT CREDENTIAL
                 </button>
             )}
@@ -441,11 +441,16 @@ export default function AdminScanner() {
            </div>
         )}
 
-        {/* Manual Reset Option */}
+        {/* Manual Reset Option (if needed for non-duplicate scans) */}
         {guestData && !alreadyScanned && (
-            <button className="next-prompt" onClick={handleReset}>
-                Discard & Scan Next
-            </button>
+            <div style={{textAlign: 'center', marginTop: '20px'}}>
+                <button 
+                    style={{background:'none', border:'none', color:'#555', fontSize:'9px', textTransform:'uppercase', letterSpacing:'2px', cursor:'pointer'}} 
+                    onClick={handleReset}
+                >
+                    Discard & Scan Next
+                </button>
+            </div>
         )}
       </div>
     </div>
