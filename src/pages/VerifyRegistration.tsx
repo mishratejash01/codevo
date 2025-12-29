@@ -53,30 +53,15 @@ export default function VerifyRegistration() {
 
   const event = data.events;
   const isVerified = ['verified', 'confirmed'].includes(data.status);
-  const isAttended = data.is_attended; // From your table schema
+  const isAttended = data.is_attended; 
   const isValid = event.end_date ? isBefore(new Date(), parseISO(event.end_date)) : true;
 
   return (
     <div className="min-h-screen bg-black text-white font-sans p-4 md:p-10 flex flex-col items-center relative overflow-hidden">
       
-      {/* ATTENDED STAMP WATERMARK */}
-      {isAttended && (
-        <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center select-none">
-           <div className="border-[12px] border-red-600/40 rounded-full p-8 md:p-16 rotate-[-25deg] flex flex-col items-center justify-center animate-in zoom-in duration-500">
-              <h1 className="text-[55px] md:text-[85px] font-black text-red-600 uppercase leading-none tracking-tighter">
-                Attended
-              </h1>
-              <div className="h-1.5 w-full bg-red-600/40 my-3" />
-              <p className="text-red-600 font-bold tracking-[8px] uppercase text-lg">Entry Verified</p>
-           </div>
-        </div>
-      )}
-
-      <div className={cn(
-        "w-full max-w-[450px] space-y-6 transition-all duration-700",
-        isAttended && "opacity-25 grayscale blur-[2px]"
-      )}>
+      <div className="w-full max-w-[450px] space-y-6">
         
+        {/* Status Banner */}
         <div className={cn(
           "w-full p-4 border flex items-center gap-4",
           isValid && isVerified ? "bg-[#00ff88]/5 border-[#00ff88]/20 text-[#00ff88]" : "bg-red-500/5 border-red-500/20 text-red-500"
@@ -92,8 +77,10 @@ export default function VerifyRegistration() {
           </Badge>
         </div>
 
+        {/* Pass Card */}
         <div className="relative border border-[#1a1a1a] bg-[#0a0a0a] overflow-hidden shadow-2xl">
-          <div className={cn("h-1.5 w-full", isAttended ? "bg-red-500" : isVerified ? "bg-[#00ff88]" : "bg-red-500")} />
+          <div className={cn("h-1.5 w-full", isAttended ? "bg-red-500/50" : isVerified ? "bg-[#00ff88]" : "bg-red-500")} />
+          
           <div className="p-6 md:p-8 space-y-6">
             <header className="flex justify-between items-start">
               <div className="space-y-1">
@@ -102,6 +89,7 @@ export default function VerifyRegistration() {
               </div>
             </header>
 
+            {/* Profile Section */}
             <div className="flex items-center gap-4 py-4 border-y border-[#1a1a1a]">
               <Avatar className="h-14 w-14 border border-[#1a1a1a]">
                 <AvatarImage src={data.avatar_url} />
@@ -113,6 +101,7 @@ export default function VerifyRegistration() {
               </div>
             </div>
 
+            {/* Event Details */}
             <div className="grid grid-cols-2 gap-y-6">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-[#777777]"><Calendar className="w-3 h-3" /><span className="text-[9px] uppercase tracking-wider">Date</span></div>
@@ -124,22 +113,46 @@ export default function VerifyRegistration() {
               </div>
             </div>
 
+            {/* QR CODE WITH STAMP WATERMARK */}
             <div className="pt-6 border-t border-[#1a1a1a] flex flex-col items-center">
-              <div className="bg-white p-4 rounded-xl shadow-inner">
-                {/* Admin scans this ID to fetch the record */}
-                <QRCodeSVG value={data.id} size={150} level="H" />
+              <div className="relative group">
+                {/* QR Container */}
+                <div className={cn(
+                  "bg-white p-4 rounded-xl shadow-inner transition-all duration-500",
+                  isAttended && "opacity-30 grayscale blur-[1px]"
+                )}>
+                  <QRCodeSVG value={data.id} size={160} level="H" />
+                </div>
+
+                {/* THE STAMP (Only shows if attended) */}
+                {isAttended && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                    <div className="border-[6px] border-red-600 rounded-full p-2 rotate-[-25deg] bg-black/10 backdrop-blur-[1px] animate-in zoom-in duration-300">
+                      <div className="border-2 border-red-600 rounded-full py-2 px-4 flex flex-col items-center justify-center">
+                        <span className="text-[18px] font-black text-red-600 uppercase leading-none">Attended</span>
+                        <div className="h-[1px] w-full bg-red-600 my-1" />
+                        <span className="text-[8px] font-bold text-red-600 uppercase tracking-[2px]">Verified</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <p className="mt-4 text-[9px] font-mono tracking-[4px] text-[#777777] uppercase">ID: {data.id.substring(0, 12)}</p>
             </div>
           </div>
           
           <footer className="bg-[#0d0d0d] p-4 flex justify-between items-center border-t border-[#1a1a1a]">
-            <div className="flex items-center gap-2"><ShieldCheck className={cn("w-3.5 h-3.5", isVerified ? "text-[#00ff88]" : "text-[#777777]")} /><span className="text-[8px] uppercase tracking-widest text-[#777777]">Security Verified</span></div>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className={cn("w-3.5 h-3.5", isVerified ? "text-[#00ff88]" : "text-[#777777]")} />
+              <span className="text-[8px] uppercase tracking-widest text-[#777777]">Security Verified</span>
+            </div>
           </footer>
         </div>
 
         {!isAttended && (
-          <Button onClick={() => window.print()} className="w-full bg-white text-black font-bold uppercase tracking-[3px] rounded-none hover:bg-[#00ff88] transition-colors h-12 text-[10px]">Download Pass</Button>
+          <Button onClick={() => window.print()} className="w-full bg-white text-black font-bold uppercase tracking-[3px] rounded-none hover:bg-[#00ff88] transition-colors h-12 text-[10px]">
+            Download Pass
+          </Button>
         )}
       </div>
     </div>
