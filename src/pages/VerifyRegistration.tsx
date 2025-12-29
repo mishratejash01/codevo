@@ -20,7 +20,7 @@ export default function VerifyRegistration() {
 
   async function fetchVerificationData() {
     try {
-      // Fetch registration and event data
+      // 1. Fetch registration details and linked event data
       const { data: reg, error: regError } = await supabase
         .from('event_registrations')
         .select(`*, events (*)`)
@@ -30,7 +30,7 @@ export default function VerifyRegistration() {
       if (regError || !reg) throw new Error("Registry record not found");
       setData(reg);
 
-      // Fetch user profile image
+      // 2. Fetch the user's account avatar from the profiles table
       if (reg.user_id) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -40,7 +40,7 @@ export default function VerifyRegistration() {
         setUserProfile(profile);
       }
 
-      // Fetch event sponsors
+      // 3. Fetch Event Sponsors/Partners logos
       const { data: sponsorData } = await supabase
         .from('event_sponsors')
         .select('*')
@@ -65,14 +65,17 @@ export default function VerifyRegistration() {
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center p-6 text-center">
       <ShieldAlert className="w-16 h-16 text-red-500 mb-6" />
       <h1 className="text-2xl font-serif mb-4">Invalid Credential</h1>
-      <button onClick={() => navigate('/')} className="mt-4 px-6 py-2 border border-[#262626] text-[10px] uppercase tracking-widest text-[#4a4a4a] hover:text-white transition-colors">
+      <button 
+        onClick={() => navigate('/')} 
+        className="mt-4 px-6 py-2 border border-[#262626] text-[10px] uppercase tracking-widest text-[#4a4a4a] hover:text-white transition-colors"
+      >
         Return Home
       </button>
     </div>
   );
 
   const event = data.events;
-  const isAttended = data.is_attended;
+  const isAttended = data.is_attended; // Uses the boolean field from your table
 
   return (
     <div className="verify-registration-container">
@@ -115,7 +118,7 @@ export default function VerifyRegistration() {
         header p { font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: var(--silver-muted); margin-bottom: 40px; }
 
         .identity-block { display: flex; align-items: center; gap: 20px; padding: 25px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 30px; }
-        .avatar-frame { width: 65px; height: 65px; border: 1px solid var(--silver-muted); padding: 3px; }
+        .avatar-frame { width: 65px; height: 65px; border: 1px solid var(--silver-muted); padding: 3px; overflow: hidden; }
         .avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
 
         .id-text h3 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 500; color: var(--silver); }
@@ -128,7 +131,7 @@ export default function VerifyRegistration() {
         .sponsor-section { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
         .sponsor-section label { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 3px; color: var(--silver-muted); margin-bottom: 15px; text-align: center; }
         .logo-cloud { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
-        .mini-logo { height: 20px; max-width: 60px; }
+        .mini-logo { height: 20px; max-width: 60px; filter: brightness(0) invert(1); opacity: 0.6; }
 
         .verification-zone { display: flex; flex-direction: column; align-items: center; position: relative; margin-top: 30px; }
         .qr-wrapper { background: #fff; padding: 12px; position: relative; }
@@ -150,7 +153,7 @@ export default function VerifyRegistration() {
 
         @media print {
           .actions { display: none !important; }
-          .stamp-attended { display: none !important; }
+          .stamp-attended { display: none !important; } /* Hide watermark for physical pass */
           .qr-dimmed { filter: none !important; opacity: 1 !important; }
           body { background: var(--bg) !important; -webkit-print-color-adjust: exact; }
           .verify-registration-container { background: var(--bg) !important; padding: 0 !important; }
@@ -169,6 +172,7 @@ export default function VerifyRegistration() {
 
             <div className="identity-block">
               <div className="avatar-frame">
+                {/* Dynamically loads account image */}
                 <img src={userProfile?.avatar_url || "/placeholder.svg"} alt="Identity" />
               </div>
               <div className="id-text">
@@ -179,16 +183,16 @@ export default function VerifyRegistration() {
 
             <div className="info-grid">
               <div className="info-item">
-                <label>Location</label>
+                <label>Venue</label>
                 <p>{event.venue || 'Virtual Premises'}</p>
               </div>
               <div className="info-item">
-                <label>Date</label>
-                <p>{event.start_date ? format(parseISO(event.start_date), 'dd . MM . yy') : '--'}</p>
+                <label>Location</label>
+                <p>{event.location || 'Online'}</p>
               </div>
               <div className="info-item">
-                <label>Registration</label>
-                <p>{data.status?.toUpperCase() || 'VERIFIED'}</p>
+                <label>Start Date</label>
+                <p>{event.start_date ? format(parseISO(event.start_date), 'dd . MM . yy') : '--'}</p>
               </div>
               <div className="info-item">
                 <label>Access Tier</label>
@@ -196,6 +200,7 @@ export default function VerifyRegistration() {
               </div>
             </div>
 
+            {/* Event Sponsors Section */}
             {sponsors.length > 0 && (
               <div className="sponsor-section">
                 <label>Event Patrons & Partners</label>
