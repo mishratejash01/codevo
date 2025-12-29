@@ -39,7 +39,7 @@ export default function VerifyRegistration() {
   if (loading) return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
       <Loader2 className="animate-spin h-10 w-10 text-[#00ff88]" />
-      <span className="text-[10px] uppercase tracking-[4px] text-[#777777]">Syncing Secure Cloud</span>
+      <span className="text-[10px] uppercase tracking-[4px] text-[#777777]">Syncing Secure Node</span>
     </div>
   );
 
@@ -52,9 +52,9 @@ export default function VerifyRegistration() {
   );
 
   const event = data.events;
-  const isVerified = ['confirmed', 'completed', 'attended'].includes(data.current_status);
+  const isVerified = ['verified', 'confirmed'].includes(data.status);
+  const isAttended = data.is_attended; // From your table schema
   const isValid = event.end_date ? isBefore(new Date(), parseISO(event.end_date)) : true;
-  const isAttended = data.current_status === 'attended';
 
   return (
     <div className="min-h-screen bg-black text-white font-sans p-4 md:p-10 flex flex-col items-center relative overflow-hidden">
@@ -93,7 +93,7 @@ export default function VerifyRegistration() {
         </div>
 
         <div className="relative border border-[#1a1a1a] bg-[#0a0a0a] overflow-hidden shadow-2xl">
-          <div className={cn("h-1.5 w-full", isAttended ? "bg-red-500" : "bg-[#00ff88]")} />
+          <div className={cn("h-1.5 w-full", isAttended ? "bg-red-500" : isVerified ? "bg-[#00ff88]" : "bg-red-500")} />
           <div className="p-6 md:p-8 space-y-6">
             <header className="flex justify-between items-start">
               <div className="space-y-1">
@@ -125,14 +125,16 @@ export default function VerifyRegistration() {
             </div>
 
             <div className="pt-6 border-t border-[#1a1a1a] flex flex-col items-center">
-              <div className="bg-white p-4 rounded-xl shadow-inner"><QRCodeSVG value={data.id} size={150} level="H" /></div>
+              <div className="bg-white p-4 rounded-xl shadow-inner">
+                {/* Admin scans this ID to fetch the record */}
+                <QRCodeSVG value={data.id} size={150} level="H" />
+              </div>
               <p className="mt-4 text-[9px] font-mono tracking-[4px] text-[#777777] uppercase">ID: {data.id.substring(0, 12)}</p>
             </div>
           </div>
           
           <footer className="bg-[#0d0d0d] p-4 flex justify-between items-center border-t border-[#1a1a1a]">
             <div className="flex items-center gap-2"><ShieldCheck className={cn("w-3.5 h-3.5", isVerified ? "text-[#00ff88]" : "text-[#777777]")} /><span className="text-[8px] uppercase tracking-widest text-[#777777]">Security Verified</span></div>
-            <img src="/placeholder.svg" className="h-4 opacity-30 grayscale" alt="Logo" />
           </footer>
         </div>
 
