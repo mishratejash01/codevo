@@ -433,7 +433,7 @@ export function AlreadyRegisteredCard({
             <QRCodeSVG value={`${window.location.origin}/verify/${currentUserReg.id}`} size={200} level="H" />
           </div>
           <p className="text-center text-sm font-medium uppercase tracking-widest">{currentUserReg.full_name}</p>
-          <p className="text-center text-[10px] text-[#777777] mt-2 tracking-widest uppercase">Admin Terminal Only</p>
+          <p className="text-center text-[10px] text-[#777777] mt-2 tracking-widest uppercase">Scan to get your Event Pass</p>
         </DialogContent>
       </Dialog>
 
