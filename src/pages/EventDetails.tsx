@@ -50,6 +50,7 @@ export default function EventDetailsPage() {
   // Deep registration state logic from hook
   const { 
     isRegistered, 
+    registration, // Added registration object here
     invitation, 
     hasPendingInvitation,
     hasAcceptedInvitation,
@@ -402,7 +403,7 @@ export default function EventDetailsPage() {
                   >
                     {regLoading ? <Loader2 className="animate-spin h-4 w-4" /> : 'Join Event'}
                   </button>
-                ) : isRegistered && event.is_paid && event.payment_status === 'pending' ? (
+                ) : isRegistered && event.is_paid && registration?.payment_status === 'pending' ? ( // Fixed: Check registration object directly
                   <button 
                     className="w-full bg-[#ff8c00] text-black border-none p-[22px] text-center text-[0.8rem] font-extrabold uppercase tracking-[4px] cursor-pointer hover:bg-white transition-all flex items-center justify-center gap-2"
                     onClick={() => toast.info("Redirecting to payment portal...")}
