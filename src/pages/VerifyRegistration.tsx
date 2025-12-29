@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, ShieldCheck, ShieldAlert, Calendar, MapPin, CheckCircle2, XCircle } from 'lucide-react';
-import { format, isBefore, parseISO } from 'date-fns';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Loader2, ShieldAlert } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -37,123 +34,322 @@ export default function VerifyRegistration() {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
-      <Loader2 className="animate-spin h-10 w-10 text-[#00ff88]" />
-      <span className="text-[10px] uppercase tracking-[4px] text-[#777777]">Syncing Secure Node</span>
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4">
+      <Loader2 className="animate-spin h-10 w-10 text-white opacity-20" />
     </div>
   );
 
   if (!data) return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center p-6 text-center">
       <ShieldAlert className="w-16 h-16 text-red-500 mb-6" />
       <h1 className="text-2xl font-serif mb-4">Invalid Credential</h1>
-      <Button onClick={() => navigate('/')} variant="outline" className="border-[#1a1a1a]">Return Home</Button>
+      <button onClick={() => navigate('/')} className="mt-4 px-6 py-2 border border-[#262626] text-[10px] uppercase tracking-widest text-[#4a4a4a] hover:text-white transition-colors">
+        Return Home
+      </button>
     </div>
   );
 
   const event = data.events;
-  const isVerified = ['verified', 'confirmed'].includes(data.status);
-  const isAttended = data.is_attended; 
-  const isValid = event.end_date ? isBefore(new Date(), parseISO(event.end_date)) : true;
+  const isAttended = data.is_attended;
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans p-4 md:p-10 flex flex-col items-center relative overflow-hidden">
-      
-      <div className="w-full max-w-[450px] space-y-6">
-        
-        {/* Status Banner */}
-        <div className={cn(
-          "w-full p-4 border flex items-center gap-4",
-          isValid && isVerified ? "bg-[#00ff88]/5 border-[#00ff88]/20 text-[#00ff88]" : "bg-red-500/5 border-red-500/20 text-red-500"
-        )}>
-          {isValid && isVerified ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-          <div className="flex-1">
-            <p className="text-[10px] uppercase tracking-[2px] font-bold">
-              {isAttended ? 'Registry Entry Recorded' : 'Credential Validated'}
-            </p>
-          </div>
-          <Badge className={cn("rounded-none border-none", isAttended ? "bg-red-500" : "bg-[#00ff88] text-black")}>
-            {isAttended ? 'RECORDED' : 'ACTIVE'}
-          </Badge>
+    <div className="verify-registration-container">
+      <style>{`
+        .verify-registration-container {
+          --bg: #0a0a0a;
+          --card-bg: #111111;
+          --silver: #e2e2e2;
+          --silver-muted: #4a4a4a;
+          --platinum-grad: linear-gradient(135deg, #f0f0f0 0%, #a1a1a1 100%);
+          --border: #262626;
+          --accent: #ffffff;
+          min-height: 100vh;
+          background-color: var(--bg);
+          color: var(--silver);
+          font-family: 'Inter', sans-serif;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 24px;
+        }
+
+        .container {
+          width: 100%;
+          max-width: 420px;
+          animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-badge {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          margin-bottom: 30px;
+        }
+
+        .status-badge .line {
+          flex: 1;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, var(--border), transparent);
+        }
+
+        .status-badge span {
+          font-size: 10px;
+          letter-spacing: 5px;
+          text-transform: uppercase;
+          color: var(--silver-muted);
+        }
+
+        .pass-card {
+          background: var(--card-bg);
+          border: 1px solid var(--border);
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+        }
+
+        .card-top-accent {
+          height: 2px;
+          width: 100%;
+          background: var(--platinum-grad);
+          opacity: 0.8;
+        }
+
+        .card-content {
+          padding: 40px 35px;
+        }
+
+        header h2 {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 32px;
+          font-weight: 300;
+          color: var(--accent);
+          line-height: 1.1;
+          margin-bottom: 8px;
+        }
+
+        header p {
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 3px;
+          color: var(--silver-muted);
+          margin-bottom: 40px;
+        }
+
+        .identity-block {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          padding: 25px 0;
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+          margin-bottom: 30px;
+        }
+
+        .avatar-frame {
+          width: 65px;
+          height: 65px;
+          border: 1px solid var(--silver-muted);
+          padding: 3px;
+          filter: grayscale(1);
+        }
+
+        .avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
+
+        .id-text h3 {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 22px;
+          font-weight: 500;
+          color: var(--silver);
+        }
+
+        .id-text span {
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          color: var(--silver-muted);
+        }
+
+        .info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 40px;
+        }
+
+        .info-item label {
+          display: block;
+          font-size: 8px;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          color: var(--silver-muted);
+          margin-bottom: 5px;
+        }
+
+        .info-item p { font-size: 13px; font-weight: 300; color: #ccc; }
+
+        .verification-zone {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          position: relative;
+        }
+
+        .qr-wrapper {
+          background: #fff;
+          padding: 12px;
+          position: relative;
+        }
+
+        .qr-dimmed {
+          filter: grayscale(1) contrast(0.5) blur(1px);
+          opacity: 0.15;
+        }
+
+        .stamp-attended {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(-12deg);
+          border: 2px solid #555;
+          padding: 8px 16px;
+          background: rgba(17, 17, 17, 0.9);
+          backdrop-filter: blur(2px);
+          z-index: 5;
+          text-align: center;
+          box-shadow: 0 0 20px rgba(0,0,0,0.5);
+          pointer-events: none;
+        }
+
+        .stamp-attended span {
+          display: block;
+          font-size: 18px;
+          font-weight: 700;
+          letter-spacing: 4px;
+          color: #888;
+          text-transform: uppercase;
+        }
+
+        .id-hash {
+          margin-top: 25px;
+          font-family: 'Space Mono', monospace;
+          font-size: 8px;
+          color: var(--silver-muted);
+          letter-spacing: 2px;
+        }
+
+        .actions {
+          margin-top: 30px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .btn-primary {
+          background: var(--platinum-grad);
+          border: none;
+          padding: 16px;
+          font-size: 10px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 3px;
+          color: #000;
+          cursor: pointer;
+        }
+
+        .btn-secondary {
+          background: transparent;
+          border: 1px solid var(--border);
+          padding: 14px;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 3px;
+          color: var(--silver-muted);
+          text-align: center;
+          cursor: pointer;
+        }
+
+        @media print {
+          .actions, .status-badge { display: none !important; }
+          .stamp-attended { display: none !important; }
+          .qr-dimmed { filter: none !important; opacity: 1 !important; }
+          body, .verify-registration-container { background: white !important; }
+          .pass-card { border: 1px solid #ddd !important; box-shadow: none !important; background: white !important; }
+        }
+      `}</style>
+
+      <div className="container">
+        <div className="status-badge">
+          <div className="line"></div>
+          <span>Verified Credential</span>
+          <div className="line"></div>
         </div>
 
-        {/* Pass Card */}
-        <div className="relative border border-[#1a1a1a] bg-[#0a0a0a] overflow-hidden shadow-2xl">
-          <div className={cn("h-1.5 w-full", isAttended ? "bg-red-500/50" : isVerified ? "bg-[#00ff88]" : "bg-red-500")} />
-          
-          <div className="p-6 md:p-8 space-y-6">
-            <header className="flex justify-between items-start">
-              <div className="space-y-1">
-                <span className="text-[9px] text-[#777777] uppercase tracking-[3px]">Digital Entry Token</span>
-                <h2 className="text-xl font-serif text-white">{event.title}</h2>
-              </div>
+        <div className="pass-card">
+          <div className="card-top-accent"></div>
+          <div className="card-content">
+            <header>
+              <p>Official Event Pass</p>
+              <h2>{event.title}</h2>
             </header>
 
-            {/* Profile Section */}
-            <div className="flex items-center gap-4 py-4 border-y border-[#1a1a1a]">
-              <Avatar className="h-14 w-14 border border-[#1a1a1a]">
-                <AvatarImage src={data.avatar_url} />
-                <AvatarFallback className="bg-[#1a1a1a] font-serif">{data.full_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <h3 className="text-base font-medium text-white">{data.full_name}</h3>
-                <p className="text-[10px] text-[#777777] uppercase tracking-wider">{data.participation_type} • {data.team_name || 'Solo'}</p>
+            <div className="identity-block">
+              <div className="avatar-frame">
+                <img 
+                  src={data.avatar_url || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&h=200&auto=format&fit=crop"} 
+                  alt="Guest" 
+                />
+              </div>
+              <div className="id-text">
+                <h3>{data.full_name}</h3>
+                <span>{data.participation_type} • {data.team_name || 'Solo Guest'}</span>
               </div>
             </div>
 
-            {/* Event Details */}
-            <div className="grid grid-cols-2 gap-y-6">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-[#777777]"><Calendar className="w-3 h-3" /><span className="text-[9px] uppercase tracking-wider">Date</span></div>
-                <p className="text-xs text-white">{format(parseISO(event.start_date), 'MMM dd, yyyy')}</p>
+            <div className="info-grid">
+              <div className="info-item">
+                <label>Location</label>
+                <p>{event.venue || 'Event Premises'}</p>
               </div>
-              <div className="col-span-2 space-y-1">
-                <div className="flex items-center gap-2 text-[#777777]"><MapPin className="w-3 h-3" /><span className="text-[9px] uppercase tracking-wider">Venue</span></div>
-                <p className="text-xs text-white truncate">{event.venue || 'Event Premises'}</p>
+              <div className="info-item">
+                <label>Date</label>
+                <p>{format(parseISO(event.start_date), 'dd . MM . yy')}</p>
+              </div>
+              <div className="info-item" style={{ gridColumn: 'span 2' }}>
+                <label>Access Level</label>
+                <p>Registry Verified Pass</p>
               </div>
             </div>
 
-            {/* QR CODE WITH STAMP WATERMARK */}
-            <div className="pt-6 border-t border-[#1a1a1a] flex flex-col items-center">
-              <div className="relative group">
-                {/* QR Container */}
-                <div className={cn(
-                  "bg-white p-4 rounded-xl shadow-inner transition-all duration-500",
-                  isAttended && "opacity-30 grayscale blur-[1px]"
-                )}>
-                  <QRCodeSVG value={data.id} size={160} level="H" />
+            <div className="verification-zone">
+              <div className={cn("qr-wrapper", isAttended && "qr-dimmed")}>
+                <QRCodeSVG value={data.id} size={140} level="H" bgColor="#ffffff" fgColor="#000000" />
+              </div>
+
+              {isAttended && (
+                <div className="stamp-attended">
+                  <span>Attended</span>
                 </div>
+              )}
 
-                {/* THE STAMP (Only shows if attended) */}
-                {isAttended && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                    <div className="border-[6px] border-red-600 rounded-full p-2 rotate-[-25deg] bg-black/10 backdrop-blur-[1px] animate-in zoom-in duration-300">
-                      <div className="border-2 border-red-600 rounded-full py-2 px-4 flex flex-col items-center justify-center">
-                        <span className="text-[18px] font-black text-red-600 uppercase leading-none">Attended</span>
-                        <div className="h-[1px] w-full bg-red-600 my-1" />
-                        <span className="text-[8px] font-bold text-red-600 uppercase tracking-[2px]">Verified</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <p className="mt-4 text-[9px] font-mono tracking-[4px] text-[#777777] uppercase">ID: {data.id.substring(0, 12)}</p>
+              <div className="id-hash">UID: {data.id.toUpperCase()}</div>
             </div>
           </div>
-          
-          <footer className="bg-[#0d0d0d] p-4 flex justify-between items-center border-t border-[#1a1a1a]">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className={cn("w-3.5 h-3.5", isVerified ? "text-[#00ff88]" : "text-[#777777]")} />
-              <span className="text-[8px] uppercase tracking-widest text-[#777777]">Security Verified</span>
-            </div>
-          </footer>
         </div>
 
-        {!isAttended && (
-          <Button onClick={() => window.print()} className="w-full bg-white text-black font-bold uppercase tracking-[3px] rounded-none hover:bg-[#00ff88] transition-colors h-12 text-[10px]">
-            Download Pass
-          </Button>
-        )}
+        <div className="actions">
+          <button className="btn-primary" onClick={() => window.print()}>
+            Download PDF Pass
+          </button>
+          <button className="btn-secondary" onClick={() => navigate('/dashboard')}>
+            Return to Dashboard
+          </button>
+        </div>
       </div>
     </div>
   );
