@@ -11,6 +11,7 @@ export default function VerifyRegistration() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
     if (registrationId) fetchVerificationData();
@@ -18,6 +19,7 @@ export default function VerifyRegistration() {
 
   async function fetchVerificationData() {
     try {
+      // 1. Fetch registration details and linked event
       const { data: reg, error: regError } = await supabase
         .from('event_registrations')
         .select(`*, events (*)`)
@@ -26,6 +28,16 @@ export default function VerifyRegistration() {
 
       if (regError || !reg) throw new Error("Registry record not found");
       setData(reg);
+
+      // 2. Fetch the actual account profile image from the profiles table
+      if (reg.user_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', reg.user_id)
+          .single();
+        setUserProfile(profile);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -300,9 +312,10 @@ export default function VerifyRegistration() {
 
             <div className="identity-block">
               <div className="avatar-frame">
+                {/* Dynamically loads the Gmail/Account image from the profiles table */}
                 <img 
-                  src={data.avatar_url || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&h=200&auto=format&fit=crop"} 
-                  alt="Guest" 
+                  src={userProfile?.avatar_url || "/placeholder.svg"} 
+                  alt="Guest Identity" 
                 />
               </div>
               <div className="id-text">
@@ -318,11 +331,11 @@ export default function VerifyRegistration() {
               </div>
               <div className="info-item">
                 <label>Date</label>
-                <p>{format(parseISO(event.start_date), 'dd . MM . yy')}</p>
+                <p>{event.start_date ? format(parseISO(event.start_date), 'dd . MM . yy') : "N/A"}</p>
               </div>
               <div className="info-item" style={{ gridColumn: 'span 2' }}>
                 <label>Access Level</label>
-                <p>Registry Verified Pass</p>
+                <p>{data.experience_level || 'General Admission'} Tier</p>
               </div>
             </div>
 
