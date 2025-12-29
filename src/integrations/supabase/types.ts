@@ -104,6 +104,105 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_registrations: {
+        Row: {
+          agreed_to_privacy: boolean
+          agreed_to_rules: boolean
+          attended_at: string | null
+          college_org_name: string
+          country_city: string
+          created_at: string | null
+          current_status: string
+          custom_answers: Json | null
+          email: string
+          event_id: string
+          experience_level: string | null
+          full_name: string
+          github_link: string | null
+          id: string
+          is_attended: boolean | null
+          linkedin_link: string | null
+          mobile_number: string
+          motivation_answer: string | null
+          payment_status: string | null
+          preferred_track: string | null
+          primary_languages: string[] | null
+          prior_contest_experience: boolean | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agreed_to_privacy?: boolean
+          agreed_to_rules?: boolean
+          attended_at?: string | null
+          college_org_name: string
+          country_city: string
+          created_at?: string | null
+          current_status?: string
+          custom_answers?: Json | null
+          email: string
+          event_id: string
+          experience_level?: string | null
+          full_name: string
+          github_link?: string | null
+          id?: string
+          is_attended?: boolean | null
+          linkedin_link?: string | null
+          mobile_number: string
+          motivation_answer?: string | null
+          payment_status?: string | null
+          preferred_track?: string | null
+          primary_languages?: string[] | null
+          prior_contest_experience?: boolean | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agreed_to_privacy?: boolean
+          agreed_to_rules?: boolean
+          attended_at?: string | null
+          college_org_name?: string
+          country_city?: string
+          created_at?: string | null
+          current_status?: string
+          custom_answers?: Json | null
+          email?: string
+          event_id?: string
+          experience_level?: string | null
+          full_name?: string
+          github_link?: string | null
+          id?: string
+          is_attended?: boolean | null
+          linkedin_link?: string | null
+          mobile_number?: string
+          motivation_answer?: string | null
+          payment_status?: string | null
+          preferred_track?: string | null
+          primary_languages?: string[] | null
+          prior_contest_experience?: boolean | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contest_registrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_discussions: {
         Row: {
           content: string
@@ -1157,6 +1256,90 @@ export type Database = {
         }
         Relationships: []
       }
+      meetup_registrations: {
+        Row: {
+          agreed_to_privacy: boolean
+          agreed_to_rules: boolean
+          attended_at: string | null
+          bringing_guest: boolean | null
+          college_org_name: string
+          connection_interests: string | null
+          country_city: string
+          created_at: string | null
+          current_status: string
+          dietary_preference: string | null
+          email: string
+          event_id: string
+          full_name: string
+          id: string
+          is_attended: boolean | null
+          mobile_number: string
+          payment_status: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agreed_to_privacy?: boolean
+          agreed_to_rules?: boolean
+          attended_at?: string | null
+          bringing_guest?: boolean | null
+          college_org_name: string
+          connection_interests?: string | null
+          country_city: string
+          created_at?: string | null
+          current_status?: string
+          dietary_preference?: string | null
+          email: string
+          event_id: string
+          full_name: string
+          id?: string
+          is_attended?: boolean | null
+          mobile_number: string
+          payment_status?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agreed_to_privacy?: boolean
+          agreed_to_rules?: boolean
+          attended_at?: string | null
+          bringing_guest?: boolean | null
+          college_org_name?: string
+          connection_interests?: string | null
+          country_city?: string
+          created_at?: string | null
+          current_status?: string
+          dietary_preference?: string | null
+          email?: string
+          event_id?: string
+          full_name?: string
+          id?: string
+          is_attended?: boolean | null
+          mobile_number?: string
+          payment_status?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetup_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_registrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       practice_bookmarks: {
         Row: {
           created_at: string | null
@@ -1769,6 +1952,90 @@ export type Database = {
           },
         ]
       }
+      webinar_registrations: {
+        Row: {
+          agreed_to_privacy: boolean
+          agreed_to_rules: boolean
+          attended_at: string | null
+          college_org_name: string
+          country_city: string
+          created_at: string | null
+          current_status: string
+          email: string
+          event_id: string
+          full_name: string
+          id: string
+          is_attended: boolean | null
+          mobile_number: string
+          payment_status: string | null
+          questions_for_speaker: string | null
+          status: string | null
+          timezone: string | null
+          topics_of_interest: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agreed_to_privacy?: boolean
+          agreed_to_rules?: boolean
+          attended_at?: string | null
+          college_org_name: string
+          country_city: string
+          created_at?: string | null
+          current_status?: string
+          email: string
+          event_id: string
+          full_name: string
+          id?: string
+          is_attended?: boolean | null
+          mobile_number: string
+          payment_status?: string | null
+          questions_for_speaker?: string | null
+          status?: string | null
+          timezone?: string | null
+          topics_of_interest?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agreed_to_privacy?: boolean
+          agreed_to_rules?: boolean
+          attended_at?: string | null
+          college_org_name?: string
+          country_city?: string
+          created_at?: string | null
+          current_status?: string
+          email?: string
+          event_id?: string
+          full_name?: string
+          id?: string
+          is_attended?: boolean | null
+          mobile_number?: string
+          payment_status?: string | null
+          questions_for_speaker?: string | null
+          status?: string | null
+          timezone?: string | null
+          topics_of_interest?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webinar_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_registrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       website_availability: {
         Row: {
           created_at: string | null
@@ -1798,6 +2065,93 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      workshop_registrations: {
+        Row: {
+          agreed_to_privacy: boolean
+          agreed_to_rules: boolean
+          attended_at: string | null
+          college_org_name: string
+          country_city: string
+          created_at: string | null
+          current_status: string
+          email: string
+          event_id: string
+          experience_level: string | null
+          full_name: string
+          id: string
+          is_attended: boolean | null
+          laptop_available: boolean | null
+          learning_goals: string | null
+          mobile_number: string
+          payment_status: string | null
+          prior_knowledge: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agreed_to_privacy?: boolean
+          agreed_to_rules?: boolean
+          attended_at?: string | null
+          college_org_name: string
+          country_city: string
+          created_at?: string | null
+          current_status?: string
+          email: string
+          event_id: string
+          experience_level?: string | null
+          full_name: string
+          id?: string
+          is_attended?: boolean | null
+          laptop_available?: boolean | null
+          learning_goals?: string | null
+          mobile_number: string
+          payment_status?: string | null
+          prior_knowledge?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agreed_to_privacy?: boolean
+          agreed_to_rules?: boolean
+          attended_at?: string | null
+          college_org_name?: string
+          country_city?: string
+          created_at?: string | null
+          current_status?: string
+          email?: string
+          event_id?: string
+          experience_level?: string | null
+          full_name?: string
+          id?: string
+          is_attended?: boolean | null
+          laptop_available?: boolean | null
+          learning_goals?: string | null
+          mobile_number?: string
+          payment_status?: string | null
+          prior_knowledge?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_registrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1883,7 +2237,15 @@ export type Database = {
           username: string
         }[]
       }
+      get_unified_event_access_status: {
+        Args: { p_event_id: string }
+        Returns: Json
+      }
       mark_as_attended: { Args: { reg_id: string }; Returns: undefined }
+      mark_contest_attended: { Args: { reg_id: string }; Returns: undefined }
+      mark_meetup_attended: { Args: { reg_id: string }; Returns: undefined }
+      mark_webinar_attended: { Args: { reg_id: string }; Returns: undefined }
+      mark_workshop_attended: { Args: { reg_id: string }; Returns: undefined }
       register_team_event: {
         Args: { p_registration: Json; p_team_members?: Json }
         Returns: Json
