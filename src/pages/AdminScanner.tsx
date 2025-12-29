@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Html5Qrcode, Html5QrcodeScanType } from 'html5-qrcode';
-import { ShieldCheck, Loader2, XCircle, Scan, Camera, Building, Mail, Users, Check, X, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, Loader2, XCircle, Scan, Camera, Building, Mail, Users, Check, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -64,7 +64,6 @@ export default function AdminScanner() {
     const cleanId = decodedText.trim().toLowerCase();
 
     try {
-      // Fetch record using the ID from the QR
       const { data, error } = await supabase
         .from('event_registrations')
         .select(`
@@ -73,6 +72,7 @@ export default function AdminScanner() {
           email, 
           college_org_name, 
           current_status, 
+          status,
           participation_type, 
           team_name,
           is_attended
@@ -84,16 +84,17 @@ export default function AdminScanner() {
 
       setGuestData(data);
       
-      // Check if already attended
-      if (data.is_attended || data.current_status === 'attended') {
+      // CHECK BOOLEAN FLAG ONLY (Reliable)
+      if (data.is_attended === true) {
         setAlreadyScanned(true);
-        toast.warning("Warning: User already checked in!");
+        toast.warning("ALERT: User has already entered!");
+      } else {
+        setAlreadyScanned(false);
       }
 
     } catch (err: any) {
       setErrorStatus(err.message);
       toast.error(err.message);
-      // Auto-reset on error after 3s
       setTimeout(() => {
         resetState();
         if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
@@ -115,11 +116,11 @@ export default function AdminScanner() {
 
     setProcessingVerdict(true);
     try {
-      // Update both flags for consistency
+      // FIX: Only update 'is_attended'. Do NOT update 'current_status' because
+      // your database constraint restricts it to 'Student', 'Professional', etc.
       const { error } = await supabase
         .from('event_registrations')
         .update({ 
-          current_status: 'attended',
           is_attended: true,
           attended_at: new Date().toISOString(),
           updated_at: new Date().toISOString() 
@@ -129,13 +130,22 @@ export default function AdminScanner() {
       if (error) throw error;
 
       toast.success(`Access Granted: ${guestData.full_name}`);
-      resetState();
-      if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
+      
+      setTimeout(() => {
+        resetState();
+        if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
+      }, 1500);
+
     } catch (err: any) {
+      console.error(err);
       toast.error("Update Failed: " + err.message);
-    } finally {
       setProcessingVerdict(false);
     }
+  };
+
+  const handleReset = () => {
+    resetState();
+    if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
   };
 
   return (
@@ -153,7 +163,6 @@ export default function AdminScanner() {
           <p className="text-[12px] text-[#A1A1AA] mt-1">Authorized personnel only • Secure Sync Active</p>
         </header>
 
-        {/* Camera Feed */}
         <div className="relative w-full aspect-square bg-black border border-[#27272A] rounded-[24px] overflow-hidden shadow-2xl">
           <div id="reader" className="w-full h-full"></div>
 
@@ -175,7 +184,6 @@ export default function AdminScanner() {
           )}
         </div>
 
-        {/* Verification Panel */}
         <div className={cn(
           "bg-[#18181B] border rounded-[20px] p-6 min-h-[220px] flex flex-col justify-center transition-colors duration-500",
           alreadyScanned ? "border-yellow-500/50 bg-yellow-500/5" : "border-[#27272A]"
@@ -187,7 +195,6 @@ export default function AdminScanner() {
             </div>
           ) : guestData ? (
             <div className="space-y-4 animate-in fade-in zoom-in duration-300">
-              {/* Header */}
               <div className="flex justify-between items-start">
                 <div>
                   <span className="text-[10px] uppercase font-bold text-[#A1A1AA] tracking-widest block mb-1">Guest Details</span>
@@ -200,39 +207,47 @@ export default function AdminScanner() {
                 )}
               </div>
 
-              {/* Warning if already scanned */}
               {alreadyScanned && (
                 <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-3">
                   <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0" />
                   <p className="text-[10px] text-yellow-200 uppercase leading-tight font-bold">
-                    Pass used. Verify ID manually.
+                    Warning: This pass was used. Do not admit again.
                   </p>
                 </div>
               )}
 
-              {/* Details Grid */}
               <div className="grid grid-cols-1 gap-2 pt-2 text-sm">
                 <div className="flex items-center gap-3 text-[#A1A1AA]"><Building className="w-4 h-4 text-[#3B82F6]" /> {guestData.college_org_name}</div>
                 <div className="flex items-center gap-3 text-[#A1A1AA]"><Mail className="w-4 h-4 text-[#3B82F6]" /> {guestData.email}</div>
                 <div className="flex items-center gap-3 text-[#A1A1AA]"><Users className="w-4 h-4 text-[#3B82F6]" /> {guestData.participation_type} • {guestData.team_name || 'Individual'}</div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex gap-3 pt-2 border-t border-[#27272A] mt-2">
-                <button 
-                  disabled={processingVerdict}
-                  onClick={() => handleVerdict(true)}
-                  className="flex-1 bg-green-600 hover:bg-green-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                >
-                  {processingVerdict ? <Loader2 className="animate-spin" size={18} /> : <><Check size={18} /> Accept</>}
-                </button>
-                <button 
-                  disabled={processingVerdict}
-                  onClick={() => handleVerdict(false)}
-                  className="flex-1 bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                >
-                  <X size={18} /> Reject
-                </button>
+                {!alreadyScanned ? (
+                  <>
+                    <button 
+                      disabled={processingVerdict}
+                      onClick={() => handleVerdict(true)}
+                      className="flex-1 bg-green-600 hover:bg-green-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                    >
+                      {processingVerdict ? <Loader2 className="animate-spin" size={18} /> : <><Check size={18} /> Accept</>}
+                    </button>
+                    <button 
+                      disabled={processingVerdict}
+                      onClick={() => handleVerdict(false)}
+                      className="flex-1 bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                    >
+                      <X size={18} /> Reject
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={handleReset}
+                    className="w-full bg-[#27272A] hover:bg-[#3f3f46] py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <RefreshCw size={18} /> Scan Next
+                  </button>
+                )}
               </div>
             </div>
           ) : errorStatus ? (
