@@ -33,6 +33,7 @@ import { EventFAQs } from '@/components/events/EventFAQs';
 import { EventDiscussions } from '@/components/events/EventDiscussions';
 import { EventEligibility } from '@/components/events/EventEligibility';
 import { EventSponsors } from '@/components/events/EventSponsors';
+import { initializeRazorpayPayment } from '@/utils/razorpay';
 
 export default function EventDetailsPage() {
   const { slug } = useParams();
@@ -44,13 +45,13 @@ export default function EventDetailsPage() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Deep registration state logic from hook
   const { 
     isRegistered, 
-    registration, // Added registration object here
+    registration, 
     invitation, 
     hasPendingInvitation,
     hasAcceptedInvitation,
@@ -114,6 +115,98 @@ export default function EventDetailsPage() {
       setLoading(false);
     }
   }
+
+  // --- PAYMENT HANDLER ---
+  const handlePayment = () => {
+    if (!event || !registration || !userProfile) {
+      toast.error("Missing event or user details");
+      return;
+    }
+
+    setIsProcessingPayment(true);
+
+    initializeRazorpayPayment(
+      {
+        amount: event.registration_fee,
+        currency: event.currency || 'INR',
+        name: "Codevo",
+        description: `Registration: ${event.title}`,
+        prefill: {
+          name: userProfile.full_name || userProfile.username || 'User',
+          email: session?.user.email || '',
+          contact: userProfile.contact_no || '',
+        },
+        notes: {
+          event_id: event.id,
+          registration_id: registration.id,
+        }
+      },
+      async (response) => {
+        // SUCCESS HANDLER
+        try {
+          toast.success(`Payment authorized! Processing record...`);
+          
+          // 1. Log Payment into 'event_payments' table (ensure this table exists in your DB)
+          const { error: paymentError } = await supabase.from('event_payments').insert({
+            event_id: event.id,
+            user_id: session?.user.id,
+            user_email: session?.user.email,
+            registration_id: registration.id,
+            amount: event.registration_fee,
+            currency: event.currency,
+            payment_gateway: 'razorpay',
+            payment_method: 'online', 
+            transaction_id: response.razorpay_payment_id,
+            payment_status: 'completed',
+            gateway_payment_id: response.razorpay_payment_id,
+            // Only relevant if you used order_id from backend
+            gateway_order_id: response.razorpay_order_id, 
+            gateway_signature: response.razorpay_signature,
+          });
+
+          if (paymentError) {
+            console.error("Payment Log Error:", paymentError);
+            // We don't stop here, we still try to update the registration status
+          }
+
+          // 2. Determine Table Name based on event type
+          let tableName = 'event_registrations'; // Default for Hackathons/Normal
+          const type = (event.form_type || event.event_type || '').toLowerCase();
+          
+          if (type === 'workshop') tableName = 'workshop_registrations';
+          else if (type === 'webinar') tableName = 'webinar_registrations';
+          else if (type === 'meetup') tableName = 'meetup_registrations';
+          else if (type === 'contest') tableName = 'contest_registrations';
+          
+          // 3. Update Registration Status
+          const { error: updateError } = await supabase
+            .from(tableName as any)
+            .update({ 
+              payment_status: 'paid',
+              status: 'confirmed'
+            })
+            .eq('id', registration.id);
+
+          if (updateError) throw updateError;
+
+          toast.success("Registration confirmed! Welcome aboard.");
+          refetchRegistration(); // Refresh UI to show "Confirmed" state
+
+        } catch (err: any) {
+          console.error("Payment post-processing error:", err);
+          toast.error("Payment recorded but status update failed. Please contact support.");
+        } finally {
+          setIsProcessingPayment(false);
+        }
+      },
+      (error) => {
+        // FAILURE HANDLER
+        console.error("Payment failed:", error);
+        toast.error(error.description || "Payment failed. Please try again.");
+        setIsProcessingPayment(false);
+      }
+    );
+  };
 
   // --- REGISTRATION FLOW HANDLERS ---
   const handleRegisterClick = () => {
@@ -223,7 +316,7 @@ export default function EventDetailsPage() {
           />
         </section>
 
-        {/* --- REGISTRATION STATUS BAR (SQL MAPPED) --- */}
+        {/* --- REGISTRATION STATUS BAR --- */}
         <div className="grid grid-cols-2 md:grid-cols-4 py-[50px] border-y border-[#1a1a1a] mb-[80px] gap-y-10">
           <div className="flex flex-col gap-1.5">
             <span className="text-[0.6rem] uppercase text-[#777777] tracking-[2px]">Last Day to Join</span>
@@ -257,7 +350,6 @@ export default function EventDetailsPage() {
           
           <div className="content-col space-y-[120px]">
             
-            {/* FIX: Only show banner if we don't have a pending invitation handled below */}
             {!hasPendingInvitation && <InvitationBanner />}
 
             {/* --- CRITICAL REGISTRATION LOGIC INJECTION --- */}
@@ -284,7 +376,7 @@ export default function EventDetailsPage() {
                  </motion.div>
               )}
 
-              {/* State C: User is already registered - Show appropriate card based on form_type */}
+              {/* State C: User is already registered */}
               {isRegistered && (
                 <section>
                   <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">
@@ -316,7 +408,7 @@ export default function EventDetailsPage() {
               <EventDetailsContent event={event} />
             </section>
 
-            {/* Section: Tracks (SQL jsonb mapping) */}
+            {/* Section: Tracks */}
             {event.tracks && Array.isArray(event.tracks) && event.tracks.length > 0 && (
               <section id="tracks">
                 <h2 className="section-title">Available Tracks</h2>
@@ -353,7 +445,7 @@ export default function EventDetailsPage() {
               <EventPrizes eventId={event.id} prizePool={event.prize_pool} />
             </section>
 
-            {/* Section: Rules (Restored Text-Only logic) */}
+            {/* Section: Rules */}
             {event.rules && (
               <section id="rules">
                 <h2 className="section-title">The Rules</h2>
@@ -403,12 +495,13 @@ export default function EventDetailsPage() {
                   >
                     {regLoading ? <Loader2 className="animate-spin h-4 w-4" /> : 'Join Event'}
                   </button>
-                ) : isRegistered && event.is_paid && registration?.payment_status === 'pending' ? ( // Fixed: Check registration object directly
+                ) : isRegistered && event.is_paid && registration?.payment_status === 'pending' ? (
                   <button 
                     className="w-full bg-[#ff8c00] text-black border-none p-[22px] text-center text-[0.8rem] font-extrabold uppercase tracking-[4px] cursor-pointer hover:bg-white transition-all flex items-center justify-center gap-2"
-                    onClick={() => toast.info("Redirecting to payment portal...")}
+                    onClick={handlePayment}
+                    disabled={isProcessingPayment}
                   >
-                    <CreditCard size={16} /> Pay {event.currency} {event.registration_fee}
+                    {isProcessingPayment ? <Loader2 className="animate-spin h-4 w-4" /> : <><CreditCard size={16} /> Pay {event.currency} {event.registration_fee}</>}
                   </button>
                 ) : isRegistered ? (
                   <div className="w-full border border-[#00ff88] p-[20px] text-center bg-[#00ff88]/5">
