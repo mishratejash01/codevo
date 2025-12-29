@@ -329,11 +329,11 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange }: MeetupR
           ) : (
             /* Success Screen */
             <div className="flex flex-col items-center justify-center p-[80px_40px] text-center min-h-[600px] animate-in zoom-in-95 duration-500">
-              <div className="w-[60px] h-[60px] border border-[#00ff88] rounded-full text-[#00ff88] flex items-center justify-center text-2xl mb-[30px]">
+              <div className={cn("w-[60px] h-[60px] border rounded-full flex items-center justify-center text-2xl mb-[30px]", event.is_paid ? "border-yellow-500 text-yellow-500" : "border-[#00ff88] text-[#00ff88]")}>
                 <Check size={30} strokeWidth={3} />
               </div>
-              <h2 className="font-serif text-[2.5rem] text-white mb-[15px]">See You There</h2>
-              <p className="text-[#777777] uppercase tracking-[2px] text-[0.7rem] mb-[40px]">Registration Logged Successfully</p>
+              <h2 className="font-serif text-[2.5rem] text-white mb-[15px]">{event.is_paid ? "Payment Required" : "See You There"}</h2>
+              <p className="text-[#777777] uppercase tracking-[2px] text-[0.7rem] mb-[40px]">{event.is_paid ? "Registration Pending Payment" : "Registration Logged Successfully"}</p>
               
               <div className="w-full border border-[#1a1a1a] p-[30px] bg-[#0a0a0a] mb-[30px]">
                 <p className="text-[0.85rem] text-[#e0e0e0] leading-relaxed">
