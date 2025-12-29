@@ -313,6 +313,7 @@ export type Database = {
         Row: {
           agreed_to_privacy: boolean
           agreed_to_rules: boolean
+          attended_at: string | null
           college_org_name: string
           country_city: string
           created_at: string | null
@@ -326,6 +327,7 @@ export type Database = {
           id: string
           invitation_token: string | null
           invited_by_registration_id: string | null
+          is_attended: boolean | null
           linkedin_link: string | null
           mobile_number: string
           motivation_answer: string | null
@@ -347,6 +349,7 @@ export type Database = {
         Insert: {
           agreed_to_privacy?: boolean
           agreed_to_rules?: boolean
+          attended_at?: string | null
           college_org_name: string
           country_city: string
           created_at?: string | null
@@ -360,6 +363,7 @@ export type Database = {
           id?: string
           invitation_token?: string | null
           invited_by_registration_id?: string | null
+          is_attended?: boolean | null
           linkedin_link?: string | null
           mobile_number: string
           motivation_answer?: string | null
@@ -381,6 +385,7 @@ export type Database = {
         Update: {
           agreed_to_privacy?: boolean
           agreed_to_rules?: boolean
+          attended_at?: string | null
           college_org_name?: string
           country_city?: string
           created_at?: string | null
@@ -394,6 +399,7 @@ export type Database = {
           id?: string
           invitation_token?: string | null
           invited_by_registration_id?: string | null
+          is_attended?: boolean | null
           linkedin_link?: string | null
           mobile_number?: string
           motivation_answer?: string | null
@@ -1839,6 +1845,24 @@ export type Database = {
         }[]
       }
       generate_invitation_token: { Args: never; Returns: string }
+      get_event_team_members: {
+        Args: { p_event_id: string; p_team_name: string }
+        Returns: {
+          avatar_url: string
+          email: string
+          full_name: string
+          github_link: string
+          id: string
+          invited_by_registration_id: string
+          linkedin_link: string
+          participation_type: string
+          payment_status: string
+          status: string
+          team_name: string
+          team_role: string
+          user_id: string
+        }[]
+      }
       get_my_event_access_status: {
         Args: { p_event_id: string }
         Returns: Json
@@ -1858,6 +1882,11 @@ export type Database = {
           user_id: string
           username: string
         }[]
+      }
+      mark_as_attended: { Args: { reg_id: string }; Returns: undefined }
+      register_team_event: {
+        Args: { p_registration: Json; p_team_members?: Json }
+        Returns: Json
       }
       update_time_spent: { Args: { p_minutes?: number }; Returns: undefined }
     }
