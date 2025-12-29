@@ -11,7 +11,7 @@ import { useJavaScriptRunner } from '@/hooks/useJavaScriptRunner';
 import { useInteractiveRunner } from '@/hooks/useInteractiveRunner';
 import { TerminalView } from '@/components/TerminalView';
 import { 
-  Loader2, Play, RefreshCw, Home, Terminal as TerminalIcon, 
+  Loader2, Play, RefreshCw, Terminal as TerminalIcon, 
   Download, Lock, Square, Clock, Plus, Minus, Maximize2, Minimize2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -258,9 +258,9 @@ const Compiler = () => {
   
   // Design State
   const [fontSizeLeft, setFontSizeLeft] = useState(14);
-  const [fontSizeRight, setFontSizeRight] = useState(14); // Matched right side default
+  const [fontSizeRight, setFontSizeRight] = useState(14);
   const [isReady, setIsReady] = useState(false);
-  const [isFullScreen, setIsFullScreen] = useState(false); // Preserved from original
+  const [isFullScreen, setIsFullScreen] = useState(false);
   
   const executionStartRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -421,14 +421,17 @@ const Compiler = () => {
       <header className="h-[60px] flex items-center justify-between px-6 border-b border-white/10 bg-[#050505] z-50 relative shrink-0">
         <div className="flex items-center gap-4">
           <Link to="/" className="text-[#666666] hover:text-white transition-colors duration-300">
-            <Home className="w-5 h-5" strokeWidth={1.5} />
+            {/* USER REQUESTED HOME ICON */}
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+               <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
+            </svg>
           </Link>
         </div>
         
         {/* BRANDING: "Codevo" (e is small, no uppercase) */}
         <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
           <span className="font-neuropol text-2xl tracking-[0.2em] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-            CODéVO
+            Codevo
           </span>
         </div>
 
