@@ -61,9 +61,14 @@ export default function AdminScanner() {
     }
 
     setVerifying(true);
-    const cleanId = decodedText.trim().toLowerCase();
+    
+    // Support URL scanning by extracting the ID
+    const cleanId = decodedText.includes('/verify/') 
+      ? decodedText.split('/verify/').pop()?.split('?')[0].trim()
+      : decodedText.trim();
 
     try {
+      // 1. Fetch record using ID
       const { data, error } = await supabase
         .from('event_registrations')
         .select(`
@@ -75,7 +80,8 @@ export default function AdminScanner() {
           status,
           participation_type, 
           team_name,
-          is_attended
+          is_attended,
+          attended_at
         `)
         .eq('id', cleanId)
         .single();
@@ -84,7 +90,7 @@ export default function AdminScanner() {
 
       setGuestData(data);
       
-      // CHECK BOOLEAN FLAG ONLY (Reliable)
+      // 2. Check IS_ATTENDED boolean only
       if (data.is_attended === true) {
         setAlreadyScanned(true);
         toast.warning("ALERT: User has already entered!");
@@ -116,8 +122,8 @@ export default function AdminScanner() {
 
     setProcessingVerdict(true);
     try {
-      // FIX: Only update 'is_attended'. Do NOT update 'current_status' because
-      // your database constraint restricts it to 'Student', 'Professional', etc.
+      // 3. Update ONLY is_attended and attended_at
+      // We do NOT update 'current_status' or 'status' to avoid constraints
       const { error } = await supabase
         .from('event_registrations')
         .update({ 
@@ -131,6 +137,7 @@ export default function AdminScanner() {
 
       toast.success(`Access Granted: ${guestData.full_name}`);
       
+      // Auto-refresh scanner
       setTimeout(() => {
         resetState();
         if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
@@ -138,7 +145,7 @@ export default function AdminScanner() {
 
     } catch (err: any) {
       console.error(err);
-      toast.error("Update Failed: " + err.message);
+      toast.error("Database Error: " + err.message);
       setProcessingVerdict(false);
     }
   };
@@ -211,7 +218,7 @@ export default function AdminScanner() {
                 <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-3">
                   <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0" />
                   <p className="text-[10px] text-yellow-200 uppercase leading-tight font-bold">
-                    Warning: This pass was used. Do not admit again.
+                    Warning: This pass was used at {guestData.attended_at ? new Date(guestData.attended_at).toLocaleTimeString() : 'Unknown'}.
                   </p>
                 </div>
               )}
