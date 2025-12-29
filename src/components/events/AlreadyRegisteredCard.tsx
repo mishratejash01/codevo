@@ -84,7 +84,6 @@ export function AlreadyRegisteredCard({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setLoading(false); return; }
 
-      // 1. Get Current User's Registration
       const { data: myReg, error: myRegError } = await supabase
         .from('event_registrations')
         .select('*')
@@ -100,7 +99,6 @@ export function AlreadyRegisteredCard({
       
       setCurrentUserReg(myReg as any);
 
-      // 2. Fetch Team Members via RPC (SECURE WAY)
       if (myReg.participation_type === 'Team' && myReg.team_name) {
         const { data: allMembers, error: rpcError } = await supabase.rpc('get_event_team_members', {
           p_event_id: eventId,
@@ -109,11 +107,9 @@ export function AlreadyRegisteredCard({
 
         if (rpcError) {
           console.error("RPC Error:", rpcError);
-          // If RPC fails, fallback to showing just the user to prevent crash
           setLeaderReg(myReg as any);
           setIsLeader(true); 
         } else if (allMembers && allMembers.length > 0) {
-          // Identify Leader
           const leader = allMembers.find((m: any) => m.team_role === 'Leader') || 
                          allMembers.find((m: any) => !m.invited_by_registration_id) || 
                          allMembers[0];
@@ -126,24 +122,19 @@ export function AlreadyRegisteredCard({
           const amILeader = leader.user_id === session.user.id;
           setIsLeader(amILeader);
 
-          // 3. Fetch Invitations
           const { data: invites } = await supabase
             .from('team_invitations')
             .select('*')
             .eq('event_id', eventId)
-            // FIX: Using JS comment syntax now
-            // Loose match for invitations
             .ilike('team_name', myReg.team_name.trim());
 
           setInvitations(invites as TeamInvitation[] || []);
         } else {
-           // Fallback if RPC returns nothing
            setLeaderReg(myReg as any);
            setTeamMembers([]);
            setIsLeader(true);
         }
       } else {
-        // Solo Logic
         setLeaderReg(myReg as any);
         setTeamMembers([]);
         setIsLeader(true);
@@ -155,7 +146,7 @@ export function AlreadyRegisteredCard({
     }
   }
 
-  const confirmedCount = teamMembers.length + 1; // +1 for leader
+  const confirmedCount = teamMembers.length + 1;
   const isTeamFull = confirmedCount >= maxTeamSize;
 
   const handleDeleteInvitation = async (inviteId: string) => {
@@ -264,7 +255,6 @@ export function AlreadyRegisteredCard({
 
   return (
     <div className="w-full max-w-[700px] bg-[#0a0a0a] border border-[#1a1a1a] mx-auto font-sans overflow-hidden">
-      {/* Header */}
       <header className="p-6 md:p-10 border-b border-[#1a1a1a] flex justify-between items-center">
         <div className="flex items-center gap-5">
           <div className="w-[50px] h-[50px] border border-[#00ff88] rounded-full flex items-center justify-center text-[#00ff88]">
@@ -282,7 +272,6 @@ export function AlreadyRegisteredCard({
         </button>
       </header>
 
-      {/* Manifest Section */}
       <div className="mx-6 md:mx-10 my-10 border border-[#1a1a1a]">
         <button onClick={() => setShowTeamDetails(!showTeamDetails)} className="w-full p-5 bg-[#0d0d0d] flex justify-between items-center cursor-pointer hover:bg-[#111]">
           <div className="text-[11px] tracking-[2px] uppercase flex items-center gap-3 text-white">
@@ -301,7 +290,6 @@ export function AlreadyRegisteredCard({
 
         {showTeamDetails && (
           <div className="bg-[#050505] border-t border-[#1a1a1a] divide-y divide-[#1a1a1a]">
-            {/* 1. Leader Row */}
             <div className="p-6 flex justify-between items-center gap-5 text-white">
               <div className="flex gap-4 items-center flex-1">
                 <Avatar className="h-9 w-9 border border-[#1a1a1a]">
@@ -329,7 +317,6 @@ export function AlreadyRegisteredCard({
               </div>
             </div>
 
-            {/* 2. Members Rows */}
             {teamMembers.map((member) => (
               <div key={member.id} className="p-6 flex justify-between items-center gap-5 text-white">
                 <div className="flex gap-4 items-center flex-1">
@@ -346,15 +333,12 @@ export function AlreadyRegisteredCard({
                 </div>
                 <div className="flex items-center gap-4">
                   <StatusBadge status="completed" />
-                  
                   {(isLeader || member.user_id === currentUserReg.user_id) && (
                     <button onClick={() => handleEditOpen(member.id, member.full_name, member.team_role, 'reg')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
                   )}
-                  
                   {isLeader && (
                     <button onClick={() => handleRemoveMember(member.id)} className="text-[#777777] hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
                   )}
-
                   {member.github_link && (
                     <a href={member.github_link} target="_blank" rel="noreferrer" className="text-[#777777] hover:text-white"><ExternalLink className="w-3.5 h-3.5" /></a>
                   )}
@@ -362,7 +346,6 @@ export function AlreadyRegisteredCard({
               </div>
             ))}
 
-            {/* 3. Invitations (Pending) */}
             {isLeader && invitations.filter(inv => inv.status !== 'completed').map((invite) => (
               <div key={invite.id} className="p-6 flex justify-between items-center gap-5 text-white bg-white/[0.02]">
                 <div className="flex gap-4 items-center flex-1 opacity-60">
@@ -415,7 +398,10 @@ export function AlreadyRegisteredCard({
       <Dialog open={showQR} onOpenChange={setShowQR}>
         <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white max-w-sm">
           <DialogHeader className="items-center"><DialogTitle className="font-serif text-2xl">Squad Credential</DialogTitle></DialogHeader>
-          <div className="bg-white p-4 mx-auto my-6"><QRCodeSVG value={`${window.location.origin}/verify/${currentUserReg.id}`} size={200} level="H" /></div>
+          <div className="bg-white p-4 mx-auto my-6 rounded-lg">
+            {/* Participant scans this to get to the verify page */}
+            <QRCodeSVG value={`${window.location.origin}/verify/${currentUserReg.id}`} size={200} level="H" />
+          </div>
           <p className="text-center text-sm font-medium uppercase tracking-widest">{currentUserReg.full_name}</p>
         </DialogContent>
       </Dialog>
