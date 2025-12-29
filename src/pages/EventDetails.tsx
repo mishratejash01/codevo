@@ -20,6 +20,8 @@ import { WebinarRegistrationModal } from '@/components/events/WebinarRegistratio
 import { MeetupRegistrationModal } from '@/components/events/MeetupRegistrationModal';
 import { ContestRegistrationModal } from '@/components/events/ContestRegistrationModal';
 import { AlreadyRegisteredCard } from '@/components/events/AlreadyRegisteredCard';
+import { SimpleRegistrationCard } from '@/components/events/SimpleRegistrationCard';
+import { supportsTeams } from '@/utils/eventHelpers';
 import { PendingInvitationCard, InvitationBanner } from '@/components/events/InvitationBanner';
 import { InviteeRegistrationForm } from '@/components/events/InviteeRegistrationForm';
 import { useEventRegistration } from '@/hooks/useEventRegistration';
@@ -281,18 +283,28 @@ export default function EventDetailsPage() {
                  </motion.div>
               )}
 
-              {/* State C: User is already registered - Show Team Composition */}
+              {/* State C: User is already registered - Show appropriate card based on form_type */}
               {isRegistered && (
                 <section>
-                  <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">Team Composition</h2>
-                  <AlreadyRegisteredCard 
-                    eventId={event.id} 
-                    eventTitle={event.title}
-                    maxTeamSize={event.max_team_size || 4}
-                    isPaid={event.is_paid} 
-                    registrationFee={event.registration_fee} 
-                    currency={event.currency} 
-                  />
+                  <h2 className="font-serif text-[2.2rem] mb-10 font-normal border-b border-[#1a1a1a] pb-5">
+                    {supportsTeams(event.form_type) ? 'Team Composition' : 'Your Registration'}
+                  </h2>
+                  {supportsTeams(event.form_type) ? (
+                    <AlreadyRegisteredCard 
+                      eventId={event.id} 
+                      eventTitle={event.title}
+                      maxTeamSize={event.max_team_size || 4}
+                      isPaid={event.is_paid} 
+                      registrationFee={event.registration_fee} 
+                      currency={event.currency} 
+                    />
+                  ) : (
+                    <SimpleRegistrationCard 
+                      eventId={event.id} 
+                      eventTitle={event.title}
+                      formType={event.form_type || 'normal'}
+                    />
+                  )}
                 </section>
               )}
             </AnimatePresence>

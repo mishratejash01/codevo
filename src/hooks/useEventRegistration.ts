@@ -67,7 +67,7 @@ export function useEventRegistration(eventId: string | undefined, refreshKey?: n
         return;
       }
 
-      const { data, error } = await supabase.rpc('get_my_event_access_status', {
+      const { data, error } = await supabase.rpc('get_unified_event_access_status', {
         p_event_id: eventId
       });
 

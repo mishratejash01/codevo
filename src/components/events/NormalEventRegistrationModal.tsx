@@ -96,7 +96,7 @@ export function NormalEventRegistrationModal({ event, isOpen, onOpenChange }: No
         current_status: formData.current_status,
         experience_level: formData.experience_level,
         motivation_answer: formData.motivation_answer.trim(),
-        participation_type: 'Individual',
+        participation_type: 'Solo',
         status: registrationStatus,
         payment_status: paymentStatus,
         agreed_to_rules: true,
