@@ -20,7 +20,7 @@ export default function VerifyRegistration() {
 
   async function fetchVerificationData() {
     try {
-      // 1. Fetch registration details
+      // Fetch using select with foreign key relation
       const { data: reg, error: regError } = await supabase
         .from('event_registrations')
         .select(`*, events (*)`)
@@ -30,7 +30,7 @@ export default function VerifyRegistration() {
       if (regError || !reg) throw new Error("Registry record not found");
       setData(reg);
 
-      // 2. Fetch User Profile (Avatar)
+      // Fetch Avatar
       if (reg.user_id) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -40,7 +40,7 @@ export default function VerifyRegistration() {
         setUserProfile(profile);
       }
 
-      // 3. Fetch Event Sponsors
+      // Fetch Sponsors
       const { data: sponsorData } = await supabase
         .from('event_sponsors')
         .select('*')
@@ -75,7 +75,7 @@ export default function VerifyRegistration() {
   );
 
   const event = data.events;
-  const isAttended = data.is_attended; // Correct boolean check
+  const isAttended = data.is_attended; // Correct boolean field
 
   return (
     <div className="verify-registration-container">
