@@ -428,7 +428,7 @@ const Compiler = () => {
         {/* BRANDING: "Codevo" (e is small, no uppercase) */}
         <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
           <span className="font-neuropol text-2xl tracking-[0.2em] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-            Codevo
+            CODéVO
           </span>
         </div>
 
