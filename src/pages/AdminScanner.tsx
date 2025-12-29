@@ -58,11 +58,7 @@ export default function AdminScanner() {
     }
 
     setVerifying(true);
-    
-    // Support both raw IDs and URLs from the AlreadyRegisteredCard
-    const cleanId = decodedText.includes('/verify/') 
-      ? decodedText.split('/verify/').pop()?.trim().toLowerCase() 
-      : decodedText.trim().toLowerCase();
+    const cleanId = decodedText.trim().toLowerCase();
 
     try {
       const { data, error } = await supabase
@@ -81,7 +77,7 @@ export default function AdminScanner() {
         .eq('id', cleanId)
         .single();
 
-      if (error || !data) throw new Error("Invalid Pass: Record not found");
+      if (error || !data) throw new Error("Invalid Pass: Record not found in database");
       if (data.current_status === 'attended') throw new Error("Security Alert: Already Checked In");
 
       const { error: updateError } = await supabase
