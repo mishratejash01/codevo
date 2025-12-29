@@ -20,7 +20,7 @@ export default function VerifyRegistration() {
 
   async function fetchVerificationData() {
     try {
-      // 1. Fetch registration details and linked event
+      // Fetch registration and event data
       const { data: reg, error: regError } = await supabase
         .from('event_registrations')
         .select(`*, events (*)`)
@@ -30,7 +30,7 @@ export default function VerifyRegistration() {
       if (regError || !reg) throw new Error("Registry record not found");
       setData(reg);
 
-      // 2. Fetch the actual account profile image
+      // Fetch user profile image
       if (reg.user_id) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -40,7 +40,7 @@ export default function VerifyRegistration() {
         setUserProfile(profile);
       }
 
-      // 3. Fetch Event Sponsors/Partners
+      // Fetch event sponsors
       const { data: sponsorData } = await supabase
         .from('event_sponsors')
         .select('*')
@@ -93,27 +93,29 @@ export default function VerifyRegistration() {
           justify-content: center;
           align-items: center;
           padding: 24px;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
 
         .container { width: 100%; max-width: 420px; animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .pass-card {
-          background: var(--card-bg);
+          background: var(--card-bg) !important;
           border: 1px solid var(--border);
           position: relative;
           overflow: hidden;
           box-shadow: 0 30px 60px rgba(0,0,0,0.8);
         }
 
-        .card-top-accent { height: 2px; width: 100%; background: var(--platinum-grad); opacity: 0.8; }
+        .card-top-accent { height: 2px; width: 100%; background: var(--platinum-grad) !important; opacity: 0.8; }
         .card-content { padding: 40px 35px; }
 
         header h2 { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; color: var(--accent); line-height: 1.1; margin-bottom: 8px; }
         header p { font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: var(--silver-muted); margin-bottom: 40px; }
 
         .identity-block { display: flex; align-items: center; gap: 20px; padding: 25px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 30px; }
-        .avatar-frame { width: 65px; height: 65px; border: 1px solid var(--silver-muted); padding: 3px; filter: grayscale(1); }
+        .avatar-frame { width: 65px; height: 65px; border: 1px solid var(--silver-muted); padding: 3px; }
         .avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
 
         .id-text h3 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 500; color: var(--silver); }
@@ -123,11 +125,10 @@ export default function VerifyRegistration() {
         .info-item label { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 2px; color: var(--silver-muted); margin-bottom: 5px; }
         .info-item p { font-size: 13px; font-weight: 300; color: #ccc; }
 
-        /* Sponsor Logos Section */
         .sponsor-section { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
         .sponsor-section label { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 3px; color: var(--silver-muted); margin-bottom: 15px; text-align: center; }
         .logo-cloud { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
-        .mini-logo { height: 20px; max-width: 60px; filter: grayscale(1) brightness(0.8); opacity: 0.6; }
+        .mini-logo { height: 20px; max-width: 60px; }
 
         .verification-zone { display: flex; flex-direction: column; align-items: center; position: relative; margin-top: 30px; }
         .qr-wrapper { background: #fff; padding: 12px; position: relative; }
@@ -151,8 +152,9 @@ export default function VerifyRegistration() {
           .actions { display: none !important; }
           .stamp-attended { display: none !important; }
           .qr-dimmed { filter: none !important; opacity: 1 !important; }
-          body, .verify-registration-container { background: white !important; }
-          .pass-card { border: 1px solid #ddd !important; box-shadow: none !important; background: white !important; }
+          body { background: var(--bg) !important; -webkit-print-color-adjust: exact; }
+          .verify-registration-container { background: var(--bg) !important; padding: 0 !important; }
+          .pass-card { box-shadow: none !important; }
         }
       `}</style>
 
@@ -198,7 +200,7 @@ export default function VerifyRegistration() {
               <div className="sponsor-section">
                 <label>Event Patrons & Partners</label>
                 <div className="logo-cloud">
-                  {sponsors.map(s => (
+                  {sponsors.map((s: any) => (
                     <img key={s.id} src={s.logo_url} alt={s.name} className="mini-logo" />
                   ))}
                 </div>
