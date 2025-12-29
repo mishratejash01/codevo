@@ -62,7 +62,7 @@ export default function AdminScanner() {
 
     setVerifying(true);
     
-    // Clean ID extraction
+    // Extract ID cleanly from URL or raw text
     const cleanId = decodedText.includes('/verify/') 
       ? decodedText.split('/verify/').pop()?.split('?')[0].trim()
       : decodedText.trim();
@@ -83,7 +83,8 @@ export default function AdminScanner() {
 
       setGuestData(data);
       
-      // 2. Check IS_ATTENDED boolean (The only source of truth)
+      // 2. CHECK FOR DUPLICATE SCAN
+      // If is_attended is TRUE, show warning immediately
       if (data.is_attended === true) {
         setAlreadyScanned(true);
         toast.warning("ALERT: User has already checked in!");
@@ -94,6 +95,7 @@ export default function AdminScanner() {
     } catch (err: any) {
       setErrorStatus(err.message);
       toast.error(err.message);
+      // Auto-reset if scanning failed (e.g. invalid QR)
       setTimeout(() => {
         resetState();
         if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
@@ -115,16 +117,24 @@ export default function AdminScanner() {
 
     setProcessingVerdict(true);
     try {
-      // 3. USE RPC FUNCTION (Bypasses RLS and handles constraints safely)
-      const { error } = await supabase.rpc('mark_as_attended', {
-        reg_id: guestData.id
-      });
+      // 3. UPDATE DATABASE (Correct Fields Only)
+      // We update 'status' to 'confirmed' (allowed) and 'is_attended' to true.
+      // We DO NOT update 'current_status' because it causes a constraint error.
+      const { error } = await supabase
+        .from('event_registrations')
+        .update({ 
+          is_attended: true,
+          status: 'confirmed', 
+          attended_at: new Date().toISOString(),
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', guestData.id);
 
       if (error) throw error;
 
       toast.success(`Access Granted: ${guestData.full_name}`);
       
-      // Auto-reset after 1.5s
+      // Auto-reset to scan next person
       setTimeout(() => {
         resetState();
         if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
@@ -132,8 +142,7 @@ export default function AdminScanner() {
 
     } catch (err: any) {
       console.error("Verdict Error:", err);
-      toast.error("System Error: " + err.message);
-    } finally {
+      toast.error("Update Failed: " + err.message);
       setProcessingVerdict(false);
     }
   };
@@ -145,6 +154,11 @@ export default function AdminScanner() {
 
   return (
     <div className="min-h-screen bg-[#09090B] flex flex-col items-center p-6 font-sans text-[#FAFAFA]">
+      <style>{`
+        @keyframes scanline { 0%, 100% { top: 0%; } 50% { top: 100%; } }
+        #reader video { object-fit: cover !important; border-radius: 20px; }
+      `}</style>
+
       <div className="w-full max-w-[420px] flex flex-col gap-6">
         <header className="pl-1">
           <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
@@ -153,6 +167,7 @@ export default function AdminScanner() {
           <p className="text-[12px] text-[#A1A1AA] mt-1">Authorized personnel only • Secure Sync Active</p>
         </header>
 
+        {/* Camera Feed */}
         <div className="relative w-full aspect-square bg-black border border-[#27272A] rounded-[24px] overflow-hidden shadow-2xl">
           <div id="reader" className="w-full h-full"></div>
           {!isScanning && (
@@ -165,6 +180,7 @@ export default function AdminScanner() {
           )}
         </div>
 
+        {/* Verification Panel */}
         <div className={cn(
           "bg-[#18181B] border rounded-[20px] p-6 min-h-[220px] flex flex-col justify-center transition-colors duration-500",
           alreadyScanned ? "border-yellow-500/50 bg-yellow-500/5" : "border-[#27272A]"
@@ -227,7 +243,7 @@ export default function AdminScanner() {
                     onClick={handleReset}
                     className="w-full bg-[#27272A] hover:bg-[#3f3f46] py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors text-[#A1A1AA] hover:text-white"
                   >
-                    <RefreshCw size={18} /> Reset / Scan Next
+                    <RefreshCw size={18} /> Scan Next
                   </button>
                 )}
               </div>
