@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { 
   Check, Users, ChevronDown, ChevronUp, 
-  Pencil, Trash2, QrCode, Info, ExternalLink 
+  Pencil, Trash2, QrCode, Info, ExternalLink, Ticket 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -59,6 +60,7 @@ export function AlreadyRegisteredCard({
   eventTitle, 
   maxTeamSize = 4,
 }: AlreadyRegisteredCardProps) {
+  const navigate = useNavigate();
   const [currentUserReg, setCurrentUserReg] = useState<Registration | null>(null);
   const [leaderReg, setLeaderReg] = useState<Registration | null>(null);
   const [teamMembers, setTeamMembers] = useState<Registration[]>([]);
@@ -234,7 +236,7 @@ export function AlreadyRegisteredCard({
     const isRejected = status === 'declined' || status === 'expired';
 
     return (
-      <div className="flex items-center gap-3 px-3 py-1.5 border border-[#1a1a1a] bg-transparent">
+      <div className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 border border-[#1a1a1a] bg-transparent whitespace-nowrap">
         <div className="relative flex h-2 w-2">
           {isConfirmed && (
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00ff88] opacity-75"></span>
@@ -246,7 +248,7 @@ export function AlreadyRegisteredCard({
             isRejected && "bg-red-600"
           )}></span>
         </div>
-        <span className="text-[10px] uppercase tracking-[1px] text-[#e0e0e0] font-medium">
+        <span className="text-[9px] md:text-[10px] uppercase tracking-[1px] text-[#e0e0e0] font-medium">
           {isConfirmed ? 'Confirmed' : isPending ? 'Pending' : 'Rejected'}
         </span>
       </div>
@@ -255,34 +257,51 @@ export function AlreadyRegisteredCard({
 
   return (
     <div className="w-full max-w-[700px] bg-[#0a0a0a] border border-[#1a1a1a] mx-auto font-sans overflow-hidden">
-      <header className="p-6 md:p-10 border-b border-[#1a1a1a] flex justify-between items-center">
-        <div className="flex items-center gap-5">
-          <div className="w-[50px] h-[50px] border border-[#00ff88] rounded-full flex items-center justify-center text-[#00ff88]">
-            <Check className="w-6 h-6 stroke-[2.5]" />
+      {/* Responsive Header */}
+      <header className="p-6 md:p-10 border-b border-[#1a1a1a] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-5">
+          <div className="w-[40px] h-[40px] md:w-[50px] md:h-[50px] border border-[#00ff88] rounded-full flex items-center justify-center text-[#00ff88] shrink-0">
+            <Check className="w-5 h-5 md:w-6 md:h-6 stroke-[2.5]" />
           </div>
           <div className="space-y-1">
-            <span className="text-[10px] tracking-[3px] uppercase text-[#777777] block">Registry Verified</span>
-            <h2 className="font-serif text-3xl md:text-[2.4rem] font-normal leading-none text-white">
+            <span className="text-[9px] md:text-[10px] tracking-[3px] uppercase text-[#777777] block">Registry Verified</span>
+            <h2 className="font-serif text-2xl md:text-[2.4rem] font-normal leading-none text-white break-words">
               {currentUserReg.team_name || 'Solo Entry'}
             </h2>
           </div>
         </div>
-        <button onClick={() => setShowQR(true)} className="w-[45px] h-[45px] border border-[#1a1a1a] flex items-center justify-center text-[#777777] hover:text-[#00ff88] transition-colors">
-          <QrCode className="w-5 h-5" />
-        </button>
+        
+        {/* Actions Container */}
+        <div className="flex items-center gap-3 self-start md:self-auto w-full md:w-auto">
+          <Button 
+            onClick={() => navigate(`/verify/${currentUserReg.id}`)}
+            className="flex-1 md:flex-none h-[45px] bg-[#1a1a1a] border border-[#1a1a1a] hover:bg-[#00ff88] hover:text-black hover:border-[#00ff88] text-[#777777] transition-all uppercase tracking-widest text-[10px] font-medium px-4 md:px-6 rounded-none flex items-center justify-center gap-2"
+          >
+            <Ticket className="w-4 h-4" />
+            <span>Pass</span>
+          </Button>
+          
+          <button 
+            onClick={() => setShowQR(true)} 
+            className="w-[45px] h-[45px] border border-[#1a1a1a] flex items-center justify-center text-[#777777] hover:text-[#00ff88] transition-colors shrink-0"
+          >
+            <QrCode className="w-5 h-5" />
+          </button>
+        </div>
       </header>
 
-      <div className="mx-6 md:mx-10 my-10 border border-[#1a1a1a]">
-        <button onClick={() => setShowTeamDetails(!showTeamDetails)} className="w-full p-5 bg-[#0d0d0d] flex justify-between items-center cursor-pointer hover:bg-[#111]">
-          <div className="text-[11px] tracking-[2px] uppercase flex items-center gap-3 text-white">
+      {/* Manifest Section */}
+      <div className="mx-4 md:mx-10 my-6 md:my-10 border border-[#1a1a1a]">
+        <button onClick={() => setShowTeamDetails(!showTeamDetails)} className="w-full p-4 md:p-5 bg-[#0d0d0d] flex justify-between items-center cursor-pointer hover:bg-[#111]">
+          <div className="text-[10px] md:text-[11px] tracking-[2px] uppercase flex items-center gap-3 text-white">
             <Users className="w-3.5 h-3.5" />
             Squad Manifest ({confirmedCount}/{maxTeamSize})
           </div>
           <div className="flex items-center gap-4">
              {isLeader && !isTeamFull && currentUserReg.participation_type === 'Team' && (
-                <button onClick={(e) => { e.stopPropagation(); setIsInviteOpen(true); }} className="text-[9px] uppercase tracking-[2px] text-[#00ff88] border border-[#00ff88]/20 px-2 py-1 hover:bg-[#00ff88]/10">
+                <div onClick={(e) => { e.stopPropagation(); setIsInviteOpen(true); }} className="text-[9px] uppercase tracking-[2px] text-[#00ff88] border border-[#00ff88]/20 px-2 py-1 hover:bg-[#00ff88]/10">
                   + Add Member
-                </button>
+                </div>
              )}
              {showTeamDetails ? <ChevronUp className="w-3 h-3 text-[#777777]" /> : <ChevronDown className="w-3 h-3 text-[#777777]" />}
           </div>
@@ -290,7 +309,8 @@ export function AlreadyRegisteredCard({
 
         {showTeamDetails && (
           <div className="bg-[#050505] border-t border-[#1a1a1a] divide-y divide-[#1a1a1a]">
-            <div className="p-6 flex justify-between items-center gap-5 text-white">
+            {/* Leader Row */}
+            <div className="p-4 md:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-5 text-white">
               <div className="flex gap-4 items-center flex-1">
                 <Avatar className="h-9 w-9 border border-[#1a1a1a]">
                   <AvatarImage src={leaderReg.avatar_url || undefined} />
@@ -306,19 +326,22 @@ export function AlreadyRegisteredCard({
                   <p className="text-[11px] text-[#777777] uppercase tracking-tighter">{leaderReg.team_role || 'Squad Alpha'}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
+              <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-t-0 border-[#1a1a1a] pt-3 sm:pt-0">
                 <StatusBadge status="completed" />
-                {isLeader && (
-                  <button onClick={() => handleEditOpen(leaderReg.id, leaderReg.full_name, leaderReg.team_role, 'reg')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
-                )}
-                {leaderReg.github_link && (
-                  <a href={leaderReg.github_link} target="_blank" rel="noreferrer" className="text-[#777777] hover:text-white"><ExternalLink className="w-3.5 h-3.5" /></a>
-                )}
+                <div className="flex items-center gap-4">
+                  {isLeader && (
+                    <button onClick={() => handleEditOpen(leaderReg.id, leaderReg.full_name, leaderReg.team_role, 'reg')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
+                  )}
+                  {leaderReg.github_link && (
+                    <a href={leaderReg.github_link} target="_blank" rel="noreferrer" className="text-[#777777] hover:text-white"><ExternalLink className="w-3.5 h-3.5" /></a>
+                  )}
+                </div>
               </div>
             </div>
 
+            {/* Team Members */}
             {teamMembers.map((member) => (
-              <div key={member.id} className="p-6 flex justify-between items-center gap-5 text-white">
+              <div key={member.id} className="p-4 md:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-5 text-white">
                 <div className="flex gap-4 items-center flex-1">
                   <Avatar className="h-9 w-9 border border-[#1a1a1a]">
                     <AvatarImage src={member.avatar_url || undefined} />
@@ -331,23 +354,26 @@ export function AlreadyRegisteredCard({
                     <p className="text-[11px] text-[#777777] uppercase tracking-tighter">{member.team_role}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-t-0 border-[#1a1a1a] pt-3 sm:pt-0">
                   <StatusBadge status="completed" />
-                  {(isLeader || member.user_id === currentUserReg.user_id) && (
-                    <button onClick={() => handleEditOpen(member.id, member.full_name, member.team_role, 'reg')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
-                  )}
-                  {isLeader && (
-                    <button onClick={() => handleRemoveMember(member.id)} className="text-[#777777] hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
-                  )}
-                  {member.github_link && (
-                    <a href={member.github_link} target="_blank" rel="noreferrer" className="text-[#777777] hover:text-white"><ExternalLink className="w-3.5 h-3.5" /></a>
-                  )}
+                  <div className="flex items-center gap-4">
+                    {(isLeader || member.user_id === currentUserReg.user_id) && (
+                      <button onClick={() => handleEditOpen(member.id, member.full_name, member.team_role, 'reg')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
+                    )}
+                    {isLeader && (
+                      <button onClick={() => handleRemoveMember(member.id)} className="text-[#777777] hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                    )}
+                    {member.github_link && (
+                      <a href={member.github_link} target="_blank" rel="noreferrer" className="text-[#777777] hover:text-white"><ExternalLink className="w-3.5 h-3.5" /></a>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
 
+            {/* Invitations */}
             {isLeader && invitations.filter(inv => inv.status !== 'completed').map((invite) => (
-              <div key={invite.id} className="p-6 flex justify-between items-center gap-5 text-white bg-white/[0.02]">
+              <div key={invite.id} className="p-4 md:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-5 text-white bg-white/[0.02]">
                 <div className="flex gap-4 items-center flex-1 opacity-60">
                   <div className="text-[10px] text-[#777777] border border-[#1a1a1a] px-1.5 py-1">INVITE</div>
                   <div>
@@ -355,10 +381,12 @@ export function AlreadyRegisteredCard({
                     <p className="text-[11px] text-[#777777] uppercase tracking-tighter">{invite.role || 'Member'}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto border-t sm:border-t-0 border-[#1a1a1a] pt-3 sm:pt-0">
                   <StatusBadge status={invite.status || 'pending'} />
-                  <button onClick={() => handleEditOpen(invite.id, invite.invitee_name || '', invite.role || 'Member', 'invite')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => handleDeleteInvitation(invite.id)} className="text-[#777777] hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                  <div className="flex items-center gap-4">
+                    <button onClick={() => handleEditOpen(invite.id, invite.invitee_name || '', invite.role || 'Member', 'invite')} className="text-[#777777] hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => handleDeleteInvitation(invite.id)} className="text-[#777777] hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -366,8 +394,9 @@ export function AlreadyRegisteredCard({
         )}
       </div>
 
+      {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white">
+        <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white w-[95vw] max-w-md rounded-none">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Modify Registry</DialogTitle></DialogHeader>
           <div className="space-y-6 pt-4">
             <div className="space-y-2">
@@ -383,8 +412,9 @@ export function AlreadyRegisteredCard({
         </DialogContent>
       </Dialog>
 
+      {/* Invite Dialog */}
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-        <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white">
+        <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white w-[95vw] max-w-md rounded-none">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Squad Expansion</DialogTitle></DialogHeader>
           <form onSubmit={handleInvite} className="space-y-6 pt-4">
             <Input required placeholder="Subject Name" value={inviteForm.name} onChange={e => setInviteForm({...inviteForm, name: e.target.value})} className="bg-black border-[#1a1a1a] rounded-none h-12 focus:border-[#00ff88]" />
@@ -395,18 +425,19 @@ export function AlreadyRegisteredCard({
         </DialogContent>
       </Dialog>
 
+      {/* QR Dialog */}
       <Dialog open={showQR} onOpenChange={setShowQR}>
-        <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white max-w-sm">
+        <DialogContent className="bg-[#0a0a0a] border-[#1a1a1a] text-white max-w-sm w-[90vw] rounded-lg">
           <DialogHeader className="items-center"><DialogTitle className="font-serif text-2xl">Squad Credential</DialogTitle></DialogHeader>
           <div className="bg-white p-4 mx-auto my-6 rounded-lg">
-            {/* Participant scans this to get to the verify page */}
             <QRCodeSVG value={`${window.location.origin}/verify/${currentUserReg.id}`} size={200} level="H" />
           </div>
           <p className="text-center text-sm font-medium uppercase tracking-widest">{currentUserReg.full_name}</p>
+          <p className="text-center text-[10px] text-[#777777] mt-2 tracking-widest uppercase">Admin Terminal Only</p>
         </DialogContent>
       </Dialog>
 
-      <div className="px-6 md:px-10 pb-10">
+      <div className="px-4 md:px-10 pb-10">
         <div className="border border-[#1a1a1a] p-4 bg-[#0d0d0d] flex items-start gap-4">
           <Info className="w-4 h-4 text-[#777777] shrink-0 mt-0.5" />
           <p className="text-[10px] text-[#777777] leading-relaxed uppercase tracking-wider">
