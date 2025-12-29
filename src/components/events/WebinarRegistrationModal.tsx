@@ -82,7 +82,7 @@ export function WebinarRegistrationModal({ event, isOpen, onOpenChange }: Webina
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('Authentication session lost');
 
-      const { error } = await supabase.from('event_registrations').insert({
+      const { error } = await supabase.from('webinar_registrations').insert({
         event_id: event.id,
         user_id: session.user.id,
         full_name: formData.full_name.trim(),
@@ -91,16 +91,13 @@ export function WebinarRegistrationModal({ event, isOpen, onOpenChange }: Webina
         college_org_name: formData.college_org_name.trim(),
         country_city: formData.country_city.trim(),
         current_status: formData.current_status,
-        motivation_answer: formData.motivation_answer.trim(),
-        participation_type: 'Individual',
-        status: 'confirmed', // Webinars are usually auto-confirmed unless paid
+        topics_of_interest: formData.motivation_answer.trim(),
+        timezone: formData.timezone,
+        questions_for_speaker: formData.questions_for_speaker.trim(),
+        status: 'confirmed',
         payment_status: 'exempt',
         agreed_to_rules: true,
         agreed_to_privacy: true,
-        custom_answers: {
-          timezone: formData.timezone,
-          questions_for_speaker: formData.questions_for_speaker
-        }
       });
 
       if (error) throw error;

@@ -126,20 +126,18 @@ export function ContestRegistrationModal({ event, isOpen, onOpenChange }: Contes
       github_link: values.github_link || null,
       linkedin_link: values.linkedin_link || null,
       preferred_track: values.preferred_track || null,
-      prior_experience: values.prior_contest_experience,
+      prior_contest_experience: values.prior_contest_experience,
       motivation_answer: values.motivation_answer.trim(),
       custom_answers: values.custom_answers || {},
       agreed_to_rules: values.agreed_to_rules,
       agreed_to_privacy: values.agreed_to_privacy,
-      participation_type: 'Solo',
-      team_role: 'Participant',
       payment_status: event.is_paid ? 'pending' : 'exempt',
       status: event.is_paid ? 'pending_payment' : 'confirmed',
     };
 
     const { error } = await supabase
-      .from('event_registrations')
-      .insert(registrationData as any);
+      .from('contest_registrations')
+      .insert(registrationData);
 
     if (error) {
       if (error.code === '23505') toast.error("You're already registered for this contest!");

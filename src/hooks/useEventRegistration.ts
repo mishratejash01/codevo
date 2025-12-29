@@ -78,14 +78,15 @@ export function useEventRegistration(eventId: string | undefined, refreshKey?: n
       }
 
       console.log('Status RPC:', data);
-      const responseState = data.state as 'registered' | 'invited_pending' | 'invited_accepted' | 'none';
+      const typedData = data as unknown as { state: string; registration?: Registration; invitation?: TeamInvitation };
+      const responseState = typedData.state as 'registered' | 'invited_pending' | 'invited_accepted' | 'none';
 
       setStatus({
         isRegistered: responseState === 'registered',
-        registration: data.registration || null,
+        registration: typedData.registration || null,
         hasPendingInvitation: responseState === 'invited_pending',
         hasAcceptedInvitation: responseState === 'invited_accepted',
-        invitation: data.invitation || null,
+        invitation: typedData.invitation || null,
         loading: false,
         state: responseState
       });

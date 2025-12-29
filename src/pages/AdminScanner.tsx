@@ -35,7 +35,6 @@ export default function AdminScanner() {
           fps: 10,
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1.0,
-          supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
         },
         onScanSuccess,
         () => {} 

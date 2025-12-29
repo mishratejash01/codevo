@@ -84,7 +84,7 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange }: MeetupR
       const registrationStatus = event.is_paid ? 'pending_payment' : 'confirmed';
       const paymentStatus = event.is_paid ? 'pending' : 'exempt';
 
-      const { error } = await supabase.from('event_registrations').insert({
+      const { error } = await supabase.from('meetup_registrations').insert({
         event_id: event.id,
         user_id: session.user.id,
         full_name: formData.full_name,
@@ -93,16 +93,13 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange }: MeetupR
         college_org_name: formData.college_org_name,
         country_city: formData.country_city,
         current_status: formData.current_status,
-        motivation_answer: formData.motivation_answer,
-        participation_type: 'Individual',
+        connection_interests: formData.motivation_answer,
+        dietary_preference: formData.dietary,
+        bringing_guest: formData.bringing_guest,
         status: registrationStatus,
         payment_status: paymentStatus,
         agreed_to_rules: true,
         agreed_to_privacy: true,
-        custom_answers: {
-          dietary: formData.dietary,
-          bringing_guest: formData.bringing_guest
-        }
       });
 
       if (error) throw error;

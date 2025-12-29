@@ -87,7 +87,7 @@ export function WorkshopRegistrationModal({ event, isOpen, onOpenChange }: Works
       const registrationStatus = event.is_paid ? 'pending_payment' : 'confirmed';
       const paymentStatus = event.is_paid ? 'pending' : 'exempt';
 
-      const { error } = await supabase.from('event_registrations').insert({
+      const { error } = await supabase.from('workshop_registrations').insert({
         event_id: event.id,
         user_id: session.user.id,
         full_name: formData.full_name.trim(),
@@ -97,16 +97,13 @@ export function WorkshopRegistrationModal({ event, isOpen, onOpenChange }: Works
         country_city: formData.country_city.trim(),
         current_status: formData.current_status,
         experience_level: formData.experience_level,
-        motivation_answer: formData.motivation_answer.trim(),
-        participation_type: 'Individual',
+        prior_knowledge: formData.motivation_answer.trim(),
+        learning_goals: formData.learning_goals.trim(),
+        laptop_available: formData.laptop_available,
         status: registrationStatus,
         payment_status: paymentStatus,
         agreed_to_rules: true,
         agreed_to_privacy: true,
-        custom_answers: {
-          laptop_available: formData.laptop_available,
-          learning_goals: formData.learning_goals
-        }
       });
 
       if (error) throw error;
