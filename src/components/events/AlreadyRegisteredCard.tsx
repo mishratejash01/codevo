@@ -103,18 +103,20 @@ export function AlreadyRegisteredCard({
         return; 
       }
       
-      setCurrentUserReg(myReg as any);
+      // Cast the result to the expected Registration type
+      const regData = myReg as unknown as Registration;
+      setCurrentUserReg(regData);
 
-      if (myReg.participation_type === 'Team' && myReg.team_name) {
+      if (regData.participation_type === 'Team' && regData.team_name) {
         // Fetch team members using RPC
         const { data: allMembers, error: rpcError } = await supabase.rpc('get_event_team_members', {
           p_event_id: eventId,
-          p_team_name: myReg.team_name
+          p_team_name: regData.team_name as string
         });
 
         if (rpcError) {
           console.error("RPC Error:", rpcError);
-          setLeaderReg(myReg as any);
+          setLeaderReg(regData);
           setIsLeader(true); 
         } else if (allMembers && allMembers.length > 0) {
           const leader = allMembers.find((m: any) => m.team_role === 'Leader') || 
@@ -134,16 +136,16 @@ export function AlreadyRegisteredCard({
             .from('team_invitations')
             .select('*')
             .eq('event_id', eventId)
-            .ilike('team_name', myReg.team_name.trim());
+            .ilike('team_name', (regData.team_name as string).trim());
 
           setInvitations(invites as TeamInvitation[] || []);
         } else {
-           setLeaderReg(myReg as any);
+           setLeaderReg(regData);
            setTeamMembers([]);
            setIsLeader(true);
         }
       } else {
-        setLeaderReg(myReg as any);
+        setLeaderReg(regData);
         setTeamMembers([]);
         setIsLeader(true);
       }
