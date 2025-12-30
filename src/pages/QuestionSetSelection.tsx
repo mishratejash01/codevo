@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +52,54 @@ const SubTopicHashtag = ({ active }: { active: boolean }) => (
   </div>
 );
 
+// --- CUSTOM SCROLLING PLACEHOLDER COMPONENT ---
+const ScrollingPlaceholder = ({ statements, visible }: { statements: string[], visible: boolean }) => {
+  const [index, setIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [shouldScroll, setShouldScroll] = useState(false);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % statements.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [statements.length]);
+
+  useEffect(() => {
+    if (textRef.current && containerRef.current) {
+      setShouldScroll(textRef.current.offsetWidth > containerRef.current.offsetWidth - 40);
+    }
+  }, [index]);
+
+  if (!visible) return null;
+
+  return (
+    <div ref={containerRef} className="absolute inset-0 pointer-events-none flex items-center pl-10 pr-4 overflow-hidden whitespace-nowrap">
+      <span 
+        ref={textRef}
+        className={cn(
+          "text-xs text-[#3f3f46] font-mono",
+          shouldScroll ? "animate-placeholder-scroll" : ""
+        )}
+      >
+        {statements[index]}
+      </span>
+      <style>{`
+        @keyframes placeholder-scroll {
+          0% { transform: translateX(0); }
+          30% { transform: translateX(0); }
+          70% { transform: translateX(calc(-100% + 180px)); }
+          100% { transform: translateX(calc(-100% + 180px)); }
+        }
+        .animate-placeholder-scroll {
+          animation: placeholder-scroll 4s ease-in-out infinite alternate;
+        }
+      `}</style>
+    </div>
+  );
+};
+
 export default function QuestionSetSelection() {
   const { subjectId, subjectName, examType, mode } = useParams();
   const navigate = useNavigate();
@@ -65,21 +113,12 @@ export default function QuestionSetSelection() {
   const [noTimeLimit, setNoTimeLimit] = useState(false);
   const [showProfileSheet, setShowProfileSheet] = useState(false);
 
-  // --- SEARCH PLACEHOLDER ANIMATION ---
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const placeholders = [
-    'Search for topics like "Python"...',
-    'Filter by Level (Easy, Medium, or Hard)...',
-    'Search for specific question names...',
-    'Find modules by category...'
+  const searchPlaceholders = [
+    'Search for questions related to specific levels like "Easy" or "Hard"...',
+    'Enter a topic name to filter modules in this subject archive...',
+    'Type the name of a specific question to find it instantly...',
+    'Filter results by searching for a specific module category...'
   ];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   // --- DATA FETCHING ---
   const { data: fetchedData = [], isLoading } = useQuery({
@@ -186,7 +225,7 @@ export default function QuestionSetSelection() {
 
       {/* --- SIDEBAR --- */}
       <aside className="w-[260px] border-r border-[#1f1f23] bg-[#080808] p-[40px_25px] flex flex-col shrink-0">
-        <span className="font-extrabold text-[22px] tracking-tight mb-[50px] block cursor-pointer" onClick={() => navigate('/')}>
+        <span className="font-extrabold text-[22px] tracking-tight mb-[50px] block cursor-pointer uppercase" onClick={() => navigate('/')}>
           CODÉVO
         </span>
         <nav className="flex flex-col gap-1 overflow-y-auto pr-2">
@@ -231,13 +270,15 @@ export default function QuestionSetSelection() {
               <h1 className="text-[28px] font-bold tracking-tight leading-none uppercase">{decodeURIComponent(subjectName || '')}</h1>
             </div>
             <div className="relative w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3f3f46]" />
-              <Input 
-                placeholder={placeholders[placeholderIndex]}
-                className="pl-10 bg-[#0d0d0d] border-[#1f1f23] text-white h-11 rounded-md text-xs placeholder:text-[#3f3f46] font-mono focus:ring-1 focus:ring-white/20 transition-all duration-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3f3f46] z-10" />
+              <div className="relative flex items-center h-11 bg-[#0d0d0d] border border-[#1f1f23] rounded-md">
+                <ScrollingPlaceholder statements={searchPlaceholders} visible={searchTerm === ''} />
+                <Input 
+                  className="bg-transparent border-none text-white h-full w-full pl-10 pr-4 text-xs font-mono focus-visible:ring-0 focus-visible:ring-offset-0 transition-all"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
           </div>
           <div className="flex gap-2 mt-4">
@@ -358,13 +399,6 @@ export default function QuestionSetSelection() {
                         </button>
                       </div>
                     </div>
-                    {isProctored && item.description && (
-                      <div className="mt-8 pt-8 border-t border-white/5">
-                        <p className="text-[#3f3f46] text-[11px] font-mono leading-relaxed uppercase tracking-widest">
-                          Note: {item.description}
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
