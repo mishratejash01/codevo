@@ -17,15 +17,19 @@ interface PaymentOptions {
   };
 }
 
-// Helper to dynamically load the Razorpay script if it's missing or blocked
+const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
+
+// Helper to ensure the Razorpay SDK is fully loaded even if index.html failed
 const loadRazorpayScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
     if (window.Razorpay) {
       resolve(true);
       return;
     }
+    
     const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.src = RAZORPAY_SCRIPT_URL;
+    script.async = true;
     script.onload = () => resolve(true);
     script.onerror = () => resolve(false);
     document.body.appendChild(script);
@@ -37,26 +41,30 @@ export const initializeRazorpayPayment = async (
   onSuccess: (response: any) => void,
   onFailure: (error: any) => void
 ) => {
-  // Ensure script is loaded
+  console.log("Attempting to open Razorpay Modal...");
+  
   const isLoaded = await loadRazorpayScript();
 
   if (!isLoaded || !window.Razorpay) {
-    toast.error("Razorpay SDK could not be loaded. Please disable your ad-blocker and try again.");
+    console.error("Razorpay SDK could not be loaded. Check your Ad-Blocker.");
+    toast.error("Payment gateway blocked. Please disable your Ad-Blocker to continue.");
+    onFailure({ description: "SDK_LOAD_ERROR" });
     return;
   }
 
-  const Razorpay = window.Razorpay;
-  const RAZORPAY_KEY_ID = "rzp_live_Rxvn7fqMFo62r3"; //
+  // The 'lumberjack' console error can be ignored; it is just telemetry.
+  const RAZORPAY_KEY_ID = "rzp_live_Rxvn7fqMFo62r3";
 
   const paymentOptions = {
     key: RAZORPAY_KEY_ID,
-    amount: options.amount * 100,
+    amount: Math.round(options.amount * 100), // Amount in paise
     currency: options.currency,
     name: options.name,
     description: options.description,
     image: "/image.png",
     order_id: options.orderId,
     handler: function (response: any) {
+      console.log("Payment Successful:", response.razorpay_payment_id);
       onSuccess(response);
     },
     prefill: options.prefill,
@@ -66,21 +74,25 @@ export const initializeRazorpayPayment = async (
     },
     modal: {
       ondismiss: function () {
+        console.log("Payment modal closed by user");
         toast.info("Payment cancelled");
+        onFailure({ description: "Payment cancelled by user" });
       },
     },
   };
 
   try {
-    const rzp = new Razorpay(paymentOptions);
+    const rzp = new (window as any).Razorpay(paymentOptions);
     
     rzp.on("payment.failed", function (response: any) {
+      console.error("Payment Failed:", response.error);
       onFailure(response.error);
     });
 
     rzp.open();
   } catch (error) {
-    console.error("Razorpay Initialization Error:", error);
-    toast.error("Failed to initialize payment gateway.");
+    console.error("Razorpay Modal Error:", error);
+    toast.error("Failed to open payment gateway.");
+    onFailure(error);
   }
 };
