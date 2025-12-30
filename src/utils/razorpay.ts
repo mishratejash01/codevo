@@ -42,6 +42,7 @@ export const initializeRazorpayPayment = async (
   onFailure: (error: any) => void
 ) => {
   console.log("Attempting to open Razorpay Modal...");
+  console.info("Note: 'lumberjack.razorpay.com' errors are Razorpay analytics and can be safely ignored - they do NOT affect payment functionality.");
   
   const isLoaded = await loadRazorpayScript();
 
@@ -52,8 +53,7 @@ export const initializeRazorpayPayment = async (
     return;
   }
 
-  // The 'lumberjack' console error can be ignored; it is just telemetry.
-  const RAZORPAY_KEY_ID = "rzp_test_RxwjSllgmQ72cg";
+  const RAZORPAY_KEY_ID = "rzp_live_Rxvn7fqMFo62r3";
 
   const paymentOptions = {
     key: RAZORPAY_KEY_ID,
