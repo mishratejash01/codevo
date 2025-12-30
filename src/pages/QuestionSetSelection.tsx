@@ -44,7 +44,7 @@ const ArchiveToggle = ({ checked, onChange }: { checked: boolean, onChange: (val
     <input type="checkbox" className="opacity-0 w-0 h-0" checked={checked} onChange={(e) => onChange(e.target.checked)} />
     <span className={cn("absolute inset-0 border-2 rounded-[30px] transition-all duration-300", checked ? "border-[#5ec952]" : "border-[#ef4444]")}>
       <span className={cn("absolute bottom-[3px] left-[3px] h-[24px] w-[24px] rounded-full transition-all duration-300", checked ? "translate-x-[40px] bg-[#5ec952]" : "translate-x-0 bg-[#ef4444]")} />
-      <span className={cn("absolute top-1/2 -translate-y-1/2 text-[9px] font-black text-white uppercase transition-all duration-300", checked ? "left-[11px]" : "right-[11px]")}>{checked ? "ON" : "OFF"}</span>
+      <span className={cn("absolute top-1/2 -translate-y-1/2 text-[10px] font-black text-white uppercase transition-all duration-300", checked ? "left-[11px]" : "right-[11px]")}>{checked ? "ON" : "OFF"}</span>
     </span>
   </label>
 );
@@ -88,6 +88,7 @@ export default function QuestionSetSelection() {
   const navigate = useNavigate();
   const isProctored = mode === 'proctored';
 
+  // --- STATE ---
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
@@ -96,11 +97,17 @@ export default function QuestionSetSelection() {
   const [showProfileSheet, setShowProfileSheet] = useState(false);
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
 
-  const searchPlaceholders = ['Search archive...', 'Filter results...', 'Archive query...', 'Record name...'];
+  const searchPlaceholders = ['Search archive...', 'Filter by level...', 'Modules query...', 'Question name...'];
 
   // --- DATA ---
   const { data: session } = useQuery({ queryKey: ['session'], queryFn: async () => (await supabase.auth.getSession()).data.session });
   const userId = session?.user?.id;
+
+  const { data: profile } = useQuery({
+    queryKey: ['user_profile', userId],
+    queryFn: async () => (await supabase.from('profiles').select('*').eq('id', userId!).maybeSingle()).data,
+    enabled: !!userId,
+  });
 
   const { data: userStats } = useQuery({
     queryKey: ['proctored_user_stats', userId],
@@ -143,6 +150,12 @@ export default function QuestionSetSelection() {
   }), [fetchedData, searchTerm, selectedTopic, isProctored]);
 
   const handleStart = async (targetId: string, isSetSelection = false) => {
+    // DEVICE RESTRICTION: Proctored tests only on Desktop
+    if (isProctored && window.innerWidth < 1024) {
+      alert("Tests can only be attempted on PC/Laptop.");
+      return;
+    }
+
     const isOk = await checkUserProfile(); if (!isOk) return setShowProfileSheet(true);
     const params = new URLSearchParams({ iitm_subject: subjectId || '', name: subjectName || '', type: examType || '', timer: noTimeLimit ? '0' : timeLimit[0].toString(), mode: mode || 'learning' });
     if (isSetSelection) params.set('set_name', targetId); else params.set('q', targetId);
@@ -153,7 +166,7 @@ export default function QuestionSetSelection() {
     <div className="flex flex-col h-full p-8 space-y-10">
       <div className="flex items-baseline gap-2 border-b border-[#1a1a1c] pb-8 shrink-0">
         <span className="text-[64px] font-light leading-none tracking-[-3px] text-white">{userStats?.solved || 0}</span>
-        <span className="font-['Playfair_Display'] italic text-xl text-[#52525b]">Archived</span>
+        <span className="font-['Playfair_Display'] italic text-xl text-[#52525b]">Solved</span>
       </div>
       <div className="bg-[#0c0c0e] border border-[#1a1a1c] p-5 rounded-sm shrink-0">
         <span className="text-[20px] font-bold block text-white">{userStats?.points.toLocaleString()}</span>
@@ -162,7 +175,7 @@ export default function QuestionSetSelection() {
       <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
         <div className="flex justify-between items-center sticky top-0 bg-[#070708] py-2 border-b border-[#1a1a1c] mb-4">
            <h3 className="text-[10px] uppercase tracking-[2px] text-[#666] font-bold italic">Hall of Fame</h3>
-           <button onClick={() => setIsLeaderboardModalOpen(true)} className="bg-white text-black text-[9px] px-3 py-1.5 rounded-sm font-black uppercase tracking-tighter hover:bg-zinc-200 transition-colors">Detail View</button>
+           <button onClick={() => setIsLeaderboardModalOpen(true)} className="bg-white text-black text-[9px] px-3 py-1.5 rounded-sm font-black uppercase tracking-tighter">Detail View</button>
         </div>
         {leaderboardData.slice(0, 10).map((e: any, i: number) => (
           <div key={e.user_id} className="flex justify-between py-2 text-[12px] items-center border-b border-white/[0.02]">
@@ -178,11 +191,10 @@ export default function QuestionSetSelection() {
     <div className="h-screen bg-[#050505] text-white flex flex-col overflow-hidden font-sans">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
       
-      {/* --- HEADER --- */}
       <header className="px-4 py-3 md:px-10 md:py-3 border-b border-[#1a1a1c] bg-[#050505] z-30 shrink-0">
         <div className="flex justify-between items-center gap-4 max-w-[1600px] mx-auto h-10">
           <div className="flex items-center gap-4 flex-1 overflow-hidden">
-            <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/5 rounded-full shrink-0"><ArrowLeft size={18} className="text-[#666] hover:text-white" /></button>
+            <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/5 rounded-full transition-colors shrink-0"><ArrowLeft size={18} className="text-[#666] hover:text-white" /></button>
             <MovingHeaderTitle subject={subjectName || ''} exam={examType || ''} />
           </div>
           <div className="flex items-center gap-2">
@@ -202,10 +214,16 @@ export default function QuestionSetSelection() {
               <Sheet>
                 <SheetTrigger asChild><Button variant="ghost" size="icon" className="lg:hidden text-[#52525b] hover:text-white"><Menu size={18} /></Button></SheetTrigger>
                 <SheetContent side="left" className="bg-[#080808] border-[#1a1a1c] text-white w-[280px] p-6">
-                  <h3 className="text-[10px] uppercase font-black text-[#444] mb-6 tracking-[2px]">Archive Directory</h3>
+                  <h3 className="text-[10px] uppercase font-black text-[#444] mb-6 tracking-[2px]">Directory</h3>
                   <div className="flex flex-col gap-1">
-                    <button onClick={() => setSelectedTopic(null)} className={cn("text-left py-3 px-4 rounded-sm text-xs font-bold transition-all", !selectedTopic ? "bg-white/10 text-white" : "text-[#666]")}>All Archive</button>
-                    {topics.map((t: any) => <button key={t} onClick={() => setSelectedTopic(t)} className={cn("text-left py-3 px-4 rounded-sm text-xs font-bold truncate transition-all", selectedTopic === t ? "bg-white/10 text-white" : "text-[#666]")}># {t}</button>)}
+                    <button onClick={() => setSelectedTopic(null)} className={cn("flex items-center gap-3 py-3 px-4 rounded-sm text-xs font-bold transition-all", !selectedTopic ? "bg-white/10 text-white" : "text-[#666]")}>
+                      <FolderSticker active={!selectedTopic} /> All Archive
+                    </button>
+                    {topics.map((t: any) => (
+                      <button key={t} onClick={() => setSelectedTopic(t)} className={cn("flex items-center gap-3 py-3 px-4 rounded-sm text-xs font-bold truncate transition-all", selectedTopic === t ? "bg-white/10 text-white" : "text-[#666]")}>
+                        <SubTopicHashtag active={selectedTopic === t} /> {t}
+                      </button>
+                    ))}
                   </div>
                 </SheetContent>
               </Sheet>
@@ -217,10 +235,10 @@ export default function QuestionSetSelection() {
       <div className="flex-1 flex overflow-hidden max-w-[1600px] mx-auto w-full relative">
         {!isProctored && (
           <aside className="hidden lg:flex w-[240px] border-r border-[#1a1a1c] bg-[#080808] p-8 flex-col shrink-0 overflow-y-auto">
-            <span className="font-extrabold text-[18px] tracking-tight mb-8 block uppercase text-[#333]">Directory</span>
+            <span className="font-extrabold text-[18px] tracking-tight mb-8 block uppercase text-[#333]">Archive</span>
             <nav className="flex flex-col gap-1 pr-2">
               <button onClick={() => setSelectedTopic(null)} className={cn("flex items-center gap-3 py-3 px-3 rounded-sm text-[12px] font-bold transition-colors text-left", selectedTopic === null ? "text-white bg-white/5 border border-white/5" : "text-[#666] hover:text-white")}>
-                <FolderSticker active={selectedTopic === null} />All Archive
+                <FolderSticker active={selectedTopic === null} />All Records
               </button>
               {topics.map((t: string) => (
                 <button key={t} onClick={() => setSelectedTopic(t)} className={cn("flex items-center gap-3 py-3 px-3 rounded-sm text-[12px] font-bold transition-colors text-left truncate", selectedTopic === t ? "text-white bg-white/5 border border-white/5" : "text-[#666] hover:text-white")}>
@@ -251,7 +269,7 @@ export default function QuestionSetSelection() {
                     <div className={cn("bg-[#0a0a0b] border border-[#1a1a1c] rounded-sm transition-all duration-300", isExpanded && "border-[#333]")}>
                       
                       <div 
-                        className={cn("p-4 md:p-6 cursor-pointer select-none flex items-center gap-4", isLocked && "opacity-40")}
+                        className={cn("p-4 md:p-6 cursor-pointer select-none flex items-center gap-4 transition-colors", isLocked && "opacity-40")}
                         onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : id)}
                       >
                         <div className="w-9 h-9 bg-black border border-[#1a1a1c] flex items-center justify-center text-[#333] rounded-sm shrink-0">
@@ -261,11 +279,11 @@ export default function QuestionSetSelection() {
                           <h3 className="text-[14px] md:text-[17px] font-bold text-zinc-100 truncate tracking-tight uppercase">{item.title || item.name}</h3>
                           <div className="flex items-center gap-2 mt-1">
                             {isProctored ? (
-                               <div className="inline-flex items-center gap-1.5 bg-transparent border border-white/10 px-2 py-0.5 rounded-[2px] text-[8px] uppercase font-black text-white tracking-widest">
+                               <div className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-0.5 rounded-[2px] text-[8px] uppercase font-black text-white tracking-widest">
                                  <span className="w-1 h-1 bg-red-500 rounded-full shadow-[0_0_8px_red]" /> Secure Test
                                </div>
                             ) : (
-                               <Badge variant="outline" className="text-[8px] uppercase tracking-widest text-[#52525b] border-[#1a1a1c] px-2 py-0 h-4">{item.category || 'Module'}</Badge>
+                               <Badge variant="outline" className="text-[8px] uppercase tracking-widest text-[#52525b] border-[#1a1a1c] px-2 py-0 h-4">{item.category || 'Standard'}</Badge>
                             )}
                           </div>
                         </div>
@@ -283,7 +301,7 @@ export default function QuestionSetSelection() {
                       <div className={cn("bg-[#080809] transition-all duration-500 ease-in-out px-4 md:px-6 overflow-hidden", isExpanded ? "max-h-[600px] border-t border-[#1a1a1c] py-6 md:py-8 opacity-100" : "max-h-0 py-0 opacity-0")}>
                         <div className="flex flex-col md:flex-row justify-between items-end gap-10">
                           <div className="flex-1 w-full space-y-6">
-                            {/* MOBILE METADATA (Revealed on click) */}
+                            {/* MOBILE METADATA */}
                             <div className="flex flex-wrap gap-2 md:hidden">
                                <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-white uppercase font-black">
                                  {isProctored ? `Set ${item.sequence_number}` : (item.difficulty || 'Normal')}
@@ -293,7 +311,7 @@ export default function QuestionSetSelection() {
                                </div>
                             </div>
 
-                            {/* SLIDER Logic: STRICTLY PRACTICE ONLY */}
+                            {/* SLIDER Logic: PRACTICE ONLY */}
                             {!isProctored && !noTimeLimit && (
                                <div className="space-y-6 animate-in fade-in duration-500">
                                   <div className="flex items-center justify-between">
@@ -312,7 +330,7 @@ export default function QuestionSetSelection() {
 
                             {isProctored && (
                                <div className="text-[10px] text-[#555] font-mono uppercase tracking-[2px]">
-                                  Candidate Authentication: {userId?.substring(0,8)} | Hash Verified
+                                  Security Hash Verified: {profile?.id?.substring(0,8) || '####'}
                                </div>
                             )}
                           </div>
@@ -344,7 +362,6 @@ export default function QuestionSetSelection() {
 
         {isProctored && <aside className="hidden lg:flex w-[340px] bg-[#070708] border-l border-[#1a1a1c] flex-col overflow-y-auto scrollbar-hide shrink-0"><SidebarStats /></aside>}
       </div>
-
     </div>
   );
 }
