@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 
 interface PaymentOptions {
-  key?: string; // Allow passing key from page
+  key?: string; 
   amount: number;
   currency: string;
   orderId?: string;
@@ -28,6 +28,9 @@ const loadRazorpayScript = (): Promise<boolean> => {
     }
     const script = document.createElement("script");
     script.src = RAZORPAY_SCRIPT_URL;
+    // CRITICAL: Set crossOrigin to anonymous to allow loading third-party scripts
+    // when any level of COEP/COOP is present in the environment.
+    script.crossOrigin = "anonymous"; 
     script.async = true;
     script.onload = () => resolve(true);
     script.onerror = () => resolve(false);
@@ -51,13 +54,11 @@ export const initializeRazorpayPayment = async (
     return;
   }
 
-  // FIX: Key must be on a single line. 
-  // We use the key passed in options, or fallback to the test key.
   const RAZORPAY_KEY_ID = options.key || "rzp_test_RxwjSllgmQ72cg";
 
   const paymentOptions = {
     key: RAZORPAY_KEY_ID,
-    amount: Math.round(options.amount * 100), // Amount in paise
+    amount: Math.round(options.amount * 100), 
     currency: options.currency || "INR",
     name: options.name,
     description: options.description,
