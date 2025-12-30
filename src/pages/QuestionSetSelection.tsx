@@ -5,13 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
-  ArrowLeft, Search, Layers, Filter, Clock, Play, 
-  Infinity as InfinityIcon, ChevronRight, Code2, Lock, FileCode2 
+  ArrowLeft, Search, Layers, Clock, Play, 
+  Infinity as InfinityIcon, Code2, Lock 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { checkUserProfile, ProfileSheet } from '@/components/ProfileCompletion';
@@ -118,7 +116,7 @@ export default function QuestionSetSelection() {
     }
   });
 
-  // --- DERIVED DATA ---
+  // --- FILTERING LOGIC ---
   const topics = useMemo(() => {
     if (isProctored) return [];
     const uniqueTopics = new Set(fetchedData.map((a: any) => a.category || 'General'));
@@ -126,17 +124,12 @@ export default function QuestionSetSelection() {
   }, [fetchedData, isProctored]);
 
   const filteredData = useMemo(() => {
-    if (isProctored) {
-      return (fetchedData as { name: string, title: string, totalTime: number }[]).filter(set => 
-        (item.title || item.name).toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    } else {
-      return (fetchedData as any[]).filter(a => {
-        const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesTopic = selectedTopic ? (a.category || 'General') === selectedTopic : true;
-        return matchesSearch && matchesTopic;
-      });
-    }
+    return (fetchedData as any[]).filter(item => {
+      const title = item.title || item.name || '';
+      const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesTopic = isProctored ? true : (selectedTopic ? (item.category || 'General') === selectedTopic : true);
+      return matchesSearch && matchesTopic;
+    });
   }, [fetchedData, searchTerm, selectedTopic, isProctored]);
 
   // --- HANDLERS ---
@@ -210,7 +203,7 @@ export default function QuestionSetSelection() {
       {/* --- MAIN CONTENT --- */}
       <main className="flex-1 overflow-y-auto flex flex-col bg-[#050505]">
         <header className="p-[40px_60px] border-b border-[#1f1f23] sticky top-0 bg-[#050505]/90 backdrop-blur-md z-20">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between">
             <div>
               <button 
                 onClick={() => navigate(-1)}
@@ -221,10 +214,10 @@ export default function QuestionSetSelection() {
               </button>
               <h1 className="text-[28px] font-bold tracking-tight leading-none uppercase">{decodeURIComponent(subjectName || '')}</h1>
             </div>
-            <div className="relative w-64">
+            <div className="relative w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3f3f46]" />
               <Input 
-                placeholder="Query database..." 
+                placeholder='Search "Python", "Level", name or category...' 
                 className="pl-9 bg-[#0d0d0d] border-[#1f1f23] text-white h-10 rounded-md text-xs placeholder:text-[#3f3f46] font-mono focus:ring-1 focus:ring-white/20"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -239,10 +232,6 @@ export default function QuestionSetSelection() {
         </header>
 
         <div className="p-[40px_60px] max-w-[1200px] w-full mx-auto">
-          <div className="text-[10px] font-bold text-[#3f3f46] uppercase tracking-[2px] mb-6">
-            Archive Inventory — {filteredData.length} records retrieved
-          </div>
-
           {isLoading ? (
             <div className="text-center py-20 text-[#666666] font-mono text-xs uppercase tracking-[3px] animate-pulse">Initializing archive...</div>
           ) : filteredData.length === 0 ? (
@@ -270,7 +259,7 @@ export default function QuestionSetSelection() {
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-[22px] font-bold text-white mb-[10px] leading-tight truncate pr-4 uppercase tracking-tight">
+                      <h3 className="text-[22px] font-bold text-white mb-[10px] leading-tight truncate pr-4 tracking-tight">
                         {item.title || item.name}
                       </h3>
                       <div className="inline-flex bg-white/[0.03] border border-[#1f1f23] p-[5px_12px] rounded-[6px] text-[10px] text-[#666666] uppercase font-bold tracking-[0.5px]">
