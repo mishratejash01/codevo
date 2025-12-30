@@ -29,8 +29,8 @@ export const initializeRazorpayPayment = (
     return;
   }
 
-  // Your Test Key ID
-  const RAZORPAY_KEY_ID = "rzp_test_RxWT9Exhzw28Do";
+  // Live Key ID
+  const RAZORPAY_KEY_ID = "rzp_live_Rxvn7fqMFo62r3";
 
   const paymentOptions = {
     key: RAZORPAY_KEY_ID,

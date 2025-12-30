@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Loader2, Check, ExternalLink, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Loader2, Check, ExternalLink, ArrowRight, ArrowLeft, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useEventPayment } from '@/hooks/useEventPayment';
 
 interface MeetupRegistrationModalProps {
   event: any;
@@ -16,6 +17,9 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange }: MeetupR
   const [loading, setLoading] = useState(false);
   const [prefilling, setPrefilling] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
+  const { processPayment, isProcessing: isPaymentProcessing } = useEventPayment();
+  
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -35,6 +39,7 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange }: MeetupR
       prefillUserData();
       setStep(1);
       setIsSuccess(false);
+      setRegistrationId(null);
     }
   }, [isOpen]);
 
@@ -84,7 +89,7 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange }: MeetupR
       const registrationStatus = event.is_paid ? 'pending_payment' : 'confirmed';
       const paymentStatus = event.is_paid ? 'pending' : 'exempt';
 
-      const { error } = await supabase.from('meetup_registrations').insert({
+      const { data: registration, error } = await supabase.from('meetup_registrations').insert({
         event_id: event.id,
         user_id: session.user.id,
         full_name: formData.full_name,
@@ -100,11 +105,34 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange }: MeetupR
         payment_status: paymentStatus,
         agreed_to_rules: true,
         agreed_to_privacy: true,
-      });
+      }).select().single();
 
       if (error) throw error;
-      
-      setIsSuccess(true);
+
+      // If paid event, initiate payment immediately
+      if (event.is_paid && event.registration_fee > 0) {
+        setRegistrationId(registration.id);
+        const paymentSuccess = await processPayment({
+          eventId: event.id,
+          eventTitle: event.title,
+          registrationId: registration.id,
+          amount: event.registration_fee,
+          currency: event.currency || 'INR',
+          userEmail: formData.email,
+          userName: formData.full_name,
+          userMobile: formData.mobile_number,
+        });
+
+        if (paymentSuccess) {
+          setIsSuccess(true);
+        } else {
+          toast.info("Registration saved. Complete payment to confirm your spot.");
+          setIsSuccess(true);
+        }
+      } else {
+        setIsSuccess(true);
+        toast.success("Registration successful!");
+      }
     } catch (err: any) {
       toast.error(err.message || 'System error during registration');
     } finally {

@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, CheckCircle2, ChevronRight, ChevronLeft, User, Swords, Shield, Mail, Phone, Building, MapPin, Lock, Trophy, Github, Linkedin } from 'lucide-react';
+import { Loader2, CheckCircle2, ChevronRight, ChevronLeft, User, Swords, Shield, Mail, Phone, Building, MapPin, Lock, Trophy, Github, Linkedin, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useEventPayment } from '@/hooks/useEventPayment';
 
 interface ContestEvent {
   id: string;
@@ -59,6 +60,8 @@ export function ContestRegistrationModal({ event, isOpen, onOpenChange }: Contes
   const totalSteps = 3;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
+  const { processPayment, isProcessing: isPaymentProcessing } = useEventPayment();
 
   const tracks = Array.isArray(event.tracks) ? event.tracks : [];
   const customQuestions = Array.isArray(event.custom_questions) ? event.custom_questions : [];
@@ -135,9 +138,11 @@ export function ContestRegistrationModal({ event, isOpen, onOpenChange }: Contes
       status: event.is_paid ? 'pending_payment' : 'confirmed',
     };
 
-    const { error } = await supabase
+    const { data: registration, error } = await supabase
       .from('contest_registrations')
-      .insert(registrationData);
+      .insert(registrationData)
+      .select()
+      .single();
 
     if (error) {
       if (error.code === '23505') toast.error("You're already registered for this contest!");
@@ -146,9 +151,32 @@ export function ContestRegistrationModal({ event, isOpen, onOpenChange }: Contes
       return;
     }
 
+    // If paid event, initiate payment immediately
+    if (event.is_paid && event.registration_fee > 0) {
+      setRegistrationId(registration.id);
+      const paymentSuccess = await processPayment({
+        eventId: event.id,
+        eventTitle: event.title,
+        registrationId: registration.id,
+        amount: event.registration_fee,
+        currency: event.currency || 'INR',
+        userEmail: values.email,
+        userName: values.full_name,
+        userMobile: values.mobile_number,
+      });
+
+      if (paymentSuccess) {
+        setIsSuccess(true);
+      } else {
+        toast.info("Registration saved. Complete payment to confirm your spot.");
+        setIsSuccess(true);
+      }
+    } else {
+      setIsSuccess(true);
+      toast.success("Contest registration successful!");
+    }
+    
     setIsSubmitting(false);
-    setIsSuccess(true);
-    toast.success("Contest registration successful!");
   }
 
   const nextStep = async () => {

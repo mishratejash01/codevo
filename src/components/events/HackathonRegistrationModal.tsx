@@ -5,10 +5,11 @@ import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { Loader2, Check, ChevronRight, Trash2, ExternalLink } from 'lucide-react';
+import { Loader2, Check, ChevronRight, Trash2, ExternalLink, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { useEventPayment } from '@/hooks/useEventPayment';
 
 // --- DATA SCHEMA ---
 interface HackathonEvent {
@@ -77,6 +78,8 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
   const totalSteps = 5;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
+  const { processPayment, isProcessing: isPaymentProcessing } = useEventPayment();
 
   const tracks = Array.isArray(event.tracks) ? event.tracks : [];
   const customQuestions = Array.isArray(event.custom_questions) ? event.custom_questions : [];
@@ -175,8 +178,31 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
         await supabase.from('team_invitations').insert(invitations);
       }
 
-      setIsSuccess(true);
-      toast.success("Registration successful!");
+      // If paid event, initiate payment immediately
+      if (event.is_paid && event.registration_fee > 0) {
+        setRegistrationId(registration.id);
+        const paymentSuccess = await processPayment({
+          eventId: event.id,
+          eventTitle: event.title,
+          registrationId: registration.id,
+          amount: event.registration_fee,
+          currency: event.currency || 'INR',
+          userEmail: values.email,
+          userName: values.full_name,
+          userMobile: values.mobile_number,
+        });
+
+        if (paymentSuccess) {
+          setIsSuccess(true);
+        } else {
+          // Payment failed/cancelled - registration is still pending
+          toast.info("Registration saved. Complete payment to confirm your spot.");
+          setIsSuccess(true);
+        }
+      } else {
+        setIsSuccess(true);
+        toast.success("Registration successful!");
+      }
     } catch (err: any) {
       console.error("Registration error:", err);
       toast.error(err.code === '23505' ? "Entry already exists" : (err.message || "Registration failure"));

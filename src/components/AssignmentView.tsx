@@ -52,7 +52,30 @@ interface AssignmentViewProps {
   onCodeSubmit?: (code: string, language: string, testResults: { public_passed: number; public_total: number; private_passed: number; private_total: number }) => void;
 }
 
-// ... (Utility functions getTargetName, normalizeOutput, detectInitialLanguage, getStarterTemplate, getFileName remain the same) ...
+// Utility functions
+const detectInitialLanguage = (title: string, category: string): Language => {
+  const text = `${title} ${category}`.toLowerCase();
+  if (text.includes('python') || text.includes('py')) return 'python';
+  if (text.includes('java')) return 'java';
+  if (text.includes('cpp') || text.includes('c++')) return 'cpp';
+  if (text.includes('javascript') || text.includes('js')) return 'javascript';
+  if (text.includes('sql')) return 'sql';
+  if (text.includes('bash') || text.includes('shell')) return 'bash';
+  return 'python';
+};
+
+const getStarterTemplate = (lang: Language): string => {
+  const templates: Record<Language, string> = {
+    python: '# Write your Python code here\n\n',
+    java: 'public class Main {\n    public static void main(String[] args) {\n        // Write your Java code here\n    }\n}\n',
+    cpp: '#include <iostream>\nusing namespace std;\n\nint main() {\n    // Write your C++ code here\n    return 0;\n}\n',
+    c: '#include <stdio.h>\n\nint main() {\n    // Write your C code here\n    return 0;\n}\n',
+    javascript: '// Write your JavaScript code here\n\n',
+    sql: '-- Write your SQL query here\n\n',
+    bash: '#!/bin/bash\n# Write your bash script here\n\n'
+  };
+  return templates[lang] || templates.python;
+};
 
 export const AssignmentView = ({ 
   assignmentId, 
@@ -95,7 +118,15 @@ export const AssignmentView = ({
   });
 
   const testCases = useMemo(() => {
-    // ... (Same stable test cases normalization logic) ...
+    // Use embedded test_cases from assignment if available, otherwise use fetched ones
+    const rawTests = (assignment as any)?.test_cases || fetchedTestCases;
+    if (!Array.isArray(rawTests)) return [];
+    return rawTests.map((tc: any, index: number) => ({
+      id: tc.id || `tc-${index}`,
+      input: tc.input || '',
+      expected_output: tc.expected_output || tc.output || '',
+      is_public: tc.is_public !== undefined ? tc.is_public : true,
+    }));
   }, [assignment, fetchedTestCases]);
 
   const { data: latestSubmission, isLoading: isSubmissionLoading } = useQuery({
