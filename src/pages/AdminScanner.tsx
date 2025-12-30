@@ -4,6 +4,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getRegistrationTable, getAttendanceRPC } from '@/utils/eventHelpers';
+import { playSuccessBeep, playRejectBeep, playErrorBeep, playWarningBeep } from '@/utils/beepSounds';
 
 // Type for the fetched guest data
 interface GuestData {
@@ -88,6 +89,7 @@ export default function AdminScanner() {
     
     // SECURITY: Reject Public/Dashboard URLs
     if (decodedText.includes('http') || decodedText.includes('/verify/')) {
+        playRejectBeep();
         toast.error("INVALID QR: Public Dashboard Link");
         setTimeout(() => {
             resetState();
@@ -125,12 +127,14 @@ export default function AdminScanner() {
       // 2. Check IS_ATTENDED status
       if (guestRecord.is_attended === true) {
         setAlreadyScanned(true);
+        playWarningBeep();
         toast.warning("ALERT: Already Entered!");
       } else {
         setAlreadyScanned(false);
       }
 
     } catch (err: any) {
+      playErrorBeep();
       toast.error(err.message);
       setTimeout(() => {
         resetState();
@@ -145,6 +149,7 @@ export default function AdminScanner() {
     if (!guestData) return;
 
     if (!approved) {
+      playRejectBeep();
       toast.error("Entry Denied");
       resetState();
       if (html5QrCodeRef.current) html5QrCodeRef.current.resume();
@@ -161,6 +166,7 @@ export default function AdminScanner() {
 
       if (error) throw error;
 
+      playSuccessBeep();
       toast.success(`Welcome, ${guestData.full_name}`);
       
       // Auto-reset after delay
@@ -171,6 +177,7 @@ export default function AdminScanner() {
 
     } catch (err: any) {
       console.error("Verdict Error:", err);
+      playErrorBeep();
       toast.error("System Error: " + err.message);
     } finally {
       setProcessingVerdict(false);

@@ -2,27 +2,129 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, Home, Code2, Trophy, LayoutDashboard, User } from 'lucide-react'; 
+import { Input } from '@/components/ui/input';
+import { LogIn, LogOut, Home, Code2, Trophy, LayoutDashboard, User, QrCode, AlertCircle, Check, Loader2 } from 'lucide-react'; 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { QRCodeSVG } from 'qrcode.react';
+import { toast } from 'sonner';
 
 interface HeaderProps {
   session: Session | null;
   onLogout: () => void;
 }
 
+interface ProfileData {
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  github_handle: string | null;
+  linkedin_url: string | null;
+}
+
 export function Header({ session, onLogout }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [username, setUsername] = useState('');
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
   const isPracticeOrExam = location.pathname.includes('/practice') || location.pathname.includes('/exam') || location.pathname.includes('/compiler');
+
+  // Fetch profile when session exists
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchProfile();
+    } else {
+      setProfile(null);
+    }
+  }, [session?.user?.id]);
+
+  async function fetchProfile() {
+    if (!session?.user?.id) return;
+    
+    const { data } = await supabase
+      .from('profiles')
+      .select('username, full_name, avatar_url, bio, github_handle, linkedin_url')
+      .eq('id', session.user.id)
+      .maybeSingle();
+    
+    if (data) {
+      setProfile(data);
+      if (data.username) {
+        setUsername(data.username);
+      }
+    }
+  }
+
+  // Check username availability with debounce
+  useEffect(() => {
+    if (!username || username === profile?.username) {
+      setUsernameError(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      if (username.length < 3) {
+        setUsernameError('Username must be at least 3 characters');
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        setUsernameError('Only letters, numbers, and underscores allowed');
+        return;
+      }
+
+      setIsCheckingUsername(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .neq('id', session?.user?.id || '')
+        .maybeSingle();
+
+      setIsCheckingUsername(false);
+
+      if (data) {
+        setUsernameError('Username already taken');
+      } else {
+        setUsernameError(null);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [username, profile?.username, session?.user?.id]);
+
+  async function saveUsername() {
+    if (!session?.user?.id || usernameError || !username) return;
+
+    setIsSavingUsername(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ username })
+      .eq('id', session.user.id);
+
+    setIsSavingUsername(false);
+
+    if (error) {
+      toast.error('Failed to save username');
+    } else {
+      toast.success('Username saved!');
+      fetchProfile(); // Refresh profile to update QR
+    }
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -34,6 +136,10 @@ export function Header({ session, onLogout }: HeaderProps) {
   }, []);
 
   if (isPracticeOrExam) return null;
+
+  const hasUsername = !!profile?.username;
+  const isProfileIncomplete = !profile?.bio || !profile?.avatar_url || !profile?.github_handle;
+  const profileQrValue = hasUsername ? `${window.location.origin}/u/${profile.username}` : '';
 
   const NavItem = ({ to, icon: Icon, label, active, size = "normal" }: { to: string; icon: any; label: string; active?: boolean, size?: "normal" | "large" }) => (
     <Link 
@@ -82,9 +188,9 @@ export function Header({ session, onLogout }: HeaderProps) {
 
             <div className="flex items-center gap-2">
               {session ? (
-                <Popover>
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                   <PopoverTrigger asChild>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md shadow-inner cursor-pointer hover:bg-white/10 transition-all">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md shadow-inner cursor-pointer hover:bg-white/10 transition-all relative">
                       <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border border-white/20">
                         {userName.charAt(0).toUpperCase()}
                       </div>
@@ -92,33 +198,127 @@ export function Header({ session, onLogout }: HeaderProps) {
                       <div className="relative flex h-2 w-2 ml-1" title="Online">
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
                       </div>
+                      {/* Incomplete Profile Badge */}
+                      {isProfileIncomplete && (
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full flex items-center justify-center">
+                          <AlertCircle className="w-2 h-2 text-white" />
+                        </span>
+                      )}
                     </div>
                   </PopoverTrigger>
                   <PopoverContent 
                     align="end" 
                     sideOffset={8}
-                    className="w-40 p-1 bg-[#0c0c0e] border border-white/10 shadow-2xl rounded-xl outline-none ring-0"
+                    className="w-72 p-0 bg-[#0c0c0e] border border-white/10 shadow-2xl rounded-xl outline-none ring-0"
                   >
-                    <div className="flex flex-col gap-0.5">
-                      {/* Mobile Only: Profile Button */}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="md:hidden w-full flex items-center justify-start gap-2.5 text-gray-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-xs font-medium transition-colors focus-visible:ring-0 focus-visible:ring-offset-0" 
-                        onClick={() => navigate('/profile')}
-                      >
-                        <User className="w-4 h-4 text-primary" /> Profile
-                      </Button>
-                      
-                      {/* Logout Button: No purple lining */}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full flex items-center justify-start gap-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-2 rounded-lg text-xs font-medium transition-colors focus-visible:ring-0 focus-visible:ring-offset-0" 
-                        onClick={onLogout}
-                      >
-                        <LogOut className="w-4 h-4" /> Logout
-                      </Button>
+                    <div className="p-4 space-y-4">
+                      {/* Profile QR Section */}
+                      <div className="text-center">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3">Public Profile QR</p>
+                        <div className="relative inline-block">
+                          {/* QR Code with blur if no username */}
+                          <div className={cn(
+                            "bg-white p-3 rounded-lg inline-block transition-all",
+                            !hasUsername && "blur-md opacity-50"
+                          )}>
+                            <QRCodeSVG 
+                              value={profileQrValue || 'no-username'} 
+                              size={120} 
+                              level="H"
+                            />
+                          </div>
+                          {/* Overlay for no username */}
+                          {!hasUsername && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-black/80 backdrop-blur-sm px-3 py-2 rounded-lg text-center">
+                                <QrCode className="w-5 h-5 mx-auto mb-1 text-primary" />
+                                <p className="text-[10px] text-white font-medium">Set Username to Unlock</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        {hasUsername && (
+                          <p className="text-[10px] text-muted-foreground mt-2">codevo.dev/u/{profile?.username}</p>
+                        )}
+                      </div>
+
+                      {/* Username Guard Section */}
+                      {!hasUsername && (
+                        <div className="border-t border-white/10 pt-4">
+                          <label className="text-[10px] uppercase tracking-widest text-muted-foreground block mb-2">
+                            Choose Your Username
+                          </label>
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <Input
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
+                                placeholder="username"
+                                className="h-9 bg-black/50 border-white/20 text-sm pr-8"
+                              />
+                              {isCheckingUsername && (
+                                <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                              )}
+                              {!isCheckingUsername && username && !usernameError && username !== profile?.username && (
+                                <Check className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              className="h-9 px-3"
+                              onClick={saveUsername}
+                              disabled={!username || !!usernameError || isCheckingUsername || isSavingUsername}
+                            >
+                              {isSavingUsername ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                            </Button>
+                          </div>
+                          {usernameError && (
+                            <p className="text-[10px] text-red-400 mt-1">{usernameError}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="border-t border-white/10 pt-3 space-y-1">
+                        {/* Incomplete Profile Warning */}
+                        {isProfileIncomplete && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-full flex items-center justify-start gap-2.5 text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 px-3 py-2 rounded-lg text-xs font-medium transition-colors" 
+                            onClick={() => { setPopoverOpen(false); navigate('/profile'); }}
+                          >
+                            <AlertCircle className="w-4 h-4" /> Complete Your Profile
+                          </Button>
+                        )}
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full flex items-center justify-start gap-2.5 text-gray-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-xs font-medium transition-colors" 
+                          onClick={() => { setPopoverOpen(false); navigate('/profile'); }}
+                        >
+                          <User className="w-4 h-4 text-primary" /> View Profile
+                        </Button>
+
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full flex items-center justify-start gap-2.5 text-gray-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg text-xs font-medium transition-colors" 
+                          onClick={() => { setPopoverOpen(false); navigate('/dashboard'); }}
+                        >
+                          <LayoutDashboard className="w-4 h-4 text-primary" /> Dashboard
+                        </Button>
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full flex items-center justify-start gap-2.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-2 rounded-lg text-xs font-medium transition-colors" 
+                          onClick={() => { setPopoverOpen(false); onLogout(); }}
+                        >
+                          <LogOut className="w-4 h-4" /> Logout
+                        </Button>
+                      </div>
                     </div>
                   </PopoverContent>
                 </Popover>
