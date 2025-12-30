@@ -5,35 +5,61 @@ import { Loader2, ShieldAlert } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
+import { getRegistrationTable } from '@/utils/eventHelpers';
+
+// Define minimal interface for registration data
+interface RegistrationData {
+  id: string;
+  full_name: string;
+  email: string;
+  user_id: string | null;
+  event_id: string;
+  participation_type?: string | null;
+  team_name?: string | null;
+  is_attended?: boolean | null;
+  events?: {
+    title: string;
+    venue: string | null;
+    location: string | null;
+    mode: string;
+    start_date: string;
+  } | null;
+}
 
 export default function VerifyRegistration() {
-  const { registrationId } = useParams();
+  const { formType, registrationId } = useParams<{ formType: string; registrationId: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<RegistrationData | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [sponsors, setSponsors] = useState<any[]>([]);
 
   useEffect(() => {
-    if (registrationId) fetchVerificationData();
-  }, [registrationId]);
+    if (formType && registrationId) fetchVerificationData();
+  }, [formType, registrationId]);
 
   async function fetchVerificationData() {
     try {
+      // Get the correct table based on formType from URL
+      const tableName = getRegistrationTable(formType);
+      
       const { data: reg, error: regError } = await supabase
-        .from('event_registrations')
+        .from(tableName as any)
         .select(`*, events (*)`)
         .eq('id', registrationId)
         .single();
 
       if (regError || !reg) throw new Error("Registry record not found");
-      setData(reg);
+      
+      // Cast to unknown first then to our interface
+      const regData = reg as unknown as RegistrationData;
+      setData(regData);
 
-      if (reg.user_id) {
+      if (regData.user_id) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('avatar_url')
-          .eq('id', reg.user_id)
+          .eq('id', regData.user_id)
           .single();
         setUserProfile(profile);
       }
@@ -41,7 +67,7 @@ export default function VerifyRegistration() {
       const { data: sponsorData } = await supabase
         .from('event_sponsors')
         .select('*')
-        .eq('event_id', reg.event_id);
+        .eq('event_id', regData.event_id);
       
       if (sponsorData) setSponsors(sponsorData);
 
@@ -67,7 +93,10 @@ export default function VerifyRegistration() {
   );
 
   const event = data.events;
-  const isAttended = data.is_attended; // THIS IS THE CORRECT FIELD
+  const isAttended = data.is_attended;
+  
+  // QR code value now includes formType for AdminScanner
+  const qrValue = `${formType}:${data.id}`;
 
   return (
     <div className="verify-registration-container">
@@ -119,7 +148,7 @@ export default function VerifyRegistration() {
           <div className="card-content">
             <header>
               <p>Official Event Entry</p>
-              <h2>{event.title}</h2>
+              <h2>{event?.title || 'Event'}</h2>
             </header>
 
             <div className="identity-block">
@@ -128,7 +157,7 @@ export default function VerifyRegistration() {
               </div>
               <div className="id-text">
                 <h3>{data.full_name}</h3>
-                <span>{data.participation_type} • {data.team_name || 'Individual'}</span>
+                <span>{data.participation_type || 'Individual'} • {data.team_name || 'Solo Entry'}</span>
               </div>
             </div>
 
@@ -136,19 +165,19 @@ export default function VerifyRegistration() {
               <div className="info-item">
                 <label>Date & Time</label>
                 <p>
-                  {event.start_date ? format(parseISO(event.start_date), 'MMM dd, yyyy') : 'TBA'}
-                  <span className="text-[#00ff88] mt-0.5">{event.start_date ? format(parseISO(event.start_date), 'hh:mm a') : ''}</span>
+                  {event?.start_date ? format(parseISO(event.start_date), 'MMM dd, yyyy') : 'TBA'}
+                  <span className="text-[#00ff88] mt-0.5">{event?.start_date ? format(parseISO(event.start_date), 'hh:mm a') : ''}</span>
                 </p>
               </div>
               <div className="info-item">
                 <label>Mode</label>
-                <p className="uppercase">{event.mode || 'In-Person'}</p>
+                <p className="uppercase">{event?.mode || 'In-Person'}</p>
               </div>
               <div className="info-item" style={{ gridColumn: 'span 2' }}>
                 <label>Venue & Location</label>
                 <p>
-                  <span className="font-semibold block text-white mb-0.5">{event.venue || 'Main Venue'}</span>
-                  {event.location || 'Online'}
+                  <span className="font-semibold block text-white mb-0.5">{event?.venue || 'Main Venue'}</span>
+                  {event?.location || 'Online'}
                 </p>
               </div>
             </div>
@@ -166,7 +195,7 @@ export default function VerifyRegistration() {
 
             <div className="verification-zone">
               <div className={cn("qr-wrapper", isAttended && "qr-dimmed")}>
-                <QRCodeSVG value={data.id} size={140} level="H" bgColor="#ffffff" fgColor="#000000" />
+                <QRCodeSVG value={qrValue} size={140} level="H" bgColor="#ffffff" fgColor="#000000" />
               </div>
               {isAttended && (
                 <div className="stamp-attended">

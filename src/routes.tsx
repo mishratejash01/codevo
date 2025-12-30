@@ -34,7 +34,7 @@ export const AppRoutes = [
   { path: "/privacy", component: PrivacyPolicy, name: "Privacy Policy" },
   
   // --- ATTENDANCE & VERIFICATION ROUTES ---
-  // Updated to support dynamic event types (formType) for various registration tables
+  // Dynamic event types (formType) for various registration tables: workshop, webinar, meetup, contest, hackathon, normal
   { path: "/verify/:formType/:registrationId", component: VerifyRegistration, name: "Verify Registration" },
   { path: "/AdminScanner", component: AdminScanner, name: "Admin Terminal" },
   

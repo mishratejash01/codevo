@@ -67,7 +67,8 @@ export function SimpleRegistrationCard({
       if (error) {
         console.error("Registration fetch error:", error);
       } else if (data) {
-        setRegistration(data as RegistrationData);
+        // Cast to unknown first then to our interface
+        setRegistration(data as unknown as RegistrationData);
       }
     } catch (err) {
       console.error("Critical error fetching registration:", err);
