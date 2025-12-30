@@ -190,6 +190,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange }: Hack
           userEmail: values.email,
           userName: values.full_name,
           userMobile: values.mobile_number,
+          formType: 'hackathon',
         });
 
         if (paymentSuccess) {

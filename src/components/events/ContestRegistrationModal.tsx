@@ -163,6 +163,7 @@ export function ContestRegistrationModal({ event, isOpen, onOpenChange }: Contes
         userEmail: values.email,
         userName: values.full_name,
         userMobile: values.mobile_number,
+        formType: 'contest',
       });
 
       if (paymentSuccess) {

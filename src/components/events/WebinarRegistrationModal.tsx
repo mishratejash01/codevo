@@ -121,6 +121,7 @@ export function WebinarRegistrationModal({ event, isOpen, onOpenChange }: Webina
           userEmail: formData.email,
           userName: formData.full_name,
           userMobile: formData.mobile_number,
+          formType: 'webinar',
         });
 
         if (paymentSuccess) {

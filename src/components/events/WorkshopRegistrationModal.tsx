@@ -124,6 +124,7 @@ export function WorkshopRegistrationModal({ event, isOpen, onOpenChange }: Works
           userEmail: formData.email,
           userName: formData.full_name,
           userMobile: formData.mobile_number,
+          formType: 'workshop',
         });
 
         if (paymentSuccess) {

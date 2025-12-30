@@ -76,7 +76,8 @@ serve(async (req) => {
       );
     }
 
-    const razorpayKeyId = Deno.env.get('rzp_live_Rxvn7fqMFo62r3') || 'rzp_live_Rxvn7fqMFo62r3';
+    // Razorpay Key ID is a publishable key, safe to use directly
+    const razorpayKeyId = 'rzp_live_Rxvn7fqMFo62r3';
     const razorpayKeySecret = Deno.env.get('RAZORPAY_KEY_SECRET');
 
     if (!razorpayKeySecret) {

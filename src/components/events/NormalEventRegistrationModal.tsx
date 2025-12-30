@@ -121,6 +121,7 @@ export function NormalEventRegistrationModal({ event, isOpen, onOpenChange }: No
           userEmail: formData.email,
           userName: formData.full_name,
           userMobile: formData.mobile_number,
+          formType: 'normal',
         });
 
         if (paymentSuccess) {

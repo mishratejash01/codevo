@@ -121,6 +121,7 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange }: MeetupR
           userEmail: formData.email,
           userName: formData.full_name,
           userMobile: formData.mobile_number,
+          formType: 'meetup',
         });
 
         if (paymentSuccess) {
