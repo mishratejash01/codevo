@@ -9,12 +9,33 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { 
   ArrowLeft, Search, Layers, Clock, Play, 
-  Infinity as InfinityIcon, ChevronRight, ChevronDown, FileCode2, Lock, Menu, Code2, X, Trophy, Shield
+  Infinity as InfinityIcon, ChevronRight, ChevronDown, FileCode2, Lock, Menu, Code2, X, Trophy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { checkUserProfile, ProfileSheet } from '@/components/ProfileCompletion';
 import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
+// --- CUSTOM ATELIER PROCTOR ICON COMPONENT ---
+const ProctorIcon = () => (
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
+    <defs>
+      <mask id="bubbleMask">
+        <rect width="100" height="100" fill="white" />
+        <path d="M62 38 H 88 A 4 4 0 0 1 92 42 V 55 A 4 4 0 0 1 88 59 H 75 L 69 65 V 59 H 62 A 4 4 0 0 1 58 55 V 42 A 4 4 0 0 1 62 38 Z" fill="black" stroke="black" strokeWidth="4" />
+      </mask>
+    </defs>
+    <g mask="url(#bubbleMask)">
+      <circle cx="50" cy="38" r="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M22 82 C 22 70, 32 62, 50 62 C 68 62, 78 70, 78 82 V 85 H 22 Z" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M40 62 L50 75 L60 62" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </g>
+    <path d="M62 38 H 88 A 4 4 0 0 1 92 42 V 55 A 4 4 0 0 1 88 59 H 75 L 69 65 V 59 H 62 A 4 4 0 0 1 58 55 V 42 A 4 4 0 0 1 62 38 Z" fill="none" stroke="#71717a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="68" cy="49" r="1.8" fill="#71717a" />
+    <circle cx="75" cy="49" r="1.8" fill="#71717a" />
+    <circle cx="82" cy="49" r="1.8" fill="#71717a" />
+  </svg>
+);
 
 // --- DESIGN COMPONENTS ---
 const FolderSticker = ({ active }: { active: boolean }) => (
@@ -173,12 +194,7 @@ export default function QuestionSetSelection() {
       <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
         <div className="flex justify-between items-center sticky top-0 bg-[#070708] py-2 border-b border-[#1a1a1c] mb-4 z-10">
            <h3 className="text-[10px] uppercase tracking-[2px] text-[#666] font-bold italic">Hall of Fame</h3>
-           <button 
-             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsLeaderboardModalOpen(true); }} 
-             className="bg-white text-black text-[9px] px-3 py-1.5 rounded-sm font-black uppercase tracking-tighter hover:bg-zinc-200 transition-colors"
-           >
-             Detail View
-           </button>
+           <button onClick={() => setIsLeaderboardModalOpen(true)} className="bg-white text-black text-[9px] px-3 py-1.5 rounded-sm font-black uppercase tracking-tighter hover:bg-zinc-200 transition-colors">Detail View</button>
         </div>
         {leaderboardData.slice(0, 10).map((e: any, i: number) => (
           <div key={e.user_id} className="flex justify-between py-2 text-[12px] items-center border-b border-white/[0.02]">
@@ -194,6 +210,7 @@ export default function QuestionSetSelection() {
     <div className="h-screen bg-[#050505] text-white flex flex-col overflow-hidden font-sans">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
       
+      {/* --- HEADER --- */}
       <header className="px-4 py-3 md:px-10 md:py-3 border-b border-[#1a1a1c] bg-[#050505] z-30 shrink-0">
         <div className="flex justify-between items-center gap-4 max-w-[1600px] mx-auto h-10">
           <div className="flex items-center gap-4 flex-1 overflow-hidden">
@@ -235,6 +252,7 @@ export default function QuestionSetSelection() {
         </div>
       </header>
 
+      {/* --- MAIN SPLIT VIEW --- */}
       <div className="flex-1 flex overflow-hidden max-w-[1600px] mx-auto w-full relative">
         {!isProctored && (
           <aside className="hidden lg:flex w-[240px] border-r border-[#1a1a1c] bg-[#080808] p-8 flex-col shrink-0 overflow-y-auto">
@@ -270,9 +288,14 @@ export default function QuestionSetSelection() {
                   <div key={id} className="relative group">
                     {isLocked && <PremiumLockOverlay />}
                     <div className={cn("bg-[#0a0a0b] border border-[#1a1a1c] rounded-sm transition-all duration-300", isExpanded && "border-[#333]")}>
-                      <div className={cn("p-4 md:p-6 cursor-pointer select-none flex items-center gap-4", isLocked && "opacity-40")} onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : id)}>
+                      
+                      {/* CARD HEADER */}
+                      <div 
+                        className={cn("p-4 md:p-6 cursor-pointer select-none flex items-center gap-4 transition-colors", isLocked && "opacity-40")}
+                        onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : id)}
+                      >
                         <div className="w-9 h-9 bg-black border border-[#1a1a1c] flex items-center justify-center text-[#333] rounded-sm shrink-0">
-                          {isProctored ? <Shield size={16} /> : <Code2 size={16} />}
+                          {isProctored ? <ProctorIcon /> : <Code2 size={16} />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-[14px] md:text-[17px] font-bold text-zinc-100 truncate tracking-tight uppercase">{item.title || item.name}</h3>
@@ -286,6 +309,7 @@ export default function QuestionSetSelection() {
                             )}
                           </div>
                         </div>
+                        
                         <div className="hidden md:flex items-center gap-6">
                            <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1.5 font-mono text-[11px] text-[#666] uppercase">
                              {isProctored ? `SET-${String(item.sequence_number || 1).padStart(2, '0')}` : String(item.totalTime || item.expected_time || 20).padStart(2, '0') + " MIN"}
@@ -295,29 +319,61 @@ export default function QuestionSetSelection() {
                         <div className="md:hidden"><ChevronDown size={14} className={cn("text-[#333] transition-transform duration-300", isExpanded && "rotate-180")} /></div>
                       </div>
 
+                      {/* EXPANDED AREA */}
                       <div className={cn("bg-[#080809] transition-all duration-500 ease-in-out px-4 md:px-6 overflow-hidden", isExpanded ? "max-h-[600px] border-t border-[#1a1a1c] py-6 md:py-8 opacity-100" : "max-h-0 py-0 opacity-0")}>
                         <div className="flex flex-col md:flex-row justify-between items-end gap-10">
                           <div className="flex-1 w-full space-y-6">
+                            {/* MOBILE TAGS */}
                             <div className="flex flex-wrap gap-2 md:hidden">
-                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-white uppercase font-black">{isProctored ? `Set ${item.sequence_number}` : (item.difficulty || 'Normal')}</div>
-                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-white uppercase font-black">{String(item.totalTime || item.expected_time || 20)} MIN</div>
+                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-white uppercase font-black">
+                                 {isProctored ? `Set ${item.sequence_number}` : (item.difficulty || 'Normal')}
+                               </div>
+                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-white uppercase font-black">
+                                 {String(item.totalTime || item.expected_time || 20)} MIN
+                               </div>
                             </div>
+
+                            {/* SLIDER (STRICTLY PRACTICE ONLY) */}
                             {!isProctored && !noTimeLimit && (
                                <div className="space-y-6 animate-in fade-in duration-500">
-                                  <div className="flex items-center justify-between"><span className="text-[10px] text-white uppercase font-black tracking-[2px] italic">Set Duration</span><div className="flex items-center gap-2"><input type="text" className="bg-black border border-[#1a1a1c] text-white w-14 p-2 text-center font-mono rounded-sm text-sm" value={timeLimit[0]} readOnly /><span className="text-[11px] text-white font-bold">MIN</span></div></div>
-                                  <div className="w-full px-2"><Slider value={timeLimit} onValueChange={setTimeLimit} min={2} max={30} step={2} className="[&_[role=slider]]:bg-white [&_[role=slider]]:border-none [&>.relative>.absolute]:bg-white py-4" /><div className="flex justify-between text-[8px] text-white/40 font-mono mt-4 tracking-[2.5px]"><span>02 MIN</span><span>15 MIN</span><span>30 MIN (OVERRIDE)</span></div></div>
+                                  <div className="flex items-center justify-between">
+                                     <span className="text-[10px] text-white uppercase font-black tracking-[2px] italic">Set Duration</span>
+                                     <div className="flex items-center gap-2">
+                                        <input type="text" className="bg-black border border-[#1a1a1c] text-white w-14 p-2 text-center font-mono rounded-sm text-sm" value={timeLimit[0]} readOnly />
+                                        <span className="text-[11px] text-white font-bold">MIN</span>
+                                     </div>
+                                  </div>
+                                  <div className="w-full px-2">
+                                     <Slider value={timeLimit} onValueChange={setTimeLimit} min={2} max={30} step={2} className="[&_[role=slider]]:bg-white [&_[role=slider]]:border-none [&>.relative>.absolute]:bg-white py-4" />
+                                     <div className="flex justify-between text-[8px] text-white/40 font-mono mt-4 tracking-[2.5px]"><span>02 MIN</span><span>15 MIN</span><span>30 MIN (OVERRIDE)</span></div>
+                                  </div>
                                </div>
                             )}
-                            {isProctored && <div className="text-[10px] text-[#555] font-mono uppercase tracking-[2px]">Security Hash Verified: {profile?.id?.substring(0,8) || '####'}</div>}
+
+                            {isProctored && (
+                               <div className="text-[10px] text-[#555] font-mono uppercase tracking-[2px]">
+                                  Candidate: {profile?.full_name?.substring(0,10) || 'Verified'} | Security Hash: {profile?.id?.substring(0,8) || '####'}
+                               </div>
+                            )}
                           </div>
+
                           <div className="flex flex-col items-end gap-6 shrink-0 w-full md:w-auto">
-                            {!isProctored && <div className="flex flex-col gap-2 items-center"><span className="text-white text-[10px] uppercase tracking-[2px] font-black">Archive Free Mode</span><ArchiveToggle checked={noTimeLimit} onChange={setNoTimeLimit} /></div>}
-                            <button onClick={() => handleStart(id, isProctored)} className="w-full md:w-auto bg-white text-black px-12 py-4 text-[10px] font-extrabold uppercase tracking-[2px] transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/20 flex items-center justify-center gap-3">
+                            {!isProctored && (
+                              <div className="flex flex-col gap-2 items-center">
+                                <span className="text-white text-[10px] uppercase tracking-[2px] font-black">Archive Free Mode</span>
+                                <ArchiveToggle checked={noTimeLimit} onChange={setNoTimeLimit} />
+                              </div>
+                            )}
+                            <button 
+                               onClick={() => handleStart(id, isProctored)} 
+                               className="w-full md:w-auto bg-white text-black px-12 py-4 text-[10px] font-extrabold uppercase tracking-[2px] transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/20 flex items-center justify-center gap-3"
+                            >
                                {!isProctored && noTimeLimit ? <InfinityIcon size={14} /> : <Play size={14} fill="currentColor" />} Solve <ChevronRight size={14} />
                             </button>
                           </div>
                         </div>
                       </div>
+
                     </div>
                   </div>
                 );
@@ -329,14 +385,20 @@ export default function QuestionSetSelection() {
         {isProctored && <aside className="hidden lg:flex w-[340px] bg-[#070708] border-l border-[#1a1a1c] flex-col overflow-y-auto scrollbar-hide shrink-0"><SidebarStats /></aside>}
       </div>
 
+      {/* --- LEADERBOARD MODAL --- */}
       {isLeaderboardModalOpen && (
-        <div className="fixed inset-0 bg-black z-[1000] flex flex-col p-6 md:p-20 overflow-y-auto animate-in fade-in duration-500">
+        <div className="fixed inset-0 bg-black z-[1100] flex flex-col p-6 md:p-[80px_100px] overflow-y-auto animate-in fade-in duration-500">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 pb-8 border-b border-[#111] gap-6">
             <div className="space-y-2">
               <p className="uppercase tracking-[4px] text-[#333] text-[9px] font-black">Performance Archive Metrics</p>
               <h2 className="font-['Playfair_Display'] text-[32px] md:text-[54px] italic font-bold text-white tracking-tighter uppercase leading-none">Hall of Fame</h2>
             </div>
-            <button onClick={() => setIsLeaderboardModalOpen(false)} className="bg-white text-black px-8 py-3.5 text-[10px] font-black uppercase transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/30 shrink-0">Return to Archive</button>
+            <button 
+               onClick={() => setIsLeaderboardModalOpen(false)} 
+               className="bg-white text-black px-8 py-3.5 text-[10px] font-black uppercase transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/30 shrink-0"
+            >
+               Return to Archive
+            </button>
           </div>
           
           <div className="overflow-x-auto scrollbar-hide">
@@ -345,7 +407,7 @@ export default function QuestionSetSelection() {
                 <tr className="border-b border-[#111]">
                   <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black">Rank</th>
                   <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black">Agent</th>
-                  <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black hidden sm:table-cell">Transmissions</th>
+                  <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black hidden sm:table-cell">Solved</th>
                   <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black hidden lg:table-cell">Streak</th>
                   <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black">XP Score</th>
                   <th className="p-4 text-[9px] uppercase tracking-[2px] text-[#333] font-black hidden sm:table-cell">Status</th>
@@ -359,7 +421,11 @@ export default function QuestionSetSelection() {
                     <td className="p-5 text-zinc-500 hidden sm:table-cell">{row.problems_solved}</td>
                     <td className="p-5 text-zinc-500 hidden lg:table-cell">{row.current_streak}D</td>
                     <td className="p-5 text-zinc-400 font-black">{row.total_score}</td>
-                    <td className="p-5 hidden sm:table-cell"><span className={cn("px-3 py-1 rounded-[1px] text-[9px] font-black uppercase", i < 3 ? "bg-[#10b9811a] text-[#10b981]" : "bg-[#111] text-[#333]")}>{i < 3 ? 'Elite' : 'Operative'}</span></td>
+                    <td className="p-5 hidden sm:table-cell">
+                      <span className={cn("px-3 py-1 rounded-[1px] text-[9px] font-black uppercase", i < 3 ? "bg-[#10b9811a] text-[#10b981]" : "bg-[#111] text-[#333]")}>
+                        {i < 3 ? 'Elite' : 'Operative'}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
