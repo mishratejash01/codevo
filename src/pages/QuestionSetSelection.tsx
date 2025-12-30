@@ -16,7 +16,7 @@ import { checkUserProfile, ProfileSheet } from '@/components/ProfileCompletion';
 import { PremiumLockOverlay } from '@/components/PremiumLockOverlay';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-// --- CUSTOM ATELIER PROCTOR ICON COMPONENT ---
+// --- CUSTOM ATELIER PROCTOR ICON ---
 const ProctorIcon = () => (
   <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
     <defs>
@@ -37,7 +37,31 @@ const ProctorIcon = () => (
   </svg>
 );
 
-// --- DESIGN COMPONENTS ---
+// --- CUSTOM ATELIER PRACTICE ICON (COLORFUL) ---
+const PracticeIcon = () => (
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
+    <rect x="22" y="18" width="45" height="65" rx="2" fill="#e5e7eb" />
+    <rect fill="#334155" x="35" y="14" width="20" height="8" rx="2" />
+    <circle fill="#475569" cx="45" cy="18" r="2" />
+    <text x="45" y="32" textAnchor="middle" fill="#f59e0b" fontSize="8" fontWeight="900" fontFamily="sans-serif" letterSpacing="0.5">TEST</text>
+    <rect x="28" y="40" width="10" height="10" rx="1" fill="none" stroke="#9ca3af" strokeWidth="1.5" />
+    <line x1="42" y1="43" x2="60" y2="43" stroke="#4b5563" strokeWidth="2.5" strokeLinecap="round" />
+    <line x1="42" y1="48" x2="55" y2="48" stroke="#4b5563" strokeWidth="2.5" strokeLinecap="round" />
+    <rect x="28" y="55" width="10" height="10" rx="1" fill="none" stroke="#9ca3af" strokeWidth="1.5" />
+    <path d="M28 60 L33 65 L42 53" fill="none" stroke="#10b981" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+    <line x1="42" y1="58" x2="60" y2="58" stroke="#4b5563" strokeWidth="2.5" strokeLinecap="round" />
+    <line x1="42" y1="63" x2="55" y2="63" stroke="#4b5563" strokeWidth="2.5" strokeLinecap="round" />
+    <rect x="28" y="70" width="10" height="10" rx="1" fill="none" stroke="#9ca3af" strokeWidth="1.5" />
+    <line x1="42" y1="73" x2="60" y2="73" stroke="#4b5563" strokeWidth="2.5" strokeLinecap="round" />
+    <line x1="42" y1="78" x2="55" y2="78" stroke="#4b5563" strokeWidth="2.5" strokeLinecap="round" />
+    <rect fill="rgba(0,0,0,0.1)" x="76" y="34" width="8" height="42" rx="1" />
+    <rect fill="#0ea5e9" x="73" y="30" width="8" height="42" rx="1" />
+    <path fill="#1e293b" d="M73 72 L77 82 L81 72 Z" />
+    <path fill="#fca5a5" d="M73 34 A 4 4 0 0 1 81 34 V 30 H 73 V 34 Z" />
+  </svg>
+);
+
+// --- NAVIGATION ICONS ---
 const FolderSticker = ({ active }: { active: boolean }) => (
   <div className={cn("relative transition-all duration-300 shrink-0", active ? "scale-105 opacity-100" : "opacity-40 hover:opacity-70")}>
     <div className="filter drop-shadow-[1px_1px_0px_rgba(0,0,0,0.5)]">
@@ -118,7 +142,7 @@ export default function QuestionSetSelection() {
   const [showProfileSheet, setShowProfileSheet] = useState(false);
   const [isLeaderboardModalOpen, setIsLeaderboardModalOpen] = useState(false);
 
-  const searchPlaceholders = ['Search archive...', 'Filter by level...', 'Modules query...', 'Question name...'];
+  const searchPlaceholders = ['Search archive...', 'Filter results...', 'Archive query...', 'Record name...'];
 
   // --- DATA ---
   const { data: session } = useQuery({ queryKey: ['session'], queryFn: async () => (await supabase.auth.getSession()).data.session });
@@ -194,7 +218,12 @@ export default function QuestionSetSelection() {
       <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
         <div className="flex justify-between items-center sticky top-0 bg-[#070708] py-2 border-b border-[#1a1a1c] mb-4 z-10">
            <h3 className="text-[10px] uppercase tracking-[2px] text-[#666] font-bold italic">Hall of Fame</h3>
-           <button onClick={() => setIsLeaderboardModalOpen(true)} className="bg-white text-black text-[9px] px-3 py-1.5 rounded-sm font-black uppercase tracking-tighter hover:bg-zinc-200 transition-colors">Detail View</button>
+           <button 
+             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsLeaderboardModalOpen(true); }} 
+             className="bg-white text-black text-[9px] px-3 py-1.5 rounded-sm font-black uppercase tracking-tighter hover:bg-zinc-200 transition-colors"
+           >
+             Detail View
+           </button>
         </div>
         {leaderboardData.slice(0, 10).map((e: any, i: number) => (
           <div key={e.user_id} className="flex justify-between py-2 text-[12px] items-center border-b border-white/[0.02]">
@@ -214,7 +243,7 @@ export default function QuestionSetSelection() {
       <header className="px-4 py-3 md:px-10 md:py-3 border-b border-[#1a1a1c] bg-[#050505] z-30 shrink-0">
         <div className="flex justify-between items-center gap-4 max-w-[1600px] mx-auto h-10">
           <div className="flex items-center gap-4 flex-1 overflow-hidden">
-            <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/5 rounded-full transition-colors shrink-0"><ArrowLeft size={18} className="text-[#666] hover:text-white" /></button>
+            <button onClick={() => navigate(-1)} className="p-1.5 hover:bg-white/5 rounded-full transition-colors shrink-0"><ArrowLeft size={18} className="text-[#666] hover:text-white" /></button>
             <MovingHeaderTitle subject={subjectName || ''} exam={examType || ''} />
           </div>
           <div className="flex items-center gap-2">
@@ -273,9 +302,9 @@ export default function QuestionSetSelection() {
         <main className="flex-1 flex flex-col overflow-y-auto scrollbar-hide pt-4 md:pt-6 px-3 md:px-12">
           {isLoading ? (
              <div className="flex items-center justify-center py-40 gap-2.5">
-                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <div className="w-2 h-2 bg-white/30 rounded-full animate-bounce" />
              </div>
           ) : (
             <div className={cn("pb-12", isProctored ? "space-y-6" : "space-y-4")}>
@@ -289,13 +318,12 @@ export default function QuestionSetSelection() {
                     {isLocked && <PremiumLockOverlay />}
                     <div className={cn("bg-[#0a0a0b] border border-[#1a1a1c] rounded-sm transition-all duration-300", isExpanded && "border-[#333]")}>
                       
-                      {/* CARD HEADER */}
                       <div 
                         className={cn("p-4 md:p-6 cursor-pointer select-none flex items-center gap-4 transition-colors", isLocked && "opacity-40")}
                         onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : id)}
                       >
-                        <div className="w-9 h-9 bg-black border border-[#1a1a1c] flex items-center justify-center text-[#333] rounded-sm shrink-0">
-                          {isProctored ? <ProctorIcon /> : <Code2 size={16} />}
+                        <div className="w-10 h-10 bg-black border border-[#1a1a1c] flex items-center justify-center text-[#333] rounded-sm shrink-0">
+                          {isProctored ? <ProctorIcon /> : <PracticeIcon />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-[14px] md:text-[17px] font-bold text-zinc-100 truncate tracking-tight uppercase">{item.title || item.name}</h3>
@@ -319,21 +347,18 @@ export default function QuestionSetSelection() {
                         <div className="md:hidden"><ChevronDown size={14} className={cn("text-[#333] transition-transform duration-300", isExpanded && "rotate-180")} /></div>
                       </div>
 
-                      {/* EXPANDED AREA */}
                       <div className={cn("bg-[#080809] transition-all duration-500 ease-in-out px-4 md:px-6 overflow-hidden", isExpanded ? "max-h-[600px] border-t border-[#1a1a1c] py-6 md:py-8 opacity-100" : "max-h-0 py-0 opacity-0")}>
                         <div className="flex flex-col md:flex-row justify-between items-end gap-10">
                           <div className="flex-1 w-full space-y-6">
-                            {/* MOBILE TAGS */}
                             <div className="flex flex-wrap gap-2 md:hidden">
-                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-white uppercase font-black">
+                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-zinc-300 uppercase font-bold">
                                  {isProctored ? `Set ${item.sequence_number}` : (item.difficulty || 'Normal')}
                                </div>
-                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-white uppercase font-black">
+                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-zinc-300 uppercase font-bold">
                                  {String(item.totalTime || item.expected_time || 20)} MIN
                                </div>
                             </div>
 
-                            {/* SLIDER (STRICTLY PRACTICE ONLY) */}
                             {!isProctored && !noTimeLimit && (
                                <div className="space-y-6 animate-in fade-in duration-500">
                                   <div className="flex items-center justify-between">
@@ -387,7 +412,7 @@ export default function QuestionSetSelection() {
 
       {/* --- LEADERBOARD MODAL --- */}
       {isLeaderboardModalOpen && (
-        <div className="fixed inset-0 bg-black z-[1100] flex flex-col p-6 md:p-[80px_100px] overflow-y-auto animate-in fade-in duration-500">
+        <div className="fixed inset-0 bg-black z-[1100] flex flex-col p-6 md:p-20 overflow-y-auto animate-in fade-in duration-500">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 pb-8 border-b border-[#111] gap-6">
             <div className="space-y-2">
               <p className="uppercase tracking-[4px] text-[#333] text-[9px] font-black">Performance Archive Metrics</p>
