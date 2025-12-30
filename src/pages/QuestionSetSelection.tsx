@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,6 +64,22 @@ export default function QuestionSetSelection() {
   const [timeLimit, setTimeLimit] = useState([20]);
   const [noTimeLimit, setNoTimeLimit] = useState(false);
   const [showProfileSheet, setShowProfileSheet] = useState(false);
+
+  // --- SEARCH PLACEHOLDER ANIMATION ---
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const placeholders = [
+    'Search for topics like "Python"...',
+    'Filter by Level (Easy, Medium, or Hard)...',
+    'Search for specific question names...',
+    'Find modules by category...'
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   // --- DATA FETCHING ---
   const { data: fetchedData = [], isLoading } = useQuery({
@@ -173,7 +189,7 @@ export default function QuestionSetSelection() {
         <span className="font-extrabold text-[22px] tracking-tight mb-[50px] block cursor-pointer" onClick={() => navigate('/')}>
           CODÉVO
         </span>
-        <nav className="flex flex-col gap-1 overflow-y-auto">
+        <nav className="flex flex-col gap-1 overflow-y-auto pr-2">
           <button 
             onClick={() => setSelectedTopic(null)}
             className={cn(
@@ -214,11 +230,11 @@ export default function QuestionSetSelection() {
               </button>
               <h1 className="text-[28px] font-bold tracking-tight leading-none uppercase">{decodeURIComponent(subjectName || '')}</h1>
             </div>
-            <div className="relative w-72">
+            <div className="relative w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3f3f46]" />
               <Input 
-                placeholder='Search "Python", "Level", name or category...' 
-                className="pl-9 bg-[#0d0d0d] border-[#1f1f23] text-white h-10 rounded-md text-xs placeholder:text-[#3f3f46] font-mono focus:ring-1 focus:ring-white/20"
+                placeholder={placeholders[placeholderIndex]}
+                className="pl-10 bg-[#0d0d0d] border-[#1f1f23] text-white h-11 rounded-md text-xs placeholder:text-[#3f3f46] font-mono focus:ring-1 focus:ring-white/20 transition-all duration-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
