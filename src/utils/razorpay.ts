@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 
 interface PaymentOptions {
+  key?: string; // Allow passing key from page
   amount: number;
   currency: string;
   orderId?: string;
@@ -19,14 +20,12 @@ interface PaymentOptions {
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
-// Helper to ensure the Razorpay SDK is fully loaded even if index.html failed
 const loadRazorpayScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
     if (window.Razorpay) {
       resolve(true);
       return;
     }
-    
     const script = document.createElement("script");
     script.src = RAZORPAY_SCRIPT_URL;
     script.async = true;
@@ -42,7 +41,6 @@ export const initializeRazorpayPayment = async (
   onFailure: (error: any) => void
 ) => {
   console.log("Attempting to open Razorpay Modal...");
-  console.info("Note: 'lumberjack.razorpay.com' errors are Razorpay analytics and can be safely ignored - they do NOT affect payment functionality.");
   
   const isLoaded = await loadRazorpayScript();
 
@@ -53,13 +51,14 @@ export const initializeRazorpayPayment = async (
     return;
   }
 
-  const RAZORPAY_KEY_ID = "rzp_test_RxwjSllgmQ72cg
-";
+  // FIX: Key must be on a single line. 
+  // We use the key passed in options, or fallback to the test key.
+  const RAZORPAY_KEY_ID = options.key || "rzp_test_RxwjSllgmQ72cg";
 
   const paymentOptions = {
     key: RAZORPAY_KEY_ID,
     amount: Math.round(options.amount * 100), // Amount in paise
-    currency: options.currency,
+    currency: options.currency || "INR",
     name: options.name,
     description: options.description,
     image: "/image.png",
