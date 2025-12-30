@@ -11,12 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getRegistrationTable } from '@/utils/eventHelpers';
+import { getRegistrationTable } from '@/utils/eventHelpers'; //
 
 interface SimpleRegistrationCardProps {
   eventId: string;
   eventTitle: string;
-  formType: string;
+  formType: string; // Passed from the parent component
 }
 
 interface RegistrationData {
@@ -44,7 +44,6 @@ export function SimpleRegistrationCard({
 
   useEffect(() => {
     fetchRegistration();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, formType]);
 
   async function fetchRegistration() {
@@ -55,10 +54,11 @@ export function SimpleRegistrationCard({
         return; 
       }
 
-      const table = getRegistrationTable(formType) as 'workshop_registrations' | 'webinar_registrations' | 'meetup_registrations' | 'contest_registrations' | 'event_registrations';
+      // Determine the correct database table dynamically based on event type
+      const table = getRegistrationTable(formType);
       
       const { data, error } = await supabase
-        .from(table)
+        .from(table as any)
         .select('*')
         .eq('event_id', eventId)
         .eq('user_id', session.user.id)
@@ -105,7 +105,8 @@ export function SimpleRegistrationCard({
         {/* Actions */}
         <div className="flex items-center gap-3 self-start md:self-auto w-full md:w-auto">
           <Button 
-            onClick={() => navigate(`/verify/${registration.id}`)}
+            // Updated to the refactored dynamic verification route
+            onClick={() => navigate(`/verify/${formType}/${registration.id}`)}
             className="flex-1 md:flex-none h-[45px] bg-[#1a1a1a] border border-[#1a1a1a] hover:bg-[#00ff88] hover:text-black hover:border-[#00ff88] text-[#777777] transition-all uppercase tracking-widest text-[10px] font-medium px-4 md:px-6 rounded-none flex items-center justify-center gap-2"
           >
             <Ticket className="w-4 h-4" />
@@ -124,7 +125,6 @@ export function SimpleRegistrationCard({
       {/* Registration Details */}
       <div className="p-6 md:p-10 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Name */}
           <div className="flex items-start gap-3">
             <User className="w-4 h-4 text-[#777777] mt-1 shrink-0" />
             <div>
@@ -133,7 +133,6 @@ export function SimpleRegistrationCard({
             </div>
           </div>
 
-          {/* Email */}
           <div className="flex items-start gap-3">
             <Mail className="w-4 h-4 text-[#777777] mt-1 shrink-0" />
             <div>
@@ -142,7 +141,6 @@ export function SimpleRegistrationCard({
             </div>
           </div>
 
-          {/* Location */}
           <div className="flex items-start gap-3">
             <MapPin className="w-4 h-4 text-[#777777] mt-1 shrink-0" />
             <div>
@@ -151,7 +149,6 @@ export function SimpleRegistrationCard({
             </div>
           </div>
 
-          {/* Registration Date */}
           <div className="flex items-start gap-3">
             <Calendar className="w-4 h-4 text-[#777777] mt-1 shrink-0" />
             <div>
@@ -194,8 +191,9 @@ export function SimpleRegistrationCard({
           </DialogHeader>
           <div className="flex flex-col items-center gap-6 py-6">
             <div className="bg-white p-4">
+              {/* Updated QR format: "formType:registrationId" for the AdminScanner */}
               <QRCodeSVG 
-                value={`${window.location.origin}/verify/${registration.id}`} 
+                value={`${formType}:${registration.id}`} 
                 size={180} 
               />
             </div>
