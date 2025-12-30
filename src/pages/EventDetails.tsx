@@ -21,7 +21,7 @@ import { MeetupRegistrationModal } from '@/components/events/MeetupRegistrationM
 import { ContestRegistrationModal } from '@/components/events/ContestRegistrationModal';
 import { AlreadyRegisteredCard } from '@/components/events/AlreadyRegisteredCard';
 import { SimpleRegistrationCard } from '@/components/events/SimpleRegistrationCard';
-import { supportsTeams } from '@/utils/eventHelpers';
+import { supportsTeams, getRegistrationTable } from '@/utils/eventHelpers';
 import { PendingInvitationCard, InvitationBanner } from '@/components/events/InvitationBanner';
 import { InviteeRegistrationForm } from '@/components/events/InviteeRegistrationForm';
 import { useEventRegistration } from '@/hooks/useEventRegistration';
@@ -92,7 +92,6 @@ export default function EventDetailsPage() {
 
   useEffect(() => {
     if (session) getEvent();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, session]);
 
   async function getEvent() {
@@ -116,7 +115,7 @@ export default function EventDetailsPage() {
     }
   }
 
-  // --- PAYMENT HANDLER ---
+  // --- PAYMENT HANDLER (Refactored for Dynamic Tables) ---
   const handlePayment = () => {
     if (!event || !registration || !userProfile) {
       toast.error("Missing event or user details");
@@ -163,13 +162,8 @@ export default function EventDetailsPage() {
 
           if (paymentError) console.error("Payment Log Error:", paymentError);
 
-          let tableName = 'event_registrations';
-          const type = (event.form_type || event.event_type || '').toLowerCase();
-          
-          if (type === 'workshop') tableName = 'workshop_registrations';
-          else if (type === 'webinar') tableName = 'webinar_registrations';
-          else if (type === 'meetup') tableName = 'meetup_registrations';
-          else if (type === 'contest') tableName = 'contest_registrations';
+          // Use centralized helper to find the correct registration table
+          const tableName = getRegistrationTable(event.form_type || event.event_type);
           
           const { error: updateError } = await supabase
             .from(tableName as any)
@@ -340,7 +334,7 @@ export default function EventDetailsPage() {
           
           <div className="content-col space-y-[60px] md:space-y-[120px]">
             
-            {/* MOBILE ACTION BUTTON (Moved from sidebar to content top for visibility on mobile) */}
+            {/* MOBILE ACTION BUTTON */}
             <div className="lg:hidden block bg-[#0a0a0a] p-6 border border-[#1a1a1a]">
                {!isRegistered && !hasPendingInvitation && !hasAcceptedInvitation ? (
                   <button 
@@ -397,6 +391,7 @@ export default function EventDetailsPage() {
                     <AlreadyRegisteredCard 
                       eventId={event.id} 
                       eventTitle={event.title}
+                      formType={event.form_type || 'normal'}
                       maxTeamSize={event.max_team_size || 4}
                       isPaid={event.is_paid} 
                       registrationFee={event.registration_fee} 
@@ -418,7 +413,6 @@ export default function EventDetailsPage() {
               <EventDetailsContent event={event} />
             </section>
 
-            {/* Other Sections (Prizes, Schedule, etc.) stay identical... */}
             <section id="schedule">
               <h2 className="section-title">Event Schedule</h2>
               <EventStagesTimeline eventId={event.id} eventStartDate={event.start_date} eventEndDate={event.end_date} registrationDeadline={event.registration_deadline} />
@@ -464,7 +458,7 @@ export default function EventDetailsPage() {
             </section>
           </div>
 
-          {/* --- STICKY SIDEBAR (Hidden on small screens since action buttons moved to content) --- */}
+          {/* --- STICKY SIDEBAR --- */}
           <aside className="hidden lg:block relative">
             <div className="sticky top-10 bg-[#0a0a0a] p-10 border border-[#1a1a1a] sidebar-card">
               <h3 className="font-serif text-[1.6rem] mb-[30px] font-normal tracking-tight">Event Details</h3>
@@ -496,13 +490,11 @@ export default function EventDetailsPage() {
                   <span className="text-[#777777] uppercase tracking-wider">Format</span>
                   <strong className="font-medium text-[#e0e0e0]">{event.mode}</strong>
                 </li>
-                {/* ...Rest of sidebar list stays same... */}
                 <li className="flex justify-between py-4 border-b border-[#1a1a1a] text-[0.8rem]">
                   <span className="text-[#777777] uppercase tracking-wider">Location</span>
                   <strong className="font-medium text-[#e0e0e0]">{event.location || 'Online'}</strong>
                 </li>
               </ul>
-              {/* ...Organizer block remains same... */}
             </div>
           </aside>
         </div>
