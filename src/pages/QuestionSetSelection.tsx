@@ -44,7 +44,7 @@ const ArchiveToggle = ({ checked, onChange }: { checked: boolean, onChange: (val
     <input type="checkbox" className="opacity-0 w-0 h-0" checked={checked} onChange={(e) => onChange(e.target.checked)} />
     <span className={cn("absolute inset-0 border-2 rounded-[30px] transition-all duration-300", checked ? "border-[#5ec952]" : "border-[#ef4444]")}>
       <span className={cn("absolute bottom-[3px] left-[3px] h-[24px] w-[24px] rounded-full transition-all duration-300", checked ? "translate-x-[40px] bg-[#5ec952]" : "translate-x-0 bg-[#ef4444]")} />
-      <span className={cn("absolute top-1/2 -translate-y-1/2 text-[10px] font-black text-white uppercase transition-all duration-300", checked ? "left-[11px]" : "right-[11px]")}>{checked ? "ON" : "OFF"}</span>
+      <span className={cn("absolute top-1/2 -translate-y-1/2 text-[9px] font-black text-white uppercase transition-all duration-300", checked ? "left-[11px]" : "right-[11px]")}>{checked ? "ON" : "OFF"}</span>
     </span>
   </label>
 );
@@ -150,36 +150,48 @@ export default function QuestionSetSelection() {
   }), [fetchedData, searchTerm, selectedTopic, isProctored]);
 
   const handleStart = async (targetId: string, isSetSelection = false) => {
-    // DEVICE RESTRICTION: Proctored tests only on Desktop
     if (isProctored && window.innerWidth < 1024) {
       alert("Tests can only be attempted on PC/Laptop.");
       return;
     }
-
     const isOk = await checkUserProfile(); if (!isOk) return setShowProfileSheet(true);
     const params = new URLSearchParams({ iitm_subject: subjectId || '', name: subjectName || '', type: examType || '', timer: noTimeLimit ? '0' : timeLimit[0].toString(), mode: mode || 'learning' });
     if (isSetSelection) params.set('set_name', targetId); else params.set('q', targetId);
     navigate(`/${isProctored ? 'exam' : 'practice'}?${params.toString()}`);
   };
 
+  // --- REFINED SIDEBAR STATS ---
   const SidebarStats = () => (
     <div className="flex flex-col h-full p-8 space-y-10">
       <div className="flex items-baseline gap-2 border-b border-[#1a1a1c] pb-8 shrink-0">
         <span className="text-[64px] font-light leading-none tracking-[-3px] text-white">{userStats?.solved || 0}</span>
-        <span className="font-['Playfair_Display'] italic text-xl text-[#52525b]">Solved</span>
+        <span className="font-['Playfair_Display'] italic text-xl text-[#52525b]">Archived</span>
       </div>
       <div className="bg-[#0c0c0e] border border-[#1a1a1c] p-5 rounded-sm shrink-0">
         <span className="text-[20px] font-bold block text-white">{userStats?.points.toLocaleString()}</span>
         <span className="text-[9px] text-[#444] uppercase font-black tracking-widest">Aggregate Marks</span>
       </div>
       <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-        <div className="flex justify-between items-center sticky top-0 bg-[#070708] py-2 border-b border-[#1a1a1c] mb-4">
+        <div className="flex justify-between items-center sticky top-0 bg-[#070708] py-2 border-b border-[#1a1a1c] mb-4 z-10">
            <h3 className="text-[10px] uppercase tracking-[2px] text-[#666] font-bold italic">Hall of Fame</h3>
-           <button onClick={() => setIsLeaderboardModalOpen(true)} className="bg-white text-black text-[9px] px-3 py-1.5 rounded-sm font-black uppercase tracking-tighter">Detail View</button>
+           {/* FIX: Ensure detail view button triggers modal correctly */}
+           <button 
+             onClick={(e) => {
+               e.preventDefault();
+               e.stopPropagation();
+               setIsLeaderboardModalOpen(true);
+             }} 
+             className="bg-white text-black text-[9px] px-3 py-1.5 rounded-sm font-black uppercase tracking-tighter hover:bg-zinc-200 transition-colors"
+           >
+             Detail View
+           </button>
         </div>
         {leaderboardData.slice(0, 10).map((e: any, i: number) => (
           <div key={e.user_id} className="flex justify-between py-2 text-[12px] items-center border-b border-white/[0.02]">
-            <div className="flex gap-4 min-w-0"><span className="font-mono text-[#333] shrink-0">{String(i + 1).padStart(2, '0')}</span><span className="truncate text-zinc-300 font-medium">{e.full_name}</span></div>
+            <div className="flex gap-4 min-w-0">
+              <span className="font-mono text-[#333] shrink-0">{String(i + 1).padStart(2, '0')}</span>
+              <span className="truncate text-zinc-300 font-medium">{e.full_name}</span>
+            </div>
             <span className="font-mono text-[#555] shrink-0">{e.total_score} XP</span>
           </div>
         ))}
@@ -191,10 +203,13 @@ export default function QuestionSetSelection() {
     <div className="h-screen bg-[#050505] text-white flex flex-col overflow-hidden font-sans">
       <ProfileSheet open={showProfileSheet} onOpenChange={setShowProfileSheet} />
       
+      {/* --- HEADER --- */}
       <header className="px-4 py-3 md:px-10 md:py-3 border-b border-[#1a1a1c] bg-[#050505] z-30 shrink-0">
         <div className="flex justify-between items-center gap-4 max-w-[1600px] mx-auto h-10">
           <div className="flex items-center gap-4 flex-1 overflow-hidden">
-            <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/5 rounded-full transition-colors shrink-0"><ArrowLeft size={18} className="text-[#666] hover:text-white" /></button>
+            <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/5 rounded-full transition-colors shrink-0">
+              <ArrowLeft size={18} className="text-[#666] hover:text-white" />
+            </button>
             <MovingHeaderTitle subject={subjectName || ''} exam={examType || ''} />
           </div>
           <div className="flex items-center gap-2">
@@ -208,7 +223,7 @@ export default function QuestionSetSelection() {
             {isProctored ? (
               <Sheet>
                 <SheetTrigger asChild><Button variant="ghost" size="icon" className="lg:hidden text-[#52525b] hover:text-white"><Trophy size={18} /></Button></SheetTrigger>
-                <SheetContent side="right" className="bg-[#070708] border-[#1a1a1c] text-white w-[300px] p-0"><SidebarStats /></SheetContent>
+                <SheetContent side="right" className="bg-[#070708] border-[#1a1a1c] text-white w-[320px] p-0"><SidebarStats /></SheetContent>
               </Sheet>
             ) : (
               <Sheet>
@@ -232,6 +247,7 @@ export default function QuestionSetSelection() {
         </div>
       </header>
 
+      {/* --- CONTENT --- */}
       <div className="flex-1 flex overflow-hidden max-w-[1600px] mx-auto w-full relative">
         {!isProctored && (
           <aside className="hidden lg:flex w-[240px] border-r border-[#1a1a1c] bg-[#080808] p-8 flex-col shrink-0 overflow-y-auto">
@@ -267,9 +283,8 @@ export default function QuestionSetSelection() {
                   <div key={id} className="relative group">
                     {isLocked && <PremiumLockOverlay />}
                     <div className={cn("bg-[#0a0a0b] border border-[#1a1a1c] rounded-sm transition-all duration-300", isExpanded && "border-[#333]")}>
-                      
                       <div 
-                        className={cn("p-4 md:p-6 cursor-pointer select-none flex items-center gap-4 transition-colors", isLocked && "opacity-40")}
+                        className={cn("p-4 md:p-6 cursor-pointer select-none flex items-center gap-4", isLocked && "opacity-40")}
                         onClick={() => !isLocked && setExpandedQuestion(isExpanded ? null : id)}
                       >
                         <div className="w-9 h-9 bg-black border border-[#1a1a1c] flex items-center justify-center text-[#333] rounded-sm shrink-0">
@@ -279,15 +294,14 @@ export default function QuestionSetSelection() {
                           <h3 className="text-[14px] md:text-[17px] font-bold text-zinc-100 truncate tracking-tight uppercase">{item.title || item.name}</h3>
                           <div className="flex items-center gap-2 mt-1">
                             {isProctored ? (
-                               <div className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-0.5 rounded-[2px] text-[8px] uppercase font-black text-white tracking-widest">
+                               <div className="inline-flex items-center gap-1.5 bg-transparent border border-white/10 px-2 py-0.5 rounded-[2px] text-[8px] uppercase font-black text-white tracking-widest">
                                  <span className="w-1 h-1 bg-red-500 rounded-full shadow-[0_0_8px_red]" /> Secure Test
                                </div>
                             ) : (
-                               <Badge variant="outline" className="text-[8px] uppercase tracking-widest text-[#52525b] border-[#1a1a1c] px-2 py-0 h-4">{item.category || 'Standard'}</Badge>
+                               <Badge variant="outline" className="text-[8px] uppercase tracking-widest text-[#52525b] border-[#1a1a1c] px-2 py-0 h-4">{item.category || 'Module'}</Badge>
                             )}
                           </div>
                         </div>
-                        
                         <div className="hidden md:flex items-center gap-6">
                            <div className="bg-white/[0.02] border border-[#1a1a1c] rounded-sm px-3 py-1.5 font-mono text-[11px] text-[#666] uppercase">
                              {isProctored ? `SET-${String(item.sequence_number || 1).padStart(2, '0')}` : String(item.totalTime || item.expected_time || 20).padStart(2, '0') + " MIN"}
@@ -297,21 +311,18 @@ export default function QuestionSetSelection() {
                         <div className="md:hidden"><ChevronDown size={14} className={cn("text-[#333] transition-transform duration-300", isExpanded && "rotate-180")} /></div>
                       </div>
 
-                      {/* EXPANDED VIEW */}
                       <div className={cn("bg-[#080809] transition-all duration-500 ease-in-out px-4 md:px-6 overflow-hidden", isExpanded ? "max-h-[600px] border-t border-[#1a1a1c] py-6 md:py-8 opacity-100" : "max-h-0 py-0 opacity-0")}>
                         <div className="flex flex-col md:flex-row justify-between items-end gap-10">
                           <div className="flex-1 w-full space-y-6">
-                            {/* MOBILE METADATA */}
                             <div className="flex flex-wrap gap-2 md:hidden">
-                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-white uppercase font-black">
+                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-zinc-300 uppercase font-bold">
                                  {isProctored ? `Set ${item.sequence_number}` : (item.difficulty || 'Normal')}
                                </div>
-                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-white uppercase font-black">
+                               <div className="bg-white/[0.03] border border-white/5 rounded-sm px-3 py-1 font-mono text-[10px] text-zinc-300 uppercase font-bold">
                                  {String(item.totalTime || item.expected_time || 20)} MIN
                                </div>
                             </div>
 
-                            {/* SLIDER Logic: PRACTICE ONLY */}
                             {!isProctored && !noTimeLimit && (
                                <div className="space-y-6 animate-in fade-in duration-500">
                                   <div className="flex items-center justify-between">
@@ -327,31 +338,21 @@ export default function QuestionSetSelection() {
                                   </div>
                                </div>
                             )}
-
-                            {isProctored && (
-                               <div className="text-[10px] text-[#555] font-mono uppercase tracking-[2px]">
-                                  Security Hash Verified: {profile?.id?.substring(0,8) || '####'}
-                               </div>
-                            )}
                           </div>
 
                           <div className="flex flex-col items-end gap-6 shrink-0 w-full md:w-auto">
                             {!isProctored && (
                               <div className="flex flex-col gap-2 items-center">
-                                <span className="text-white text-[10px] uppercase tracking-[2px] font-black">Free Mode</span>
+                                <span className="text-white text-[10px] uppercase tracking-[2px] font-black">Archive Free Mode</span>
                                 <ArchiveToggle checked={noTimeLimit} onChange={setNoTimeLimit} />
                               </div>
                             )}
-                            <button 
-                               onClick={() => handleStart(id, isProctored)} 
-                               className="w-full md:w-auto bg-white text-black px-12 py-4 text-[10px] font-extrabold uppercase tracking-[2px] transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/20 flex items-center justify-center gap-3"
-                            >
-                               {!isProctored && noTimeLimit ? <InfinityIcon size={14} /> : <Play size={14} fill="currentColor" />} Solve <ChevronRight size={14} className="transition-transform" />
+                            <button onClick={() => handleStart(id, isProctored)} className="w-full md:w-auto bg-white text-black px-12 py-4 text-[10px] font-extrabold uppercase tracking-[2px] transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/20 flex items-center justify-center gap-3">
+                               {!isProctored && noTimeLimit ? <InfinityIcon size={14} /> : <Play size={14} fill="currentColor" />} Solve <ChevronRight size={14} />
                             </button>
                           </div>
                         </div>
                       </div>
-
                     </div>
                   </div>
                 );
@@ -362,6 +363,33 @@ export default function QuestionSetSelection() {
 
         {isProctored && <aside className="hidden lg:flex w-[340px] bg-[#070708] border-l border-[#1a1a1c] flex-col overflow-y-auto scrollbar-hide shrink-0"><SidebarStats /></aside>}
       </div>
+
+      {/* --- LEADERBOARD MODAL --- */}
+      {isLeaderboardModalOpen && (
+        <div className="fixed inset-0 bg-black z-[1000] flex flex-col p-12 md:p-[80px_100px] overflow-y-auto animate-in fade-in duration-500">
+          <div className="flex justify-between items-end mb-10 pb-8 border-b border-[#111]">
+            <div><p className="uppercase tracking-[6px] text-[#333] text-[10px] mb-3 font-black">Performance Archive Metrics</p><h2 className="font-['Playfair_Display'] text-[32px] md:text-[54px] italic font-bold text-white tracking-tighter uppercase">Hall of Fame</h2></div>
+            <button onClick={() => setIsLeaderboardModalOpen(false)} className="bg-white text-black px-8 py-3.5 text-[10px] font-black uppercase transition-all hover:bg-transparent hover:text-white border border-transparent hover:border-white/30">Close</button>
+          </div>
+          <table className="w-full text-left border-collapse min-w-[700px]">
+            <thead>
+              <tr className="border-b border-[#111]"><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">Rank</th><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">Agent</th><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">Transmissions</th><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">Streak</th><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">XP Score</th><th className="p-5 text-[10px] uppercase tracking-[3px] text-[#333] font-black">Status</th></tr>
+            </thead>
+            <tbody className="font-mono text-[13px] divide-y divide-[#111]">
+              {leaderboardData.map((row: any, i: number) => (
+                <tr key={row.user_id} className="hover:bg-white/[0.01] transition-colors group">
+                  <td className="p-5 text-[#333] group-hover:text-[#666]">{String(i + 1).padStart(2, '0')}</td>
+                  <td className="p-5 text-zinc-100 font-sans font-bold">{row.full_name}</td>
+                  <td className="p-5 text-zinc-500">{row.problems_solved}</td>
+                  <td className="p-5 text-zinc-500">{row.current_streak}D</td>
+                  <td className="p-5 text-zinc-400 font-black">{row.total_score}</td>
+                  <td className="p-5"><span className={cn("px-3 py-1 rounded-[1px] text-[9px] font-black uppercase", i < 3 ? "bg-[#10b9811a] text-[#10b981]" : "bg-[#111] text-[#333]")}>{i < 3 ? 'Elite' : 'Operative'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
