@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { LogOut, User, Check, Loader2, ChevronDown, Home, Code2, Trophy, LayoutDashboard, LogIn } from 'lucide-react'; 
+import { LogOut, User, Check, Loader2, ChevronDown, Home, Code2, Trophy, LayoutDashboard, LogIn, Copy } from 'lucide-react'; 
 import {
   Popover,
   PopoverContent,
@@ -98,10 +98,17 @@ export function Header({ session, onLogout }: HeaderProps) {
   const isProfileIncomplete = !profile?.bio || !profile?.avatar_url || !profile?.github_handle || !profile?.username;
   const isProfileComplete = !isProfileIncomplete;
   
-  // Dynamic URL: takes the current host (e.g., localhost:3000 or your domain) and the actual username
-  const currentHost = window.location.host;
+  // Clean URL: removes https:// and www.
+  const currentHost = window.location.host.replace(/^www\./, '');
   const displayUrl = `${currentHost}/u/${profile?.username || 'username'}`;
   const qrFullUrl = `${window.location.origin}/u/${profile?.username || ''}`;
+
+  const copyToClipboard = () => {
+    if (hasUsername) {
+      navigator.clipboard.writeText(displayUrl);
+      toast.success('Profile link copied!');
+    }
+  };
 
   const NavItem = ({ to, icon: Icon, label, active, size = "normal" }: { to: string; icon: any; label: string; active?: boolean, size?: "normal" | "large" }) => (
     <Link 
@@ -131,7 +138,6 @@ export function Header({ session, onLogout }: HeaderProps) {
               </span>
             </Link>
 
-            {/* Desktop Navigation Tabs */}
             <div className="hidden md:flex flex-1 justify-center gap-4">
               <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white px-3 py-2 transition-colors">
                 <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-4 h-4 object-contain opacity-80" /> 
@@ -152,7 +158,6 @@ export function Header({ session, onLogout }: HeaderProps) {
                         {userName.charAt(0).toUpperCase()}
                       </div>
                       <span className="text-xs font-medium text-gray-200">{userName}</span>
-                      {/* Glowing Green Online Indicator */}
                       <div className="relative flex h-2 w-2 ml-1">
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
                       </div>
@@ -175,9 +180,12 @@ export function Header({ session, onLogout }: HeaderProps) {
                         )}
                       </div>
 
-                      <p className="text-[#444444] text-[13px] mb-10 tracking-wide font-medium">
-                        {displayUrl}
-                      </p>
+                      <div className="flex items-center justify-center gap-2 mb-10 group cursor-pointer" onClick={copyToClipboard}>
+                        <p className="text-[#444444] text-[13px] tracking-wide font-medium group-hover:text-[#888888] transition-colors">
+                          {displayUrl}
+                        </p>
+                        {hasUsername && <Copy className="w-3 h-3 text-[#444444] group-hover:text-[#888888] transition-colors" />}
+                      </div>
 
                       <div className="flex flex-col gap-3 text-left">
                         {!hasUsername && (
@@ -207,7 +215,6 @@ export function Header({ session, onLogout }: HeaderProps) {
                           {isProfileIncomplete ? 'Complete Your Profile' : 'Edit Profile'}
                         </Link>
 
-                        {/* View Profile link only shows if profile is complete */}
                         {isProfileComplete && (
                           <Link 
                             to={`/u/${profile?.username}`} 
@@ -237,7 +244,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* Mobile Bottom Navigation */}
       <div className={cn("fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform", (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none")}>
         <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl relative">
           <div className="flex justify-between items-end px-2">
