@@ -42,7 +42,6 @@ export default function VerifyRegistration() {
 
   async function fetchVerificationData() {
     try {
-      // Get the correct table based on formType from URL
       const tableName = getRegistrationTable(formType);
       
       const { data: reg, error: regError } = await supabase
@@ -53,7 +52,6 @@ export default function VerifyRegistration() {
 
       if (regError || !reg) throw new Error("Registry record not found");
       
-      // Cast to unknown first then to our interface
       const regData = reg as unknown as RegistrationData;
       setData(regData);
 
@@ -96,13 +94,9 @@ export default function VerifyRegistration() {
 
   const event = data.events;
   const isAttended = data.is_attended;
-  
-  // Payment Guard Check
   const isPaidEvent = event?.is_paid === true;
   const isPaymentComplete = ['paid', 'completed', 'exempt'].includes(data.payment_status || '');
   const showPaymentRequired = isPaidEvent && !isPaymentComplete;
-  
-  // Entry QR code value: formType:registrationId (for AdminScanner)
   const qrValue = `${formType}:${data.id}`;
 
   return (
@@ -114,8 +108,16 @@ export default function VerifyRegistration() {
         .pass-card { background: var(--card-bg) !important; border: 1px solid var(--border); position: relative; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
         .card-top-accent { height: 2px; width: 100%; background: var(--platinum-grad) !important; opacity: 0.8; }
         .card-content { padding: 40px 35px; }
-        header h2 { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; color: var(--accent); line-height: 1.1; margin-bottom: 8px; }
-        header p { font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: var(--silver-muted); margin-bottom: 40px; }
+        
+        /* Updated Header for Branding */
+        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+        .header-main h2 { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; color: var(--accent); line-height: 1.1; margin-bottom: 0; }
+        .header-main p { font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: var(--silver-muted); margin-bottom: 8px; }
+        
+        .branding { text-align: right; }
+        .branding-title { font-size: 14px; font-weight: 800; letter-spacing: 5px; color: #fff; line-height: 1; }
+        .branding-tag { font-size: 6px; letter-spacing: 2px; text-transform: uppercase; color: var(--silver-muted); margin-top: 4px; display: block; }
+
         .identity-block { display: flex; align-items: center; gap: 20px; padding: 25px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 30px; }
         .avatar-frame { width: 65px; height: 65px; border: 1px solid var(--silver-muted); padding: 3px; overflow: hidden; }
         .avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
@@ -132,12 +134,12 @@ export default function VerifyRegistration() {
         .verification-zone { display: flex; flex-direction: column; align-items: center; position: relative; margin-top: 30px; }
         .qr-wrapper { background: #fff; padding: 12px; position: relative; }
         .qr-dimmed { filter: grayscale(1) contrast(0.5) blur(1px); opacity: 0.15; }
-        .stamp-attended { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-12deg); border: 2px solid #555; padding: 8px 16px; background: rgba(17, 17, 17, 0.9); backdrop-filter: blur(2px); z-index: 5; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); pointer-events: none; }
+        .stamp-attended { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50) rotate(-12deg); border: 2px solid #555; padding: 8px 16px; background: rgba(17, 17, 17, 0.9); backdrop-filter: blur(2px); z-index: 5; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); pointer-events: none; }
         .stamp-attended span { display: block; font-size: 18px; font-weight: 700; letter-spacing: 4px; color: #888; text-transform: uppercase; }
         .id-hash { margin-top: 20px; font-family: 'Space Mono', monospace; font-size: 8px; color: var(--silver-muted); letter-spacing: 2px; }
         .actions { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
         .btn-primary { background: var(--platinum-grad); border: none; padding: 16px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 3px; color: #000; cursor: pointer; }
-        .btn-secondary { background: transparent; border: 1px solid var(--border); padding: 14px; font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: var(--silver-muted); text-align: center; cursor: pointer; }
+        
         @media print {
           .actions { display: none !important; }
           .stamp-attended { display: none !important; }
@@ -154,8 +156,15 @@ export default function VerifyRegistration() {
           <div className="card-top-accent"></div>
           <div className="card-content">
             <header>
-              <p>Official Event Entry</p>
-              <h2>{event?.title || 'Event'}</h2>
+              <div className="header-main">
+                <p>Official Event Entry</p>
+                <h2>{event?.title || 'Event'}</h2>
+              </div>
+              {/* Added Codevo Branding */}
+              <div className="branding">
+                <span className="branding-title">CODEVO</span>
+                <span className="branding-tag">Authorized Digital Pass</span>
+              </div>
             </header>
 
             <div className="identity-block">
@@ -201,7 +210,6 @@ export default function VerifyRegistration() {
             )}
 
             <div className="verification-zone">
-              {/* Payment Guard: Show payment required message instead of QR */}
               {showPaymentRequired ? (
                 <div style={{textAlign: 'center', padding: '30px 0'}}>
                   <div style={{width: '80px', height: '80px', margin: '0 auto 20px', border: '2px solid #d4af37', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
@@ -213,7 +221,6 @@ export default function VerifyRegistration() {
               ) : (
                 <>
                   <div className={cn("qr-wrapper", isAttended && "qr-dimmed")}>
-                    {/* Entry QR: formType:registrationId for AdminScanner */}
                     <QRCodeSVG value={qrValue} size={140} level="H" bgColor="#ffffff" fgColor="#000000" />
                   </div>
                   {isAttended && (
@@ -230,7 +237,7 @@ export default function VerifyRegistration() {
 
         <div className="actions">
           <button className="btn-primary" onClick={() => window.print()}>Download Digital Pass</button>
-          <button className="btn-secondary" onClick={() => navigate('/dashboard')}>Return to Dashboard</button>
+          {/* Removed "Return to Dashboard" button */}
         </div>
       </div>
     </div>
