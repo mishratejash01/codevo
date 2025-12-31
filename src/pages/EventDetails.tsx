@@ -158,7 +158,7 @@ export default function EventDetailsPage() {
             gateway_payment_id: response.razorpay_payment_id,
             gateway_order_id: response.razorpay_order_id, 
             gateway_signature: response.razorpay_signature,
-          });
+          } as any); // Cast to allow dynamic columns
 
           if (paymentError) console.error("Payment Log Error:", paymentError);
 

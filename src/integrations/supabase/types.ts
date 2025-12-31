@@ -307,6 +307,7 @@ export type Database = {
           payment_gateway: string | null
           payment_method: string | null
           payment_status: string | null
+          registration_form_type: string | null
           registration_id: string | null
           transaction_id: string | null
           user_email: string
@@ -326,6 +327,7 @@ export type Database = {
           payment_gateway?: string | null
           payment_method?: string | null
           payment_status?: string | null
+          registration_form_type?: string | null
           registration_id?: string | null
           transaction_id?: string | null
           user_email: string
@@ -345,6 +347,7 @@ export type Database = {
           payment_gateway?: string | null
           payment_method?: string | null
           payment_status?: string | null
+          registration_form_type?: string | null
           registration_id?: string | null
           transaction_id?: string | null
           user_email?: string
@@ -356,13 +359,6 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_payments_registration_id_fkey"
-            columns: ["registration_id"]
-            isOneToOne: false
-            referencedRelation: "event_registrations"
             referencedColumns: ["id"]
           },
         ]

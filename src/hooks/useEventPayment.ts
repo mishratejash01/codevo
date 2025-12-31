@@ -197,7 +197,7 @@ export const useEventPayment = (): UseEventPaymentReturn => {
                   payment_method: paymentMethod,
                   transaction_id: transactionId,
                   metadata: metadata,
-                });
+                } as any); // Cast to any to allow registration_form_type column
 
               if (paymentError) {
                 console.error('Error inserting payment record:', paymentError);
