@@ -1,4 +1,3 @@
-// src/pages/Auth.tsx
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,12 +6,43 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// --- Custom Typewriter Hook (Kept exactly as is) ---
+const useTypewriter = (text: string, speed: number = 50, startDelay: number = 1000) => {
+  const [displayText, setDisplayText] = useState('');
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const delayTimer = setTimeout(() => {
+      setStarted(true);
+    }, startDelay);
+    return () => clearTimeout(delayTimer);
+  }, [startDelay]);
+
+  useEffect(() => {
+    if (!started) return;
+    const interval = setInterval(() => {
+      setDisplayText((currentText) => {
+        if (currentText.length < text.length) {
+          return currentText + text.charAt(currentText.length);
+        }
+        clearInterval(interval);
+        return currentText;
+      });
+    }, speed);
+    return () => clearInterval(interval);
+  }, [started, text, speed]);
+
+  return displayText;
+};
+
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
   const googleBtnRef = useRef<HTMLDivElement>(null);
+  
+  const typewriterText = useTypewriter("Built and Maintained by Neural AI", 60, 1200);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -21,32 +51,25 @@ const Auth = () => {
     };
     checkSession();
 
-    // 1. Function to initialize Google
-    const initGoogle = () => {
+    // Polling for Google GSI script availability
+    const interval = setInterval(() => {
       if ((window as any).google) {
         setIsGoogleLoaded(true);
         (window as any).google.accounts.id.initialize({
+          // Replace with your exact Client ID from Google Console
           client_id: "29616950088-p64jd8affh5s0q1c3eq48fgfn9mu28e2.apps.googleusercontent.com",
           callback: handleGoogleResponse,
-          auto_select: false,
-          itp_support: true
+          ux_mode: 'popup',
         });
 
-        // 2. Render the invisible real Google button inside our ref
+        // Render the hidden button into our ref
         if (googleBtnRef.current) {
           (window as any).google.accounts.id.renderButton(googleBtnRef.current, {
             theme: "outline",
             size: "large",
-            width: "100%", // Matches your UI
+            width: "100%", 
           });
         }
-      }
-    };
-
-    // 3. Poll for Google script if not yet loaded
-    const interval = setInterval(() => {
-      if ((window as any).google) {
-        initGoogle();
         clearInterval(interval);
       }
     }, 100);
@@ -57,7 +80,6 @@ const Auth = () => {
   const handleGoogleResponse = async (response: any) => {
     setLoading(true);
     try {
-      console.log("Google Response received, signing in to Supabase...");
       const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
         token: response.credential,
@@ -72,25 +94,6 @@ const Auth = () => {
         variant: "destructive",
       });
       setLoading(false);
-    }
-  };
-
-  const handleCustomButtonClick = () => {
-    if (!isGoogleLoaded) {
-      toast({
-        title: "Wait a moment",
-        description: "Google services are still loading...",
-      });
-      return;
-    }
-
-    // This finds the real hidden Google button and clicks it for the user
-    const googleIframeButton = googleBtnRef.current?.querySelector('div[role="button"]') as HTMLElement;
-    if (googleIframeButton) {
-      googleIframeButton.click();
-    } else {
-      // Fallback to prompt if rendering hasn't finished
-      (window as any).google.accounts.id.prompt();
     }
   };
 
@@ -112,18 +115,20 @@ const Auth = () => {
             <p className="text-muted-foreground">Sign in to codevo.co.in to continue.</p>
           </div>
 
-          <div className="grid gap-4 relative">
-            {/* This is the actual Google button. 
-              We hide it behind your styled button using opacity-0 
-            */}
-            <div ref={googleBtnRef} className="absolute inset-0 opacity-0 z-20 cursor-pointer pointer-events-auto" />
-            
+          <div className="grid gap-4 relative group">
+            {/* The REAL invisible Google button */}
+            <div 
+              ref={googleBtnRef} 
+              className="absolute inset-0 opacity-0 z-20 cursor-pointer pointer-events-auto" 
+            />
+
+            {/* Your visual UI button */}
             <Button 
               variant="outline" 
               className={cn(
                 "w-full h-12 bg-white text-black border-none font-medium text-base relative z-10",
                 "flex items-center justify-center gap-3 transition-all duration-200",
-                "hover:bg-gray-200 hover:scale-[1.02]", 
+                "group-hover:bg-gray-200 group-hover:scale-[1.02]", 
                 "rounded-xl"
               )}
               disabled={loading || !isGoogleLoaded}
@@ -143,11 +148,48 @@ const Auth = () => {
               )}
             </Button>
           </div>
-          
-          {/* ... Brand text and rest of component ... */}
+
+          <div className="pt-8 border-t border-white/10 mt-8">
+            <div className="flex flex-col items-center justify-center space-y-3 opacity-90 transition-opacity cursor-default">
+              <span className="font-neuropol text-2xl font-bold tracking-wider text-white">
+                COD
+                <span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>
+                VO
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.3em] font-medium animate-light-ray whitespace-nowrap">
+                Where Visionaries Build the Future.
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-auto text-xs text-muted-foreground hidden lg:block">
+          &copy; {new Date().getFullYear()} CODéVO. All rights reserved.
         </div>
       </div>
-      {/* ... Right side video ... */}
+
+      {/* Video Background Section (Restored exactly as per original) */}
+      <div className="hidden lg:block lg:w-1/2 bg-[#09090b] relative h-screen">
+        <div className="absolute inset-0 m-4 rounded-[40px] overflow-hidden border border-white/10 bg-black shadow-2xl">
+           <video 
+             src="https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/efecto-recording-2025-11-29T22-59-44.webm"
+             autoPlay 
+             loop 
+             muted 
+             playsInline 
+             className="w-full h-full object-cover opacity-80"
+           />
+           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 pointer-events-none z-10" />
+           <div className="absolute bottom-12 inset-x-0 flex justify-center z-20 pointer-events-none">
+             <div className="bg-black/40 backdrop-blur-sm px-8 py-3 rounded-full border border-white/5 shadow-2xl">
+               <p className="text-white/90 text-sm font-mono tracking-wider flex items-center gap-1">
+                 {typewriterText}
+                 <span className="animate-pulse w-[2px] h-[1.2em] bg-green-400 inline-block"></span>
+               </p>
+             </div>
+           </div>
+        </div>
+      </div>
     </div>
   );
 };
