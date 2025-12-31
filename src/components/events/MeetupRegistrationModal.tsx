@@ -18,6 +18,7 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange, onRegistr
   const [loading, setLoading] = useState(false);
   const [prefilling, setPrefilling] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   const { processPayment, isProcessing: isPaymentProcessing } = useEventPayment();
   
@@ -40,6 +41,7 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange, onRegistr
       prefillUserData();
       setStep(1);
       setIsSuccess(false);
+      setPaymentCompleted(false);
       setRegistrationId(null);
     }
   }, [isOpen]);
@@ -126,6 +128,7 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange, onRegistr
         });
 
         if (paymentSuccess) {
+          setPaymentCompleted(true);
           setIsSuccess(true);
           onRegistrationComplete?.();
         } else {
@@ -362,33 +365,24 @@ export function MeetupRegistrationModal({ event, isOpen, onOpenChange, onRegistr
           ) : (
             /* Success Screen */
             <div className="flex flex-col items-center justify-center p-[80px_40px] text-center min-h-[600px] animate-in zoom-in-95 duration-500">
-              <div className={cn("w-[60px] h-[60px] border rounded-full flex items-center justify-center text-2xl mb-[30px]", event.is_paid ? "border-yellow-500 text-yellow-500" : "border-[#00ff88] text-[#00ff88]")}>
+              <div className={cn("w-[60px] h-[60px] border rounded-full flex items-center justify-center text-2xl mb-[30px]", event.is_paid && !paymentCompleted ? "border-yellow-500 text-yellow-500" : "border-[#00ff88] text-[#00ff88]")}>
                 <Check size={30} strokeWidth={3} />
               </div>
-              <h2 className="font-serif text-[2.5rem] text-white mb-[15px]">{event.is_paid ? "Payment Required" : "See You There"}</h2>
-              <p className="text-[#777777] uppercase tracking-[2px] text-[0.7rem] mb-[40px]">{event.is_paid ? "Registration Pending Payment" : "Registration Logged Successfully"}</p>
+              <h2 className="font-serif text-[2.5rem] text-white mb-[15px]">{event.is_paid && !paymentCompleted ? "Payment Required" : "See You There"}</h2>
+              <p className="text-[#777777] uppercase tracking-[2px] text-[0.7rem] mb-[40px]">{event.is_paid && !paymentCompleted ? "Registration Pending Payment" : "Registration Confirmed"}</p>
               
               <div className="w-full border border-[#1a1a1a] p-[30px] bg-[#0a0a0a] mb-[30px]">
                 <p className="text-[0.85rem] text-[#e0e0e0] leading-relaxed">
-                  Your slot is reserved in the attendee manifest. {event.is_paid ? 'Complete the payment to finalize your presence.' : 'A confirmation protocol has been sent to your email.'}
+                  {event.is_paid && !paymentCompleted ? 'Your slot is reserved. Complete the payment to finalize your presence.' : 'Your registration is confirmed! A confirmation has been sent to your email.'}
                 </p>
               </div>
               
-              {event.is_paid ? (
-                <button 
-                  className="w-full bg-[#ff8c00] text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] cursor-pointer transition-all hover:bg-white flex items-center justify-center gap-2"
-                  onClick={() => window.location.reload()} // Simplified for payment routing
-                >
-                  Complete Payment — {event.currency || 'INR'} {event.registration_fee} <ExternalLink size={14} />
-                </button>
-              ) : (
-                <button 
-                  className="w-full bg-white text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] cursor-pointer transition-all hover:bg-[#ff8c00]"
-                  onClick={() => onOpenChange(false)}
-                >
-                  Return to Briefing
-                </button>
-              )}
+              <button 
+                className="w-full bg-white text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] cursor-pointer transition-all hover:bg-[#ff8c00]"
+                onClick={() => onOpenChange(false)}
+              >
+                Return to Briefing
+              </button>
             </div>
           )}
         </div>
