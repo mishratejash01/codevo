@@ -54,7 +54,7 @@ const Auth = () => {
     /* global google */
     if (typeof window !== 'undefined' && (window as any).google) {
       (window as any).google.accounts.id.initialize({
-        client_id: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com", // REPLACE THIS
+        client_id: "29616950088-p64jd8affh5s0q1c3eq48fgfn9mu28e2.apps.googleusercontent.com", // REPLACE THIS
         callback: handleGoogleResponse,
         context: 'signin',
         ux_mode: 'popup', // Using popup keeps the user on your domain
