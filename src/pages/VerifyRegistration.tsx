@@ -42,6 +42,7 @@ export default function VerifyRegistration() {
 
   async function fetchVerificationData() {
     try {
+      // Get the correct table based on formType from URL
       const tableName = getRegistrationTable(formType);
       
       const { data: reg, error: regError } = await supabase
@@ -52,6 +53,7 @@ export default function VerifyRegistration() {
 
       if (regError || !reg) throw new Error("Registry record not found");
       
+      // Cast to unknown first then to our interface
       const regData = reg as unknown as RegistrationData;
       setData(regData);
 
@@ -94,9 +96,13 @@ export default function VerifyRegistration() {
 
   const event = data.events;
   const isAttended = data.is_attended;
+  
+  // Payment Guard Check
   const isPaidEvent = event?.is_paid === true;
   const isPaymentComplete = ['paid', 'completed', 'exempt'].includes(data.payment_status || '');
   const showPaymentRequired = isPaidEvent && !isPaymentComplete;
+  
+  // Entry QR code value: formType:registrationId (for AdminScanner)
   const qrValue = `${formType}:${data.id}`;
 
   return (
@@ -130,14 +136,14 @@ export default function VerifyRegistration() {
         .stamp-attended span { display: block; font-size: 18px; font-weight: 700; letter-spacing: 4px; color: #888; text-transform: uppercase; }
         .id-hash { margin-top: 20px; font-family: 'Space Mono', monospace; font-size: 8px; color: var(--silver-muted); letter-spacing: 2px; }
         
-        /* Footer Branding Styles */
+        /* New Codevo Branding Styles */
         .card-footer-branding { margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px; text-align: center; }
         .branding-text { font-size: 12px; font-weight: 800; letter-spacing: 6px; color: #fff; text-transform: uppercase; opacity: 0.9; }
-        .branding-subtext { font-size: 6px; letter-spacing: 2px; text-transform: uppercase; color: var(--silver-muted); display: block; margin-top: 4px; }
+        .branding-sub { font-size: 6px; letter-spacing: 2px; text-transform: uppercase; color: var(--silver-muted); display: block; margin-top: 4px; }
 
         .actions { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
         .btn-primary { background: var(--platinum-grad); border: none; padding: 16px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 3px; color: #000; cursor: pointer; }
-        
+        .btn-secondary { background: transparent; border: 1px solid var(--border); padding: 14px; font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: var(--silver-muted); text-align: center; cursor: pointer; }
         @media print {
           .actions { display: none !important; }
           .stamp-attended { display: none !important; }
@@ -201,9 +207,10 @@ export default function VerifyRegistration() {
             )}
 
             <div className="verification-zone">
+              {/* Payment Guard: Show payment required message instead of QR */}
               {showPaymentRequired ? (
                 <div style={{textAlign: 'center', padding: '30px 0'}}>
-                  <div style={{width: '80px', height: '80px', margin: '0 auto 20px', border: '2px solid #d4af37', borderRadius: '50%', display: 'flex', alignItems: 'center', justify-content: 'center'}}>
+                  <div style={{width: '80px', height: '80px', margin: '0 auto 20px', border: '2px solid #d4af37', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                     <span style={{color: '#d4af37', fontSize: '32px'}}>₹</span>
                   </div>
                   <p style={{color: '#d4af37', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '3px', fontSize: '12px'}}>Payment Required</p>
@@ -212,6 +219,7 @@ export default function VerifyRegistration() {
               ) : (
                 <>
                   <div className={cn("qr-wrapper", isAttended && "qr-dimmed")}>
+                    {/* Entry QR: formType:registrationId for AdminScanner */}
                     <QRCodeSVG value={qrValue} size={140} level="H" bgColor="#ffffff" fgColor="#000000" />
                   </div>
                   {isAttended && (
@@ -224,17 +232,17 @@ export default function VerifyRegistration() {
               <div className="id-hash">UID: {data.id.toUpperCase()}</div>
             </div>
 
-            {/* Added Codevo Branding at the bottom of the card */}
+            {/* Codevo Branding at the bottom of the card content */}
             <div className="card-footer-branding">
               <span className="branding-text">CODEVO</span>
-              <span className="branding-subtext">Authorized Digital Entry Pass</span>
+              <span className="branding-sub">Authorized Digital Entry Pass</span>
             </div>
           </div>
         </div>
 
         <div className="actions">
           <button className="btn-primary" onClick={() => window.print()}>Download Digital Pass</button>
-          {/* Dashboard button removed per request */}
+          {/* Return to Dashboard button removed */}
         </div>
       </div>
     </div>
