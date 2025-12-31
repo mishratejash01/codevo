@@ -95,12 +95,13 @@ export function Header({ session, onLogout }: HeaderProps) {
   if (isPracticeOrExam) return null;
 
   const hasUsername = !!profile?.username;
-  // Profile is incomplete if missing key fields
   const isProfileIncomplete = !profile?.bio || !profile?.avatar_url || !profile?.github_handle || !profile?.username;
   const isProfileComplete = !isProfileIncomplete;
   
-  // Dynamic URL display
-  const displayUrl = hasUsername ? `codevo.dev/u/${profile?.username}` : 'codevo.dev/u/username';
+  // Dynamic URL: takes the current host (e.g., localhost:3000 or your domain) and the actual username
+  const currentHost = window.location.host;
+  const displayUrl = `${currentHost}/u/${profile?.username || 'username'}`;
+  const qrFullUrl = `${window.location.origin}/u/${profile?.username || ''}`;
 
   const NavItem = ({ to, icon: Icon, label, active, size = "normal" }: { to: string; icon: any; label: string; active?: boolean, size?: "normal" | "large" }) => (
     <Link 
@@ -151,7 +152,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                         {userName.charAt(0).toUpperCase()}
                       </div>
                       <span className="text-xs font-medium text-gray-200">{userName}</span>
-                      {/* Gowing Green Online Indicator */}
+                      {/* Glowing Green Online Indicator */}
                       <div className="relative flex h-2 w-2 ml-1">
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500 shadow-[0_0_10px_#22c55e]"></span>
                       </div>
@@ -165,7 +166,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                       
                       <div className="bg-white p-4 inline-block mb-6 rounded-sm relative">
                         <div className={cn(!hasUsername && "blur-md opacity-30")}>
-                          <QRCodeSVG value={hasUsername ? `https://${displayUrl}` : 'setup'} size={140} />
+                          <QRCodeSVG value={hasUsername ? qrFullUrl : 'setup'} size={140} />
                         </div>
                         {!hasUsername && (
                           <div className="absolute inset-0 flex items-center justify-center p-4 text-[10px] text-black font-bold uppercase tracking-widest">
@@ -174,19 +175,18 @@ export function Header({ session, onLogout }: HeaderProps) {
                         )}
                       </div>
 
-                      <p className="text-[#444444] text-[13px] mb-10 tracking-wide">
+                      <p className="text-[#444444] text-[13px] mb-10 tracking-wide font-medium">
                         {displayUrl}
                       </p>
 
                       <div className="flex flex-col gap-3 text-left">
-                        {/* Username Input if missing */}
                         {!hasUsername && (
                           <div className="flex gap-2 mb-4">
                             <Input 
                               value={username} 
                               onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} 
                               placeholder="username" 
-                              className="h-9 bg-black border-[#222222] text-xs rounded-none" 
+                              className="h-9 bg-black border-[#222222] text-xs rounded-none focus:border-white" 
                             />
                             <Button size="sm" onClick={saveUsername} disabled={isSavingUsername || !!usernameError} className="h-9 bg-white text-black hover:bg-zinc-200 rounded-none">
                               {isSavingUsername ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Set'}
@@ -194,7 +194,6 @@ export function Header({ session, onLogout }: HeaderProps) {
                           </div>
                         )}
 
-                        {/* Red Action Button if Incomplete */}
                         <Link 
                           to="/profile" 
                           onClick={() => setPopoverOpen(false)} 
@@ -208,12 +207,12 @@ export function Header({ session, onLogout }: HeaderProps) {
                           {isProfileIncomplete ? 'Complete Your Profile' : 'Edit Profile'}
                         </Link>
 
-                        {/* Show View Profile ONLY if completed */}
+                        {/* View Profile link only shows if profile is complete */}
                         {isProfileComplete && (
                           <Link 
                             to={`/u/${profile?.username}`} 
                             onClick={() => setPopoverOpen(false)} 
-                            className="text-white text-[13px] font-medium py-3 hover:text-[#888888] transition-colors"
+                            className="text-white text-[13px] font-medium py-3 px-1 hover:text-[#888888] transition-colors"
                           >
                             View Profile
                           </Link>
