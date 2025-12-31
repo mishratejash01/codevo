@@ -79,6 +79,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange, onRegi
   const totalSteps = 5;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   const { processPayment, isProcessing: isPaymentProcessing } = useEventPayment();
 
@@ -195,6 +196,7 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange, onRegi
         });
 
         if (paymentSuccess) {
+          setPaymentCompleted(true);
           setIsSuccess(true);
           onRegistrationComplete?.();
         } else {
@@ -534,23 +536,19 @@ export function HackathonRegistrationModal({ event, isOpen, onOpenChange, onRegi
           ) : (
             /* --- Success View --- */
             <div className="flex flex-col items-center justify-center p-[80px_40px] text-center min-h-[700px] animate-in zoom-in duration-500">
-              <div className={cn("w-[60px] h-[60px] border rounded-full flex items-center justify-center text-2xl mb-[30px] shadow-[0_0_20px_rgba(0,255,136,0.1)]", event.is_paid ? "border-yellow-500 text-yellow-500" : "border-[#00ff88] text-[#00ff88]")}>
+              <div className={cn("w-[60px] h-[60px] border rounded-full flex items-center justify-center text-2xl mb-[30px] shadow-[0_0_20px_rgba(0,255,136,0.1)]", event.is_paid && !paymentCompleted ? "border-yellow-500 text-yellow-500" : "border-[#00ff88] text-[#00ff88]")}>
                 <Check size={30} strokeWidth={3} />
               </div>
-              <h2 className="font-serif text-[2.8rem] text-white mb-[10px]">{event.is_paid ? "Payment Required" : "You're Registered"}</h2>
-              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">{event.is_paid ? "Final Step Remaining" : "Welcome to the 2025 Assembly"}</p>
+              <h2 className="font-serif text-[2.8rem] text-white mb-[10px]">{event.is_paid && !paymentCompleted ? "Payment Required" : "You're Registered"}</h2>
+              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">{event.is_paid && !paymentCompleted ? "Final Step Remaining" : "Registration Confirmed"}</p>
               
               <div className="w-full border border-[#1a1a1a] p-[30px] bg-[#0a0a0a] mb-[30px]">
                 <p className="text-[0.9rem] font-light leading-relaxed text-[#e0e0e0]">
-                  Your application is successful. {event.is_paid ? 'Please complete the payment below to finalize your spot.' : 'Check your comms (email) for joining instructions.'}
+                  {event.is_paid && !paymentCompleted ? 'Your application is successful. Please complete the payment to finalize your spot.' : 'Your registration is confirmed! Check your email for joining instructions.'}
                 </p>
               </div>
               
-              {event.is_paid ? (
-                <button className="w-full bg-[#ff8c00] text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] hover:bg-white transition-all flex items-center justify-center gap-2">Complete Payment <ExternalLink size={14} /></button>
-              ) : (
-                <button onClick={() => onOpenChange(false)} className="w-full bg-white text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] hover:bg-[#ff8c00] transition-all">Return to Briefing</button>
-              )}
+              <button onClick={() => onOpenChange(false)} className="w-full bg-white text-black border-none p-[22px] text-[0.8rem] font-extrabold uppercase tracking-[4px] hover:bg-[#ff8c00] transition-all">Return to Briefing</button>
             </div>
           )}
         </div>

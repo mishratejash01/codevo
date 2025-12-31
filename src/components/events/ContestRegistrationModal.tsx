@@ -61,6 +61,7 @@ export function ContestRegistrationModal({ event, isOpen, onOpenChange, onRegist
   const totalSteps = 3;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   const { processPayment, isProcessing: isPaymentProcessing } = useEventPayment();
 
@@ -168,6 +169,7 @@ export function ContestRegistrationModal({ event, isOpen, onOpenChange, onRegist
       });
 
       if (paymentSuccess) {
+        setPaymentCompleted(true);
         setIsSuccess(true);
         onRegistrationComplete?.();
       } else {
@@ -253,15 +255,15 @@ export function ContestRegistrationModal({ event, isOpen, onOpenChange, onRegist
         <div className="p-6 md:p-8">
           {isSuccess ? (
             <div className="flex flex-col items-center justify-center py-10 text-center animate-in zoom-in duration-300">
-              <div className={cn("w-24 h-24 bg-gradient-to-br rounded-full flex items-center justify-center mb-6 border", event.is_paid ? "from-yellow-500/20 to-orange-500/20 border-yellow-500/30" : "from-green-500/20 to-emerald-500/20 border-green-500/30")}>
-                <CheckCircle2 className={cn("w-12 h-12", event.is_paid ? "text-yellow-500" : "text-green-500")} />
+              <div className={cn("w-24 h-24 bg-gradient-to-br rounded-full flex items-center justify-center mb-6 border", event.is_paid && !paymentCompleted ? "from-yellow-500/20 to-orange-500/20 border-yellow-500/30" : "from-green-500/20 to-emerald-500/20 border-green-500/30")}>
+                <CheckCircle2 className={cn("w-12 h-12", event.is_paid && !paymentCompleted ? "text-yellow-500" : "text-green-500")} />
               </div>
-              <h3 className="text-3xl font-bold text-white mb-2">{event.is_paid ? "Almost There! 🔒" : "You're In! ⚔️"}</h3>
+              <h3 className="text-3xl font-bold text-white mb-2">{event.is_paid && !paymentCompleted ? "Almost There! 🔒" : "You're In! ⚔️"}</h3>
               <p className="text-zinc-400 mb-4 max-w-md">
-                Registration for <strong className="text-white">{event.title}</strong> is {event.is_paid ? 'pending payment' : 'confirmed'}.
+                Registration for <strong className="text-white">{event.title}</strong> is {event.is_paid && !paymentCompleted ? 'pending payment' : 'confirmed'}.
               </p>
-              <p className="text-sm text-rose-400 mb-6">{event.is_paid ? "Please complete payment to secure your entry." : "Get ready to compete and show your skills!"}</p>
-              {event.is_paid && (
+              <p className="text-sm text-rose-400 mb-6">{event.is_paid && !paymentCompleted ? "Please complete payment to secure your entry." : "Get ready to compete and show your skills!"}</p>
+              {event.is_paid && !paymentCompleted && (
                 <Button className="w-full mb-3 bg-gradient-to-r from-rose-500 to-red-500 hover:opacity-90 font-bold">
                   <Lock className="w-4 h-4 mr-2" /> Complete Payment - {event.currency} {event.registration_fee}
                 </Button>

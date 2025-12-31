@@ -18,6 +18,7 @@ export function WorkshopRegistrationModal({ event, isOpen, onOpenChange, onRegis
   const [loading, setLoading] = useState(false);
   const [prefilling, setPrefilling] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   const { processPayment, isProcessing: isPaymentProcessing } = useEventPayment();
   
@@ -41,6 +42,7 @@ export function WorkshopRegistrationModal({ event, isOpen, onOpenChange, onRegis
       prefillUserData();
       setStep(1);
       setIsSuccess(false);
+      setPaymentCompleted(false);
       setRegistrationId(null);
     }
   }, [isOpen]);
@@ -129,6 +131,7 @@ export function WorkshopRegistrationModal({ event, isOpen, onOpenChange, onRegis
         });
 
         if (paymentSuccess) {
+          setPaymentCompleted(true);
           setIsSuccess(true);
           onRegistrationComplete?.();
         } else {
@@ -374,15 +377,15 @@ export function WorkshopRegistrationModal({ event, isOpen, onOpenChange, onRegis
           ) : (
             /* Success View */
             <div className="flex flex-col items-center justify-center p-[100px_40px] text-center min-h-[650px] animate-in zoom-in duration-500">
-              <div className={cn("w-[64px] h-[64px] border rounded-full flex items-center justify-center text-2xl mb-[30px] shadow-[0_0_20px_rgba(0,255,136,0.1)]", event.is_paid ? "border-yellow-500 text-yellow-500" : "border-[#00ff88] text-[#00ff88]")}>
+              <div className={cn("w-[64px] h-[64px] border rounded-full flex items-center justify-center text-2xl mb-[30px] shadow-[0_0_20px_rgba(0,255,136,0.1)]", event.is_paid && !paymentCompleted ? "border-yellow-500 text-yellow-500" : "border-[#00ff88] text-[#00ff88]")}>
                 <Check size={32} strokeWidth={3} />
               </div>
-              <h2 className="font-serif text-[3rem] text-white mb-[10px]">{event.is_paid ? "Payment Pending" : "Registered"}</h2>
-              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">{event.is_paid ? "Workshop Seat Reserved - Payment Needed" : "Workshop Seat Reserved"}</p>
+              <h2 className="font-serif text-[3rem] text-white mb-[10px]">{event.is_paid && !paymentCompleted ? "Payment Pending" : "Registered"}</h2>
+              <p className="text-[#777777] uppercase tracking-[3px] text-[0.7rem] mb-[50px]">{event.is_paid && !paymentCompleted ? "Workshop Seat Reserved - Payment Needed" : "Workshop Seat Confirmed"}</p>
               
               <div className="w-full border border-[#1a1a1a] p-[30px] bg-[#0a0a0a] mb-[30px]">
                 <p className="text-[0.85rem] font-light leading-relaxed text-[#e0e0e0]">
-                  {event.is_paid ? 'Your application is initiated. Please complete the payment to confirm your seat.' : 'Your application is confirmed in the mission manifest. Check your email for the workshop preparation guide and location details.'}
+                  {event.is_paid && !paymentCompleted ? 'Your application is initiated. Please complete the payment to confirm your seat.' : 'Your registration is confirmed! Check your email for the workshop preparation guide and location details.'}
                 </p>
               </div>
               
