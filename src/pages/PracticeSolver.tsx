@@ -300,12 +300,13 @@ export default function PracticeSolver() {
           <div className="h-6 w-px bg-white/10 mx-2 hidden sm:block" />
 
           <Select value={activeLanguage} onValueChange={(v) => setActiveLanguage(v as Language)}>
-            <SelectTrigger className="h-9 w-[130px] bg-[#0a0a0c] border-white/10 text-xs font-bold text-zinc-300 focus:ring-primary/20 hover:border-white/20 transition-colors">
+            <SelectTrigger className="h-9 w-[140px] bg-[#0a0a0c] border-white/10 text-xs font-bold text-zinc-300 focus:ring-primary/20 hover:border-white/20 transition-colors">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-[#0a0a0c] border-white/10 text-zinc-300">
               <SelectItem value="python">Python</SelectItem>
               <SelectItem value="javascript">JavaScript</SelectItem>
+              <SelectItem value="typescript">TypeScript</SelectItem>
               <SelectItem value="java">Java</SelectItem>
               <SelectItem value="cpp">C++</SelectItem>
             </SelectContent>

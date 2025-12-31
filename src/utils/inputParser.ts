@@ -8,7 +8,7 @@ import { Language } from './codeWrappers';
 interface ParsedParam {
   name: string;
   value: string;
-  type: 'array' | 'string' | 'number' | 'boolean' | 'array2d' | 'null';
+  type: 'array' | 'string' | 'number' | 'boolean' | 'array2d' | 'null' | 'linkedlist' | 'tree';
 }
 
 /**
@@ -42,7 +42,7 @@ const parseRawInput = (rawInput: string): ParsedParam[] => {
     params.push({
       name,
       value,
-      type: detectValueType(value)
+      type: detectValueType(value, name)
     });
   }
   
@@ -107,8 +107,9 @@ const parseUnnamedInput = (input: string): ParsedParam[] => {
 
 /**
  * Detect the type of a value string
+ * Enhanced to detect ListNode and TreeNode patterns
  */
-const detectValueType = (value: string): ParsedParam['type'] => {
+const detectValueType = (value: string, name?: string): ParsedParam['type'] => {
   const trimmed = value.trim();
   
   if (trimmed === 'null' || trimmed === 'None' || trimmed === 'nullptr') {
@@ -120,6 +121,21 @@ const detectValueType = (value: string): ParsedParam['type'] => {
   if (trimmed.startsWith('[[') || trimmed.startsWith('[[ ')) {
     return 'array2d';
   }
+  
+  // Check for LinkedList pattern based on parameter name
+  if (name && (name.toLowerCase().includes('head') || name.toLowerCase().includes('list'))) {
+    if (trimmed.startsWith('[') && !trimmed.startsWith('[[')) {
+      return 'linkedlist';
+    }
+  }
+  
+  // Check for Tree pattern based on parameter name
+  if (name && (name.toLowerCase().includes('root') || name.toLowerCase().includes('tree'))) {
+    if (trimmed.startsWith('[')) {
+      return 'tree';
+    }
+  }
+  
   if (trimmed.startsWith('[')) {
     return 'array';
   }
@@ -145,6 +161,7 @@ export const parseInputForLanguage = (language: Language, rawInput: string): str
       case 'python':
         return convertToPython(param);
       case 'javascript':
+      case 'typescript':
         return convertToJavaScript(param);
       case 'java':
         return convertToJava(param);
@@ -168,6 +185,14 @@ const convertToPython = (param: ParsedParam): string => {
   if (type === 'boolean') {
     return value.toLowerCase() === 'true' ? 'True' : 'False';
   }
+  if (type === 'linkedlist') {
+    // Convert array to ListNode using helper
+    return `_build_list(${value})`;
+  }
+  if (type === 'tree') {
+    // Convert array to TreeNode using helper
+    return `_build_tree(${value})`;
+  }
   if (type === 'string') {
     // Ensure proper string quoting
     if (!value.startsWith('"') && !value.startsWith("'")) {
@@ -186,6 +211,12 @@ const convertToJavaScript = (param: ParsedParam): string => {
   if (type === 'null') return 'null';
   if (type === 'boolean') {
     return value.toLowerCase() === 'true' ? 'true' : 'false';
+  }
+  if (type === 'linkedlist') {
+    return `_buildList(${value})`;
+  }
+  if (type === 'tree') {
+    return `_buildTree(${value})`;
   }
   if (type === 'string') {
     if (!value.startsWith('"') && !value.startsWith("'")) {
@@ -209,6 +240,14 @@ const convertToJava = (param: ParsedParam): string => {
     // Ensure double quotes for Java strings
     const unquoted = value.replace(/^['"]|['"]$/g, '');
     return `"${unquoted}"`;
+  }
+  if (type === 'linkedlist') {
+    // For Java, we need to pass the array and let the driver build the list
+    return `buildList(${convertArrayToJava(value)})`;
+  }
+  if (type === 'tree') {
+    // Similar for trees
+    return convertArrayToJava(value);
   }
   if (type === 'array') {
     return convertArrayToJava(value);
@@ -289,6 +328,14 @@ const convertToCpp = (param: ParsedParam): string => {
   if (type === 'string') {
     const unquoted = value.replace(/^['"]|['"]$/g, '');
     return `"${unquoted}"`;
+  }
+  if (type === 'linkedlist') {
+    // For C++, pass to buildList helper
+    const arr = convertArrayToCpp(value);
+    return `buildList(${arr})`;
+  }
+  if (type === 'tree') {
+    return convertArrayToCpp(value);
   }
   if (type === 'array') {
     return convertArrayToCpp(value);
