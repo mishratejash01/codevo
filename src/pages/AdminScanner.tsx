@@ -130,7 +130,7 @@ export default function AdminScanner() {
       const guestRecord = {
         participation_type: null,
         team_name: null,
-        ...data
+        ...(typeof data === 'object' && data !== null ? data : {})
       } as unknown as Omit<GuestData, 'formType'>;
       
       setGuestData({ ...guestRecord, formType });

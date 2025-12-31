@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Renderer, Program, Mesh, Triangle, Vec2 } from 'ogl';
 import './DarkVeil.css';
 
@@ -94,14 +94,30 @@ export default function DarkVeil({
   resolutionScale = 1
 }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile on mount
   useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    // Skip WebGL on mobile for performance
+    if (isMobile) return;
+
     const canvas = ref.current as HTMLCanvasElement;
+    if (!canvas) return;
     const parent = canvas.parentElement as HTMLElement;
 
     const renderer = new Renderer({
-      dpr: Math.min(window.devicePixelRatio, 2),
+      dpr: Math.min(window.devicePixelRatio, 1.5), // Lower DPR for performance
       canvas,
-      alpha: true // Ensure transparency support
+      alpha: true
     });
 
     const gl = renderer.gl;
@@ -154,6 +170,14 @@ export default function DarkVeil({
       cancelAnimationFrame(frame);
       window.removeEventListener('resize', resize);
     };
-  }, [hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale]);
+  }, [isMobile, hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale]);
+
+  // Show static gradient fallback on mobile instead of heavy WebGL
+  if (isMobile) {
+    return (
+      <div className="darkveil-canvas w-full h-full bg-gradient-to-br from-purple-900/30 via-black to-blue-900/20" />
+    );
+  }
+
   return <canvas ref={ref} className="darkveil-canvas" />;
 }

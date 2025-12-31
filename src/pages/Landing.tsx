@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // --- NEW IMPORT ---
 import { HitMeUpWidget } from '@/pages/Profile'; 
@@ -81,10 +82,10 @@ const Landing = () => {
   const [session, setSession] = useState<any>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
-
+  const isMobile = useIsMobile();
   // Typewriter states
   const taglineText = useTypewriter("Forget theory… let’s break stuff and build better.", 40, 500);
-  const helloWorldText = useTypewriter("Hello World", 150, 1500);
+  const helloWorldText = useTypewriter("Hello World", isMobile ? 50 : 150, isMobile ? 300 : 1500);
 
   // --- Showcase Animation States ---
   const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
@@ -94,15 +95,30 @@ const Landing = () => {
   // Ref for auto-scrolling the terminal
   const codeScrollRef = useRef<HTMLDivElement>(null);
 
-  // Framer Motion Scroll Logic
+  // Framer Motion Scroll Logic - simplified on mobile for performance
   const { scrollY } = useScroll();
-  const rawScale = useTransform(scrollY, [0, 500], [1, 0.90]);
-  const smoothScale = useSpring(rawScale, { stiffness: 50, damping: 15, mass: 0.2 });
-  const rawRadius = useTransform(scrollY, [0, 500], [0, 32]);
-  const smoothRadius = useSpring(rawRadius, { stiffness: 50, damping: 15, mass: 0.2 });
+  const rawScale = useTransform(scrollY, [0, 500], [1, isMobile ? 1 : 0.90]);
+  const smoothScale = useSpring(rawScale, { 
+    stiffness: isMobile ? 200 : 50, 
+    damping: isMobile ? 30 : 15, 
+    mass: 0.1 
+  });
+  const rawRadius = useTransform(scrollY, [0, 500], [0, isMobile ? 0 : 32]);
+  const smoothRadius = useSpring(rawRadius, { 
+    stiffness: isMobile ? 200 : 50, 
+    damping: isMobile ? 30 : 15, 
+    mass: 0.1 
+  });
 
-  // Animation Loop
+  // Animation Loop - reduced on mobile
   useEffect(() => {
+    // Skip complex animations on mobile
+    if (isMobile) {
+      setShowcasePhase('terminal');
+      setTypedCode(DEMO_SCENARIO.code);
+      return;
+    }
+
     let timeoutId: NodeJS.Timeout;
     let charIndex = 0;
 
@@ -135,7 +151,7 @@ const Landing = () => {
 
     animate();
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     if (activeKey) {
