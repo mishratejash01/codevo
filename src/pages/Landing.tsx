@@ -8,7 +8,7 @@ import { Header } from '@/components/Header';
 import { cn } from "@/lib/utils";
 import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
-import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // --- WIDGET IMPORT ---
@@ -55,15 +55,6 @@ const Landing = () => {
   const [typedCode, setTypedCode] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
   
-  const codeScrollRef = useRef<HTMLDivElement>(null);
-
-  // Scroll Effects Preservation (Stays for background scaling logic)
-  const { scrollY } = useScroll();
-  const rawScale = useTransform(scrollY, [0, 500], [1, isMobile ? 1 : 0.90]);
-  const smoothScale = useSpring(rawScale, { stiffness: 50, damping: 15, mass: 0.1 });
-  const rawRadius = useTransform(scrollY, [0, 500], [0, isMobile ? 0 : 32]);
-  const smoothRadius = useSpring(rawRadius, { stiffness: 50, damping: 15, mass: 0.1 });
-
   // Terminal Animation Logic
   useEffect(() => {
     if (isMobile) {
@@ -160,65 +151,58 @@ const Landing = () => {
       <main className="flex-1 w-full bg-black">
         
         {/* --- HERO SECTION --- */}
-        <div className="relative w-full h-[100vh] bg-black"> 
-          <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
-            <motion.div 
-              className="relative w-full h-full bg-black flex flex-col justify-center items-center shadow-2xl pb-32"
-              style={{
-                scale: smoothScale, 
-                transformOrigin: 'top center', 
-                borderBottomLeftRadius: smoothRadius,
-                borderBottomRightRadius: smoothRadius,
-              }}
-            >
-              <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
-                <div className="max-w-4xl mx-auto space-y-8">
-                  
-                  {/* Main Heading */}
-                  <h1 className="text-[54px] md:text-[88px] font-medium tracking-[-0.06em] leading-[0.95] text-white" style={{ fontFamily: 'var(--font-geom)' }}>
-                    <span className="block">The Coding Platform built</span>
-                    for global developers
-                  </h1>
+        <div className="relative w-full h-screen bg-black flex flex-col justify-center items-center shadow-2xl pb-32"> 
+          <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
+            <div className="max-w-[1100px] mx-auto flex flex-col items-center">
+              
+              {/* Main Heading: Exact 88px, -0.06em spacing, 0.95 height */}
+              <h1 
+                className="text-[54px] md:text-[88px] font-medium tracking-[-0.06em] leading-[0.95] text-white mb-[30px]" 
+                style={{ fontFamily: 'var(--font-geom)' }}
+              >
+                <span className="block">The Coding Platform built</span>
+                for global developers
+              </h1>
 
-                  {/* Description */}
-                  <p className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[800px] mx-auto leading-[1.5] tracking-[-0.02em]" style={{ fontFamily: 'var(--font-geom)' }}>
-                    Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
-                  </p>
+              {/* Description: Exact 21px, -0.02em spacing, 1.5 line height, 800px max-width */}
+              <p 
+                className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[800px] mx-auto leading-[1.5] tracking-[-0.02em] mb-[50px]" 
+                style={{ fontFamily: 'var(--font-geom)' }}
+              >
+                Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
+              </p>
 
-                  {/* Buttons: Updated to match provided snippet dimensions */}
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] pt-6">
-                    <Button 
-                      onClick={() => navigate('/auth')}
-                      size="lg"
-                      className="h-auto px-[38px] py-[18px] bg-white text-black hover:bg-zinc-200 transition-all text-[16px] font-semibold rounded-full min-w-[220px]"
-                    >
-                      Join 1M+ Developers -Auth
-                    </Button>
-                    
-                    <Button 
-                      variant="outline"
-                      size="lg"
-                      className="h-auto px-[38px] py-[18px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[16px] font-semibold rounded-full"
-                    >
-                      Try Now
-                    </Button>
-                  </div>
-                </div>
+              {/* Buttons: Exact padding 18px 38px, font 16px, gap 12px */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px]">
+                <Button 
+                  onClick={() => navigate('/auth')}
+                  size="lg"
+                  className="h-auto px-[38px] py-[18px] bg-white text-black hover:bg-zinc-200 transition-all text-[16px] font-semibold rounded-full min-w-[220px]"
+                >
+                  Join 1M+ Developers -Auth
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  size="lg"
+                  className="h-auto px-[38px] py-[18px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[16px] font-semibold rounded-full"
+                >
+                  Try Now
+                </Button>
               </div>
+            </div>
+          </div>
 
-              {/* Scroll Indicator */}
-              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={scrollToContent}>
-                <div className="w-[30px] h-[50px] border border-white/20 rounded-full flex justify-center items-center bg-transparent">
-                  <div className="animate-scroll-arrow"><ChevronsDown className="w-4 h-4 text-white/40" /></div>
-                </div>
-              </div>
-            </motion.div>
+          {/* Scroll Indicator */}
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={scrollToContent}>
+            <div className="w-[30px] h-[50px] border border-white/20 rounded-full flex justify-center items-center bg-transparent">
+              <div className="animate-scroll-arrow"><ChevronsDown className="w-4 h-4 text-white/40" /></div>
+            </div>
           </div>
         </div>
 
-        {/* --- SECTION 2: EXPERIENCE REAL CODING (UPDATED) --- */}
+        {/* --- SECTION 2: EXPERIENCE REAL CODING --- */}
         <section id="laptop-section" className="w-full bg-black py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
-          {/* Grid background removed for solid black effect */}
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
               
