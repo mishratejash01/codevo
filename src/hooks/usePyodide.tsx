@@ -141,6 +141,7 @@ export const usePyodide = () => {
   }, [isReady]);
 
   // Handle terminal input character by character
+  // NOTE: TerminalView already handles visual echo, so we only track the buffer here
   const writeInputToWorker = useCallback((char: string) => {
     if (!isWaitingForInput) return;
     
@@ -149,10 +150,7 @@ export const usePyodide = () => {
       const inputText = inputLineRef.current;
       inputLineRef.current = "";
       
-      // Echo the newline
-      setOutput(prev => prev + '\n');
-      
-      // Send input to worker
+      // Send input to worker (no echo needed - terminal handles it)
       setIsWaitingForInput(false);
       workerRef.current?.postMessage({ type: 'INPUT_RESPONSE', text: inputText });
     } 
@@ -160,8 +158,6 @@ export const usePyodide = () => {
     else if (char === '\x7f' || char === '\b') {
       if (inputLineRef.current.length > 0) {
         inputLineRef.current = inputLineRef.current.slice(0, -1);
-        // Visual backspace: move cursor back, overwrite with space, move back again
-        setOutput(prev => prev.slice(0, -1));
       }
     }
     // Handle Ctrl+C (interrupt)
@@ -171,10 +167,9 @@ export const usePyodide = () => {
       setIsRunning(false);
       setIsWaitingForInput(false);
     }
-    // Regular character - echo it
+    // Regular character - just track it, terminal already echoes
     else if (char.length === 1 && char >= ' ') {
       inputLineRef.current += char;
-      setOutput(prev => prev + char);
     }
   }, [isWaitingForInput]);
 
