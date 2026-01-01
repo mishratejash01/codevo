@@ -55,17 +55,18 @@ const AppContent = () => {
     syncRoutes();
   }, []);
 
-  // --- HIDE NAVIGATION ON VERIFICATION PAGE ---
-  const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth', '/verify']; 
+  // --- HIDE NAVIGATION ON VERIFICATION PAGE & ADMIN SCANNER ---
+  const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth', '/verify', '/AdminScanner']; 
   const showDock = !hideDockRoutes.some(path => 
     location.pathname === path || 
     location.pathname.startsWith('/practice') || 
     location.pathname.startsWith('/exam') || 
     location.pathname.startsWith('/compiler') ||
-    location.pathname.startsWith('/verify')
+    location.pathname.startsWith('/verify') ||
+    location.pathname.startsWith('/AdminScanner')
   );
   
-  const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth', '/u/', '/profile', '/verify'];
+  const hideFooterRoutes = ['/practice', '/compiler', '/exam', '/auth', '/u/', '/profile', '/verify', '/AdminScanner'];
   const showFooter = !hideFooterRoutes.some(path => location.pathname.startsWith(path));
 
   const dockItems = [
