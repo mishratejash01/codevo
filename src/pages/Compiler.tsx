@@ -590,22 +590,14 @@ const Compiler = () => {
                   <span className="text-[9px] text-[#555]">This may take a few seconds</span>
                 </div>
               ) : (
-                <>
-                  <div className="p-2 border-b border-white/5 bg-[#010409]">
-                    <div className="flex items-center gap-2 text-green-500/80 mb-1 font-mono text-[10px]">
-                      <span>[SYSTEM]</span>
-                      <span className="text-[#666]">Runtime Ready.</span>
-                    </div>
-                  </div>
-                  <TerminalView 
-                    output={runnerState.output} 
-                    onInput={handleTerminalInput}
-                    isWaitingForInput={runnerState.isWaitingForInput}
-                    language={activeLanguage}
-                    isRunning={runnerState.isRunning}
-                    fontSize={fontSizeRight}
-                  />
-                </>
+                <TerminalView 
+                  output={runnerState.output} 
+                  onInput={handleTerminalInput}
+                  isWaitingForInput={runnerState.isWaitingForInput}
+                  language={activeLanguage}
+                  isRunning={runnerState.isRunning}
+                  fontSize={fontSizeRight}
+                />
               )}
             </div>
 

@@ -44,8 +44,6 @@ function extractMissingModuleName(message) {
 
 async function initPyodide() {
   try {
-    self.postMessage({ type: 'OUTPUT', text: '⏳ Loading Python runtime...\n' });
-    
     pyodide = await loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
     });
@@ -91,9 +89,9 @@ async function initPyodide() {
 }
 
 async function executeWithInputs(code, inputs) {
-  // Build the wrapped code with input values
   const inputsJson = JSON.stringify(inputs);
   
+  // Don't echo input - the UI already shows what user types
   const wrappedCode = `
 import builtins
 import sys
@@ -108,13 +106,11 @@ def _patched_input(prompt=""):
     if _input_index < len(_collected_inputs):
         val = _collected_inputs[_input_index]
         _input_index += 1
-        print(val)  # Echo input
         return val
     raise EOFError("__NEED_MORE_INPUT__")
 
 builtins.input = _patched_input
 
-# User code starts here
 ${code}
 `;
 
@@ -240,7 +236,6 @@ self.onmessage = async (event) => {
   if (type === 'INIT') {
     const success = await initPyodide();
     if (success) {
-      self.postMessage({ type: 'OUTPUT', text: '✅ Python ready!\n\n' });
       self.postMessage({ type: 'READY' });
     }
   }
