@@ -16,12 +16,14 @@ export default {
       fontFamily: {
         sans: ["Inter", "sans-serif"], 
         mono: ["JetBrains Mono", "monospace"],
+        // Neo-Grotesk style stack for specific hero text use
+        grotesk: ["Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
+        background: "#000000", // Full Deep Black as requested
         foreground: "hsl(var(--foreground))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
@@ -51,8 +53,8 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        obsidian: "#050505",
-        charcoal: "#0F0F11",
+        obsidian: "#000000", // Adjusted to deep black
+        charcoal: "#050505",
         glass: "rgba(15, 15, 17, 0.6)",
       },
       backgroundImage: {
@@ -81,7 +83,6 @@ export default {
           "0%, 100%": { boxShadow: "0 0 10px rgba(168, 85, 247, 0.2)" },
           "50%": { boxShadow: "0 0 20px rgba(168, 85, 247, 0.6)" },
         },
-        // --- NEW KEYFRAMES ---
         "scanline": {
           "0%": { transform: "translateY(-100%)" },
           "100%": { transform: "translateY(500%)" },
@@ -96,7 +97,6 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "shimmer": "shimmer 3s linear infinite",
         "pulse-glow": "pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        // --- NEW ANIMATIONS ---
         "scanline": "scanline 3s linear infinite",
         "spin-slow": "spin-slow 10s linear infinite",
       },
