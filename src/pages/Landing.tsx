@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Server, Activity } from 'lucide-react';
+import { Code2, ArrowRight, ChevronsDown, Terminal, LayoutGrid, Play, Activity } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
@@ -11,8 +11,8 @@ import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-// --- IMPORT FROM ORIGINAL SOURCE ---
-import { HitMeUpWidget } from '@/pages/Profile'; 
+// --- WIDGET IMPORT ---
+import { HitMeUpWidget } from '@/components/HitMeUpWidget'; 
 
 const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
@@ -27,20 +27,7 @@ const TECH_STACK = [
 
 const DEMO_SCENARIO = {
   question: "How do I fast-track my coding career?",
-  code: `import codevo
-
-def start_journey():
-    # 1. Pick a skill
-    skill = "Python"
-    
-    # 2. Practice daily
-    result = codevo.practice(skill)
-    
-    # 3. Get Hired
-    if result.score > 90:
-        return "SUCCESS!"
-
-print(start_journey())`
+  code: `import codevo\n\ndef start_journey():\n    # 1. Pick a skill\n    skill = "Python"\n    \n    # 2. Practice daily\n    result = codevo.practice(skill)\n    \n    # 3. Get Hired\n    if result.score > 90:\n        return "SUCCESS!"\n\nprint(start_journey())`
 };
 
 const Landing = () => {
@@ -50,56 +37,37 @@ const Landing = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const isMobile = useIsMobile();
-
-  // --- Showcase Animation States ---
+  
   const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
   const [typedCode, setTypedCode] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const codeScrollRef = useRef<HTMLDivElement>(null);
 
-  // Scroll Animations Preservation
+  // Background and Section Scroll Effects Preservation
   const { scrollY } = useScroll();
   const rawScale = useTransform(scrollY, [0, 500], [1, isMobile ? 1 : 0.90]);
-  const smoothScale = useSpring(rawScale, { 
-    stiffness: isMobile ? 200 : 50, 
-    damping: isMobile ? 30 : 15, 
-    mass: 0.1 
-  });
+  const smoothScale = useSpring(rawScale, { stiffness: 50, damping: 15, mass: 0.1 });
   const rawRadius = useTransform(scrollY, [0, 500], [0, isMobile ? 0 : 32]);
-  const smoothRadius = useSpring(rawRadius, { 
-    stiffness: isMobile ? 200 : 50, 
-    damping: isMobile ? 30 : 15, 
-    mass: 0.1 
-  });
+  const smoothRadius = useSpring(rawRadius, { stiffness: 50, damping: 15, mass: 0.1 });
 
-  // Animation Loop for Terminal Section
+  // Terminal Demo Animation Logic
   useEffect(() => {
-    if (isMobile) {
-      setShowcasePhase('terminal');
-      setTypedCode(DEMO_SCENARIO.code);
-      return;
-    }
+    if (isMobile) { setShowcasePhase('terminal'); setTypedCode(DEMO_SCENARIO.code); return; }
     let timeoutId: NodeJS.Timeout;
     let charIndex = 0;
     const animate = () => {
-      setShowcasePhase('question');
-      setTypedCode('');
-      setActiveKey(null);
+      setShowcasePhase('question'); setTypedCode(''); setActiveKey(null);
       timeoutId = setTimeout(() => {
         setShowcasePhase('terminal');
         const typeChar = () => {
           if (charIndex < DEMO_SCENARIO.code.length) {
             const char = DEMO_SCENARIO.code[charIndex];
             setTypedCode(prev => prev + char);
-            setActiveKey(char); 
-            charIndex++;
+            setActiveKey(char); charIndex++;
             timeoutId = setTimeout(typeChar, Math.random() * 30 + 30);
           } else {
             setActiveKey(null);
-            timeoutId = setTimeout(() => {
-              charIndex = 0;
-              animate();
-            }, 5000);
+            timeoutId = setTimeout(() => { charIndex = 0; animate(); }, 5000);
           }
         };
         timeoutId = setTimeout(typeChar, 800);
@@ -110,76 +78,44 @@ const Landing = () => {
   }, [isMobile]);
 
   useEffect(() => {
-    if (codeScrollRef.current) {
-      codeScrollRef.current.scrollTop = codeScrollRef.current.scrollHeight;
-    }
-  }, [typedCode]);
-
-  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => setSession(session));
     return () => subscription.unsubscribe();
-  }, [toast]);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    toast({ description: "Logged out successfully" });
-  };
-
-  const scrollToContent = () => {
-    const element = document.getElementById('laptop-section');
-    if (element) element.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   const handlePracticeClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setButtonPosition({ x: rect.left, y: rect.top, width: rect.width, height: rect.height });
     setIsNavigating(true);
-    setTimeout(() => {
-      session ? navigate('/practice') : navigate('/auth');
-    }, 800);
+    setTimeout(() => { session ? navigate('/practice') : navigate('/auth'); }, 800);
   };
 
   return (
-    <div className="min-h-screen bg-black selection:bg-white/20 flex flex-col relative overflow-hidden">
-      
+    <div className="min-h-screen bg-black selection:bg-white/20 flex flex-col relative overflow-hidden font-sans">
       <HitMeUpWidget />
-
+      
       <style>{`
-        @keyframes scroll-arrow-move {
-          0% { transform: translateY(0); opacity: 0.5; }
-          25% { transform: translateY(-4px); opacity: 0.8; }
-          75% { transform: translateY(4px); opacity: 0.8; }
-          100% { transform: translateY(0); opacity: 0.5; }
-        }
+        @keyframes scroll-arrow-move { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(6px); opacity: 1; } }
         .animate-scroll-arrow { animation: scroll-arrow-move 2s ease-in-out infinite; }
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .animate-marquee { animation: marquee 30s linear infinite; }
-        @keyframes code-blink { 50% { opacity: 0; } }
-        .cursor-blink { display: inline-block; width: 8px; height: 15px; background-color: #3b82f6; animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 2px; }
+        .cursor-blink { display: inline-block; width: 8px; height: 15px; background-color: #3b82f6; animation: blink 1s step-end infinite; vertical-align: middle; }
       `}</style>
 
       {/* Page Transition Overlay */}
       <AnimatePresence>
         {isNavigating && (
           <motion.div
-            initial={{ 
-              position: 'fixed', top: buttonPosition.y, left: buttonPosition.x, width: buttonPosition.width, height: buttonPosition.height, borderRadius: '0.75rem', backgroundColor: '#ffffff', zIndex: 9999,
-            }}
-            animate={{ 
-              top: 0, left: 0, width: '100vw', height: '100vh', borderRadius: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
-            }}
+            initial={{ position: 'fixed', top: buttonPosition.y, left: buttonPosition.x, width: buttonPosition.width, height: buttonPosition.height, borderRadius: '0.75rem', backgroundColor: '#ffffff', zIndex: 9999 }}
+            animate={{ top: 0, left: 0, width: '100vw', height: '100vh', borderRadius: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }}
             className="flex items-center justify-center"
           >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.3 } }} className="text-black font-neuropol text-4xl">
-              INITIALIZING...
-            </motion.div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.3 } }} className="text-black font-neuropol text-4xl">INITIALIZING...</motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <Header session={session} onLogout={handleLogout} />
+      <Header session={session} onLogout={() => supabase.auth.signOut()} />
 
       <main className="flex-1 w-full bg-black">
         
@@ -187,32 +123,24 @@ const Landing = () => {
         <div className="relative w-full h-[100vh] bg-black"> 
           <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
             <motion.div 
-              className="relative w-full h-full bg-black flex flex-col justify-center items-center shadow-2xl"
-              style={{
-                scale: smoothScale, 
-                transformOrigin: 'top center', 
-                borderBottomLeftRadius: smoothRadius,
-                borderBottomRightRadius: smoothRadius,
-              }}
+              className="relative w-full h-full bg-black flex flex-col justify-center items-center"
+              style={{ scale: smoothScale, transformOrigin: 'top center', borderBottomLeftRadius: smoothRadius, borderBottomRightRadius: smoothRadius }}
             >
-              {/* Pure Deep Black Background */}
-              <div className="absolute inset-0 z-0 bg-black" />
-
               <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
                 <div className="max-w-5xl mx-auto space-y-8">
                   
-                  {/* Main Heading - Neo Grotesk Font and Positioned above */}
+                  {/* Heading - Neo Grotesk Font and Image Colors */}
                   <h1 className="text-5xl md:text-8xl font-bold tracking-tight text-white leading-[1.05] font-grotesk">
                     The coding platform for the <br />
-                    <span className="text-zinc-500">global developers</span>
+                    <span className="text-zinc-600">global developers</span>
                   </h1>
 
-                  {/* Description - Static zinc-400 */}
+                  {/* Description */}
                   <p className="max-w-2xl mx-auto text-lg md:text-xl text-zinc-400 leading-relaxed font-grotesk">
                     Over 1 million learners trust <span className="text-zinc-200 font-semibold">CODéVO</span> to master what basic tutorials never could — from daily coding practice and logic building to real-world projects and professional careers.
                   </p>
 
-                  {/* Buttons - Middle alignment, middle layer */}
+                  {/* Buttons - Middle Centered Alignment */}
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-8">
                     <Button 
                       onClick={() => navigate('/auth')}
@@ -235,10 +163,9 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* Scroll indicator */}
-              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={scrollToContent}>
-                <div className="w-[30px] h-[50px] border border-white/20 rounded-full flex justify-center items-center bg-transparent">
-                  <div className="animate-scroll-arrow"><ChevronsDown className="w-4 h-4 text-white/40" /></div>
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={() => document.getElementById('laptop-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                <div className="w-[30px] h-[50px] border border-white/20 rounded-full flex justify-center items-start pt-2 bg-transparent">
+                  <div className="w-1 h-2 bg-white/40 rounded-full animate-scroll-arrow" />
                 </div>
               </div>
             </motion.div>
@@ -249,6 +176,7 @@ const Landing = () => {
         <section id="laptop-section" className="w-full bg-black py-24 md:py-32 relative z-20 -mt-12 overflow-hidden border-b border-white/5">
           <div className="container mx-auto px-4 md:px-6 relative z-10 text-center">
             
+            {/* Content Centered and Static */}
             <div className="max-w-4xl mx-auto space-y-6 mb-16">
               <div className="flex items-center gap-2 justify-center text-[10px] font-mono text-green-500 tracking-widest uppercase">
                 <Activity className="w-3 h-3 animate-pulse" />
@@ -262,17 +190,17 @@ const Landing = () => {
                 <span className="text-zinc-200 font-medium">Write. Run. Debug. Succeed.</span>
               </p>
               
-              {/* Buttons middle alignment */}
+              {/* Buttons Aligned to Middle */}
               <div className="flex justify-center pt-4">
-                <Button onClick={handlePracticeClick} className="h-14 px-12 rounded-full bg-white text-black hover:bg-white/90 text-lg font-bold shadow-2xl">
+                <Button onClick={handlePracticeClick} className="h-14 px-12 rounded-full bg-white text-black hover:bg-white/90 text-lg font-bold shadow-2xl transition-transform hover:scale-105">
                   Start Coding Now
                 </Button>
               </div>
             </div>
 
-            {/* Laptop Mockup */}
+            {/* Centered Laptop Mockup */}
             <div className="max-w-5xl mx-auto perspective-1000">
-               <div className="relative transform bg-[#0a0a0a] rounded-t-2xl p-2 border border-white/10 shadow-2xl overflow-hidden">
+               <div className="relative transform bg-[#0a0a0a] rounded-t-2xl p-2 border border-white/10 shadow-2xl">
                  <div className="bg-[#000000] rounded-t-xl border border-white/5 overflow-hidden aspect-[16/9] relative group">
                     <div className="absolute inset-0 flex flex-col font-mono text-[10px] md:text-sm text-zinc-500">
                         <div className="h-8 border-b border-white/10 flex items-center px-4 justify-between bg-[#0a0a0a]">
@@ -292,7 +220,7 @@ const Landing = () => {
                <div className="h-4 bg-[#111] rounded-b-2xl border-t border-black/50 mx-1" />
             </div>
 
-            {/* Tech Stack Marquee */}
+            {/* Tech Stack Marquee Centered */}
             <div className="mt-20 max-w-2xl mx-auto overflow-hidden relative">
               <div className="flex gap-10 animate-marquee whitespace-nowrap items-center opacity-30 grayscale hover:opacity-100 transition-opacity">
                 {[...TECH_STACK, ...TECH_STACK].map((src, i) => (
@@ -304,89 +232,50 @@ const Landing = () => {
         </section>
 
         {/* --- SECTION 3: KEYBOARD & TERMINAL --- */}
-        <section className="py-24 md:py-32 relative overflow-hidden bg-black border-t border-white/5">
+        <section className="py-24 bg-black border-t border-white/5">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto">
-              
-              {/* Terminal */}
-              <div className="relative h-[300px] md:h-[450px] w-full bg-[#121212] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
-                <div className="h-10 bg-[#1a1a1a] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
-                  <div className="w-3 h-3 rounded-full bg-red-500/80" /><div className="w-3 h-3 rounded-full bg-yellow-500/80" /><div className="w-3 h-3 rounded-full bg-green-500/80" />
+              <div className="relative h-[450px] bg-[#0a0a0a] rounded-3xl border border-white/10 flex flex-col overflow-hidden">
+                <div className="h-10 bg-[#0f0f0f] border-b border-white/5 flex items-center px-4 gap-2 shrink-0">
+                  <div className="w-3 h-3 rounded-full bg-zinc-800" /><div className="w-3 h-3 rounded-full bg-zinc-800" />
                   <div className="ml-4 text-xs text-muted-foreground font-mono opacity-50 flex-1 text-center">{showcasePhase === 'question' ? 'challenge.md' : 'solution.py'}</div>
                 </div>
-
-                <div className="flex-1 relative p-6 md:p-8 font-mono text-sm md:text-base overflow-hidden">
+                <div className="flex-1 relative p-8 font-mono overflow-hidden">
                   <div className={cn("absolute inset-0 p-8 flex flex-col items-center justify-center text-center transition-all duration-700", showcasePhase === 'question' ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none")}>
                     <Code2 className="w-12 h-12 text-zinc-600 mb-6" />
                     <h3 className="text-2xl font-bold text-white mb-4 font-grotesk">Codevo Challenge</h3>
-                    <p className="text-zinc-500 leading-relaxed text-sm md:text-lg">"{DEMO_SCENARIO.question}"</p>
+                    <p className="text-zinc-500 leading-relaxed">"{DEMO_SCENARIO.question}"</p>
                   </div>
-
-                  <div className={cn("absolute inset-0 p-6 md:p-8 bg-[#0c0c0e] transition-all duration-500 flex flex-col", showcasePhase === 'terminal' ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none")}>
-                    <div 
-                      ref={codeScrollRef}
-                      className="font-mono text-blue-400 whitespace-pre-wrap leading-relaxed text-xs md:text-sm overflow-y-auto flex-1 pr-2 no-scrollbar"
-                    >
-                      {typedCode}<span className="cursor-blink" />
-                    </div>
+                  <div className={cn("absolute inset-0 p-8 bg-[#000000] transition-all duration-500", showcasePhase === 'terminal' ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none")}>
+                    <div className="text-blue-400 whitespace-pre-wrap leading-relaxed text-sm md:text-base">{typedCode}<span className="cursor-blink" /></div>
                   </div>
                 </div>
               </div>
-
-              {/* Keyboard */}
-              <div className="relative w-full">
-                <div className="w-full">
-                  <VirtualKeyboard activeChar={activeKey} />
-                </div>
-              </div>
+              <div className="relative w-full"><VirtualKeyboard activeChar={activeKey} /></div>
             </div>
           </div>
         </section>
 
         {/* --- SECTION 4: CODE ON CODEVO --- */}
-        <section className="w-full bg-[#050505] py-24 md:py-32 relative overflow-hidden border-t border-white/5">
+        <section className="w-full bg-[#050505] py-24 border-t border-white/5">
           <div className="container mx-auto px-6 max-w-7xl">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
               <div className="max-w-xl"><h2 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-[1.05] font-grotesk">Code on <span className="font-neuropol">CODéVO</span></h2></div>
-              <div className="max-w-sm"><p className="text-lg text-zinc-500 leading-relaxed font-grotesk">Experience the future of coding. Featuring frontier capabilities in real-time execution, secure proctoring, and global competition.</p></div>
+              <div className="max-w-sm"><p className="text-lg text-zinc-500 leading-relaxed font-grotesk">Experience frontier capabilities in real-time execution and global competition.</p></div>
             </div>
-
-            <div className="relative w-full h-[450px] md:h-[700px] mt-12">
-              <div className="absolute left-0 top-0 w-[95%] md:w-[80%] h-[90%] bg-[#0f0f11] rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-10">
-                 <div className="w-full h-full flex flex-col bg-[#0c0c0e] rounded-xl border border-white/5 overflow-hidden">
-                    <div className="h-12 border-b border-white/5 flex items-center px-4 md:px-6 justify-between bg-[#151517]">
-                       <div className="text-xs md:text-sm text-gray-500 font-mono">codevo_ide_v2.tsx</div>
-                    </div>
-                    <div className="flex-1 p-4 md:p-8 font-mono text-xs md:text-base text-gray-400 space-y-2 md:space-y-4">
-                       <div className="flex gap-4">
-                          <span><span className="text-purple-400">import</span> <span className="text-white">React</span> <span className="text-purple-400">from</span> <span className="text-green-400">'react'</span>;</span>
-                       </div>
-                       <div className="flex gap-4">
-                          <span><span className="text-blue-400">const</span> <span className="text-yellow-200">App</span> = () <span className="text-blue-400">=&gt;</span> {'{'}</span>
-                       </div>
-                       <div className="flex gap-4">
-                          <span className="pl-4 md:pl-8 text-pink-400">return</span> (
-                       </div>
-                       <div className="flex gap-4">
-                          <span className="pl-8 md:pl-12 text-gray-300">&lt;<span className="text-blue-300">CodevoEnvironment</span> /&gt;</span>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-
-              <div className="absolute right-[2%] md:right-[5%] bottom-[10px] md:bottom-[-20px] w-[120px] md:w-[300px] aspect-[9/19] bg-black rounded-[1.5rem] md:rounded-[3rem] border-[4px] md:border-[8px] border-[#1a1a1a] shadow-[0_25px_50px_-12px_rgba(0,0,0,1)] z-30 overflow-hidden transform md:translate-y-10">
-                 <div className="h-full w-full bg-[#0c0c0e] pt-8 md:pt-12 px-2 md:px-5 pb-4 md:pb-8 flex flex-col relative">
-                    <div className="mt-auto w-full h-8 md:h-12 bg-white text-black rounded-full flex items-center justify-center font-bold text-[8px] md:text-sm shadow-lg">
-                       Start
-                    </div>
-                 </div>
+            <div className="relative w-full h-[500px] md:h-[700px] bg-[#0a0a0a] rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden">
+              <div className="absolute left-10 top-10 w-full h-full bg-black rounded-3xl border border-white/10 p-10 font-mono text-sm space-y-4">
+                 <div className="text-purple-400">import <span className="text-white">React</span> from <span className="text-green-400">'react'</span>;</div>
+                 <div className="text-blue-400">const <span className="text-yellow-200">App</span> = () =&gt; {'{'}</div>
+                 <div className="pl-8 text-zinc-400">return &lt;<span className="text-blue-300">Codevo</span> /&gt;;</div>
+                 <div>{'}'}</div>
               </div>
             </div>
           </div>
         </section>
 
         {/* --- SECTION 5: PLAY N CODÉ --- */}
-        <section className="w-full bg-black py-24 md:py-32 relative overflow-hidden border-t border-white/5">
+        <section className="w-full bg-black py-24 border-t border-white/5">
           <div className="container mx-auto px-6 text-center">
             <h2 className="text-4xl md:text-6xl font-bold text-white mb-16 tracking-tight font-grotesk">Play n Codé</h2>
             <div className="w-full max-w-6xl mx-auto"><AsteroidGameFrame /></div>
