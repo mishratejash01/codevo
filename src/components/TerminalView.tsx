@@ -24,7 +24,6 @@ export const TerminalView = ({
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const writtenCharsRef = useRef<number>(0);
-  const currentLineRef = useRef<string>("");
   const isInitializedRef = useRef(false);
 
   // Update Font Size dynamically
@@ -101,32 +100,12 @@ export const TerminalView = ({
       } catch (e) { }
     });
 
-    // Handle user input
+    // --- FIX IS HERE ---
+    // We removed 'term.write(data)' from here. 
+    // Now we only send the keystroke to the runner.
+    // The runner updates 'output', which triggers the useEffect below to write to screen.
     term.onData((data) => {
-      if (data === '\r') {
-        term.write('\r\n');
-        onInput('\r');
-        currentLineRef.current = "";
-      } else if (data === '\x7f' || data === '\b') {
-        if (currentLineRef.current.length > 0) {
-          currentLineRef.current = currentLineRef.current.slice(0, -1);
-          term.write('\b \b');
-          onInput('\b');
-        }
-      } else if (data === '\x03') {
-        term.write('^C\r\n');
-        onInput('\x03');
-        currentLineRef.current = "";
-      } else if (data === '\x04') {
-        onInput('\r');
-        currentLineRef.current = "";
-      } else if (data.startsWith('\x1b')) {
-        return;
-      } else if (data >= ' ' || data === '\t') {
-        term.write(data);
-        currentLineRef.current += data;
-        onInput(data);
-      }
+      onInput(data);
     });
 
     terminalRef.current = term;
@@ -150,28 +129,31 @@ export const TerminalView = ({
       resizeObserver.disconnect();
       isInitializedRef.current = false;
     };
-  }, [onInput]);
+  }, [onInput]); // Removed unnecessary dependencies to prevent re-init
 
   // Handle output changes
   useEffect(() => {
     const term = terminalRef.current;
     if (!term) return;
     
+    // If output was cleared (e.g. re-run)
     if (output.length === 0) {
       term.reset();
       term.write(`\x1b[38;5;242m${getCommandPrompt()}\x1b[0m\r\n`);
       writtenCharsRef.current = 0;
-      currentLineRef.current = "";
       return;
     }
     
+    // If output shrunk (e.g. Backspace was pressed), we must reset to sync
     if (output.length < writtenCharsRef.current) {
       term.reset();
       term.write(`\x1b[38;5;242m${getCommandPrompt()}\x1b[0m\r\n`);
-      writtenCharsRef.current = 0;
-      currentLineRef.current = "";
+      term.write(output); // Rewrite correct content
+      writtenCharsRef.current = output.length;
+      return;
     }
 
+    // Normal case: append new characters
     const newText = output.slice(writtenCharsRef.current);
     if (newText.length > 0) {
       term.write(newText);
@@ -185,7 +167,6 @@ export const TerminalView = ({
     if (!term) return;
     
     if (isWaitingForInput) {
-      // Show subtle indicator that input is expected
       term.options.cursorStyle = 'underline';
       term.options.cursorBlink = true;
     } else {
@@ -193,15 +174,12 @@ export const TerminalView = ({
     }
   }, [isWaitingForInput]);
 
+  // Focus terminal when needed
   useEffect(() => {
     if ((isWaitingForInput || isRunning) && terminalRef.current) {
       terminalRef.current.focus();
     }
   }, [isWaitingForInput, isRunning]);
-
-  useEffect(() => {
-    currentLineRef.current = "";
-  }, [language]);
 
   return (
     <div className="relative h-full w-full">
@@ -210,18 +188,12 @@ export const TerminalView = ({
         className="h-full w-full bg-[#010409] overflow-hidden"
         style={{ minHeight: '100px', padding: '8px' }}
       />
+      
       {/* Input waiting indicator */}
       {isWaitingForInput && (
-        <div className="absolute bottom-2 right-2 flex items-center gap-2 px-2 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded text-xs text-yellow-400">
+        <div className="absolute bottom-2 right-2 flex items-center gap-2 px-2 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded text-xs text-yellow-400 pointer-events-none">
           <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
           Waiting for input...
-        </div>
-      )}
-      {/* Running indicator */}
-      {isRunning && !isWaitingForInput && (
-        <div className="absolute bottom-2 right-2 flex items-center gap-2 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded text-xs text-blue-400">
-          <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-          Running...
         </div>
       )}
     </div>
