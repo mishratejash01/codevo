@@ -269,7 +269,8 @@ const Compiler = () => {
   const { 
     runCode: runPython, output: pythonOutput, isRunning: pythonRunning, 
     isReady: pythonReady, isWaitingForInput: pythonWaitingForInput, 
-    writeInputToWorker: writePythonInput, stopExecution: stopPython, hasSharedArrayBuffer
+    writeInputToWorker: writePythonInput, stopExecution: stopPython,
+    initError: pythonInitError, retryInit: retryPythonInit
   } = usePyodide();
 
   const {
@@ -568,24 +569,33 @@ const Compiler = () => {
 
             {/* Terminal Area */}
             <div className="flex-1 bg-[#010409] relative overflow-hidden flex flex-col">
-              {isPython && !pythonReady ? (
+              {isPython && pythonInitError ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-[#666] gap-4 p-6">
+                  <div className="text-red-400 text-center">
+                    <span className="text-2xl mb-2 block">⚠️</span>
+                    <span className="text-[11px] uppercase tracking-widest block mb-4">Kernel Error</span>
+                    <p className="text-[10px] text-[#888] mb-4 max-w-xs">{pythonInitError}</p>
+                  </div>
+                  <Button 
+                    onClick={retryPythonInit}
+                    className="h-8 bg-white/10 text-white hover:bg-white/20 text-[10px] uppercase tracking-wider"
+                  >
+                    <RefreshCw className="w-3 h-3 mr-2" /> Retry Kernel
+                  </Button>
+                </div>
+              ) : isPython && !pythonReady ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-[#666] gap-4">
                   <Loader2 className="w-6 h-6 animate-spin text-white/20" />
-                  <span className="text-[10px] uppercase tracking-widest">Initializing Kernel...</span>
+                  <span className="text-[10px] uppercase tracking-widest">Initializing Python...</span>
+                  <span className="text-[9px] text-[#555]">This may take a few seconds</span>
                 </div>
               ) : (
                 <>
                   <div className="p-2 border-b border-white/5 bg-[#010409]">
                     <div className="flex items-center gap-2 text-green-500/80 mb-1 font-mono text-[10px]">
                       <span>[SYSTEM]</span>
-                      <span className="text-[#666]">Local Node Ready.</span>
+                      <span className="text-[#666]">Runtime Ready.</span>
                     </div>
-                    {isReady && (
-                      <div className="flex items-center gap-2 text-green-500/80 animate-in fade-in slide-in-from-left-2 duration-500 font-mono text-[10px]">
-                        <span>[SYSTEM]</span>
-                        <span className="text-[#666]">Handshake latency: 12ms</span>
-                      </div>
-                    )}
                   </div>
                   <TerminalView 
                     output={runnerState.output} 

@@ -6,107 +6,127 @@ interface WorkerMessage {
   message?: string;
 }
 
+const INIT_TIMEOUT_MS = 20000; // 20 seconds timeout for initialization
+
 export const usePyodide = () => {
   const [output, setOutput] = useState<string>("");
   const [isRunning, setIsRunning] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
   
   const workerRef = useRef<Worker | null>(null);
   const inputLineRef = useRef<string>("");
-  const collectedInputsRef = useRef<string[]>([]);
-  const currentCodeRef = useRef<string>("");
+  const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize the Web Worker
-  useEffect(() => {
-    const worker = new Worker('/pyodide.worker.js');
-    workerRef.current = worker;
+  const initWorker = useCallback(() => {
+    // Clean up existing worker
+    if (workerRef.current) {
+      workerRef.current.terminate();
+    }
     
-    // Handle messages from worker
-    worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
-      const { type, text, message } = event.data;
+    // Reset state
+    setIsReady(false);
+    setInitError(null);
+    setOutput("");
+    setIsRunning(false);
+    setIsWaitingForInput(false);
+    
+    try {
+      const worker = new Worker('/pyodide.worker.js');
+      workerRef.current = worker;
       
-      switch (type) {
-        case 'READY':
-          setIsReady(true);
-          break;
-          
-        case 'OUTPUT':
-          if (text) {
-            setOutput(prev => prev + text);
-          }
-          break;
-          
-        case 'INPUT_REQUEST':
-          setIsWaitingForInput(true);
-          break;
-          
-        case 'FINISHED':
-          setIsRunning(false);
-          setIsWaitingForInput(false);
-          break;
-          
-        case 'ERROR':
-          setOutput(prev => prev + `\nError: ${message}\n`);
-          setIsRunning(false);
-          break;
-      }
-    };
-    
-    worker.onerror = (error) => {
-      console.error('Worker error:', error);
-      setOutput(prev => prev + `\nWorker Error: ${error.message}\n`);
-      setIsRunning(false);
-    };
-    
-    // Initialize the worker (no SharedArrayBuffer needed)
-    worker.postMessage({ type: 'INIT' });
+      // Set initialization timeout
+      initTimeoutRef.current = setTimeout(() => {
+        if (!isReady) {
+          setInitError('Python initialization timed out. Please refresh the page.');
+        }
+      }, INIT_TIMEOUT_MS);
+      
+      // Handle messages from worker
+      worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
+        const { type, text, message } = event.data;
+        
+        switch (type) {
+          case 'READY':
+            if (initTimeoutRef.current) {
+              clearTimeout(initTimeoutRef.current);
+              initTimeoutRef.current = null;
+            }
+            setIsReady(true);
+            setInitError(null);
+            break;
+            
+          case 'OUTPUT':
+            if (text) {
+              setOutput(prev => prev + text);
+            }
+            break;
+            
+          case 'INPUT_REQUEST':
+            setIsWaitingForInput(true);
+            break;
+            
+          case 'FINISHED':
+            setIsRunning(false);
+            setIsWaitingForInput(false);
+            inputLineRef.current = "";
+            break;
+            
+          case 'ERROR':
+            if (message) {
+              setOutput(prev => prev + `\n❌ ${message}\n`);
+            }
+            if (!isReady) {
+              setInitError(message || 'Failed to initialize Python');
+            }
+            setIsRunning(false);
+            setIsWaitingForInput(false);
+            break;
+        }
+      };
+      
+      worker.onerror = (error) => {
+        console.error('Worker error:', error);
+        setOutput(prev => prev + `\n❌ Worker Error: ${error.message}\n`);
+        setIsRunning(false);
+        setInitError('Worker failed to load. Please refresh the page.');
+      };
+      
+      // Initialize the worker
+      worker.postMessage({ type: 'INIT' });
+      
+    } catch (err) {
+      setInitError('Failed to create Python worker');
+      console.error('Failed to create worker:', err);
+    }
+  }, [isReady]);
+
+  // Initialize on mount
+  useEffect(() => {
+    initWorker();
     
     return () => {
-      worker.terminate();
-      workerRef.current = null;
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+      }
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
     };
-  }, []);
-
-  // Re-run code with collected inputs
-  const rerunWithInputs = useCallback(() => {
-    if (!workerRef.current || !currentCodeRef.current) return;
-    
-    // Wrap code with pre-collected inputs
-    const inputs = collectedInputsRef.current;
-    const inputSetup = `_input_values = ${JSON.stringify(inputs)}\n_input_index = 0\n`;
-    
-    // Create wrapped code that uses our input values
-    const wrappedCode = `
-import builtins
-
-_input_values = ${JSON.stringify(inputs)}
-_input_index = 0
-
-def _custom_input(prompt=""):
-    global _input_index
-    if prompt:
-        print(prompt, end="", flush=True)
-    if _input_index < len(_input_values):
-        val = _input_values[_input_index]
-        _input_index += 1
-        print(val)  # Echo the input
-        return val
-    raise EOFError("__NEED_INPUT__")
-
-builtins.input = _custom_input
-
-${currentCodeRef.current}
-`;
-    
-    setOutput(""); // Clear output for re-run
-    workerRef.current.postMessage({ type: 'RUN', code: wrappedCode });
   }, []);
 
   // Run Python code
   const runCode = useCallback((code: string) => {
-    if (!workerRef.current || !isReady) {
-      console.warn('Worker not ready');
+    if (!workerRef.current) {
+      console.warn('Worker not available');
+      return;
+    }
+    
+    if (!isReady) {
+      setOutput("⏳ Python is still loading, please wait...\n");
       return;
     }
     
@@ -115,73 +135,61 @@ ${currentCodeRef.current}
     setOutput("");
     setIsWaitingForInput(false);
     inputLineRef.current = "";
-    collectedInputsRef.current = [];
-    currentCodeRef.current = code;
     
-    // Create wrapped code with custom input handler
-    const wrappedCode = `
-import builtins
-
-_input_values = []
-_input_index = 0
-
-def _custom_input(prompt=""):
-    global _input_index
-    if prompt:
-        print(prompt, end="", flush=True)
-    if _input_index < len(_input_values):
-        val = _input_values[_input_index]
-        _input_index += 1
-        print(val)  # Echo the input
-        return val
-    raise EOFError("__NEED_INPUT__")
-
-builtins.input = _custom_input
-
-${code}
-`;
-    
-    workerRef.current.postMessage({ type: 'RUN', code: wrappedCode });
+    // Send code to worker
+    workerRef.current.postMessage({ type: 'RUN', code });
   }, [isReady]);
 
-  // Write input character to the Python process
+  // Handle terminal input character by character
   const writeInputToWorker = useCallback((char: string) => {
-    // Handle Enter key - submit the input line
+    if (!isWaitingForInput) return;
+    
+    // Handle Enter key - submit the input
     if (char === '\r' || char === '\n') {
       const inputText = inputLineRef.current;
       inputLineRef.current = "";
       
-      // Add to collected inputs
-      collectedInputsRef.current.push(inputText);
+      // Echo the newline
+      setOutput(prev => prev + '\n');
       
-      // Re-run with all collected inputs
+      // Send input to worker
       setIsWaitingForInput(false);
-      rerunWithInputs();
+      workerRef.current?.postMessage({ type: 'INPUT_RESPONSE', text: inputText });
     } 
     // Handle Backspace
     else if (char === '\x7f' || char === '\b') {
-      inputLineRef.current = inputLineRef.current.slice(0, -1);
+      if (inputLineRef.current.length > 0) {
+        inputLineRef.current = inputLineRef.current.slice(0, -1);
+        // Visual backspace: move cursor back, overwrite with space, move back again
+        setOutput(prev => prev.slice(0, -1));
+      }
     }
     // Handle Ctrl+C (interrupt)
     else if (char === '\x03') {
       workerRef.current?.postMessage({ type: 'INTERRUPT' });
       inputLineRef.current = "";
-      collectedInputsRef.current = [];
       setIsRunning(false);
       setIsWaitingForInput(false);
     }
-    // Regular character
-    else {
+    // Regular character - echo it
+    else if (char.length === 1 && char >= ' ') {
       inputLineRef.current += char;
+      setOutput(prev => prev + char);
     }
-  }, [rerunWithInputs]);
+  }, [isWaitingForInput]);
 
   // Stop execution
   const stopExecution = useCallback(() => {
     workerRef.current?.postMessage({ type: 'INTERRUPT' });
     setIsRunning(false);
     setIsWaitingForInput(false);
+    inputLineRef.current = "";
   }, []);
+
+  // Retry initialization
+  const retryInit = useCallback(() => {
+    initWorker();
+  }, [initWorker]);
 
   return { 
     runCode, 
@@ -191,6 +199,8 @@ ${code}
     isWaitingForInput,
     writeInputToWorker,
     stopExecution,
-    hasSharedArrayBuffer: false // No longer needed
+    initError,
+    retryInit,
+    hasSharedArrayBuffer: false
   };
 };

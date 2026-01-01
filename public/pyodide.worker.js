@@ -3,6 +3,15 @@
  * 
  * This worker runs Python code in isolation and handles interactive input()
  * using an async message-based approach that works WITHOUT SharedArrayBuffer.
+ * 
+ * Protocol:
+ * - RUN: Start executing code
+ * - INPUT_REQUEST: Worker needs input from user
+ * - INPUT_RESPONSE: Main thread sends user input
+ * - OUTPUT: Worker sends output text
+ * - FINISHED: Execution complete
+ * - ERROR: Error occurred
+ * - READY: Worker initialized
  */
 
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
@@ -10,18 +19,11 @@ importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js");
 let pyodide = null;
 let micropip = null;
 
-// Message-based input queue (no SharedArrayBuffer needed)
-let inputQueue = [];
-let inputResolver = null;
-let isWaitingForInput = false;
-
-const CLEAR_GLOBALS_CODE = `
-import sys
-# Clear user-defined variables
-for name in list(globals().keys()):
-    if not name.startswith('_') and name not in ['__builtins__', '__name__', '__doc__']:
-        del globals()[name]
-`;
+// State for input handling
+let userCode = "";
+let collectedInputs = [];
+let previousOutput = "";
+let isExecuting = false;
 
 function extractMissingModuleName(message) {
   const msg = String(message || "");
@@ -40,21 +42,10 @@ function extractMissingModuleName(message) {
   return null;
 }
 
-// Async input function that waits for message from main thread
-function getInputAsync() {
-  return new Promise((resolve) => {
-    if (inputQueue.length > 0) {
-      resolve(inputQueue.shift());
-    } else {
-      isWaitingForInput = true;
-      inputResolver = resolve;
-      self.postMessage({ type: 'INPUT_REQUEST' });
-    }
-  });
-}
-
 async function initPyodide() {
   try {
+    self.postMessage({ type: 'OUTPUT', text: '⏳ Loading Python runtime...\n' });
+    
     pyodide = await loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
     });
@@ -62,82 +53,185 @@ async function initPyodide() {
     await pyodide.loadPackage("micropip");
     micropip = pyodide.pyimport("micropip");
 
-    // Use RAW mode for character-by-character output
+    // Collect output in buffer for delta calculation
+    let outputBuffer = "";
+    
     pyodide.setStdout({
       raw: (byte) => {
         const char = String.fromCharCode(byte);
-        self.postMessage({ type: 'OUTPUT', text: char });
+        outputBuffer += char;
+        // Only send new output (delta from previous run)
+        if (outputBuffer.length > previousOutput.length) {
+          self.postMessage({ type: 'OUTPUT', text: char });
+        }
       }
     });
     
     pyodide.setStderr({
       raw: (byte) => {
         const char = String.fromCharCode(byte);
-        self.postMessage({ type: 'OUTPUT', text: char });
+        outputBuffer += char;
+        if (outputBuffer.length > previousOutput.length) {
+          self.postMessage({ type: 'OUTPUT', text: char });
+        }
       }
     });
     
+    // Store buffer reference for access in run
+    self.outputBuffer = outputBuffer;
+    self.getOutputBuffer = () => outputBuffer;
+    self.resetOutputBuffer = () => { outputBuffer = ""; };
+    self.setOutputBuffer = (val) => { outputBuffer = val; };
+    
     return true;
   } catch (err) {
-    self.postMessage({ type: 'ERROR', message: 'Failed to load Pyodide: ' + err.message });
+    self.postMessage({ type: 'ERROR', message: 'Failed to load Python: ' + err.message });
     return false;
   }
 }
 
-function setupMessageBasedStdin() {
-  // Create a custom input function in Python that calls our async JS function
-  pyodide.runPython(`
-import sys
-import js
-from pyodide.ffi import to_js
-
-# Store original input
-_original_input = input
-
-# Create async-compatible input replacement
-def _custom_input(prompt=""):
-    if prompt:
-        print(prompt, end="", flush=True)
-    # This will be replaced by our wrapper
-    raise EOFError("Input requested")
-  `);
-}
-
-async function runCodeWithAsyncInput(code) {
-  // Wrap user code to handle input() calls
+async function executeWithInputs(code, inputs) {
+  // Build the wrapped code with input values
+  const inputsJson = JSON.stringify(inputs);
+  
   const wrappedCode = `
 import builtins
 import sys
 
-# Custom input that signals need for input
-_input_values = []
+_collected_inputs = ${inputsJson}
 _input_index = 0
 
-def _async_input(prompt=""):
+def _patched_input(prompt=""):
     global _input_index
     if prompt:
         print(prompt, end="", flush=True)
-    if _input_index < len(_input_values):
-        val = _input_values[_input_index]
+    if _input_index < len(_collected_inputs):
+        val = _collected_inputs[_input_index]
         _input_index += 1
+        print(val)  # Echo input
         return val
-    raise EOFError("__NEED_INPUT__")
+    raise EOFError("__NEED_MORE_INPUT__")
 
-builtins.input = _async_input
+builtins.input = _patched_input
 
+# User code starts here
 ${code}
 `;
-  
+
   try {
+    // Clear previous state
+    await pyodide.runPythonAsync(`
+import sys
+for name in list(globals().keys()):
+    if not name.startswith('_') and name not in ['__builtins__', '__name__', '__doc__']:
+        try:
+            del globals()[name]
+        except:
+            pass
+`);
+    
     await pyodide.runPythonAsync(wrappedCode);
     return { needsInput: false, error: null };
   } catch (err) {
     const errorMsg = err?.message ?? String(err);
-    if (errorMsg.includes("__NEED_INPUT__")) {
+    
+    if (errorMsg.includes("__NEED_MORE_INPUT__")) {
       return { needsInput: true, error: null };
     }
+    
+    // Check for missing module
+    const missingModule = extractMissingModuleName(errorMsg);
+    if (missingModule) {
+      return { needsInput: false, error: errorMsg, missingModule };
+    }
+    
     return { needsInput: false, error: errorMsg };
   }
+}
+
+async function runCode() {
+  if (!pyodide) {
+    self.postMessage({ type: 'ERROR', message: 'Python not initialized' });
+    self.postMessage({ type: 'FINISHED' });
+    return;
+  }
+  
+  isExecuting = true;
+  
+  // Reset output tracking for this run
+  let currentOutput = "";
+  
+  // Custom stdout that tracks output
+  pyodide.setStdout({
+    raw: (byte) => {
+      const char = String.fromCharCode(byte);
+      currentOutput += char;
+      // Only emit characters beyond what we've already shown
+      if (currentOutput.length > previousOutput.length) {
+        self.postMessage({ type: 'OUTPUT', text: char });
+      }
+    }
+  });
+  
+  pyodide.setStderr({
+    raw: (byte) => {
+      const char = String.fromCharCode(byte);
+      currentOutput += char;
+      if (currentOutput.length > previousOutput.length) {
+        self.postMessage({ type: 'OUTPUT', text: char });
+      }
+    }
+  });
+  
+  const result = await executeWithInputs(userCode, collectedInputs);
+  
+  if (result.needsInput) {
+    // Save current output so we don't repeat it on re-run
+    previousOutput = currentOutput;
+    // Request input from user
+    self.postMessage({ type: 'INPUT_REQUEST' });
+    // Don't send FINISHED - we're waiting for input
+    return;
+  }
+  
+  if (result.error) {
+    // Try to install missing module and retry
+    if (result.missingModule) {
+      const pkg = result.missingModule.split('.')[0];
+      try {
+        self.postMessage({ type: 'OUTPUT', text: `\n📦 Installing '${pkg}'...\n` });
+        await micropip.install(pkg);
+        self.postMessage({ type: 'OUTPUT', text: `✅ Installed. Retrying...\n\n` });
+        
+        // Reset and retry
+        previousOutput = "";
+        currentOutput = "";
+        const retryResult = await executeWithInputs(userCode, collectedInputs);
+        
+        if (retryResult.needsInput) {
+          previousOutput = currentOutput;
+          self.postMessage({ type: 'INPUT_REQUEST' });
+          return;
+        }
+        
+        if (retryResult.error) {
+          self.postMessage({ type: 'OUTPUT', text: '\n❌ ' + retryResult.error + '\n' });
+        }
+      } catch (installErr) {
+        self.postMessage({ type: 'OUTPUT', text: `\n❌ Failed to install '${pkg}': ${installErr.message}\n` });
+      }
+    } else {
+      // Format error message nicely
+      let errorMsg = result.error;
+      if (errorMsg.includes('KeyboardInterrupt')) {
+        errorMsg = '⚠️ Program interrupted';
+      }
+      self.postMessage({ type: 'OUTPUT', text: '\n' + errorMsg + '\n' });
+    }
+  }
+  
+  isExecuting = false;
+  self.postMessage({ type: 'FINISHED' });
 }
 
 self.onmessage = async (event) => {
@@ -146,95 +240,35 @@ self.onmessage = async (event) => {
   if (type === 'INIT') {
     const success = await initPyodide();
     if (success) {
+      self.postMessage({ type: 'OUTPUT', text: '✅ Python ready!\n\n' });
       self.postMessage({ type: 'READY' });
     }
   }
   
-  if (type === 'INPUT_RESPONSE') {
-    // Handle input from main thread
-    if (inputResolver) {
-      inputResolver(text);
-      inputResolver = null;
-      isWaitingForInput = false;
-    } else {
-      inputQueue.push(text);
-    }
+  if (type === 'RUN') {
+    // New execution - reset state
+    userCode = code;
+    collectedInputs = [];
+    previousOutput = "";
+    
+    await runCode();
   }
   
-  if (type === 'RUN') {
-    if (!pyodide) {
-      self.postMessage({ type: 'ERROR', message: 'Pyodide not initialized' });
-      self.postMessage({ type: 'FINISHED' });
-      return;
-    }
+  if (type === 'INPUT_RESPONSE') {
+    if (!isExecuting) return;
     
-    // Reset input state
-    inputQueue = [];
-    inputResolver = null;
-    isWaitingForInput = false;
+    // Add the new input to our collection
+    collectedInputs.push(text);
     
-    try {
-      await pyodide.runPythonAsync(CLEAR_GLOBALS_CODE);
-      
-      // Set up input values from collected inputs
-      await pyodide.runPythonAsync(`
-_input_values = []
-_input_index = 0
-`);
-      
-      await pyodide.runPythonAsync(code);
-
-    } catch (err) {
-      const rawError = err?.message ?? String(err);
-      let errorMessage = rawError;
-
-      // Handle Missing Modules via Micropip
-      const missingModule = extractMissingModuleName(errorMessage);
-      if (missingModule) {
-        const pkg = missingModule.split('.')[0];
-        let packageLoaded = false;
-
-        try {
-          self.postMessage({ type: 'OUTPUT', text: `\n📦 Installing '${pkg}' via micropip...\n` });
-          await micropip.install(pkg);
-          packageLoaded = true;
-          self.postMessage({ type: 'OUTPUT', text: `✅ Installed '${pkg}'. Retrying code...\n\n` });
-
-          await pyodide.runPythonAsync(CLEAR_GLOBALS_CODE);
-          await pyodide.runPythonAsync(code);
-          self.postMessage({ type: 'FINISHED' });
-          return;
-
-        } catch (loadOrRetryErr) {
-          if (packageLoaded) {
-            errorMessage = loadOrRetryErr?.message ?? String(loadOrRetryErr);
-          } else {
-            errorMessage = `ModuleNotFoundError: '${pkg}'\n` +
-              `💡 '${pkg}' failed to install.\n` +
-              `Reason: It might require C-extensions or network sockets not supported in the browser.`;
-          }
-        }
-      }
-
-      // User-Friendly Error Formatting
-      if (errorMessage.includes('EOFError')) {
-        errorMessage = 'EOFError: Input required.\n💡 Type your input in the terminal and press Enter.';
-      } else if (errorMessage.includes('KeyboardInterrupt')) {
-        errorMessage = 'Program interrupted (Ctrl+C)';
-      }
-
-      self.postMessage({ type: 'OUTPUT', text: '\n' + errorMessage + '\n' });
-    } finally {
-      self.postMessage({ type: 'FINISHED' });
-    }
+    // Re-run with all collected inputs
+    await runCode();
   }
   
   if (type === 'INTERRUPT') {
-    // Signal interrupt - will be caught on next Python operation
-    isWaitingForInput = false;
-    if (inputResolver) {
-      inputResolver('');
-      inputResolver = null;
-    }
+    isExecuting = false;
+    collectedInputs = [];
+    previousOutput = "";
+    self.postMessage({ type: 'OUTPUT', text: '\n⚠️ Interrupted\n' });
+    self.postMessage({ type: 'FINISHED' });
   }
 };

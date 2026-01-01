@@ -191,20 +191,25 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
       collectedInputsRef.current.push(inputValue);
       setOutput(prev => prev + '\n');
       
+      setIsWaitingForInput(false);
       executeWithInputs();
     }
     else if (char === '\x7f' || char === '\b') {
-      currentInputLineRef.current = currentInputLineRef.current.slice(0, -1);
+      if (currentInputLineRef.current.length > 0) {
+        currentInputLineRef.current = currentInputLineRef.current.slice(0, -1);
+        setOutput(prev => prev.slice(0, -1));
+      }
     }
     else if (char === '\x03') {
       abortControllerRef.current?.abort();
       currentInputLineRef.current = "";
       setIsWaitingForInput(false);
       setIsRunning(false);
-      setOutput(prev => prev + '^C\n');
+      setOutput(prev => prev + '\n⚠️ Interrupted\n');
     }
-    else {
+    else if (char.length === 1 && char >= ' ') {
       currentInputLineRef.current += char;
+      setOutput(prev => prev + char);
     }
   }, [isWaitingForInput, executeWithInputs]);
 
