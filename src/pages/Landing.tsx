@@ -122,6 +122,12 @@ const Landing = () => {
       <HitMeUpWidget />
 
       <style>{`
+        @import url('https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/style.css');
+        
+        :root {
+          --font-geom: 'Geist Sans', sans-serif;
+        }
+
         @keyframes scroll-arrow-move {
           0% { transform: translateY(0); opacity: 0.5; }
           25% { transform: translateY(-4px); opacity: 0.8; }
@@ -166,36 +172,34 @@ const Landing = () => {
               }}
             >
               <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
-                <div className="max-w-4xl mx-auto space-y-6">
+                <div className="max-w-4xl mx-auto space-y-8">
                   
-                  {/* Main Heading: Neo-Grotesk Font, Static Colors */}
-                  <h1 className="text-4xl md:text-6xl font-grotesk font-bold tracking-tight text-white leading-tight">
-                    The coding platform for the <br />
-                    <span className="text-zinc-500">global developers</span>
+                  {/* Main Heading */}
+                  <h1 className="text-[54px] md:text-[88px] font-medium tracking-[-0.06em] leading-[0.95] text-white" style={{ fontFamily: 'var(--font-geom)' }}>
+                    <span className="block">The Coding Platform built</span>
+                    for global developers
                   </h1>
 
-                  {/* Description: Neo-Grotesk Font */}
-                  <p className="max-w-2xl mx-auto text-base md:text-lg text-zinc-400 leading-relaxed font-grotesk">
-                    Over 1 million learners trust <span className="text-zinc-200 font-semibold">CODéVO</span> to master what basic tutorials never could — from daily coding practice and logic building to real-world projects and professional careers.
+                  {/* Description */}
+                  <p className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[800px] mx-auto leading-[1.5] tracking-[-0.02em]" style={{ fontFamily: 'var(--font-geom)' }}>
+                    Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
                   </p>
 
-                  {/* Buttons: Middle alignment, middle layer */}
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
+                  {/* Buttons: Updated to match provided snippet dimensions */}
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] pt-6">
                     <Button 
                       onClick={() => navigate('/auth')}
                       size="lg"
-                      className="h-12 px-8 bg-white text-black hover:bg-zinc-200 transition-all text-base font-bold rounded-full min-w-[220px]"
+                      className="h-auto px-[38px] py-[18px] bg-white text-black hover:bg-zinc-200 transition-all text-[16px] font-semibold rounded-full min-w-[220px]"
                     >
-                      Join 1M+ Developers
-                      <ArrowRight className="ml-2 w-4 h-4" />
+                      Join 1M+ Developers -Auth
                     </Button>
                     
                     <Button 
                       variant="outline"
                       size="lg"
-                      className="h-12 px-10 border-zinc-800 bg-transparent hover:bg-zinc-900 text-white transition-all text-base font-medium rounded-full"
+                      className="h-auto px-[38px] py-[18px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[16px] font-semibold rounded-full"
                     >
-                      <Play className="mr-2 w-3 h-3 fill-current" />
                       Try Now
                     </Button>
                   </div>
