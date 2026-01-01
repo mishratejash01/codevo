@@ -1,11 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-// Buffer layout constants
-const STATUS_WAITING = 0;
-const STATUS_INPUT_READY = 1;
-const STATUS_INTERRUPT = -1;
-const TEXT_BUFFER_SIZE = 4096; // 4KB for input text
-
 interface WorkerMessage {
   type: 'READY' | 'OUTPUT' | 'INPUT_REQUEST' | 'FINISHED' | 'ERROR';
   text?: string;
@@ -18,46 +12,15 @@ export const usePyodide = () => {
   const [isReady, setIsReady] = useState(false);
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   
-  // Worker and buffer refs
   const workerRef = useRef<Worker | null>(null);
-  const sharedSignalBufferRef = useRef<SharedArrayBuffer | null>(null);
-  const sharedTextBufferRef = useRef<SharedArrayBuffer | null>(null);
-  const signalArrayRef = useRef<Int32Array | null>(null);
-  const textArrayRef = useRef<Uint8Array | null>(null);
   const inputLineRef = useRef<string>("");
-  const hasSharedArrayBufferRef = useRef<boolean>(typeof SharedArrayBuffer !== 'undefined');
+  const collectedInputsRef = useRef<string[]>([]);
+  const currentCodeRef = useRef<string>("");
 
   // Initialize the Web Worker
   useEffect(() => {
-    // Check if SharedArrayBuffer is available
-    const hasSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined';
-    hasSharedArrayBufferRef.current = hasSharedArrayBuffer;
-    
-    if (!hasSharedArrayBuffer) {
-      console.warn('SharedArrayBuffer not available. Interactive input will be limited.');
-    }
-    
-    // Create the worker
     const worker = new Worker('/pyodide.worker.js');
     workerRef.current = worker;
-    
-    // Create shared buffers if available
-    let sharedBuffer: SharedArrayBuffer | null = null;
-    let textBuffer: SharedArrayBuffer | null = null;
-    
-    if (hasSharedArrayBuffer) {
-      try {
-        sharedBuffer = new SharedArrayBuffer(8); // 2 Int32 values
-        textBuffer = new SharedArrayBuffer(TEXT_BUFFER_SIZE);
-        
-        sharedSignalBufferRef.current = sharedBuffer;
-        sharedTextBufferRef.current = textBuffer;
-        signalArrayRef.current = new Int32Array(sharedBuffer);
-        textArrayRef.current = new Uint8Array(textBuffer);
-      } catch (e) {
-        console.warn('Failed to create SharedArrayBuffer:', e);
-      }
-    }
     
     // Handle messages from worker
     worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
@@ -96,17 +59,48 @@ export const usePyodide = () => {
       setIsRunning(false);
     };
     
-    // Initialize the worker
-    worker.postMessage({
-      type: 'INIT',
-      sharedBuffer,
-      textBuffer
-    });
+    // Initialize the worker (no SharedArrayBuffer needed)
+    worker.postMessage({ type: 'INIT' });
     
     return () => {
       worker.terminate();
       workerRef.current = null;
     };
+  }, []);
+
+  // Re-run code with collected inputs
+  const rerunWithInputs = useCallback(() => {
+    if (!workerRef.current || !currentCodeRef.current) return;
+    
+    // Wrap code with pre-collected inputs
+    const inputs = collectedInputsRef.current;
+    const inputSetup = `_input_values = ${JSON.stringify(inputs)}\n_input_index = 0\n`;
+    
+    // Create wrapped code that uses our input values
+    const wrappedCode = `
+import builtins
+
+_input_values = ${JSON.stringify(inputs)}
+_input_index = 0
+
+def _custom_input(prompt=""):
+    global _input_index
+    if prompt:
+        print(prompt, end="", flush=True)
+    if _input_index < len(_input_values):
+        val = _input_values[_input_index]
+        _input_index += 1
+        print(val)  # Echo the input
+        return val
+    raise EOFError("__NEED_INPUT__")
+
+builtins.input = _custom_input
+
+${currentCodeRef.current}
+`;
+    
+    setOutput(""); // Clear output for re-run
+    workerRef.current.postMessage({ type: 'RUN', code: wrappedCode });
   }, []);
 
   // Run Python code
@@ -118,44 +112,51 @@ export const usePyodide = () => {
     
     // Reset state for new run
     setIsRunning(true);
-    setOutput(""); // Clear output
+    setOutput("");
     setIsWaitingForInput(false);
     inputLineRef.current = "";
+    collectedInputsRef.current = [];
+    currentCodeRef.current = code;
     
-    // Reset the signal buffer
-    if (signalArrayRef.current) {
-      Atomics.store(signalArrayRef.current, 0, STATUS_WAITING);
-      Atomics.store(signalArrayRef.current, 1, 0);
-    }
+    // Create wrapped code with custom input handler
+    const wrappedCode = `
+import builtins
+
+_input_values = []
+_input_index = 0
+
+def _custom_input(prompt=""):
+    global _input_index
+    if prompt:
+        print(prompt, end="", flush=True)
+    if _input_index < len(_input_values):
+        val = _input_values[_input_index]
+        _input_index += 1
+        print(val)  # Echo the input
+        return val
+    raise EOFError("__NEED_INPUT__")
+
+builtins.input = _custom_input
+
+${code}
+`;
     
-    // Send code to worker
-    workerRef.current.postMessage({ type: 'RUN', code });
+    workerRef.current.postMessage({ type: 'RUN', code: wrappedCode });
   }, [isReady]);
 
   // Write input character to the Python process
   const writeInputToWorker = useCallback((char: string) => {
     // Handle Enter key - submit the input line
     if (char === '\r' || char === '\n') {
-      const inputText = inputLineRef.current + '\n';
+      const inputText = inputLineRef.current;
       inputLineRef.current = "";
       
-      if (!hasSharedArrayBufferRef.current || !signalArrayRef.current || !textArrayRef.current) {
-        // Fallback: Can't provide interactive input without SharedArrayBuffer
-        console.warn('Cannot provide interactive input: SharedArrayBuffer not available');
-        return;
-      }
+      // Add to collected inputs
+      collectedInputsRef.current.push(inputText);
       
-      // Write the input text to the shared buffer
-      const encoded = new TextEncoder().encode(inputText);
-      const length = Math.min(encoded.length, TEXT_BUFFER_SIZE - 1);
-      textArrayRef.current.set(encoded.slice(0, length));
-      
-      // Signal that input is ready
-      Atomics.store(signalArrayRef.current, 1, length); // Store length
-      Atomics.store(signalArrayRef.current, 0, STATUS_INPUT_READY); // Set status
-      Atomics.notify(signalArrayRef.current, 0, 1); // Wake the worker
-      
+      // Re-run with all collected inputs
       setIsWaitingForInput(false);
+      rerunWithInputs();
     } 
     // Handle Backspace
     else if (char === '\x7f' || char === '\b') {
@@ -163,25 +164,20 @@ export const usePyodide = () => {
     }
     // Handle Ctrl+C (interrupt)
     else if (char === '\x03') {
-      if (signalArrayRef.current) {
-        Atomics.store(signalArrayRef.current, 0, STATUS_INTERRUPT);
-        Atomics.notify(signalArrayRef.current, 0, 1);
-      }
       workerRef.current?.postMessage({ type: 'INTERRUPT' });
       inputLineRef.current = "";
+      collectedInputsRef.current = [];
+      setIsRunning(false);
+      setIsWaitingForInput(false);
     }
     // Regular character
     else {
       inputLineRef.current += char;
     }
-  }, []);
+  }, [rerunWithInputs]);
 
   // Stop execution
   const stopExecution = useCallback(() => {
-    if (signalArrayRef.current) {
-      Atomics.store(signalArrayRef.current, 0, STATUS_INTERRUPT);
-      Atomics.notify(signalArrayRef.current, 0, 1);
-    }
     workerRef.current?.postMessage({ type: 'INTERRUPT' });
     setIsRunning(false);
     setIsWaitingForInput(false);
@@ -195,6 +191,6 @@ export const usePyodide = () => {
     isWaitingForInput,
     writeInputToWorker,
     stopExecution,
-    hasSharedArrayBuffer: hasSharedArrayBufferRef.current
+    hasSharedArrayBuffer: false // No longer needed
   };
 };

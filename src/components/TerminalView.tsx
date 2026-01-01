@@ -9,7 +9,7 @@ interface TerminalViewProps {
   isWaitingForInput?: boolean;
   language?: string;
   isRunning?: boolean;
-  fontSize?: number; // Added prop for zoom
+  fontSize?: number;
 }
 
 export const TerminalView = ({ 
@@ -31,7 +31,6 @@ export const TerminalView = ({
   useEffect(() => {
     if (terminalRef.current) {
       terminalRef.current.options.fontSize = fontSize;
-      // Re-fit terminal when font size changes to adjust rows/cols
       if (fitAddonRef.current) {
         fitAddonRef.current.fit();
       }
@@ -44,6 +43,7 @@ export const TerminalView = ({
       case 'cpp': return '$ ./main.cpp';
       case 'c': return '$ ./main.c';
       case 'javascript': return '$ node index.js';
+      case 'typescript': return '$ ts-node index.ts';
       case 'bash': return '$ bash script.sh';
       case 'sql': return '$ sqlite3';
       default: return '$ python main.py';
@@ -62,7 +62,7 @@ export const TerminalView = ({
       fontSize: fontSize,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace",
       theme: {
-        background: '#010409', // Deep dark background
+        background: '#010409',
         foreground: '#e4e4e7',
         cursor: '#22c55e',
         cursorAccent: '#0c0c0e',
@@ -150,7 +150,7 @@ export const TerminalView = ({
       resizeObserver.disconnect();
       isInitializedRef.current = false;
     };
-  }, [onInput]); // fontSize removed from dep array to avoid re-init
+  }, [onInput]);
 
   // Handle output changes
   useEffect(() => {
@@ -179,6 +179,20 @@ export const TerminalView = ({
     }
   }, [output, getCommandPrompt]);
 
+  // Show input indicator when waiting
+  useEffect(() => {
+    const term = terminalRef.current;
+    if (!term) return;
+    
+    if (isWaitingForInput) {
+      // Show subtle indicator that input is expected
+      term.options.cursorStyle = 'underline';
+      term.options.cursorBlink = true;
+    } else {
+      term.options.cursorStyle = 'bar';
+    }
+  }, [isWaitingForInput]);
+
   useEffect(() => {
     if ((isWaitingForInput || isRunning) && terminalRef.current) {
       terminalRef.current.focus();
@@ -190,10 +204,26 @@ export const TerminalView = ({
   }, [language]);
 
   return (
-    <div 
-      ref={containerRef}
-      className="h-full w-full bg-[#010409] overflow-hidden"
-      style={{ minHeight: '100px', padding: '8px' }}
-    />
+    <div className="relative h-full w-full">
+      <div 
+        ref={containerRef}
+        className="h-full w-full bg-[#010409] overflow-hidden"
+        style={{ minHeight: '100px', padding: '8px' }}
+      />
+      {/* Input waiting indicator */}
+      {isWaitingForInput && (
+        <div className="absolute bottom-2 right-2 flex items-center gap-2 px-2 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded text-xs text-yellow-400">
+          <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+          Waiting for input...
+        </div>
+      )}
+      {/* Running indicator */}
+      {isRunning && !isWaitingForInput && (
+        <div className="absolute bottom-2 right-2 flex items-center gap-2 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded text-xs text-blue-400">
+          <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+          Running...
+        </div>
+      )}
+    </div>
   );
 };

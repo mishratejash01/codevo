@@ -12,24 +12,18 @@ interface InteractiveRunnerResult {
   stopExecution: () => void;
 }
 
-// Detect if output is waiting for input (ends with a prompt-like pattern)
+// Detect if output is waiting for input
 const detectPrompt = (output: string): string | null => {
-  // Common patterns for input prompts
   const lines = output.split('\n');
   const lastLine = lines[lines.length - 1].trim();
   
-  // Check for common prompt patterns:
-  // - Ends with ":" or ": " 
-  // - Ends with "?" or "? "
-  // - Ends with "> " or ">> "
-  // - Contains "enter", "input", "name", "number" etc and ends with punctuation
   const promptPatterns = [
-    /[:\?]\s*$/,                           // Ends with : or ?
-    />\s*$/,                                // Ends with >
-    /enter\s+.+[:\?]?\s*$/i,               // "Enter something:"
-    /input\s+.+[:\?]?\s*$/i,               // "Input something:"
-    /type\s+.+[:\?]?\s*$/i,                // "Type something:"
-    /please\s+.+[:\?]?\s*$/i,              // "Please provide..."
+    /[:\?]\s*$/,
+    />\s*$/,
+    /enter\s+.+[:\?]?\s*$/i,
+    /input\s+.+[:\?]?\s*$/i,
+    /type\s+.+[:\?]?\s*$/i,
+    /please\s+.+[:\?]?\s*$/i,
   ];
   
   for (const pattern of promptPatterns) {
@@ -69,6 +63,7 @@ const getLanguageConfig = (language: Language): { pistonLang: string; version: s
     case 'java': return { pistonLang: 'java', version: '15.0.2' };
     case 'cpp': return { pistonLang: 'cpp', version: '10.2.0' };
     case 'c': return { pistonLang: 'c', version: '10.2.0' };
+    case 'typescript': return { pistonLang: 'typescript', version: '5.0.3' };
     case 'sql': return { pistonLang: 'sqlite3', version: '3.36.0' };
     case 'bash': return { pistonLang: 'bash', version: '5.0.0' };
     default: return { pistonLang: 'python', version: '3.10.0' };
@@ -85,54 +80,83 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
   const currentInputLineRef = useRef<string>("");
   const abortControllerRef = useRef<AbortController | null>(null);
   const executionCountRef = useRef<number>(0);
+  const retryCountRef = useRef<number>(0);
 
-  const runPiston = async (code: string, stdin: string, signal: AbortSignal): Promise<{ success: boolean; output: string; needsInput: boolean }> => {
+  const runPiston = async (
+    code: string, 
+    stdin: string, 
+    signal: AbortSignal
+  ): Promise<{ success: boolean; output: string; needsInput: boolean }> => {
     const { pistonLang, version } = getLanguageConfig(language);
+    const maxRetries = 3;
     
-    try {
-      const response = await fetch(PISTON_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          language: pistonLang,
-          version,
-          files: [{ content: code }],
-          stdin,
-        }),
-        signal,
-      });
-      
-      const data = await response.json();
-      
-      if (data.run) {
-        const stdout = data.run.stdout || "";
-        const stderr = data.run.stderr || "";
-        const combinedOutput = stdout + stderr;
-        const isError = data.run.code !== 0;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const response = await fetch(PISTON_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            language: pistonLang,
+            version,
+            files: [{ content: code }],
+            stdin,
+          }),
+          signal,
+        });
         
-        // Check if the error indicates waiting for input
-        const lowerError = stderr.toLowerCase();
-        const needsInput = (
-          lowerError.includes('nosuchelementexception') ||
-          lowerError.includes('eof when reading') ||
-          lowerError.includes('eoferror') ||
-          (isError && collectedInputsRef.current.length === 0 && stdout.length > 0)
-        );
+        // Handle rate limiting
+        if (response.status === 429) {
+          if (attempt < maxRetries - 1) {
+            const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+            setOutput(prev => prev + `\n⏳ Server busy, retrying in ${delay/1000}s...\n`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          return { success: false, output: "⚠️ Rate limit exceeded. Please wait a moment and try again.", needsInput: false };
+        }
         
-        return {
-          success: !isError,
-          output: isError && !needsInput ? getFriendlyError(combinedOutput, language) : stdout,
-          needsInput
-        };
+        const data = await response.json();
+        
+        if (data.run) {
+          const stdout = data.run.stdout || "";
+          const stderr = data.run.stderr || "";
+          const combinedOutput = stdout + stderr;
+          const isError = data.run.code !== 0;
+          
+          const lowerError = stderr.toLowerCase();
+          const needsInput = (
+            lowerError.includes('nosuchelementexception') ||
+            lowerError.includes('eof when reading') ||
+            lowerError.includes('eoferror') ||
+            (isError && collectedInputsRef.current.length === 0 && stdout.length > 0)
+          );
+          
+          return {
+            success: !isError,
+            output: isError && !needsInput ? getFriendlyError(combinedOutput, language) : stdout,
+            needsInput
+          };
+        }
+        
+        return { success: false, output: "Execution failed", needsInput: false };
+      } catch (e: any) {
+        if (e.name === 'AbortError') {
+          return { success: false, output: "^C\nExecution stopped.", needsInput: false };
+        }
+        
+        // Network error - retry
+        if (attempt < maxRetries - 1) {
+          const delay = Math.pow(2, attempt) * 1000;
+          setOutput(prev => prev + `\n⚠️ Network error, retrying in ${delay/1000}s...\n`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        return { success: false, output: `Error: ${e.message}`, needsInput: false };
       }
-      
-      return { success: false, output: "Execution failed", needsInput: false };
-    } catch (e: any) {
-      if (e.name === 'AbortError') {
-        return { success: false, output: "^C\nExecution stopped.", needsInput: false };
-      }
-      return { success: false, output: `Error: ${e.message}`, needsInput: false };
     }
+    
+    return { success: false, output: "Failed after multiple retries", needsInput: false };
   };
 
   const executeWithInputs = useCallback(async () => {
@@ -144,17 +168,14 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
     const stdin = collectedInputsRef.current.join('\n');
     const result = await runPiston(codeRef.current, stdin, signal);
     
-    // Check if we're still on the same execution
     if (currentExecution !== executionCountRef.current) return;
     if (signal.aborted) return;
     
     setOutput(result.output);
     
     if (result.needsInput || detectPrompt(result.output)) {
-      // Program needs more input
       setIsWaitingForInput(true);
     } else {
-      // Program completed
       setIsRunning(false);
       setIsWaitingForInput(false);
     }
@@ -163,25 +184,18 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
   const writeInput = useCallback((char: string) => {
     if (!isWaitingForInput) return;
     
-    // Handle Enter key - submit the input
     if (char === '\r' || char === '\n') {
       const inputValue = currentInputLineRef.current;
       currentInputLineRef.current = "";
       
-      // Add to collected inputs
       collectedInputsRef.current.push(inputValue);
-      
-      // Show the input in terminal and add newline
       setOutput(prev => prev + '\n');
       
-      // Re-execute with all inputs
       executeWithInputs();
     }
-    // Handle Backspace - update current line
     else if (char === '\x7f' || char === '\b') {
       currentInputLineRef.current = currentInputLineRef.current.slice(0, -1);
     }
-    // Handle Ctrl+C (interrupt)
     else if (char === '\x03') {
       abortControllerRef.current?.abort();
       currentInputLineRef.current = "";
@@ -189,7 +203,6 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
       setIsRunning(false);
       setOutput(prev => prev + '^C\n');
     }
-    // Regular character
     else {
       currentInputLineRef.current += char;
     }
@@ -203,10 +216,10 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
   }, []);
 
   const runCode = useCallback((code: string) => {
-    // Reset state
     codeRef.current = code;
     collectedInputsRef.current = [];
     currentInputLineRef.current = "";
+    retryCountRef.current = 0;
     
     setIsRunning(true);
     setOutput("");
@@ -214,7 +227,6 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
     
     abortControllerRef.current = new AbortController();
     
-    // Execute the code
     executeWithInputs();
   }, [executeWithInputs]);
 
