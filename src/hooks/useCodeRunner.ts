@@ -3,7 +3,7 @@ import { useState } from 'react';
 // Piston API
 const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
 
-export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript' | 'sql' | 'bash';
+export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript' | 'typescript' | 'sql' | 'bash';
 
 interface ExecutionResult {
   success: boolean;
@@ -138,6 +138,7 @@ export const useCodeRunner = () => {
       switch (language) {
         case 'python': result = await runPiston('python', '3.10.0', code, input, language); break;
         case 'javascript': result = await runPiston('javascript', '18.15.0', code, input, language); break;
+        case 'typescript': result = await runPiston('typescript', '5.0.3', code, input, language); break;
         case 'java': result = await runPiston('java', '15.0.2', code, input, language); break;
         case 'cpp': result = await runPiston('cpp', '10.2.0', code, input, language); break;
         case 'c': result = await runPiston('c', '10.2.0', code, input, language); break;

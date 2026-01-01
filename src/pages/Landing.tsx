@@ -113,10 +113,10 @@ const Landing = () => {
       <HitMeUpWidget />
 
       <style>{`
-        @import url('https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/style.css');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;500;600;700&display=swap');
         
         :root {
-          --font-geom: 'Geist Sans', sans-serif;
+          --font-geom: 'Inter', system-ui, sans-serif;
         }
 
         @keyframes scroll-arrow-move {

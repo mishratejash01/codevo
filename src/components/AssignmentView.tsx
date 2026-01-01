@@ -71,6 +71,7 @@ const getStarterTemplate = (lang: Language): string => {
     cpp: '#include <iostream>\nusing namespace std;\n\nint main() {\n    // Write your C++ code here\n    return 0;\n}\n',
     c: '#include <stdio.h>\n\nint main() {\n    // Write your C code here\n    return 0;\n}\n',
     javascript: '// Write your JavaScript code here\n\n',
+    typescript: '// Write your TypeScript code here\n\n',
     sql: '-- Write your SQL query here\n\n',
     bash: '#!/bin/bash\n# Write your bash script here\n\n'
   };
