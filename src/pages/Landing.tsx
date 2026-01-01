@@ -57,14 +57,14 @@ const Landing = () => {
   
   const codeScrollRef = useRef<HTMLDivElement>(null);
 
-  // Scroll Effects Preservation
+  // Scroll Effects Preservation (Stays for background scaling logic)
   const { scrollY } = useScroll();
   const rawScale = useTransform(scrollY, [0, 500], [1, isMobile ? 1 : 0.90]);
   const smoothScale = useSpring(rawScale, { stiffness: 50, damping: 15, mass: 0.1 });
   const rawRadius = useTransform(scrollY, [0, 500], [0, isMobile ? 0 : 32]);
   const smoothRadius = useSpring(rawRadius, { stiffness: 50, damping: 15, mass: 0.1 });
 
-  // Terminal Demo Animation Loop
+  // Terminal Animation Logic
   useEffect(() => {
     if (isMobile) {
       setShowcasePhase('terminal');
@@ -168,18 +168,18 @@ const Landing = () => {
               <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
                 <div className="max-w-4xl mx-auto space-y-6">
                   
-                  {/* Main Heading: Static size and image colors */}
+                  {/* Main Heading: No animation, static colors */}
                   <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
                     The coding platform for the <br />
                     <span className="text-zinc-500">global developers</span>
                   </h1>
 
-                  {/* Description: Static Zinc-400 */}
+                  {/* Description: Positioned slightly below */}
                   <p className="max-w-2xl mx-auto text-base md:text-lg text-zinc-400 leading-relaxed">
                     Over 1 million learners trust <span className="text-zinc-200 font-semibold">CODéVO</span> to master what basic tutorials never could — from daily coding practice and logic building to real-world projects and professional careers.
                   </p>
 
-                  {/* Buttons: Centered and Pill-shaped */}
+                  {/* Buttons: Middle alignment, middle layer */}
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
                     <Button 
                       onClick={() => navigate('/auth')}
@@ -212,26 +212,47 @@ const Landing = () => {
           </div>
         </div>
 
-        {/* --- SECTION 2: LAPTOP & TECHNOLOGIES --- */}
-        <section id="laptop-section" className="w-full bg-[#09090b] py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+        {/* --- SECTION 2: EXPERIENCE REAL CODING (UPDATED) --- */}
+        <section id="laptop-section" className="w-full bg-black py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
+          {/* Grid background removed for solid black effect */}
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+              
               <div className="flex-1 space-y-8 md:space-y-10 text-center lg:text-left">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 justify-center lg:justify-start text-[10px] font-mono text-green-500 mb-2 tracking-widest uppercase"><Activity className="w-3 h-3 animate-pulse" />System::Online</div>
-                  <h2 className="text-3xl md:text-6xl font-mono font-bold tracking-tight text-white leading-tight">EXPERIENCE <br/> <span className="text-blue-500">REAL CODING</span></h2>
-                  <p className="font-mono text-xs md:text-base text-gray-400 w-full max-w-[90vw] md:max-w-lg mx-auto lg:mx-0 leading-relaxed">A fully functional development environment right in your browser. <br/><span className="text-white">Write. Run. Debug. Succeed.</span></p>
+                  <div className="flex items-center gap-2 justify-center lg:justify-start text-[10px] font-mono text-green-500 mb-2 tracking-widest uppercase">
+                    <Activity className="w-3 h-3 animate-pulse" />
+                    System::Online
+                  </div>
+                  <h2 className="text-3xl md:text-6xl font-mono font-bold tracking-tight text-white leading-tight">
+                    EXPERIENCE <br/> <span className="text-blue-500">REAL CODING</span>
+                  </h2>
+                  <p className="font-mono text-xs md:text-base text-gray-400 w-full max-w-[90vw] md:max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                    A fully functional development environment right in your browser. <br/>
+                    <span className="text-white">Write. Run. Debug. Succeed.</span>
+                  </p>
                 </div>
+
                 <div className="flex flex-col items-center lg:items-start gap-8">
-                  <Button onClick={handlePracticeClick} className="group h-12 md:h-14 px-8 md:px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-base md:text-lg font-bold">Start Coding</Button>
+                  <Button onClick={handlePracticeClick} className="group h-12 md:h-14 px-8 md:px-10 rounded-[1rem] bg-white text-black hover:bg-white/90 text-base md:text-lg font-bold">
+                    Start Coding
+                  </Button>
+                  
                   <div className="w-full max-w-md">
                     <div className="w-full overflow-hidden relative mask-gradient-x">
-                      <div className="flex gap-6 animate-marquee whitespace-nowrap items-center">{[...TECH_STACK, ...TECH_STACK].map((src, i) => (<div key={i} className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 opacity-50 grayscale"><img src={src} alt="tech" className="w-full h-full object-contain" /></div>))}</div>
+                      <div className="flex gap-6 animate-marquee whitespace-nowrap items-center">
+                        {[...TECH_STACK, ...TECH_STACK].map((src, i) => (
+                          <div key={i} className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 opacity-50 grayscale transition-all hover:grayscale-0">
+                            <img src={src} alt="tech" className="w-full h-full object-contain" />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Laptop Viewport */}
               <div className="flex-1 w-full max-w-full lg:max-w-none perspective-1000">
                 <div className="relative transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
                   <div className="relative bg-[#151515] rounded-t-xl p-1.5 pb-0 border border-white/10 shadow-2xl">
@@ -242,7 +263,10 @@ const Landing = () => {
                           <div className="text-xs text-white/40">codevo_practice.py</div>
                         </div>
                         <div className="flex-1 flex overflow-hidden">
-                          <div className="w-8 md:w-10 border-r border-white/10 flex flex-col items-center py-2 gap-3 bg-[#0c0c0e]"><LayoutGrid className="w-3 h-3 text-primary" /><Code2 className="w-3 h-3 opacity-50" /></div>
+                          <div className="w-8 md:w-10 border-r border-white/10 flex flex-col items-center py-2 gap-3 bg-[#0c0c0e]">
+                            <LayoutGrid className="w-3 h-3 text-primary" />
+                            <Code2 className="w-3 h-3 opacity-50" />
+                          </div>
                           <div className="flex-1 p-2 md:p-3 relative bg-[#09090b]">
                             <div className="text-blue-400">def optimize_route(nodes):</div>
                             <div className="text-purple-400 pl-4">dp = [float('inf')] * len(nodes)</div>
@@ -255,6 +279,7 @@ const Landing = () => {
                   <div className="h-2.5 md:h-3.5 bg-[#1f1f1f] rounded-b-lg border-t border-black/50 shadow-2xl" />
                 </div>
               </div>
+
             </div>
           </div>
         </section>
