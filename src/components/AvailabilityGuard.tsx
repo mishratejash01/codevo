@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { useSectionAvailability } from '@/hooks/useWebsiteAvailability';
 import MaintenancePage from './MaintenancePage';
+import LoadingSpinner from '@/components/ui/snow-ball-loading-spinner';
 
 interface AvailabilityGuardProps {
   sectionKey: string;
@@ -10,11 +11,13 @@ interface AvailabilityGuardProps {
 const AvailabilityGuard = ({ sectionKey, children }: AvailabilityGuardProps) => {
   const { isAvailable, sectionName, message, isLoading } = useSectionAvailability(sectionKey);
 
-  // Show nothing while loading to prevent flash
+  // Show the Snow Ball Spinner while loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="scale-75 transform">
+          <LoadingSpinner />
+        </div>
       </div>
     );
   }
