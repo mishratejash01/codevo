@@ -172,9 +172,9 @@ const Landing = () => {
           <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
             <div className="max-w-[1100px] mx-auto flex flex-col items-center">
               
-              {/* Main Heading: Inter font, weight 500 - STRICTLY MAINTAINED */}
+              {/* Main Heading: Reduced Size */}
               <h1 
-                className="text-[54px] md:text-[88px] tracking-[-0.06em] leading-[0.95] text-white mb-[30px]" 
+                className="text-[42px] md:text-[72px] tracking-[-0.06em] leading-[0.95] text-white mb-[20px]" 
                 style={{ 
                   fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
                   fontWeight: 500 
@@ -184,16 +184,16 @@ const Landing = () => {
                 for global developers
               </h1>
 
-              {/* Description: Geist Sans - STRICTLY MAINTAINED */}
+              {/* Description: Reduced Size */}
               <p 
-                className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[800px] mx-auto leading-[1.5] tracking-[-0.02em] mb-[50px]" 
+                className="text-[14px] md:text-[18px] text-[#a1a1aa] max-w-[800px] mx-auto leading-[1.5] tracking-[-0.02em] mb-[32px]" 
                 style={{ fontFamily: 'var(--font-geom)' }}
               >
                 Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
               </p>
 
-              {/* Buttons - STRICTLY MAINTAINED */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] mb-16 relative z-30">
+              {/* Buttons: Shifted Up */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] mb-12 relative z-30">
                 <Button 
                   onClick={() => navigate('/auth')}
                   size="lg"
@@ -212,8 +212,8 @@ const Landing = () => {
               </div>
 
               {/* --- IMAGE CAROUSEL SECTION --- */}
-              {/* Shifted up with -mt-24 to blend with buttons while maintaining aspect ratio */}
-              <div className="w-full max-w-7xl relative z-20 -mt-24">
+              {/* Blended with hero via negative margin and gradients */}
+              <div className="w-full max-w-7xl relative z-20 -mt-20">
                 <div className="relative w-full aspect-[16/10] md:aspect-[21/9] overflow-hidden rounded-t-lg">
                   <AnimatePresence mode="popLayout">
                     <motion.img 
