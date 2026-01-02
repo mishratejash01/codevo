@@ -43,6 +43,12 @@ def start_journey():
 print(start_journey())`
 };
 
+const HERO_IMAGES = [
+  "https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/IMG%20Pat%201.png",
+  "https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/IMG%20Part%202.png",
+  "https://fxwmyjvzwcimlievpvjh.supabase.co/storage/v1/object/public/Assets/IMG%20Part%203.png"
+];
+
 const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -54,6 +60,17 @@ const Landing = () => {
   const [showcasePhase, setShowcasePhase] = useState<'question' | 'terminal'>('question');
   const [typedCode, setTypedCode] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  
+  // Image Carousel State
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Cycle Images
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 4000); // Change image every 4 seconds
+    return () => clearInterval(timer);
+  }, []);
   
   // Terminal Animation Logic
   useEffect(() => {
@@ -194,14 +211,21 @@ const Landing = () => {
                 </Button>
               </div>
 
-              {/* --- NEW IMAGE SECTION --- */}
+              {/* --- IMAGE CAROUSEL SECTION --- */}
               <div className="w-full max-w-[1000px] relative z-20">
-                <div className="rounded-xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#0c0c0e]">
-                  <img 
-                    src="/image_dd8214.png" 
-                    alt="Platform Preview" 
-                    className="w-full h-auto object-cover"
-                  />
+                <div className="rounded-xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-[#0c0c0e] aspect-[16/9] relative">
+                  <AnimatePresence>
+                    <motion.img 
+                      key={currentImageIndex}
+                      src={HERO_IMAGES[currentImageIndex]}
+                      alt="Platform Preview" 
+                      className="absolute inset-0 w-full h-full object-cover"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 1 }}
+                    />
+                  </AnimatePresence>
                 </div>
               </div>
 
