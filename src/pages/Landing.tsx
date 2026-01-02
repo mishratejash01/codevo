@@ -183,7 +183,7 @@ const Landing = () => {
         {/* --- HERO SECTION --- */}
         <div className="relative w-full min-h-screen bg-black flex flex-col justify-center items-center shadow-2xl py-24"> 
           <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
-            {/* Reduced width to max-w-5xl to prevent image stretching/blurring */}
+            {/* Reduced width to max-w-5xl to prevent image stretching */}
             <div className="max-w-5xl mx-auto flex flex-col items-center w-full">
               
               {/* Main Heading */}
@@ -228,10 +228,6 @@ const Landing = () => {
 
               {/* --- IMAGE CAROUSEL SECTION --- */}
               <div className="w-full relative z-20 -mt-6">
-                {/* AspectRatio: Keeps the frame cinematic (21/9).
-                   Object-Cover: Crops excess edges if ratio doesn't match perfectly.
-                   Max-Width: Controlled by parent (max-w-5xl) to prevent pixelation.
-                */}
                 <div className="relative w-full aspect-[16/10] md:aspect-[21/9] overflow-hidden rounded-t-lg shadow-2xl">
                   <AnimatePresence mode="popLayout">
                     <motion.img 
