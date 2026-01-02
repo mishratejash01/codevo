@@ -377,12 +377,7 @@ const Landing = () => {
               </div>
               <div className="absolute right-[2%] md:right-[5%] bottom-[10px] md:bottom-[-20px] w-[120px] md:w-[300px] aspect-[9/19] bg-black rounded-[1.5rem] md:rounded-[3rem] border-[4px] md:border-[8px] border-[#1a1a1a] shadow-2xl z-30 overflow-hidden transform md:translate-y-10">
                  <div className="h-full w-full bg-[#0c0c0e] pt-8 md:pt-12 px-2 md:px-5 pb-4 md:pb-8 flex flex-col relative">
-                    <div 
-                      onClick={() => navigate('/compiler')}
-                      className="mt-auto w-full h-8 md:h-12 bg-white text-black rounded-full flex items-center justify-center font-bold text-[8px] md:text-sm shadow-lg cursor-pointer hover:bg-zinc-200 transition-colors"
-                    >
-                      Start
-                    </div>
+                    <div className="mt-auto w-full h-8 md:h-12 bg-white text-black rounded-full flex items-center justify-center font-bold text-[8px] md:text-sm shadow-lg">Start</div>
                  </div>
               </div>
             </div>
