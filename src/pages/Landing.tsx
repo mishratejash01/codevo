@@ -1,3 +1,5 @@
+// mishratejash01/codevo/codevo-1890e334b2b9948d077d3cae82ff7478bd54648e/src/pages/Landing.tsx
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -127,7 +129,7 @@ const Landing = () => {
   // --- HANDLERS ---
   const handleJoinClick = () => {
     if (session) {
-      navigate('/dashboard');
+      navigate('/profile');
     } else {
       navigate('/auth');
     }
@@ -136,9 +138,6 @@ const Landing = () => {
   const handleTryNowClick = () => {
     navigate('/practice-arena');
   };
-
-  // Extract First Name for Welcome Message
-  const firstName = session?.user?.user_metadata?.full_name?.split(' ')[0] || "Developer";
 
   return (
     <div className="min-h-screen bg-black selection:bg-white/20 flex flex-col relative overflow-hidden">
@@ -188,89 +187,45 @@ const Landing = () => {
             {/* Wider container for Zoomed In Feel */}
             <div className="max-w-5xl mx-auto flex flex-col items-center w-full">
               
-              {session ? (
-                // --- LOGGED IN VIEW ---
-                <>
-                  <h1 
-                    className="text-[48px] md:text-[88px] tracking-tight leading-[1] text-white mb-[24px] text-center" 
-                    style={{ 
-                      fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-                      fontWeight: 500 
-                    }}
-                  >
-                    <span className="block">Welcome back,</span>
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-                      {firstName}
-                    </span>
-                  </h1>
+              {/* Main Heading: Large & Bold */}
+              <h1 
+                className="text-[48px] md:text-[88px] tracking-tight leading-[1] text-white mb-[24px] text-center" 
+                style={{ 
+                  fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+                  fontWeight: 500 
+                }}
+              >
+                <span className="block">The Coding Platform built</span>
+                for global developers
+              </h1>
 
-                  <p 
-                    className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[850px] mx-auto leading-[1.6] tracking-normal mb-[40px] text-center" 
-                    style={{ fontFamily: 'var(--font-geom)' }}
-                  >
-                   Your environment is live. Ready to write some code?
-                  </p>
+              {/* Description: Larger Text */}
+              <p 
+                className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[850px] mx-auto leading-[1.6] tracking-normal mb-[40px] text-center" 
+                style={{ fontFamily: 'var(--font-geom)' }}
+              >
+                Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
+              </p>
 
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-[16px] mb-12 relative z-30">
-                    <Button 
-                      onClick={handleJoinClick} // Redirects to Dashboard
-                      size="lg"
-                      className="h-auto px-[42px] py-[20px] bg-white text-black hover:bg-zinc-200 transition-all text-[17px] font-semibold rounded-full min-w-[240px]"
-                    >
-                      Go to Dashboard
-                    </Button>
-                    
-                    <Button 
-                      onClick={handleTryNowClick}
-                      variant="outline"
-                      size="lg"
-                      className="h-auto px-[42px] py-[20px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[17px] font-semibold rounded-full"
-                    >
-                      Practice Arena
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                // --- VISITOR VIEW ---
-                <>
-                  <h1 
-                    className="text-[48px] md:text-[88px] tracking-tight leading-[1] text-white mb-[24px] text-center" 
-                    style={{ 
-                      fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-                      fontWeight: 500 
-                    }}
-                  >
-                    <span className="block">The Coding Platform built</span>
-                    for global developers
-                  </h1>
-
-                  <p 
-                    className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[850px] mx-auto leading-[1.6] tracking-normal mb-[40px] text-center" 
-                    style={{ fontFamily: 'var(--font-geom)' }}
-                  >
-                    Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
-                  </p>
-
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-[16px] mb-12 relative z-30">
-                    <Button 
-                      onClick={handleJoinClick}
-                      size="lg"
-                      className="h-auto px-[42px] py-[20px] bg-white text-black hover:bg-zinc-200 transition-all text-[17px] font-semibold rounded-full min-w-[240px]"
-                    >
-                      Join 1M+ Developers
-                    </Button>
-                    
-                    <Button 
-                      onClick={handleTryNowClick}
-                      variant="outline"
-                      size="lg"
-                      className="h-auto px-[42px] py-[20px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[17px] font-semibold rounded-full"
-                    >
-                      Try Now
-                    </Button>
-                  </div>
-                </>
-              )}
+              {/* Buttons: Large & Prominent */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-[16px] mb-12 relative z-30">
+                <Button 
+                  onClick={handleJoinClick}
+                  size="lg"
+                  className="h-auto px-[42px] py-[20px] bg-white text-black hover:bg-zinc-200 transition-all text-[17px] font-semibold rounded-full min-w-[240px]"
+                >
+                  Join 1M+ Developers -Auth
+                </Button>
+                
+                <Button 
+                  onClick={handleTryNowClick}
+                  variant="outline"
+                  size="lg"
+                  className="h-auto px-[42px] py-[20px] border-[#333] bg-transparent hover:bg-zinc-900 text-white transition-all text-[17px] font-semibold rounded-full"
+                >
+                  Try Now
+                </Button>
+              </div>
 
               {/* --- IMAGE CAROUSEL SECTION --- */}
               <div className="w-full relative z-20 -mt-8">
