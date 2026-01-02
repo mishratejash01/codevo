@@ -212,8 +212,8 @@ const Landing = () => {
               </div>
 
               {/* --- IMAGE CAROUSEL SECTION --- */}
-              {/* Blended with hero via negative margin and gradients */}
-              <div className="w-full max-w-7xl relative z-20 -mt-20">
+              {/* Shifted down to -mt-4 to fill space below and reduce aggressive overlap */}
+              <div className="w-full max-w-7xl relative z-20 -mt-4">
                 <div className="relative w-full aspect-[16/10] md:aspect-[21/9] overflow-hidden rounded-t-lg">
                   <AnimatePresence mode="popLayout">
                     <motion.img 
