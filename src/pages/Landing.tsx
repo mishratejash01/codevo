@@ -172,7 +172,7 @@ const Landing = () => {
           <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
             <div className="max-w-[1100px] mx-auto flex flex-col items-center">
               
-              {/* Main Heading: Inter font, weight 500 */}
+              {/* Main Heading: Inter font, weight 500 - STRICTLY MAINTAINED */}
               <h1 
                 className="text-[54px] md:text-[88px] tracking-[-0.06em] leading-[0.95] text-white mb-[30px]" 
                 style={{ 
@@ -184,7 +184,7 @@ const Landing = () => {
                 for global developers
               </h1>
 
-              {/* Description: Geist Sans (unchanged) */}
+              {/* Description: Geist Sans - STRICTLY MAINTAINED */}
               <p 
                 className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[800px] mx-auto leading-[1.5] tracking-[-0.02em] mb-[50px]" 
                 style={{ fontFamily: 'var(--font-geom)' }}
@@ -192,8 +192,8 @@ const Landing = () => {
                 Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
               </p>
 
-              {/* Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] mb-16">
+              {/* Buttons - STRICTLY MAINTAINED */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-[12px] mb-16 relative z-30">
                 <Button 
                   onClick={() => navigate('/auth')}
                   size="lg"
@@ -212,7 +212,8 @@ const Landing = () => {
               </div>
 
               {/* --- IMAGE CAROUSEL SECTION --- */}
-              <div className="w-full max-w-7xl relative z-20 mt-8">
+              {/* Shifted up with -mt-24 to blend with buttons while maintaining aspect ratio */}
+              <div className="w-full max-w-7xl relative z-20 -mt-24">
                 <div className="relative w-full aspect-[16/10] md:aspect-[21/9] overflow-hidden rounded-t-lg">
                   <AnimatePresence mode="popLayout">
                     <motion.img 
