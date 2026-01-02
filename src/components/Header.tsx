@@ -87,7 +87,8 @@ export function Header({ session, onLogout }: HeaderProps) {
   }
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    // Increased threshold slightly to prevent jitter at very top
+    const handleScroll = () => setIsScrolled(window.scrollY > 30);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -131,39 +132,55 @@ export function Header({ session, onLogout }: HeaderProps) {
     <>
       <header 
         className={cn(
-          "fixed z-50 left-0 right-0 mx-auto transition-all duration-500 ease-in-out",
+          "fixed z-50 left-0 right-0 mx-auto transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
           isScrolled 
-            ? "top-5 max-w-7xl px-4 md:px-0" // Scrolled: Floating, centered, constrained width
-            : "top-0 w-full px-6 py-4"       // Initial: Full width, stuck to top, wider padding
+            ? "top-5 max-w-7xl px-4 md:px-0" // Scrolled: Floating state
+            : "top-0 w-full max-w-full px-6 py-4" // Initial: Full width state
         )}
       >
         <div 
           className={cn(
-            "transition-all duration-500 ease-in-out",
+            "transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] w-full",
             isScrolled 
               ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-2 px-6" 
-              : "rounded-none border-none bg-transparent p-0"
+              : "rounded-none border-transparent bg-transparent p-0"
           )}
         >
-          <nav className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3 group">
+          <nav className="flex items-center justify-between w-full">
+            {/* Logo Section */}
+            <Link to="/" className="flex items-center gap-3 group shrink-0">
               <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white">
                 COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
               </span>
             </Link>
 
-            <div className="hidden md:flex flex-1 justify-center gap-4">
-              <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white px-3 py-2 transition-colors">
+            {/* Navigation Tabs - RIGHT ALIGNED */}
+            <div className="hidden md:flex flex-1 justify-end items-center gap-6 mr-6">
+              <Link to="/degree" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-white transition-colors relative group">
                 <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-4 h-4 object-contain opacity-80" /> 
                 IITM BS
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
               </Link>
-              <Link to="/practice-arena" className="text-sm font-medium text-muted-foreground hover:text-white px-3 py-2 transition-colors">Practice</Link>
-              <Link to="/events" className="text-sm font-medium text-muted-foreground hover:text-white px-3 py-2 transition-colors">Events</Link>
-              <Link to="/compiler" className="text-sm font-medium text-muted-foreground hover:text-purple-400 px-3 py-2 transition-colors">Compiler</Link>
-              <Link to="/leaderboard" className="text-sm font-medium text-muted-foreground hover:text-white px-3 py-2 transition-colors">Leaderboard</Link>
+              <Link to="/practice-arena" className="text-sm font-medium text-muted-foreground hover:text-white transition-colors relative group">
+                Practice
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
+              </Link>
+              <Link to="/events" className="text-sm font-medium text-muted-foreground hover:text-white transition-colors relative group">
+                Events
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
+              </Link>
+              <Link to="/compiler" className="text-sm font-medium text-muted-foreground hover:text-purple-400 transition-colors relative group">
+                Compiler
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-400 transition-all group-hover:w-full"></span>
+              </Link>
+              <Link to="/leaderboard" className="text-sm font-medium text-muted-foreground hover:text-white transition-colors relative group">
+                Leaderboard
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
+              </Link>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Profile / Auth Section */}
+            <div className="flex items-center gap-2 shrink-0">
               {session ? (
                 <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                   <PopoverTrigger asChild>
