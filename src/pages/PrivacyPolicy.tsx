@@ -1,3 +1,5 @@
+// mishratejash01/codevo/codevo-1890e334b2b9948d077d3cae82ff7478bd54648e/src/pages/PrivacyPolicy.tsx
+
 import { Lock, Eye, Database, Globe } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { useState, useEffect } from 'react';
@@ -92,7 +94,7 @@ const PrivacyPolicy = () => {
           {/* Contact */}
           <section className="pt-8 border-t border-white/10">
             <p className="text-sm text-muted-foreground">
-                If you have any questions about this Privacy Policy, please contact us at <a href="mailto:legal@codevo.com" className="text-primary hover:underline">legal@codevo.com</a>.
+                If you have any questions about this Privacy Policy, please contact us at <a href="mailto:reach@codevo.co.in" className="text-primary hover:underline">reach@codevo.co.in</a>.
             </p>
           </section>
 
