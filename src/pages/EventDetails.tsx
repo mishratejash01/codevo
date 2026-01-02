@@ -261,20 +261,7 @@ export default function EventDetailsPage() {
       
       <div className="max-w-[1200px] mx-auto px-4 md:px-10">
         
-        {/* --- TOP NAVIGATION --- */}
-        <nav className="py-[20px] md:py-[30px] flex justify-between items-center border-b border-[#1a1a1a]">
-          <div className="flex items-center gap-[15px] md:gap-[30px]">
-            <button 
-              onClick={() => navigate('/events')} 
-              className="bg-transparent border-none text-[#777777] text-[0.55rem] md:text-[0.65rem] tracking-[2px] uppercase cursor-pointer hover:text-white transition-colors"
-            >
-              ← GO BACK
-            </button>
-          </div>
-          <div className="hidden sm:block text-[0.5rem] md:text-[0.6rem] tracking-[2px] text-[#777777] uppercase font-mono">
-            REF_CODE: {event.id.slice(0, 8).toUpperCase()}
-          </div>
-        </nav>
+        
 
         {/* --- HERO SECTION --- */}
         <section className="py-[40px] md:py-[80px] grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-[60px] items-center">
