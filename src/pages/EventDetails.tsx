@@ -261,7 +261,20 @@ export default function EventDetailsPage() {
       
       <div className="max-w-[1200px] mx-auto px-4 md:px-10">
         
-        
+        {/* --- TOP NAVIGATION --- */}
+        <nav className="py-[20px] md:py-[30px] flex justify-between items-center border-b border-[#1a1a1a]">
+          <div className="flex items-center gap-[15px] md:gap-[30px]">
+            <button 
+              onClick={() => navigate('/events')} 
+              className="bg-transparent border-none text-[#777777] text-[0.55rem] md:text-[0.65rem] tracking-[2px] uppercase cursor-pointer hover:text-white transition-colors"
+            >
+              ← GO BACK
+            </button>
+          </div>
+          <div className="hidden sm:block text-[0.5rem] md:text-[0.6rem] tracking-[2px] text-[#777777] uppercase font-mono">
+            REF_CODE: {event.id.slice(0, 8).toUpperCase()}
+          </div>
+        </nav>
 
         {/* --- HERO SECTION --- */}
         <section className="py-[40px] md:py-[80px] grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-[60px] items-center">
@@ -321,27 +334,29 @@ export default function EventDetailsPage() {
           <div className="content-col space-y-[60px] md:space-y-[120px]">
             
             {/* MOBILE ACTION BUTTON */}
-            {(!isRegistered && !hasPendingInvitation && !hasAcceptedInvitation) || (isRegistered && event.is_paid && registration?.payment_status === 'pending') ? (
-              <div className="lg:hidden block bg-[#0a0a0a] p-6 border border-[#1a1a1a]">
-                 {!isRegistered && !hasPendingInvitation && !hasAcceptedInvitation ? (
-                    <button 
-                      onClick={handleRegisterClick}
-                      disabled={regLoading}
-                      className="w-full bg-[#ff8c00] text-black border-none p-[18px] text-center text-[0.7rem] font-extrabold uppercase tracking-[3px] cursor-pointer"
-                    >
-                      {regLoading ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : 'Join Event'}
-                    </button>
-                  ) : (
-                    <button 
-                      className="w-full bg-[#ff8c00] text-black border-none p-[18px] text-center text-[0.7rem] font-extrabold uppercase tracking-[3px]"
-                      onClick={handlePayment}
-                      disabled={isProcessingPayment}
-                    >
-                      {isProcessingPayment ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : `Pay ${event.currency} ${event.registration_fee}`}
-                    </button>
-                  )}
-              </div>
-            ) : null}
+            <div className="lg:hidden block bg-[#0a0a0a] p-6 border border-[#1a1a1a]">
+               {!isRegistered && !hasPendingInvitation && !hasAcceptedInvitation ? (
+                  <button 
+                    onClick={handleRegisterClick}
+                    disabled={regLoading}
+                    className="w-full bg-[#ff8c00] text-black border-none p-[18px] text-center text-[0.7rem] font-extrabold uppercase tracking-[3px] cursor-pointer"
+                  >
+                    {regLoading ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : 'Join Event'}
+                  </button>
+                ) : isRegistered && event.is_paid && registration?.payment_status === 'pending' ? (
+                  <button 
+                    className="w-full bg-[#ff8c00] text-black border-none p-[18px] text-center text-[0.7rem] font-extrabold uppercase tracking-[3px]"
+                    onClick={handlePayment}
+                    disabled={isProcessingPayment}
+                  >
+                    {isProcessingPayment ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : `Pay ${event.currency} ${event.registration_fee}`}
+                  </button>
+                ) : isRegistered ? (
+                  <div className="w-full border border-[#00ff88] p-4 text-center bg-[#00ff88]/5">
+                    <span className="text-[#00ff88] text-[0.6rem] font-bold uppercase tracking-[2px]">Registration Active</span>
+                  </div>
+                ) : null}
+            </div>
 
             {!hasPendingInvitation && <InvitationBanner />}
 
@@ -461,6 +476,10 @@ export default function EventDetailsPage() {
                   >
                     <CreditCard size={16} /> Pay {event.currency} {event.registration_fee}
                   </button>
+                ) : isRegistered ? (
+                  <div className="w-full border border-[#00ff88] p-[20px] text-center bg-[#00ff88]/5">
+                    <span className="text-[#00ff88] text-[0.65rem] font-bold uppercase tracking-[2px]">Registration Active</span>
+                  </div>
                 ) : null}
               </div>
 
