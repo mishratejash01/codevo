@@ -171,7 +171,8 @@ const Landing = () => {
         <div className="relative w-full min-h-screen bg-black flex flex-col justify-center items-center shadow-2xl py-32"> 
           {/* Main Container: Center Aligned, Text Center */}
           <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
-            <div className="max-w-[1100px] mx-auto flex flex-col items-center w-full">
+            {/* Widened to max-w-7xl to align with image */}
+            <div className="max-w-7xl mx-auto flex flex-col items-center w-full">
               
               {/* Main Heading: Center Aligned, Relaxed Tracking & Leading */}
               <h1 
