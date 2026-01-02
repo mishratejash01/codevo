@@ -9,7 +9,7 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           
           {/* Brand Column - Top Left */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             <Link to="/" className="flex flex-col items-start gap-2 group w-fit">
               {/* Logo - Solid Filled */}
               <span className="font-neuropol text-4xl font-bold tracking-wider text-white cursor-pointer select-none">
@@ -18,6 +18,19 @@ export const Footer = () => {
                 VO
               </span>
             </Link>
+
+            {/* Contact Section */}
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                For business inquiries, collaborations, or support, please reach out to us directly.
+              </p>
+              <a 
+                href="mailto:reach@codevo.co.in" 
+                className="text-sm font-medium text-white hover:text-primary transition-colors inline-block border-b border-transparent hover:border-primary"
+              >
+                reach@codevo.co.in
+              </a>
+            </div>
           </div>
           
           {/* Platform Links */}
