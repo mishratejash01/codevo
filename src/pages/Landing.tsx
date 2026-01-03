@@ -1,5 +1,3 @@
-// mishratejash01/codevo/codevo-1890e334b2b9948d077d3cae82ff7478bd54648e/src/pages/Landing.tsx
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +10,7 @@ import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { FeaturesInfiniteCarousel } from '@/components/FeaturesInfiniteCarousel';
 
 // --- WIDGET IMPORT ---
 import { HitMeUpWidget } from '@/pages/Profile'; 
@@ -180,7 +179,7 @@ const Landing = () => {
 
       <main className="flex-1 w-full bg-black">
         
-        {/* --- HERO SECTION --- */}
+        {/* --- SECTION 1: HERO --- */}
         <div className="relative w-full min-h-screen bg-black flex flex-col justify-center items-center shadow-2xl py-32"> 
           <div className="container mx-auto px-4 relative z-10 flex flex-col items-center justify-center text-center">
             
@@ -426,6 +425,9 @@ const Landing = () => {
           </div>
         </section>
 
+        {/* --- NEW SECTION: FEATURES CAROUSEL --- */}
+        <FeaturesInfiniteCarousel />
+        
         {/* --- SECTION 3: KEYBOARD & TERMINAL --- */}
         <section className="py-12 md:py-24 relative overflow-hidden bg-black border-t border-white/5">
           <div className="container mx-auto px-4 md:px-6">
