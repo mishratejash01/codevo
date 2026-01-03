@@ -81,9 +81,13 @@ export function Header({ session, onLogout }: HeaderProps) {
             
             {/* Products Mega Dropdown (Hover) */}
             <div className="relative" onMouseEnter={() => setActiveDropdown('products')} onMouseLeave={() => setActiveDropdown(null)}>
-              <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2 group">
+              <button className="flex items-center gap-1 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2 group">
                 Products
-                <ChevronDown className={cn("w-3.5 h-3.5 opacity-50 transition-transform duration-300", activeDropdown === 'products' && "rotate-180 opacity-100")} />
+                {/* Refined Arrow Design */}
+                <ChevronDown className={cn(
+                  "w-3 h-3 stroke-[2.5px] opacity-40 transition-all duration-300", 
+                  activeDropdown === 'products' && "rotate-180 opacity-100 text-white"
+                )} />
               </button>
               
               {activeDropdown === 'products' && (
@@ -122,9 +126,13 @@ export function Header({ session, onLogout }: HeaderProps) {
 
             {/* Resources Mega Dropdown (Hover) */}
             <div className="relative" onMouseEnter={() => setActiveDropdown('resources')} onMouseLeave={() => setActiveDropdown(null)}>
-              <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2 group">
+              <button className="flex items-center gap-1 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2 group">
                 Resources
-                <ChevronDown className={cn("w-3.5 h-3.5 opacity-50 transition-transform duration-300", activeDropdown === 'resources' && "rotate-180 opacity-100")} />
+                {/* Refined Arrow Design */}
+                <ChevronDown className={cn(
+                  "w-3 h-3 stroke-[2.5px] opacity-40 transition-all duration-300", 
+                  activeDropdown === 'resources' && "rotate-180 opacity-100 text-white"
+                )} />
               </button>
 
               {activeDropdown === 'resources' && (
@@ -163,7 +171,6 @@ export function Header({ session, onLogout }: HeaderProps) {
 
             <Link to="/events" className="text-[14px] font-medium text-muted-foreground hover:text-white transition-colors">Events</Link>
 
-            {/* Try CODéVO Play Button */}
             <Button 
               onClick={() => navigate('/practice-arena')}
               variant="outline" 
