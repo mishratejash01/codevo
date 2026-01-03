@@ -28,7 +28,7 @@ import { toast } from 'sonner';
 
 /**
  * SOLID FILLED DROPDOWN ARROW
- * Always pure white (opacity 100) to match your request.
+ * Pure white geometric triangle.
  */
 const FilledDropdownArrow = ({ isOpen }: { isOpen: boolean }) => (
   <svg 
@@ -82,10 +82,10 @@ export function Header({ session, onLogout }: HeaderProps) {
       isScrolled ? "top-6 max-w-7xl px-4 md:px-0" : "top-0 w-full max-w-full px-10 py-6"
     )}>
       <div className={cn(
-        "transition-all duration-700 w-full",
+        "transition-all duration-700 w-full relative",
         isScrolled ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-4 px-10" : "p-0"
       )}>
-        <nav className="flex items-center justify-between w-full">
+        <nav className="flex items-center justify-between w-full relative z-10">
           {/* Logo Section */}
           <Link to="/" className="flex items-center gap-3 group shrink-0">
             <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]">
@@ -96,9 +96,9 @@ export function Header({ session, onLogout }: HeaderProps) {
           {/* Navigation Menu */}
           <div className="hidden md:flex flex-1 justify-end items-center gap-9 mr-8">
             
-            {/* PRODUCTS MEGA DROPDOWN (HOVER) */}
+            {/* PRODUCTS MEGA DROPDOWN */}
             <div 
-              className="relative group" 
+              className="relative" 
               onMouseEnter={() => setActiveDropdown('products')} 
               onMouseLeave={() => setActiveDropdown(null)}
             >
@@ -108,7 +108,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               </button>
               
               {activeDropdown === 'products' && (
-                <div className="absolute top-full right-[-150px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="absolute top-[100%] right-[-180px] w-[920px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300 z-[100]">
                   <div className="col-span-2 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">Our Solutions</div>
                   <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">Ecosystem</div>
                   
@@ -132,17 +132,17 @@ export function Header({ session, onLogout }: HeaderProps) {
                        <img src="https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover blur-lg opacity-20" />
                     </div>
                     <div className="flex flex-col">
-                        <p className="text-white/40 text-[14px] font-medium blur-[2.5px] leading-tight">Neural IDE v3</p>
-                        <p className="text-[11px] text-[#666] font-bold uppercase tracking-widest mt-2">Coming Soon</p>
+                        <p className="text-white/40 text-[14px] font-medium blur-[2px] leading-tight whitespace-nowrap">Neural IDE v3 Platinum</p>
+                        <p className="text-[11px] text-[#666] font-bold uppercase tracking-widest mt-2 whitespace-nowrap">Coming Soon</p>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* RESOURCES MEGA DROPDOWN (HOVER) */}
+            {/* RESOURCES MEGA DROPDOWN */}
             <div 
-              className="relative group" 
+              className="relative" 
               onMouseEnter={() => setActiveDropdown('resources')} 
               onMouseLeave={() => setActiveDropdown(null)}
             >
@@ -152,7 +152,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               </button>
 
               {activeDropdown === 'resources' && (
-                <div className="absolute top-full right-[-150px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="absolute top-[100%] right-[-180px] w-[920px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300 z-[100]">
                   <div className="col-span-2 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">CODéVO</div>
                   <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">Featured Blog Posts</div>
 
@@ -176,7 +176,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                         </div>
                         <div className="flex flex-col">
                           <p className="text-[14px] text-white/30 blur-[2px] font-medium leading-tight">{blog.title}</p>
-                          <p className="text-[10px] text-[#666] font-bold uppercase tracking-widest mt-2">Coming Soon</p>
+                          <p className="text-[10px] text-[#666] font-bold uppercase tracking-widest mt-2 whitespace-nowrap">Coming Soon</p>
                         </div>
                       </div>
                     ))}
@@ -208,15 +208,21 @@ export function Header({ session, onLogout }: HeaderProps) {
                     <FilledDropdownArrow isOpen={popoverOpen} />
                   </div>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-[320px] p-8 bg-[#0a0a0a] border border-[#222222] shadow-[0_40px_80px_rgba(0,0,0,0.9)] outline-none">
+                <PopoverContent align="end" className="w-[320px] p-8 bg-[#0a0a0a] border border-[#222222] shadow-[0_40px_80px_rgba(0,0,0,0.9)] outline-none ring-0">
                   <div className="text-center">
                     <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#888888] mb-8">Public Profile</p>
                     <div className="bg-white p-4 inline-block mb-6 rounded-sm">
                       <QRCodeSVG value={displayUrl} size={140} />
                     </div>
-                    <Link to="/profile" className="w-full block py-4 text-[13px] font-bold uppercase tracking-widest bg-white text-black hover:bg-transparent hover:text-white border border-white transition-all">Edit Profile</Link>
+                    {/* Clean Edit Profile - Removed outline */}
+                    <Link to="/profile" className="w-full block py-4 text-[13px] font-bold uppercase tracking-widest bg-white text-black hover:bg-zinc-200 transition-all rounded-sm">
+                      Edit Profile
+                    </Link>
                     <div className="mt-4 pt-4 border-t border-[#222222]">
-                      <button onClick={onLogout} className="flex items-center w-full text-white text-[13px] font-medium hover:opacity-60 transition-opacity"><LogOut className="mr-3 w-[18px] h-[18px]" /> Logout</button>
+                      {/* Clean Logout - Removed outline on hover */}
+                      <button onClick={onLogout} className="flex items-center w-full text-white text-[13px] font-medium hover:text-zinc-400 transition-colors py-2">
+                        <LogOut className="mr-3 w-[18px] h-[18px]" /> Logout
+                      </button>
                     </div>
                   </div>
                 </PopoverContent>
