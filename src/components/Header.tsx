@@ -27,24 +27,23 @@ import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 
 /**
- * CUSTOM DESIGNED ARROW
- * Matches the sharp, thin geometric style from your reference image.
+ * FILLED DROPDOWN ARROW
+ * Replaces the "single line" chevron with a solid geometric shape 
+ * to match professional corporate designs.
  */
-const CustomDropdownArrow = ({ isOpen }: { isOpen: boolean }) => (
+const FilledDropdownArrow = ({ isOpen }: { isOpen: boolean }) => (
   <svg 
-    width="12" 
-    height="12" 
-    viewBox="0 0 12 12" 
-    fill="none" 
+    width="8" 
+    height="6" 
+    viewBox="0 0 8 6" 
+    fill="currentColor" 
     xmlns="http://www.w3.org/2000/svg"
-    className={cn("transition-transform duration-300 ml-1.5 opacity-40", isOpen && "rotate-180 opacity-100")}
+    className={cn(
+      "transition-transform duration-300 ml-2 opacity-40 shrink-0", 
+      isOpen && "rotate-180 opacity-100"
+    )}
   >
-    <path 
-      d="M2.5 4.5L6 8L9.5 4.5" 
-      stroke="currentColor" 
-      strokeWidth="1.2" 
-      strokeLinecap="square" 
-    />
+    <path d="M0 1L4 5L8 1H0Z" />
   </svg>
 );
 
@@ -88,7 +87,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         isScrolled ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-4 px-10" : "p-0"
       )}>
         <nav className="flex items-center justify-between w-full">
-          {/* Brand Logo with Glow */}
+          {/* Logo Section */}
           <Link to="/" className="flex items-center gap-3 group shrink-0">
             <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]">
               COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
@@ -96,62 +95,65 @@ export function Header({ session, onLogout }: HeaderProps) {
           </Link>
 
           {/* Navigation Menu */}
-          <div className="hidden md:flex flex-1 justify-end items-center gap-8 mr-8">
+          <div className="hidden md:flex flex-1 justify-end items-center gap-9 mr-8">
             
-            {/* --- PRODUCTS DROP-DOWN --- */}
+            {/* PRODUCTS MEGA DROPDOWN (HOVER) */}
             <div 
-              className="relative" 
+              className="relative group" 
               onMouseEnter={() => setActiveDropdown('products')} 
               onMouseLeave={() => setActiveDropdown(null)}
             >
-              <button className="flex items-center text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2">
+              <button className="flex items-center text-[14px] font-medium text-muted-foreground group-hover:text-white transition-colors py-2 outline-none">
                 Products
-                <CustomDropdownArrow isOpen={activeDropdown === 'products'} />
+                <FilledDropdownArrow isOpen={activeDropdown === 'products'} />
               </button>
               
               {activeDropdown === 'products' && (
-                <div className="absolute top-full right-[-120px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-top-2">
+                <div className="absolute top-full right-[-150px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="col-span-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">Our Solutions</div>
                   <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">Ecosystem</div>
                   
                   <div className="grid grid-cols-2 col-span-2 gap-y-6">
                     <Link to="/compiler" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/item">
-                      <Terminal className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Compiler</span>
+                      <Terminal className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> 
+                      <span className="text-[15px]">Compiler</span>
                     </Link>
                     <Link to="/practice-arena" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/item">
-                      <Gamepad2 className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Practice Arena</span>
+                      <Gamepad2 className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> 
+                      <span className="text-[15px]">Practice Arena</span>
                     </Link>
                     <Link to="/profile" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/item">
-                      <UserCircle className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Profile Card</span>
+                      <UserCircle className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> 
+                      <span className="text-[15px]">Profile Card</span>
                     </Link>
                   </div>
 
                   <div className="border-l border-white/10 pl-10 flex flex-col gap-6">
                     <div className="relative rounded-md overflow-hidden border border-white/5 aspect-video bg-[#111]">
-                       <img src="https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover blur-md opacity-20" />
+                       <img src="https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover blur-lg opacity-20" />
                     </div>
                     <div className="flex flex-col">
-                        <p className="text-white/40 text-[14px] font-medium blur-[1px]">Neural IDE v3</p>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-1">Coming Soon</p>
+                        <p className="text-white/40 text-[14px] font-medium blur-[2px]">Neural IDE v3</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-1.5">Coming Soon</p>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* --- RESOURCES DROP-DOWN --- */}
+            {/* RESOURCES MEGA DROPDOWN (HOVER) */}
             <div 
-              className="relative" 
+              className="relative group" 
               onMouseEnter={() => setActiveDropdown('resources')} 
               onMouseLeave={() => setActiveDropdown(null)}
             >
-              <button className="flex items-center text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2">
+              <button className="flex items-center text-[14px] font-medium text-muted-foreground group-hover:text-white transition-colors py-2 outline-none">
                 Resources
-                <CustomDropdownArrow isOpen={activeDropdown === 'resources'} />
+                <FilledDropdownArrow isOpen={activeDropdown === 'resources'} />
               </button>
 
               {activeDropdown === 'resources' && (
-                <div className="absolute top-full right-[-120px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-top-2">
+                <div className="absolute top-full right-[-150px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="col-span-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">CODéVO</div>
                   <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">Featured Blog Posts</div>
 
@@ -164,18 +166,18 @@ export function Header({ session, onLogout }: HeaderProps) {
                     <Link to="/blog" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><BookOpen className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Blog</span></Link>
                   </div>
 
-                  <div className="border-l border-white/10 pl-10 flex flex-col gap-8">
+                  <div className="border-l border-white/10 pl-10 flex flex-col gap-10">
                     {[
                       { title: "MoReBench: Evaluating AI Moral Reasoning", img: "https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" },
                       { title: "The Agentic Era: Building Foundations", img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=300" }
                     ].map((blog, i) => (
-                      <div key={i} className="flex gap-4">
+                      <div key={i} className="flex gap-4 items-start">
                         <div className="w-[130px] h-[75px] bg-[#111] rounded-md border border-white/10 overflow-hidden flex-shrink-0">
                           <img src={blog.img} className="w-full h-full object-cover blur-md opacity-20" />
                         </div>
                         <div className="flex flex-col">
-                          <p className="text-[14px] text-white/30 blur-[2px] font-medium leading-tight mb-1">{blog.title}</p>
-                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Coming Soon</p>
+                          <p className="text-[14px] text-white/30 blur-[2px] font-medium leading-tight mb-2">{blog.title}</p>
+                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Coming Soon</p>
                         </div>
                       </div>
                     ))}
@@ -186,7 +188,7 @@ export function Header({ session, onLogout }: HeaderProps) {
 
             <Link to="/events" className="text-[14px] font-medium text-muted-foreground hover:text-white transition-colors">Events</Link>
 
-            {/* ACTION BUTTON */}
+            {/* Try CODéVO Play Button */}
             <Button 
               onClick={() => navigate('/practice-arena')}
               className="group border border-white/20 bg-transparent hover:bg-white text-white hover:text-black rounded-full px-6 h-10 text-[13px] font-bold transition-all flex items-center gap-2"
@@ -196,7 +198,7 @@ export function Header({ session, onLogout }: HeaderProps) {
             </Button>
           </div>
 
-          {/* AUTH SECTION */}
+          {/* Auth Section */}
           <div className="flex items-center gap-2 shrink-0">
             {session ? (
               <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
@@ -204,10 +206,10 @@ export function Header({ session, onLogout }: HeaderProps) {
                   <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
                     <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20">{userName.charAt(0).toUpperCase()}</div>
                     <span className="text-sm font-medium text-gray-200">{userName}</span>
-                    <CustomDropdownArrow isOpen={popoverOpen} />
+                    <FilledDropdownArrow isOpen={popoverOpen} />
                   </div>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-[320px] p-8 bg-[#0a0a0a] border border-[#222222] shadow-[0_40px_80px_rgba(0,0,0,0.9)]">
+                <PopoverContent align="end" className="w-[320px] p-8 bg-[#0a0a0a] border border-[#222222] shadow-[0_40px_80px_rgba(0,0,0,0.9)] outline-none">
                   <div className="text-center">
                     <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#888888] mb-8">Public Profile</p>
                     <div className="bg-white p-4 inline-block mb-6 rounded-sm">
