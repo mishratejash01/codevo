@@ -26,17 +26,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 
-// Custom Sharp Thin Arrow for the professional look
-const DropdownArrow = ({ isOpen }: { isOpen: boolean }) => (
+/**
+ * CUSTOM DESIGNED ARROW
+ * Matches the sharp, thin geometric style from your reference image.
+ */
+const CustomDropdownArrow = ({ isOpen }: { isOpen: boolean }) => (
   <svg 
-    width="10" 
-    height="6" 
-    viewBox="0 0 10 6" 
+    width="12" 
+    height="12" 
+    viewBox="0 0 12 12" 
     fill="none" 
     xmlns="http://www.w3.org/2000/svg"
-    className={cn("transition-transform duration-300 opacity-40", isOpen && "rotate-180 opacity-100")}
+    className={cn("transition-transform duration-300 ml-1.5 opacity-40", isOpen && "rotate-180 opacity-100")}
   >
-    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path 
+      d="M2.5 4.5L6 8L9.5 4.5" 
+      stroke="currentColor" 
+      strokeWidth="1.2" 
+      strokeLinecap="square" 
+    />
   </svg>
 );
 
@@ -80,37 +88,41 @@ export function Header({ session, onLogout }: HeaderProps) {
         isScrolled ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-4 px-10" : "p-0"
       )}>
         <nav className="flex items-center justify-between w-full">
-          {/* Logo Section */}
+          {/* Brand Logo with Glow */}
           <Link to="/" className="flex items-center gap-3 group shrink-0">
             <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]">
               COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
             </span>
           </Link>
 
-          {/* Navigation Tabs */}
+          {/* Navigation Menu */}
           <div className="hidden md:flex flex-1 justify-end items-center gap-8 mr-8">
             
-            {/* Products Mega Dropdown (Hover) */}
-            <div className="relative" onMouseEnter={() => setActiveDropdown('products')} onMouseLeave={() => setActiveDropdown(null)}>
-              <button className="flex items-center gap-2 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2">
+            {/* --- PRODUCTS DROP-DOWN --- */}
+            <div 
+              className="relative" 
+              onMouseEnter={() => setActiveDropdown('products')} 
+              onMouseLeave={() => setActiveDropdown(null)}
+            >
+              <button className="flex items-center text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2">
                 Products
-                <DropdownArrow isOpen={activeDropdown === 'products'} />
+                <CustomDropdownArrow isOpen={activeDropdown === 'products'} />
               </button>
               
               {activeDropdown === 'products' && (
-                <div className="absolute top-full right-[-100px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-top-2">
+                <div className="absolute top-full right-[-120px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-top-2">
                   <div className="col-span-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">Our Solutions</div>
                   <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">Ecosystem</div>
                   
                   <div className="grid grid-cols-2 col-span-2 gap-y-6">
-                    <Link to="/compiler" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all">
-                      <Terminal className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Compiler</span>
+                    <Link to="/compiler" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/item">
+                      <Terminal className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Compiler</span>
                     </Link>
-                    <Link to="/practice-arena" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all">
-                      <Gamepad2 className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Practice Arena</span>
+                    <Link to="/practice-arena" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/item">
+                      <Gamepad2 className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Practice Arena</span>
                     </Link>
-                    <Link to="/profile" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all">
-                      <UserCircle className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Profile Card</span>
+                    <Link to="/profile" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/item">
+                      <UserCircle className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> <span className="text-[15px]">Profile Card</span>
                     </Link>
                   </div>
 
@@ -120,32 +132,36 @@ export function Header({ session, onLogout }: HeaderProps) {
                     </div>
                     <div className="flex flex-col">
                         <p className="text-white/40 text-[14px] font-medium blur-[1px]">Neural IDE v3</p>
-                        <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider mt-1">Coming Soon</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-1">Coming Soon</p>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Resources Mega Dropdown (Hover) */}
-            <div className="relative" onMouseEnter={() => setActiveDropdown('resources')} onMouseLeave={() => setActiveDropdown(null)}>
-              <button className="flex items-center gap-2 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2">
+            {/* --- RESOURCES DROP-DOWN --- */}
+            <div 
+              className="relative" 
+              onMouseEnter={() => setActiveDropdown('resources')} 
+              onMouseLeave={() => setActiveDropdown(null)}
+            >
+              <button className="flex items-center text-[14px] font-medium text-muted-foreground hover:text-white transition-colors py-2">
                 Resources
-                <DropdownArrow isOpen={activeDropdown === 'resources'} />
+                <CustomDropdownArrow isOpen={activeDropdown === 'resources'} />
               </button>
 
               {activeDropdown === 'resources' && (
-                <div className="absolute top-full right-[-100px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-top-2">
-                  <div className="col-span-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">Codevo</div>
+                <div className="absolute top-full right-[-120px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-2xl backdrop-blur-3xl animate-in fade-in slide-in-from-top-2">
+                  <div className="col-span-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">CODéVO</div>
                   <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">Featured Blog Posts</div>
 
                   <div className="grid grid-cols-2 col-span-2 gap-y-6">
-                    <Link to="/contact" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all"><Mail className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Contact Us</span></Link>
-                    <Link to="/security" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all"><ShieldCheck className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Security</span></Link>
-                    <Link to="/terms" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all"><FileText className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Terms & Conditions</span></Link>
-                    <Link to="/cookies" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all"><Cookie className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Cookies</span></Link>
-                    <Link to="/privacy" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all"><Lock className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Privacy Policy</span></Link>
-                    <Link to="/blog" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all"><BookOpen className="w-[18px] h-[18px] text-muted-foreground" /> <span className="text-[15px]">Blog</span></Link>
+                    <Link to="/contact" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><Mail className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Contact Us</span></Link>
+                    <Link to="/security" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><ShieldCheck className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Security</span></Link>
+                    <Link to="/terms" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><FileText className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Terms & Conditions</span></Link>
+                    <Link to="/cookies" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><Cookie className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Cookies</span></Link>
+                    <Link to="/privacy" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><Lock className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Privacy Policy</span></Link>
+                    <Link to="/blog" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><BookOpen className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Blog</span></Link>
                   </div>
 
                   <div className="border-l border-white/10 pl-10 flex flex-col gap-8">
@@ -170,7 +186,7 @@ export function Header({ session, onLogout }: HeaderProps) {
 
             <Link to="/events" className="text-[14px] font-medium text-muted-foreground hover:text-white transition-colors">Events</Link>
 
-            {/* Try CODéVO Play - Outline with Fill Hover */}
+            {/* ACTION BUTTON */}
             <Button 
               onClick={() => navigate('/practice-arena')}
               className="group border border-white/20 bg-transparent hover:bg-white text-white hover:text-black rounded-full px-6 h-10 text-[13px] font-bold transition-all flex items-center gap-2"
@@ -180,7 +196,7 @@ export function Header({ session, onLogout }: HeaderProps) {
             </Button>
           </div>
 
-          {/* Auth Section */}
+          {/* AUTH SECTION */}
           <div className="flex items-center gap-2 shrink-0">
             {session ? (
               <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
@@ -188,7 +204,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                   <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
                     <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20">{userName.charAt(0).toUpperCase()}</div>
                     <span className="text-sm font-medium text-gray-200">{userName}</span>
-                    <DropdownArrow isOpen={popoverOpen} />
+                    <CustomDropdownArrow isOpen={popoverOpen} />
                   </div>
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-[320px] p-8 bg-[#0a0a0a] border border-[#222222] shadow-[0_40px_80px_rgba(0,0,0,0.9)]">
