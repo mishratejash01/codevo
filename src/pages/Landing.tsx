@@ -1,16 +1,16 @@
 // mishratejash01/codevo/codevo-1890e334b2b9948d077d3cae82ff7478bd54648e/src/pages/Landing.tsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Code2, ChevronsDown, Terminal, Activity, Maximize2, RefreshCw, Minus, Plus, Download, Play, Square } from 'lucide-react';
+import { Code2, ChevronsDown, Terminal, Activity, Maximize2, RefreshCw, Minus, Plus, Download, Play, Square, Rotate3D } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { cn } from "@/lib/utils";
 import { VirtualKeyboard } from '@/components/VirtualKeyboard';
 import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // --- WIDGET IMPORT ---
@@ -66,11 +66,59 @@ const Landing = () => {
   // Image Carousel State
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  // --- 3D ROTATION STATE ---
+  const laptopRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // Motion values for smooth rotation
+  const rotateX = useMotionValue(0);
+  const rotateY = useMotionValue(0);
+  
+  // Add some physics spring to the rotation so it feels weighty
+  const springConfig = { damping: 20, stiffness: 100 };
+  const rotateXSpring = useSpring(rotateX, springConfig);
+  const rotateYSpring = useSpring(rotateY, springConfig);
+
+  // Manual Drag Logic
+  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const sensitivity = 0.4;
+      const deltaX = e.movementX;
+      const deltaY = e.movementY;
+
+      // Update rotation values (inverted Y for natural feel)
+      rotateY.set(rotateY.get() + deltaX * sensitivity);
+      rotateX.set(rotateX.get() - deltaY * sensitivity);
+    };
+
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+      // Optional: Snap back to center on release? 
+      // Uncomment below to snap back
+      // rotateX.set(0); rotateY.set(0);
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleGlobalMouseMove);
+      window.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isDragging, rotateX, rotateY]);
+
+
   // Cycle Images
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % HERO_IMAGES.length);
-    }, 4000); // Change image every 4 seconds
+    }, 4000); 
     return () => clearInterval(timer);
   }, []);
   
@@ -148,7 +196,6 @@ const Landing = () => {
         :root {
           --font-geom: 'Inter', system-ui, sans-serif;
         }
-
         @keyframes scroll-arrow-move {
           0% { transform: translateY(0); opacity: 0.5; }
           25% { transform: translateY(-4px); opacity: 0.8; }
@@ -187,7 +234,6 @@ const Landing = () => {
             {/* Wider container for Zoomed In Feel */}
             <div className="max-w-5xl mx-auto flex flex-col items-center w-full">
               
-              {/* Main Heading: Large & Bold */}
               <h1 
                 className="text-[48px] md:text-[88px] tracking-tight leading-[1] text-white mb-[24px] text-center" 
                 style={{ 
@@ -199,7 +245,6 @@ const Landing = () => {
                 for global developers
               </h1>
 
-              {/* Description: Larger Text */}
               <p 
                 className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[850px] mx-auto leading-[1.6] tracking-normal mb-[40px] text-center" 
                 style={{ fontFamily: 'var(--font-geom)' }}
@@ -207,7 +252,6 @@ const Landing = () => {
                 Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
               </p>
 
-              {/* Buttons: Large & Prominent */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-[16px] mb-12 relative z-30">
                 <Button 
                   onClick={handleJoinClick}
@@ -243,7 +287,6 @@ const Landing = () => {
                     />
                   </AnimatePresence>
                   
-                  {/* Blending Gradients */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10 pointer-events-none" />
                   <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-transparent z-10 pointer-events-none" />
                 </div>
@@ -252,7 +295,6 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* Scroll Indicator */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 cursor-pointer" onClick={scrollToContent}>
             <div className="w-[30px] h-[50px] border border-white/20 rounded-full flex justify-center items-center bg-transparent">
               <div className="animate-scroll-arrow"><ChevronsDown className="w-4 h-4 text-white/40" /></div>
@@ -260,7 +302,7 @@ const Landing = () => {
           </div>
         </div>
 
-        {/* --- SECTION 2: EXPERIENCE REAL CODING (With MacBook Pro Frame) --- */}
+        {/* --- SECTION 2: EXPERIENCE REAL CODING (With Interactive 3D MacBook Pro) --- */}
         <section id="laptop-section" className="w-full bg-black py-12 md:py-24 relative z-20 -mt-12 overflow-hidden border-b border-white/5 shadow-[0_-20px_50px_rgba(0,0,0,0.8)]">
           <div className="container mx-auto px-4 md:px-6 relative z-10">
             <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
@@ -278,6 +320,11 @@ const Landing = () => {
                     A fully functional development environment right in your browser. <br/>
                     <span className="text-white">Write. Run. Debug. Succeed.</span>
                   </p>
+                  
+                  <div className="flex items-center gap-2 justify-center lg:justify-start text-xs text-gray-500 mt-4">
+                    <Rotate3D className="w-4 h-4 text-blue-500 animate-pulse" />
+                    <span>Drag the laptop to rotate in 3D</span>
+                  </div>
                 </div>
 
                 <div className="flex flex-col items-center lg:items-start gap-8">
@@ -299,19 +346,34 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* --- MACBOOK PRO VIEWPORT --- */}
-              <div className="flex-1 w-full max-w-full lg:max-w-none perspective-2000">
-                <div className="relative group w-full max-w-[650px] mx-auto transform transition-transform duration-700 hover:rotate-y-[-2deg] hover:rotate-x-[2deg]">
+              {/* --- MACBOOK PRO 3D INTERACTIVE VIEWPORT --- */}
+              <div 
+                className="flex-1 w-full max-w-full lg:max-w-none" 
+                style={{ perspective: '1200px' }} // High perspective for 3D feel
+              >
+                <motion.div 
+                  ref={laptopRef}
+                  onMouseDown={handleMouseDown}
+                  onTouchStart={handleMouseDown}
+                  style={{ 
+                    rotateX: rotateXSpring, 
+                    rotateY: rotateYSpring,
+                    transformStyle: 'preserve-3d',
+                    cursor: isDragging ? 'grabbing' : 'grab'
+                  }}
+                  className="relative group w-full max-w-[650px] mx-auto"
+                >
                   
-                  {/* Top Case / Lid (Reduced padding from p-2.5 to p-1.5 to thin out the bezel) */}
-                  <div className="relative bg-[#0d0d0d] rounded-[14px] md:rounded-[22px] p-1 md:p-1.5 shadow-2xl border border-[#222]">
-                     
+                  {/* Top Case / Lid (Screen Container) */}
+                  <div 
+                    className="relative bg-[#0d0d0d] rounded-[14px] md:rounded-[22px] p-1 md:p-1.5 shadow-2xl border border-[#222]"
+                    style={{ transform: 'translateZ(10px)', transformStyle: 'preserve-3d' }}
+                  >
                      {/* Screen Bezel (Glossy Black) */}
                      <div className="relative bg-black rounded-[10px] md:rounded-[18px] overflow-hidden border border-white/5 ring-1 ring-white/5">
                         
                         {/* Notch Area */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80px] md:w-[120px] h-[12px] md:h-[18px] bg-black rounded-b-[6px] md:rounded-b-[10px] z-50 flex justify-center items-center">
-                           {/* Camera Lens */}
                            <div className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-[#1a1a1a] shadow-inner border border-white/10" />
                         </div>
 
@@ -325,7 +387,6 @@ const Landing = () => {
                                   <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
                                 </svg>
                              </div>
-                             {/* Logo Centered */}
                              <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 flex items-center justify-center">
                                 <span className="font-neuropol text-[10px] md:text-xs tracking-[0.2em] text-white/90">
                                   CODéVO
@@ -340,7 +401,6 @@ const Landing = () => {
                           <div className="flex-1 flex relative bg-[#0a0a0a] overflow-hidden">
                               {/* LEFT PANEL: EDITOR */}
                               <div className="w-[60%] border-r border-white/5 flex flex-col bg-[#050505]">
-                                  {/* Left Toolbar */}
                                   <div className="h-[32px] px-2 flex items-center justify-between bg-[#080808] border-b border-white/10">
                                       <div className="flex items-center gap-2">
                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" className="w-3 h-3 opacity-80" alt="py" />
@@ -359,7 +419,6 @@ const Landing = () => {
                                           <RefreshCw className="w-2.5 h-2.5" />
                                       </div>
                                   </div>
-                                  {/* Editor Area */}
                                   <div className="flex-1 p-3 font-mono text-[8px] md:text-[10px] text-gray-300 leading-relaxed overflow-hidden">
                                       <div><span className="text-blue-400">def</span> <span className="text-yellow-200">optimize_route</span>(nodes):</div>
                                       <div className="pl-3 text-[#6a9955]"># Initialize DP table</div>
@@ -373,7 +432,6 @@ const Landing = () => {
 
                               {/* RIGHT PANEL: TERMINAL */}
                               <div className="flex-1 flex flex-col bg-[#050505]">
-                                  {/* Right Toolbar */}
                                   <div className="h-[32px] px-2 flex items-center justify-between bg-[#080808] border-b border-white/10">
                                       <span className="text-[7px] md:text-[8px] font-semibold uppercase tracking-widest text-[#666] flex items-center gap-1">
                                         <Terminal className="w-2.5 h-2.5" /> Console
@@ -386,7 +444,6 @@ const Landing = () => {
                                          </div>
                                       </div>
                                   </div>
-                                  {/* Terminal Area */}
                                   <div className="flex-1 bg-[#010409] p-3 font-mono text-[8px] md:text-[10px] text-green-400/90 leading-relaxed">
                                       <div>&gt;&gt; SYSTEM READY</div>
                                       <div className="text-gray-500">&gt;&gt; Initializing Kernel...</div>
@@ -395,7 +452,6 @@ const Landing = () => {
                               </div>
                           </div>
 
-                          {/* 3. FOOTER */}
                           <div className="h-[24px] border-t border-white/10 bg-[#050505] flex items-center justify-between px-3 text-[8px] text-[#666] uppercase tracking-widest">
                              <div className="flex items-center gap-1.5">
                                <div className="w-1.5 h-1.5 rounded-full bg-[#3fb950] shadow-[0_0_4px_#3fb950]" />
@@ -403,23 +459,22 @@ const Landing = () => {
                              </div>
                              <span>Codevo 2025</span>
                           </div>
-
                         </div>
                      </div>
                   </div>
 
                   {/* Bottom Case / Base */}
-                  <div className="relative -mt-[1px] mx-[2%]">
-                     {/* Hinge Area */}
+                  <div 
+                    className="relative -mt-[1px] mx-[2%]"
+                    style={{ transformStyle: 'preserve-3d' }}
+                  >
                      <div className="h-2 bg-[#111] rounded-b-sm border-x border-b border-[#222]" />
-                     {/* Main Base */}
                      <div className="h-2.5 md:h-3.5 bg-gradient-to-b from-[#1a1a1a] to-[#111] rounded-b-[10px] md:rounded-b-[16px] border border-[#222] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] flex justify-center">
-                        {/* Opening Indent */}
                         <div className="w-[15%] h-[2px] md:h-[3px] bg-[#222] rounded-b-md border-x border-b border-[#333]" />
                      </div>
                   </div>
 
-                </div>
+                </motion.div>
               </div>
 
             </div>
