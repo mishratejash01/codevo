@@ -13,8 +13,7 @@ import {
   Mail,
   Lock,
   Cookie,
-  BookOpen,
-  Copy
+  BookOpen
 } from 'lucide-react'; 
 import {
   Popover,
@@ -24,11 +23,9 @@ import {
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
-import { toast } from 'sonner';
 
 /**
  * SOLID FILLED DROPDOWN ARROW
- * Always pure white (opacity 100) to match your request.
  */
 const FilledDropdownArrow = ({ isOpen }: { isOpen: boolean }) => (
   <svg 
@@ -83,7 +80,10 @@ export function Header({ session, onLogout }: HeaderProps) {
     )}>
       <div className={cn(
         "transition-all duration-700 w-full",
-        isScrolled ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-4 px-10" : "p-0"
+        // Added border-transparent to the non-scrolled state to prevent outline artifacts during transition
+        isScrolled 
+          ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-4 px-10" 
+          : "p-0 border border-transparent"
       )}>
         <nav className="flex items-center justify-between w-full">
           {/* Logo Section */}
@@ -108,7 +108,8 @@ export function Header({ session, onLogout }: HeaderProps) {
               </button>
               
               {activeDropdown === 'products' && (
-                <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                // Changed right-[-150px] to right-0 for strict right alignment
+                <div className="absolute top-full right-0 w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl">
                     <div className="col-span-2 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">Our Solutions</div>
                     <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">Ecosystem</div>
@@ -154,7 +155,8 @@ export function Header({ session, onLogout }: HeaderProps) {
               </button>
 
               {activeDropdown === 'resources' && (
-                <div className="absolute top-full right-[-150px] w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                // Changed right-[-150px] to right-0 for strict right alignment
+                <div className="absolute top-full right-0 w-[850px] pt-6 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl">
                     <div className="col-span-2 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">CODéVO</div>
                     <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">Featured Blog Posts</div>
@@ -206,8 +208,11 @@ export function Header({ session, onLogout }: HeaderProps) {
             {session ? (
               <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                 <PopoverTrigger asChild>
-                  <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20">{userName.charAt(0).toUpperCase()}</div>
+                  <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all outline-none">
+                    {/* Added green shadow glow here for the profile indicator */}
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20 shadow-[0_0_10px_rgba(34,197,94,0.6)]">
+                      {userName.charAt(0).toUpperCase()}
+                    </div>
                     <span className="text-sm font-semibold text-white">{userName}</span>
                     <FilledDropdownArrow isOpen={popoverOpen} />
                   </div>
@@ -220,7 +225,8 @@ export function Header({ session, onLogout }: HeaderProps) {
                     </div>
                     <Link to="/profile" className="w-full block py-4 text-[13px] font-bold uppercase tracking-widest bg-white text-black hover:bg-transparent hover:text-white border border-white transition-all">Edit Profile</Link>
                     <div className="mt-4 pt-4 border-t border-[#222222]">
-                      <button onClick={onLogout} className="flex items-center w-full text-white text-[13px] font-medium hover:opacity-60 transition-opacity"><LogOut className="mr-3 w-[18px] h-[18px]" /> Logout</button>
+                      {/* Added outline-none and focus ring removal for the logout button */}
+                      <button onClick={onLogout} className="flex items-center w-full text-white text-[13px] font-medium hover:opacity-60 transition-opacity outline-none focus:outline-none focus:ring-0"><LogOut className="mr-3 w-[18px] h-[18px]" /> Logout</button>
                     </div>
                   </div>
                 </PopoverContent>
