@@ -50,8 +50,6 @@ export const AsteroidGameFrame = () => {
 
   // Input Handling
   useEffect(() => {
-    // NOTE: Removed "if (!gameStarted) return;" so we can listen for 'W' to start the game
-
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       
@@ -415,6 +413,7 @@ export const AsteroidGameFrame = () => {
          <div className="flex items-center gap-4 md:gap-6">
             <div className="flex gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest items-center">
                <div className="flex gap-1">
+                 <span className="border border-white/10 bg-white/5 px-1.5 py-0.5 rounded text-gray-300">W</span>
                  <span className="border border-white/10 bg-white/5 px-1.5 py-0.5 rounded text-gray-300">A</span>
                  <span className="border border-white/10 bg-white/5 px-1.5 py-0.5 rounded text-gray-300">D</span>
                </div>
@@ -430,7 +429,7 @@ export const AsteroidGameFrame = () => {
          
          <div className="flex items-center gap-2 text-gray-600 text-[10px] md:text-xs">
            <span className="hidden sm:inline">Built by</span>
-           <span className="text-gray-300 font-bold">Vireon Games</span>
+           <span className="text-gray-300 font-bold">Neural AI</span>
          </div>
       </div>
     </div>
