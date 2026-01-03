@@ -50,10 +50,22 @@ export const AsteroidGameFrame = () => {
 
   // Input Handling
   useEffect(() => {
-    if (!gameStarted) return;
+    // NOTE: Removed "if (!gameStarted) return;" so we can listen for 'W' to start the game
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
+      
+      // Start/Pause Toggle with W
+      if (key === 'w') {
+        setGameStarted(prev => !prev);
+        lastActivity.current = Date.now();
+        setInactive(false);
+        return;
+      }
+
+      // If game is not started, ignore other inputs
+      if (!gameStarted) return;
+
       if (key === 'a' || key === 'arrowleft') gameState.current.keys.a = true;
       if (key === 'd' || key === 'arrowright') gameState.current.keys.d = true;
       if (e.code === 'Space') {
@@ -65,12 +77,14 @@ export const AsteroidGameFrame = () => {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      if (!gameStarted) return;
       const key = e.key.toLowerCase();
       if (key === 'a' || key === 'arrowleft') gameState.current.keys.a = false;
       if (key === 'd' || key === 'arrowright') gameState.current.keys.d = false;
     };
 
     const handleMouseDown = (e: MouseEvent) => {
+      if (!gameStarted) return;
       // Only fire if clicking on canvas directly (not on controls)
       if (canvasRef.current && canvasRef.current === e.target) {
         fireBullet();
@@ -78,6 +92,7 @@ export const AsteroidGameFrame = () => {
     };
 
     const handleMouseMove = () => {
+      if (!gameStarted) return;
       if (inactive) {
         lastActivity.current = Date.now();
         setInactive(false);
@@ -322,7 +337,7 @@ export const AsteroidGameFrame = () => {
               ASTEROID DEFENSE
             </h3>
             <p className="text-gray-300 text-xs md:text-sm max-w-md mx-auto">
-              Defend your station. <span className="hidden md:inline">Use <span className="text-white border border-white/20 px-1 rounded">A</span> <span className="text-white border border-white/20 px-1 rounded">D</span> to rotate and <span className="text-white border border-white/20 px-1 rounded">SPACE</span> to fire.</span>
+              Defend your station. <span className="hidden md:inline">Use <span className="text-white border border-white/20 px-1 rounded">A</span> <span className="text-white border border-white/20 px-1 rounded">D</span> to rotate, <span className="text-white border border-white/20 px-1 rounded">SPACE</span> to fire, and <span className="text-white border border-white/20 px-1 rounded">W</span> to pause/start.</span>
             </p>
             <Button 
               onClick={() => setGameStarted(true)}
@@ -400,7 +415,6 @@ export const AsteroidGameFrame = () => {
          <div className="flex items-center gap-4 md:gap-6">
             <div className="flex gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest items-center">
                <div className="flex gap-1">
-                 <span className="border border-white/10 bg-white/5 px-1.5 py-0.5 rounded text-gray-300">W</span>
                  <span className="border border-white/10 bg-white/5 px-1.5 py-0.5 rounded text-gray-300">A</span>
                  <span className="border border-white/10 bg-white/5 px-1.5 py-0.5 rounded text-gray-300">D</span>
                </div>
