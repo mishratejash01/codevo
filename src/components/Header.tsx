@@ -132,25 +132,27 @@ export function Header({ session, onLogout }: HeaderProps) {
         className={cn(
           "fixed z-50 left-0 right-0 mx-auto transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
           isScrolled 
-            ? "top-6 max-w-7xl px-4 md:px-0"
-            : "top-0 w-full max-w-full px-10 py-6"
+            ? "top-6 max-w-7xl px-4 md:px-0" 
+            : "top-0 w-full max-w-full px-10 py-6" 
         )}
       >
         <div 
           className={cn(
             "transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] w-full",
             isScrolled 
-              ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-4 px-10"
+              ? "rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl p-4 px-10" 
               : "rounded-none border-transparent bg-transparent p-0"
           )}
         >
           <nav className="flex items-center justify-between w-full">
+            {/* Logo Section with Glow Effect */}
             <Link to="/" className="flex items-center gap-3 group shrink-0">
-              <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white">
+              <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]">
                 COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
               </span>
             </Link>
 
+            {/* Navigation Tabs */}
             <div className="hidden md:flex flex-1 justify-end items-center gap-8 mr-8">
               <Link to="/degree" className="flex items-center gap-2 text-[15px] font-medium text-muted-foreground hover:text-white transition-colors relative group">
                 <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-4 h-4 object-contain opacity-80" /> 
@@ -175,6 +177,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               </Link>
             </div>
 
+            {/* Profile / Auth Section */}
             <div className="flex items-center gap-2 shrink-0">
               {session ? (
                 <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
@@ -261,7 +264,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                   </PopoverContent>
                 </Popover>
               ) : (
-                /* UPDATED SIGN IN BUTTON: Transparent Grayish White (Glass effect) */
+                /* Updated "Sign in" Button: Transparent Grayish Type */
                 <Button 
                   size="lg" 
                   className="bg-white/10 hover:bg-white/20 text-white rounded-full px-8 font-semibold h-11 transition-all border border-white/10 backdrop-blur-md" 
@@ -275,7 +278,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         </div>
       </header>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Bottom Navigation */}
       <div className={cn("fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform", (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none")}>
         <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl relative">
           <div className="flex justify-between items-end px-2">
