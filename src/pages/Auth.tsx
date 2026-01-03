@@ -42,8 +42,6 @@ const Auth = () => {
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
   const googleBtnRef = useRef<HTMLDivElement>(null);
   
-  const typewriterText = useTypewriter("Built and Maintained by Neural AI", 60, 1200);
-
   useEffect(() => {
     // Check for existing session
     const checkSession = async () => {
@@ -184,14 +182,6 @@ const Auth = () => {
              className="w-full h-full object-cover opacity-80"
            />
            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 pointer-events-none z-10" />
-           <div className="absolute bottom-12 inset-x-0 flex justify-center z-20 pointer-events-none">
-             <div className="bg-black/40 backdrop-blur-sm px-8 py-3 rounded-full border border-white/5 shadow-2xl">
-               <p className="text-white/90 text-sm font-mono tracking-wider flex items-center gap-1">
-                 {typewriterText}
-                 <span className="animate-pulse w-[2px] h-[1.2em] bg-green-400 inline-block"></span>
-               </p>
-             </div>
-           </div>
         </div>
       </div>
     </div>
