@@ -261,10 +261,10 @@ export function Header({ session, onLogout }: HeaderProps) {
                   </PopoverContent>
                 </Popover>
               ) : (
-                /* UPDATED SIGN IN BUTTON: Rounded-full, white background, black text */
+                /* UPDATED SIGN IN BUTTON: Vibrant Blue color (#3b82f6) and Pill Shape as per image */
                 <Button 
                   size="lg" 
-                  className="bg-white text-black hover:bg-zinc-200 rounded-full px-8 font-semibold h-11 transition-all" 
+                  className="bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded-full px-8 font-semibold h-11 transition-all border-none" 
                   onClick={() => navigate('/auth')}
                 >
                   Sign in
@@ -275,6 +275,7 @@ export function Header({ session, onLogout }: HeaderProps) {
         </div>
       </header>
 
+      {/* Mobile Navigation Updates */}
       <div className={cn("fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform", (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none")}>
         <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl relative">
           <div className="flex justify-between items-end px-2">
@@ -287,7 +288,7 @@ export function Header({ session, onLogout }: HeaderProps) {
             </div>
             <div className="flex gap-4">
               <NavItem to="/leaderboard" icon={Trophy} label="Rank" active={location.pathname === "/leaderboard"} />
-              {session ? <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={location.pathname === "/dashboard"} /> : <NavItem to="/auth" icon={LogIn} label="Login" active={location.pathname === "/auth"} />}
+              {session ? <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={location.pathname === "/dashboard"} /> : <NavItem to="/auth" icon={LogIn} label="Sign in" active={location.pathname === "/auth"} />}
             </div>
           </div>
         </div>
