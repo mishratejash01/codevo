@@ -3,7 +3,18 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { LogOut, User, Check, Loader2, ChevronDown, Home, Code2, Trophy, LayoutDashboard, LogIn, Copy } from 'lucide-react'; 
+import { 
+  LogOut, 
+  ChevronDown, 
+  Home, 
+  Code2, 
+  Trophy, 
+  LayoutDashboard, 
+  LogIn, 
+  Copy, 
+  ArrowRight,
+  Loader2
+} from 'lucide-react'; 
 import {
   Popover,
   PopoverContent,
@@ -51,38 +62,12 @@ export function Header({ session, onLogout }: HeaderProps) {
     const { data } = await supabase
       .from('profiles')
       .select('username, full_name, avatar_url, bio, github_handle, linkedin_url')
-      .eq('id', session.user.id)
+      .eq( 'id', session.user.id)
       .maybeSingle();
     
     if (data) {
       setProfile(data);
       if (data.username) setUsername(data.username);
-    }
-  }
-
-  useEffect(() => {
-    if (!username || username === profile?.username) {
-      setUsernameError(null);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      if (username.length < 3) return setUsernameError('Too short');
-      setIsCheckingUsername(true);
-      const { data } = await supabase.from('profiles').select('username').eq('username', username).neq('id', session?.user?.id || '').maybeSingle();
-      setIsCheckingUsername(false);
-      setUsernameError(data ? 'Taken' : null);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [username, profile?.username, session?.user?.id]);
-
-  async function saveUsername() {
-    if (!session?.user?.id || usernameError || !username) return;
-    setIsSavingUsername(true);
-    const { error } = await supabase.from('profiles').update({ username }).eq('id', session.user.id);
-    setIsSavingUsername(false);
-    if (!error) {
-      toast.success('Username updated');
-      fetchProfile();
     }
   }
 
@@ -145,36 +130,41 @@ export function Header({ session, onLogout }: HeaderProps) {
           )}
         >
           <nav className="flex items-center justify-between w-full">
-            {/* Logo Section with Glow Effect */}
+            {/* Logo Section with Glow */}
             <Link to="/" className="flex items-center gap-3 group shrink-0">
               <span className="font-neuropol text-xl md:text-2xl font-bold tracking-wider text-white transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]">
                 COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
               </span>
             </Link>
 
-            {/* Navigation Tabs */}
-            <div className="hidden md:flex flex-1 justify-end items-center gap-8 mr-8">
-              <Link to="/degree" className="flex items-center gap-2 text-[15px] font-medium text-muted-foreground hover:text-white transition-colors relative group">
-                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/6/69/IIT_Madras_Logo.svg/1200px-IIT_Madras_Logo.svg.png" alt="IITM" className="w-4 h-4 object-contain opacity-80" /> 
-                IITM BS
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
-              </Link>
-              <Link to="/practice-arena" className="text-[15px] font-medium text-muted-foreground hover:text-white transition-colors relative group">
-                Practice
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
-              </Link>
-              <Link to="/events" className="text-[15px] font-medium text-muted-foreground hover:text-white transition-colors relative group">
+            {/* Professional Navigation Tabs */}
+            <div className="hidden md:flex flex-1 justify-end items-center gap-7 mr-6">
+              <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors group">
+                Products
+                <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+              </button>
+              
+              <button className="flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-white transition-colors group">
+                Resources
+                <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+              </button>
+
+              <Link to="/events" className="text-[14px] font-medium text-muted-foreground hover:text-white transition-colors">
                 Events
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
               </Link>
-              <Link to="/compiler" className="text-[15px] font-medium text-muted-foreground hover:text-purple-400 transition-colors relative group">
-                Compiler
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-400 transition-all group-hover:w-full"></span>
-              </Link>
-              <Link to="/leaderboard" className="text-[15px] font-medium text-muted-foreground hover:text-white transition-colors relative group">
-                Leaderboard
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all group-hover:w-full"></span>
-              </Link>
+
+              {/* Combined Try Codevo Play Button */}
+              <Button 
+                onClick={() => navigate('/practice-arena')}
+                variant="outline" 
+                className={cn(
+                  "group border-white/20 bg-transparent hover:bg-white text-white hover:text-black rounded-full px-6 h-10 text-[13px] font-bold transition-all flex items-center gap-2",
+                  "shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                )}
+              >
+                Try CODéVO Play
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </Button>
             </div>
 
             {/* Profile / Auth Section */}
@@ -217,20 +207,6 @@ export function Header({ session, onLogout }: HeaderProps) {
                       </div>
 
                       <div className="flex flex-col gap-3 text-left">
-                        {!hasUsername && (
-                          <div className="flex gap-2 mb-4">
-                            <Input 
-                              value={username} 
-                              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} 
-                              placeholder="username" 
-                              className="h-9 bg-black border-[#222222] text-xs rounded-none focus:border-white" 
-                            />
-                            <Button size="sm" onClick={saveUsername} disabled={isSavingUsername || !!usernameError} className="h-9 bg-white text-black hover:bg-zinc-200 rounded-none">
-                              {isSavingUsername ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Set'}
-                            </Button>
-                          </div>
-                        )}
-
                         <Link 
                           to="/profile" 
                           onClick={() => setPopoverOpen(false)} 
@@ -244,16 +220,6 @@ export function Header({ session, onLogout }: HeaderProps) {
                           {isProfileIncomplete ? 'Complete Your Profile' : 'Edit Profile'}
                         </Link>
 
-                        {isProfileComplete && (
-                          <Link 
-                            to={`/u/${profile?.username}`} 
-                            onClick={() => setPopoverOpen(false)} 
-                            className="text-white text-[13px] font-medium py-3 px-1 hover:text-[#888888] transition-colors"
-                          >
-                            View Profile
-                          </Link>
-                        )}
-
                         <div className="mt-4 pt-4 border-t border-[#222222]">
                           <button onClick={() => { setPopoverOpen(false); onLogout(); }} className="flex items-center w-full text-white text-[13px] font-medium hover:opacity-60 transition-opacity">
                             <LogOut className="mr-3 w-[18px] h-[18px] stroke-[2px]" /> Logout
@@ -264,10 +230,9 @@ export function Header({ session, onLogout }: HeaderProps) {
                   </PopoverContent>
                 </Popover>
               ) : (
-                /* Updated "Sign in" Button: Transparent Grayish Type */
                 <Button 
                   size="lg" 
-                  className="bg-white/10 hover:bg-white/20 text-white rounded-full px-8 font-semibold h-11 transition-all border border-white/10 backdrop-blur-md" 
+                  className="bg-white/10 hover:bg-white/20 text-white rounded-full px-7 font-semibold h-10 transition-all border border-white/10 backdrop-blur-md text-[14px]" 
                   onClick={() => navigate('/auth')}
                 >
                   Sign in
@@ -277,25 +242,6 @@ export function Header({ session, onLogout }: HeaderProps) {
           </nav>
         </div>
       </header>
-
-      {/* Mobile Bottom Navigation */}
-      <div className={cn("fixed bottom-6 left-6 right-6 z-50 md:hidden transition-all duration-500 transform", (!isPracticeOrExam && isScrolled) ? "translate-y-0 opacity-100" : "translate-y-32 opacity-0 pointer-events-none")}>
-        <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-3 shadow-2xl relative">
-          <div className="flex justify-between items-end px-2">
-            <div className="flex gap-4">
-              <NavItem to="/" icon={Home} label="Home" active={location.pathname === "/"} />
-              <NavItem to="/events" icon={Code2} label="Events" active={location.pathname.startsWith("/events")} />
-            </div>
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-3">
-               <NavItem to="/practice-arena" icon={Code2} label="Practice" active={location.pathname.startsWith("/practice-arena")} size="large" />
-            </div>
-            <div className="flex gap-4">
-              <NavItem to="/leaderboard" icon={Trophy} label="Rank" active={location.pathname === "/leaderboard"} />
-              {session ? <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={location.pathname === "/dashboard"} /> : <NavItem to="/auth" icon={LogIn} label="Sign in" active={location.pathname === "/auth"} />}
-            </div>
-          </div>
-        </div>
-      </div>
     </>
   );
 }
