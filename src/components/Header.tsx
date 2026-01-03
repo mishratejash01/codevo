@@ -27,20 +27,19 @@ import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 
 /**
- * FILLED DROPDOWN ARROW
- * Replaces the "single line" chevron with a solid geometric shape 
- * to match professional corporate designs.
+ * SOLID FILLED DROPDOWN ARROW
+ * Always pure white (opacity 100) to match your request.
  */
 const FilledDropdownArrow = ({ isOpen }: { isOpen: boolean }) => (
   <svg 
     width="8" 
     height="6" 
     viewBox="0 0 8 6" 
-    fill="currentColor" 
+    fill="white" 
     xmlns="http://www.w3.org/2000/svg"
     className={cn(
-      "transition-transform duration-300 ml-2 opacity-40 shrink-0", 
-      isOpen && "rotate-180 opacity-100"
+      "transition-transform duration-300 ml-2 shrink-0", 
+      isOpen && "rotate-180"
     )}
   >
     <path d="M0 1L4 5L8 1H0Z" />
@@ -103,38 +102,38 @@ export function Header({ session, onLogout }: HeaderProps) {
               onMouseEnter={() => setActiveDropdown('products')} 
               onMouseLeave={() => setActiveDropdown(null)}
             >
-              <button className="flex items-center text-[14px] font-medium text-muted-foreground group-hover:text-white transition-colors py-2 outline-none">
+              <button className="flex items-center text-[14px] font-semibold text-white transition-colors py-2 outline-none">
                 Products
                 <FilledDropdownArrow isOpen={activeDropdown === 'products'} />
               </button>
               
               {activeDropdown === 'products' && (
                 <div className="absolute top-full right-[-150px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="col-span-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">Our Solutions</div>
-                  <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">Ecosystem</div>
+                  <div className="col-span-2 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">Our Solutions</div>
+                  <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">Ecosystem</div>
                   
-                  <div className="grid grid-cols-2 col-span-2 gap-y-6">
-                    <Link to="/compiler" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/item">
-                      <Terminal className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> 
+                  <div className="grid grid-cols-2 col-span-2 gap-y-7">
+                    <Link to="/compiler" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
+                      <Terminal className="w-[18px] h-[18px] text-[#666] group-hover/item:text-white" /> 
                       <span className="text-[15px]">Compiler</span>
                     </Link>
-                    <Link to="/practice-arena" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/item">
-                      <Gamepad2 className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> 
+                    <Link to="/practice-arena" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
+                      <Gamepad2 className="w-[18px] h-[18px] text-[#666] group-hover/item:text-white" /> 
                       <span className="text-[15px]">Practice Arena</span>
                     </Link>
-                    <Link to="/profile" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/item">
-                      <UserCircle className="w-[18px] h-[18px] text-muted-foreground group-hover/item:text-white" /> 
+                    <Link to="/profile" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
+                      <UserCircle className="w-[18px] h-[18px] text-[#666] group-hover/item:text-white" /> 
                       <span className="text-[15px]">Profile Card</span>
                     </Link>
                   </div>
 
                   <div className="border-l border-white/10 pl-10 flex flex-col gap-6">
-                    <div className="relative rounded-md overflow-hidden border border-white/5 aspect-video bg-[#111]">
+                    <div className="relative rounded-md overflow-hidden border border-white/10 aspect-video bg-[#111]">
                        <img src="https://images.unsplash.com/photo-1614850523296-e8c041de4398?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover blur-lg opacity-20" />
                     </div>
                     <div className="flex flex-col">
-                        <p className="text-white/40 text-[14px] font-medium blur-[2px]">Neural IDE v3</p>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-1.5">Coming Soon</p>
+                        <p className="text-white/40 text-[14px] font-medium blur-[2.5px] leading-tight">Neural IDE v3</p>
+                        <p className="text-[11px] text-[#666] font-bold uppercase tracking-widest mt-2">Coming Soon</p>
                     </div>
                   </div>
                 </div>
@@ -147,23 +146,23 @@ export function Header({ session, onLogout }: HeaderProps) {
               onMouseEnter={() => setActiveDropdown('resources')} 
               onMouseLeave={() => setActiveDropdown(null)}
             >
-              <button className="flex items-center text-[14px] font-medium text-muted-foreground group-hover:text-white transition-colors py-2 outline-none">
+              <button className="flex items-center text-[14px] font-semibold text-white transition-colors py-2 outline-none">
                 Resources
                 <FilledDropdownArrow isOpen={activeDropdown === 'resources'} />
               </button>
 
               {activeDropdown === 'resources' && (
                 <div className="absolute top-full right-[-150px] w-[850px] bg-[#050505] border border-white/10 rounded-sm p-10 grid grid-cols-[1fr_1fr_1.2fr] gap-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] backdrop-blur-3xl animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="col-span-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">CODéVO</div>
-                  <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-2">Featured Blog Posts</div>
+                  <div className="col-span-2 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">CODéVO</div>
+                  <div className="col-span-1 border-l border-white/10 pl-10 text-[11px] font-bold text-[#666] uppercase tracking-[0.2em] mb-2">Featured Blog Posts</div>
 
-                  <div className="grid grid-cols-2 col-span-2 gap-y-6">
-                    <Link to="/contact" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><Mail className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Contact Us</span></Link>
-                    <Link to="/security" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><ShieldCheck className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Security</span></Link>
-                    <Link to="/terms" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><FileText className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Terms & Conditions</span></Link>
-                    <Link to="/cookies" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><Cookie className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Cookies</span></Link>
-                    <Link to="/privacy" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><Lock className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Privacy Policy</span></Link>
-                    <Link to="/blog" className="flex items-center gap-4 text-gray-300 hover:text-white hover:translate-x-1 transition-all group/res"><BookOpen className="w-[18px] h-[18px] text-muted-foreground group-hover/res:text-white" /> <span className="text-[15px]">Blog</span></Link>
+                  <div className="grid grid-cols-2 col-span-2 gap-y-7">
+                    <Link to="/contact" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Mail className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px]">Contact Us</span></Link>
+                    <Link to="/security" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><ShieldCheck className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px]">Security</span></Link>
+                    <Link to="/terms" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><FileText className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px]">Terms & Conditions</span></Link>
+                    <Link to="/cookies" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Cookie className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px]">Cookies</span></Link>
+                    <Link to="/privacy" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><Lock className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px]">Privacy Policy</span></Link>
+                    <Link to="/blog" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/res"><BookOpen className="w-[18px] h-[18px] text-[#666] group-hover/res:text-white" /> <span className="text-[15px]">Blog</span></Link>
                   </div>
 
                   <div className="border-l border-white/10 pl-10 flex flex-col gap-10">
@@ -176,8 +175,8 @@ export function Header({ session, onLogout }: HeaderProps) {
                           <img src={blog.img} className="w-full h-full object-cover blur-md opacity-20" />
                         </div>
                         <div className="flex flex-col">
-                          <p className="text-[14px] text-white/30 blur-[2px] font-medium leading-tight mb-2">{blog.title}</p>
-                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Coming Soon</p>
+                          <p className="text-[14px] text-white/30 blur-[2px] font-medium leading-tight">{blog.title}</p>
+                          <p className="text-[10px] text-[#666] font-bold uppercase tracking-widest mt-2">Coming Soon</p>
                         </div>
                       </div>
                     ))}
@@ -186,7 +185,7 @@ export function Header({ session, onLogout }: HeaderProps) {
               )}
             </div>
 
-            <Link to="/events" className="text-[14px] font-medium text-muted-foreground hover:text-white transition-colors">Events</Link>
+            <Link to="/events" className="text-[14px] font-semibold text-white hover:opacity-80 transition-opacity">Events</Link>
 
             {/* Try CODéVO Play Button */}
             <Button 
@@ -205,7 +204,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                 <PopoverTrigger asChild>
                   <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
                     <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20">{userName.charAt(0).toUpperCase()}</div>
-                    <span className="text-sm font-medium text-gray-200">{userName}</span>
+                    <span className="text-sm font-semibold text-white">{userName}</span>
                     <FilledDropdownArrow isOpen={popoverOpen} />
                   </div>
                 </PopoverTrigger>
