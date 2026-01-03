@@ -429,7 +429,7 @@ export const AsteroidGameFrame = () => {
          
          <div className="flex items-center gap-2 text-gray-600 text-[10px] md:text-xs">
            <span className="hidden sm:inline">Built by</span>
-           <span className="text-gray-300 font-bold">Neural AI</span>
+           <span className="text-gray-300 font-bold">Vireon Games</span>
          </div>
       </div>
     </div>
