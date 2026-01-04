@@ -73,13 +73,9 @@ const Landing = () => {
     return () => clearInterval(timer);
   }, []);
   
-  // Terminal Animation Logic
+  // Terminal Animation Logic (ENABLED FOR MOBILE NOW)
   useEffect(() => {
-    if (isMobile) {
-      setShowcasePhase('terminal');
-      setTypedCode(DEMO_SCENARIO.code);
-      return;
-    }
+    // Removed the "if (isMobile) return" block so typing works on mobile
     let timeoutId: NodeJS.Timeout;
     let charIndex = 0;
     const animate = () => {
@@ -105,7 +101,7 @@ const Landing = () => {
     };
     animate();
     return () => clearTimeout(timeoutId);
-  }, [isMobile]);
+  }, []); // Removed [isMobile] dependency as logic is universal now
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
@@ -231,7 +227,8 @@ const Landing = () => {
 
               {/* --- IMAGE CAROUSEL SECTION --- */}
               <div className="w-full relative z-20 -mt-8">
-                <div className="relative w-full aspect-[16/10] md:aspect-[21/9] overflow-hidden rounded-t-lg shadow-2xl">
+                {/* Changed aspect ratio for mobile to 4/3 to prevent squashing */}
+                <div className="relative w-full aspect-[4/3] md:aspect-[21/9] overflow-hidden rounded-t-lg shadow-2xl">
                   <AnimatePresence mode="popLayout">
                     <motion.img 
                       key={currentImageIndex}
