@@ -15,22 +15,26 @@ import SubjectOppeSelection from "./pages/SubjectOppeSelection";
 import SubjectModeSelection from "./pages/SubjectModeSelection";
 import Profile from "./pages/Profile";
 import About from "./pages/About"; 
-import Events from "./pages/Events";
-import EventDetails from "./pages/EventDetails";
-import Dashboard from "./pages/Dashboard";
-
-// --- LEGAL & SUPPORT PAGES ---
 import TermsOfService from "./pages/TermsOfService"; 
 import PrivacyPolicy from "./pages/PrivacyPolicy"; 
 import CookiePolicy from "./pages/CookiePolicy";
 import Security from "./pages/Security";
+import Events from "./pages/Events";
+import EventDetails from "./pages/EventDetails";
+import Dashboard from "./pages/Dashboard";
+import MaintenancePage from "./components/MaintenancePage"; // Imported MaintenancePage
 
 // --- ATTENDANCE SYSTEM IMPORTS ---
 import VerifyRegistration from "./pages/VerifyRegistration";
 import AdminScanner from "./pages/AdminScanner";
 
 export const AppRoutes = [
-  { path: "/", component: Landing, name: "Landing Page" },
+  // --- MAIN ENTRY POINT (MAINTENANCE MODE) ---
+  { path: "/", component: MaintenancePage, name: "Coming Soon" }, 
+  
+  // Alternative path for Landing if needed for internal testing
+  { path: "/home", component: Landing, name: "Landing Page" },
+
   { path: "/auth", component: Auth, name: "Authentication" },
   { path: "/dashboard", component: Dashboard, name: "Dashboard" },
   { path: "/about", component: About, name: "About Us" },
@@ -40,7 +44,7 @@ export const AppRoutes = [
   { path: "/privacy", component: PrivacyPolicy, name: "Privacy Policy" },
   { path: "/cookies", component: CookiePolicy, name: "Cookie Policy" },
   { path: "/security", component: Security, name: "Security" },
-
+  
   // --- ATTENDANCE & VERIFICATION ROUTES ---
   { path: "/verify/:formType/:registrationId", component: VerifyRegistration, name: "Verify Registration" },
   { path: "/AdminScanner", component: AdminScanner, name: "Admin Terminal" },
