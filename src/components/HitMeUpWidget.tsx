@@ -4,35 +4,42 @@ import {
   SheetTrigger,
   SheetHeader,
   SheetTitle,
-  SheetDescription 
+  SheetDescription,
+  SheetClose 
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, Send, Github, Linkedin, Mail, Twitter } from "lucide-react";
+import { ChevronLeft, Send, Github, Linkedin, Mail, Twitter, X } from "lucide-react";
 
 export function HitMeUpWidget() {
   return (
     <Sheet>
       <SheetTrigger asChild>
         <button
-          className="fixed right-0 top-1/2 -translate-y-1/2 z-50 bg-white text-black p-3 pr-3 rounded-l-2xl shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:pr-5 hover:bg-zinc-200 transition-all duration-300 group border-l border-t border-b border-white/10 flex items-center gap-2"
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-50 bg-white text-black p-3 rounded-l-xl shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:bg-zinc-200 transition-all duration-300 group border-l border-t border-b border-white/10 flex items-center justify-center w-12 h-14"
           aria-label="Connect"
         >
-          <ChevronLeft className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          {/* Optional Label on Hover */}
-          <span className="text-xs font-bold uppercase tracking-wider hidden group-hover:inline-block animate-in fade-in duration-200">
-            Connect
-          </span>
+          {/* Arrow Icon Only - No Text */}
+          <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform duration-300" />
         </button>
       </SheetTrigger>
       
-      <SheetContent side="right" className="w-full sm:max-w-[420px] bg-[#050505] border-l border-white/10 p-0 shadow-2xl">
-        <div className="flex flex-col h-full">
+      <SheetContent side="right" className="w-full sm:max-w-[420px] bg-[#050505] border-l border-white/10 p-0 shadow-2xl [&>button]:hidden">
+        {/* Note: [&>button]:hidden hides the default shadcn close button so we can use our custom one */}
+        
+        <div className="flex flex-col h-full relative">
             
+            {/* Custom Cross Mark (Close Button) */}
+            <SheetClose asChild>
+                <button className="absolute top-5 right-5 z-50 p-2 rounded-full bg-white/5 hover:bg-white/20 text-gray-400 hover:text-white transition-all">
+                    <X className="w-5 h-5" />
+                </button>
+            </SheetClose>
+
             {/* Header / Profile Section */}
             <div className="p-8 pb-8 border-b border-white/5 bg-[#0a0a0a]">
-                <SheetHeader className="text-left space-y-2">
+                <SheetHeader className="text-left space-y-2 pr-10">
                     <SheetTitle className="text-3xl font-bold text-white font-sans tracking-tight">Let's Connect</SheetTitle>
                     <SheetDescription className="text-gray-400 text-sm leading-relaxed">
                         Have a project in mind or just want to say hi? <br/> 
