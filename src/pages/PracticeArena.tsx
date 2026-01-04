@@ -20,10 +20,10 @@ import { cn } from '@/lib/utils';
 import { UserStatsCard } from '@/components/practice/UserStatsCard';
 import { ActivityCalendar } from '@/components/practice/ActivityCalendar';
 import { QRCodeSVG } from 'qrcode.react';
+import { SEO } from '@/components/SEO';
 
 type StatusFilter = 'all' | 'solved' | 'unsolved' | 'attempted';
 
-// --- PREMIUM FOLDER STICKER ---
 const FolderSticker = ({ active }: { active: boolean }) => (
   <div className={cn(
     "relative transition-all duration-300 shrink-0", 
@@ -50,7 +50,6 @@ const FolderSticker = ({ active }: { active: boolean }) => (
   </div>
 );
 
-// --- TOPIC HASHTAG ICON ---
 const SubTopicHashtag = ({ active }: { active: boolean }) => (
   <div className={cn("relative w-4 h-4 shrink-0 transition-opacity duration-300", active ? "opacity-100" : "opacity-30")}>
     <div className="absolute left-[30%] top-0 w-[2px] h-full bg-[#f39233] rounded-full" />
@@ -96,7 +95,6 @@ export default function PracticeArena() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [placeholderTopic, setPlaceholderTopic] = useState("Arrays");
   
-  // Username update states
   const [newUsername, setNewUsername] = useState('');
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   
@@ -237,6 +235,11 @@ export default function PracticeArena() {
 
   return (
     <div className="h-screen bg-[#050505] text-[#ffffff] flex flex-col font-sans overflow-hidden select-none">
+      <SEO 
+        title="Practice Arena" 
+        description="Master Data Structures and Algorithms with curated problem sets, instant judging, and real-time performance tracking."
+        url="https://codevo.co.in/practice-arena"
+      />
       <nav className="flex items-center justify-between px-6 md:px-12 h-16 border-b border-[#1a1a1a] bg-[#050505] shrink-0 z-50">
         <div className="flex items-center gap-4 md:gap-8 font-sans">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -310,10 +313,8 @@ export default function PracticeArena() {
                    </div>
                  </div>
 
-                 {/* Updated QR Section */}
                  <div className="mt-1 p-3 bg-white rounded-lg flex flex-col items-center gap-2 relative overflow-hidden">
                     <div className="relative w-[96px] h-[96px]">
-                      {/* Blur logic: active if no username exists (Guest or Logged in without username) */}
                       <div className={cn("transition-all duration-500", !profile?.username && "blur-md select-none")}>
                         <QRCodeSVG 
                           value={profileLink} 
@@ -323,7 +324,6 @@ export default function PracticeArena() {
                         />
                       </div>
                       
-                      {/* Input overlay: shown only if logged in AND has no username */}
                       {userId && !profile?.username && (
                         <div className="absolute inset-0 flex flex-col items-center justify-end pb-1 px-1">
                           <div className="w-full flex flex-col gap-1">
