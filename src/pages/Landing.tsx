@@ -12,8 +12,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FeaturesInfiniteCarousel } from '@/components/FeaturesInfiniteCarousel';
 
-// --- WIDGET IMPORT ---
-import { HitMeUpWidget } from '@/pages/Profile'; 
+// --- WIDGET IMPORT UPDATED ---
+import { HitMeUpWidget } from '@/components/HitMeUpWidget'; 
 
 const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
