@@ -147,7 +147,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                       </Link>
                       <Link to="/practice-arena" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
                         <div className="shrink-0 transition-transform group-hover/item:scale-110"><PracticeIcon /></div>
-                        <span className="text-[17px] font-medium font-sans">Practice Arena</span>
+                        <span className="text-[17px] font-medium font-sans">Practice </span>
                       </Link>
                       <Link to="/profile" className="flex items-center gap-4 text-[#e0e0e0] hover:text-white hover:translate-x-1 transition-all group/item">
                         <div className="shrink-0 transition-transform group-hover/item:scale-110"><ProfileIcon /></div>
