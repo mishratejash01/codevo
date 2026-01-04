@@ -33,7 +33,7 @@ export const Footer = () => {
             </div>
           </div>
           
-          {/* Products Links (Matches Header 'Products' tab) */}
+          {/* Products Links */}
           <div>
             <h4 className="font-bold text-white mb-6">Products</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
@@ -44,7 +44,7 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Resources Links (Matches Header 'Resources' tab) */}
+          {/* Resources Links */}
           <div>
             <h4 className="font-bold text-white mb-6">Resources</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
@@ -54,13 +54,13 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Legal Links (Matches Header 'Resources' sub-items) */}
+          {/* Legal Links (Connecting Paths) */}
           <div>
             <h4 className="font-bold text-white mb-6">Legal</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li><Link to="/terms" className="hover:text-white transition-colors">Terms & Conditions</Link></li>
               <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/cookies" className="hover:text-white transition-colors">Cookies</Link></li>
+              <li><Link to="/cookies" className="hover:text-white transition-colors">Cookie Policy</Link></li>
               <li><Link to="/security" className="hover:text-white transition-colors">Security</Link></li>
             </ul>
           </div>
