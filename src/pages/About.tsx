@@ -8,6 +8,7 @@ import {
   Zap, Server, Cpu, Heart, Rocket, Lock 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { SEO } from '@/components/SEO';
 
 const About = () => {
   const navigate = useNavigate();
@@ -40,10 +41,14 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-primary/30 font-sans overflow-x-hidden">
+      <SEO 
+        title="About Us" 
+        description="We are forging the future of code. Learn about Codevo's mission to revolutionize developer education and practice."
+        url="https://codevo.co.in/about"
+      />
       <Header session={session} onLogout={handleLogout} />
 
       <main className="pt-24 pb-0">
-        {/* --- HERO SECTION --- */}
         <section className="relative px-6 md:px-12 lg:px-24 py-12 md:py-20 max-w-7xl mx-auto">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
           
@@ -72,7 +77,6 @@ const About = () => {
           </motion.div>
         </section>
 
-        {/* --- STATS / LOCATIONS --- */}
         <section className="border-y border-white/5 bg-[#0c0c0e]">
           <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 grid grid-cols-1 md:grid-cols-3 gap-12">
             {[
@@ -100,7 +104,6 @@ const About = () => {
           </div>
         </section>
 
-        {/* --- MISSION --- */}
         <section className="max-w-7xl mx-auto px-6 md:px-12 py-24">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
@@ -135,7 +138,6 @@ const About = () => {
           </div>
         </section>
 
-        {/* --- VALUES GRID --- */}
         <section className="bg-[#050505] py-24 border-t border-white/5">
           <div className="max-w-7xl mx-auto px-6 md:px-12">
             <div className="text-center mb-16">
@@ -172,7 +174,6 @@ const About = () => {
           </div>
         </section>
 
-        {/* --- UNDER THE HOOD (Technical) --- */}
         <section className="py-24 max-w-7xl mx-auto px-6 md:px-12 relative overflow-hidden">
            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[300px] bg-purple-600/10 blur-[100px] rounded-full pointer-events-none" />
            
@@ -217,7 +218,6 @@ const About = () => {
            </div>
         </section>
 
-        {/* --- CTA --- */}
         <section className="bg-gradient-to-b from-[#09090b] to-[#0c0c0e] py-20 border-t border-white/5">
           <div className="max-w-4xl mx-auto text-center px-6">
             <h2 className="text-4xl md:text-5xl font-bold font-neuropol text-white mb-6">Ready to Build?</h2>
