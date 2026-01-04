@@ -9,7 +9,7 @@ interface MaintenancePageProps {
 }
 
 const MaintenancePage = ({ 
-  message = 'We'll be back soon !', 
+  message = "We'll be back soon !", 
   showBackButton = true 
 }: MaintenancePageProps) => {
   const navigate = useNavigate();
