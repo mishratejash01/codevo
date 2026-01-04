@@ -1,14 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Home, Code2, GraduationCap, Trophy, Shield, User, Terminal, ChevronRight, Hash } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Home, 
+  Code2, 
+  Trophy, 
+  User, 
+  Terminal, 
+  ChevronRight, 
+  Hash, 
+  Calendar,
+  Activity
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-// --- Mini Visual Components (Mockups - Kept as requested) ---
+// --- Mini Visual Components (Mockups) ---
 
-// Abstract Version
+// 1. Landing / Navigation
 const MiniLanding = () => (
   <div className="flex flex-col h-full bg-[#050505] p-4 relative overflow-hidden font-sans">
     <div className="absolute top-0 left-0 right-0 h-1 bg-white/20" />
@@ -31,6 +43,7 @@ const MiniLanding = () => (
   </div>
 );
 
+// 2. Auth
 const MiniAuth = () => (
   <div className="flex h-full bg-[#050505]">
     <div className="w-1/2 p-6 flex flex-col justify-center space-y-4">
@@ -51,45 +64,31 @@ const MiniAuth = () => (
   </div>
 );
 
-const MiniDegree = () => (
-  <div className="flex flex-col h-full bg-[#050505] p-4">
-    <div className="flex gap-2 mb-4">
-      <div className="h-6 w-20 bg-white text-black rounded-sm flex items-center justify-center text-[8px] font-bold">BS Degree</div>
-      <div className="h-6 w-20 bg-white/5 rounded-sm border border-white/10" />
-    </div>
-    <div className="grid grid-cols-2 gap-3">
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="aspect-video bg-white/5 rounded-sm border border-white/10 p-2 flex flex-col justify-between">
-          <div className="w-6 h-6 bg-white/10 rounded-sm" />
-          <div className="h-2 w-3/4 bg-white/10 rounded-sm" />
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
+// 3. Practice Arena
 const MiniPractice = () => (
   <div className="flex h-full bg-[#050505] text-[6px] font-mono">
     <div className="w-1/4 border-r border-white/10 bg-[#0a0a0a] flex flex-col">
-      <div className="p-2 border-b border-white/10 font-bold text-gray-400">FILES</div>
+      <div className="p-2 border-b border-white/10 font-bold text-gray-400">EXPLORER</div>
       {[1,2,3,4].map(i => (
         <div key={i} className={cn("p-2 border-b border-white/5 flex items-center gap-2", i === 1 ? "bg-white/10 text-white" : "text-gray-600")}>
           <div className={cn("w-1 h-1 rounded-sm", i===1 ? "bg-white" : "bg-gray-700")} />
-          prob_{i}.py
+          algorithm_{i}.ts
         </div>
       ))}
     </div>
     <div className="flex-1 flex flex-col">
       <div className="h-6 border-b border-white/10 flex items-center px-2 bg-[#0a0a0a] justify-between">
-        <span className="text-gray-300">main.py</span>
+        <span className="text-gray-300">main.ts</span>
         <div className="flex gap-1">
           <div className="px-2 py-0.5 bg-white text-black font-bold rounded-[2px]">RUN</div>
         </div>
       </div>
       <div className="flex-1 p-2 space-y-1 bg-[#050505]">
-        <div className="text-gray-600"># Solution</div>
-        <div><span className="text-white">def</span> <span className="text-gray-300">solve</span>(x):</div>
-        <div className="pl-2"><span className="text-white">return</span> x * <span className="text-gray-400">2</span></div>
+        <div className="text-gray-600">// Two Sum Solution</div>
+        <div><span className="text-white">function</span> <span className="text-gray-300">twoSum</span>(nums, target) {'{'}</div>
+        <div className="pl-2"><span className="text-white">const</span> map = <span className="text-white">new</span> Map();</div>
+        <div className="pl-2"><span className="text-gray-500">...</span></div>
+        <div className="pl-2">{'}'}</div>
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: [0, 1, 0] }}
@@ -98,42 +97,97 @@ const MiniPractice = () => (
         />
       </div>
       <div className="h-1/3 border-t border-white/10 bg-[#0a0a0a] p-2">
-        <div className="text-gray-400 mb-1">{">"} Running tests...</div>
-        <div className="text-white">{">"} All Passed (0.02s)</div>
+        <div className="text-gray-400 mb-1">{">"} Running test cases...</div>
+        <div className="text-white">{">"} All Passed (12ms)</div>
       </div>
     </div>
   </div>
 );
 
-const MiniExam = () => (
-  <div className="flex flex-col h-full bg-[#050505] relative font-sans">
-    <div className="h-8 bg-white/5 border-b border-white/10 flex items-center justify-between px-3">
+// 4. Events (NEW)
+const MiniEvents = () => (
+  <div className="flex flex-col h-full bg-[#050505] p-4 font-sans">
+    <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2">
-        <Shield className="w-3 h-3 text-white" />
-        <span className="text-[8px] font-bold text-white tracking-widest">SECURE MODE</span>
+        <Calendar className="w-3 h-3 text-white" />
+        <span className="text-[8px] font-bold text-white tracking-widest">LIVE EVENTS</span>
       </div>
-      <div className="text-[8px] font-mono text-gray-400">01:59:45</div>
+      <div className="px-1.5 py-0.5 rounded-sm bg-white/10 border border-white/10 text-[6px] text-white">FILTER</div>
     </div>
-    <div className="flex-1 flex relative">
-      <div className="flex-1 p-4">
-        <div className="h-2 w-1/3 bg-white/20 rounded-sm mb-4" />
-        <div className="space-y-2">
-          <div className="h-1.5 w-full bg-white/10 rounded-sm" />
-          <div className="h-1.5 w-5/6 bg-white/10 rounded-sm" />
+    <div className="space-y-2">
+      {[
+        { title: "Weekly Contest 102", status: "LIVE", users: "1.2k" },
+        { title: "CodeVo Hackathon", status: "REG", users: "500+" },
+        { title: "Algorithm Sprint", status: "ENDED", users: "890" }
+      ].map((event, i) => (
+        <div key={i} className="flex flex-col p-2 rounded-sm border border-white/5 bg-white/[0.02]">
+          <div className="flex justify-between items-start mb-2">
+            <span className="text-[8px] font-bold text-white">{event.title}</span>
+            <span className={cn(
+              "text-[6px] px-1 rounded-sm border", 
+              event.status === "LIVE" ? "border-red-500/50 text-red-400 bg-red-500/10" : 
+              event.status === "REG" ? "border-green-500/50 text-green-400 bg-green-500/10" : 
+              "border-white/10 text-gray-500"
+            )}>
+              {event.status}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-[6px] text-gray-500">
+             <span>{event.users} Participants</span>
+             <div className="h-1 w-1 rounded-full bg-gray-700" />
+             <span>Ranked</span>
+          </div>
         </div>
-        <div className="mt-6 grid grid-cols-1 gap-2">
-          <div className="h-6 border border-white/10 rounded-sm bg-white/5 flex items-center px-2 text-[8px] text-gray-500">Option A</div>
-          <div className="h-6 border border-white/40 rounded-sm bg-white/10 flex items-center px-2 text-[8px] text-white font-medium">Option B</div>
-          <div className="h-6 border border-white/10 rounded-sm bg-white/5 flex items-center px-2 text-[8px] text-gray-500">Option C</div>
-        </div>
-      </div>
-      <div className="absolute top-2 right-2 w-16 h-12 bg-[#111] border border-white/10 rounded-sm flex items-center justify-center">
-         <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-      </div>
+      ))}
     </div>
   </div>
 );
 
+// 5. Profile & Activity (NEW)
+const MiniProfile = () => (
+  <div className="flex flex-col h-full bg-[#050505] font-sans">
+     {/* Profile Header */}
+     <div className="h-12 bg-white/5 border-b border-white/10 p-3 flex items-center gap-3">
+        <div className="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center text-[8px] font-bold">JD</div>
+        <div>
+           <div className="h-1.5 w-16 bg-white/20 rounded-sm mb-1" />
+           <div className="h-1 w-10 bg-white/10 rounded-sm" />
+        </div>
+     </div>
+     
+     <div className="p-3 space-y-4">
+        {/* Heatmap Mockup */}
+        <div>
+           <div className="text-[6px] text-gray-500 mb-1 uppercase tracking-wider">Activity</div>
+           <div className="grid grid-cols-12 gap-0.5">
+              {Array.from({ length: 36 }).map((_, i) => (
+                 <div 
+                   key={i} 
+                   className={cn(
+                     "w-full aspect-square rounded-[1px]", 
+                     Math.random() > 0.7 ? "bg-white/80" : Math.random() > 0.4 ? "bg-white/20" : "bg-white/5"
+                   )} 
+                 />
+              ))}
+           </div>
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 gap-2">
+           <div className="p-2 border border-white/10 rounded-sm bg-white/[0.02]">
+              <div className="text-[6px] text-gray-500 uppercase">Solved</div>
+              <div className="text-[10px] font-bold text-white mt-0.5">142</div>
+           </div>
+           <div className="p-2 border border-white/10 rounded-sm bg-white/[0.02]">
+              <div className="text-[6px] text-gray-500 uppercase">Streak</div>
+              <div className="text-[10px] font-bold text-white mt-0.5">12 Days</div>
+           </div>
+        </div>
+     </div>
+  </div>
+);
+
+// 6. Leaderboard
 const MiniLeaderboard = () => (
   <div className="flex flex-col h-full bg-[#050505] p-4 font-sans">
     <div className="flex items-center justify-center mb-4 space-x-2">
@@ -169,10 +223,10 @@ type DocSection = {
 const SECTIONS: DocSection[] = [
   {
     id: 'landing',
-    title: 'Navigation & Dashboard',
+    title: 'Platform Navigation',
     route: '/',
     icon: <Home className="w-5 h-5" />,
-    description: "The primary entry vector serves as the operational command center. It facilitates high-level ecosystem navigation, presents core platform capabilities, and provides immediate status metrics through a unified interface.",
+    description: "The primary entry vector serving as the operational command center. It facilitates high-level ecosystem navigation, presents core platform capabilities, and provides immediate status metrics through a unified interface.",
     technicalDetails: ["Dynamic Route Rendering", "Interactive Feature Showcase", "Global State Management"],
     visualComponent: <MiniLanding />
   },
@@ -181,40 +235,40 @@ const SECTIONS: DocSection[] = [
     title: 'Identity Management',
     route: '/auth',
     icon: <User className="w-5 h-5" />,
-    description: "A robust authentication gateway utilizing OAuth 2.0 protocols. This module handles secure session initiation, JWT token persistence, and role-based access control for protected academic resources.",
+    description: "A robust authentication gateway utilizing OAuth 2.0 protocols. This module handles secure session initiation, JWT token persistence, and role-based access control for protected resources.",
     technicalDetails: ["OAuth 2.0 Integration", "JWT Token Handling", "Session Persistence"],
     visualComponent: <MiniAuth />
   },
   {
-    id: 'degree',
-    title: 'Curriculum Dashboard',
-    route: '/degree',
-    icon: <GraduationCap className="w-5 h-5" />,
-    description: "Specialized interface for academic programs implementing a hierarchical content structure. Enables granular filtering by academic level (Foundation, Diploma, Degree) and subject matter domains.",
-    technicalDetails: ["Relational Data Mapping", "Real-time Filtering", "Dynamic Hydration"],
-    visualComponent: <MiniDegree />
-  },
-  {
     id: 'practice',
-    title: 'Development Environment',
-    route: '/practice',
+    title: 'Practice Arena',
+    route: '/practice-arena',
     icon: <Code2 className="w-5 h-5" />,
-    description: "Feature-rich coding environment tailored for skill acquisition. Integrates the Monaco Editor for professional syntax highlighting and employs a WebAssembly runtime for secure, client-side execution.",
+    description: "A feature-rich coding environment tailored for skill acquisition. Integrates the Monaco Editor for professional syntax highlighting and employs a WebAssembly runtime for secure, client-side code execution.",
     technicalDetails: ["Monaco Editor Engine", "Pyodide WASM Runtime", "Client-side Sandboxing"],
     visualComponent: <MiniPractice />
   },
   {
-    id: 'exam',
-    title: 'Secure Assessment',
-    route: '/exam',
-    icon: <Shield className="w-5 h-5" />,
-    description: "Hardened environment designed for formal evaluations. Enforces strict compliance via Fullscreen API integration, visibility state monitoring, and browser fingerprinting prevention mechanisms.",
-    technicalDetails: ["Fullscreen API Enforcement", "Visibility API Monitoring", "Input Interception"],
-    visualComponent: <MiniExam />
+    id: 'events',
+    title: 'Events & Hackathons',
+    route: '/events',
+    icon: <Calendar className="w-5 h-5" />,
+    description: "Comprehensive event management system supporting competitive programming contests, hackathons, and webinars. Features real-time registration tracking, countdown timers, and live status updates.",
+    technicalDetails: ["Real-time Websockets", "Concurrency Management", "Dynamic Status Updates"],
+    visualComponent: <MiniEvents />
+  },
+  {
+    id: 'profile',
+    title: 'Profile & Activity',
+    route: '/profile',
+    icon: <Activity className="w-5 h-5" />,
+    description: "Detailed user analytics dashboard visualizing coding activity, problem-solving streaks, and skill progression. Includes GitHub-style contribution heatmaps and persistent statistics tracking.",
+    technicalDetails: ["Data Visualization", "Activity Aggregation", "Persistent Storage"],
+    visualComponent: <MiniProfile />
   },
   {
     id: 'leaderboard',
-    title: 'Global Metrics',
+    title: 'Global Leaderboard',
     route: '/leaderboard',
     icon: <Trophy className="w-5 h-5" />,
     description: "Analytics-driven leaderboard system aggregating user performance. Employs real-time database subscriptions to reflect score updates instantaneously across the global user base.",
