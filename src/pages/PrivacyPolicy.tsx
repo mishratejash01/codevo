@@ -3,7 +3,7 @@ import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ChevronRight, Shield, Lock, Eye, Database } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 const SECTIONS = [
   { id: 'introduction', title: '1. Introduction' },
@@ -93,10 +93,6 @@ const PrivacyPolicy = () => {
                   ))}
                 </nav>
                 <div className="mt-10 p-6 rounded-2xl bg-[#0a0a0a] border border-white/5">
-                  <div className="flex items-center gap-3 mb-3 text-white">
-                     <Shield className="w-5 h-5" />
-                     <span className="font-bold text-sm">Data Protection</span>
-                  </div>
                   <p className="text-xs text-gray-400 mb-4 leading-relaxed">
                     We process data in compliance with GDPR, CCPA, and global privacy standards.
                   </p>
@@ -129,15 +125,11 @@ const PrivacyPolicy = () => {
                   
                   <div className="grid md:grid-cols-2 gap-4 mt-6 not-prose">
                     <div className="p-4 rounded-lg border border-white/10 bg-[#0a0a0a]">
-                        <div className="flex items-center gap-2 mb-2 text-white font-semibold text-sm">
-                            <Database className="w-4 h-4 text-blue-500" /> Personal Data
-                        </div>
+                        <h4 className="text-white font-semibold text-sm mb-2">Personal Data</h4>
                         <p className="text-xs text-gray-400 leading-relaxed">Email address, First name and last name, Cookies and Usage Data, Github/LinkedIn profile links.</p>
                     </div>
                     <div className="p-4 rounded-lg border border-white/10 bg-[#0a0a0a]">
-                        <div className="flex items-center gap-2 mb-2 text-white font-semibold text-sm">
-                            <Eye className="w-4 h-4 text-purple-500" /> Usage Data
-                        </div>
+                        <h4 className="text-white font-semibold text-sm mb-2">Usage Data</h4>
                         <p className="text-xs text-gray-400 leading-relaxed">IP address, browser type, browser version, pages visited, time and date of visit, and unique device identifiers.</p>
                     </div>
                   </div>
@@ -205,14 +197,11 @@ const PrivacyPolicy = () => {
                 {/* 7. Security */}
                 <section id="security" className="scroll-mt-32">
                   <h2 className="text-2xl mb-6">7. Security Measures</h2>
-                  <div className="flex items-start gap-4 bg-[#0a0a0a] border border-white/5 p-6 rounded-lg">
-                    <Lock className="w-6 h-6 text-green-500 mt-1 shrink-0" />
-                    <div>
-                      <h4 className="text-white font-bold text-sm mb-2">Enterprise-Grade Security</h4>
-                      <p className="text-sm text-gray-400">
-                        We use SSL/TLS encryption for all data in transit. Our databases are encrypted at rest. We employ strict access controls and conduct regular security audits to ensure your code and personal information remain secure.
-                      </p>
-                    </div>
+                  <div className="bg-[#0a0a0a] border border-white/5 p-6 rounded-lg">
+                    <h4 className="text-white font-bold text-sm mb-2">Enterprise-Grade Security</h4>
+                    <p className="text-sm text-gray-400">
+                      We use SSL/TLS encryption for all data in transit. Our databases are encrypted at rest. We employ strict access controls and conduct regular security audits to ensure your code and personal information remain secure.
+                    </p>
                   </div>
                 </section>
 
