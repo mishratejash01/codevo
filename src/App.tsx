@@ -1,13 +1,12 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
-import { SplashScreen } from "@/components/SplashScreen";
+// SplashScreen import removed
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
 import { Home, Code2, Calendar, User } from "lucide-react"; 
@@ -23,23 +22,13 @@ import VerifyRegistration from "@/pages/VerifyRegistration";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const [showSplash, setShowSplash] = useState(true);
+  // State for showSplash removed
   const location = useLocation();
   const navigate = useNavigate();
 
   useTimeTracking();
 
-  useEffect(() => {
-    const hasSeenSplash = sessionStorage.getItem("has_seen_splash");
-    if (hasSeenSplash) {
-      setShowSplash(false);
-    } else {
-      sessionStorage.setItem("has_seen_splash", "true");
-      // Increased splash duration slightly to ensure the animation plays out
-      const timer = setTimeout(() => setShowSplash(false), 3500);
-      return () => clearTimeout(timer);
-    }
-  }, []);
+  // useEffect for splash screen timer removed
 
   useEffect(() => {
     const syncRoutes = async () => {
@@ -92,10 +81,7 @@ const AppContent = () => {
     return null;
   };
 
-  // --- RENDER SPLASH SCREEN IF ACTIVE ---
-  if (showSplash) {
-    return <SplashScreen />;
-  }
+  // Conditional return for SplashScreen removed
 
   return (
     <AvailabilityGuard sectionKey="main_website">
