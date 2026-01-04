@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { SEO } from '@/components/SEO';
 
 // --- Types ---
 interface Event {
@@ -49,20 +50,18 @@ interface Event {
 const StatusIcon = ({ type }: { type: 'success' | 'fail' }) => {
   if (type === 'success') {
     return (
-      // Checkmark: Perfectly centered visually
       <div className="relative w-full h-full flex items-center justify-center">
         <div style={{
           width: '24px',
           height: '12px',
           borderLeft: '5px solid #000',
           borderBottom: '5px solid #000',
-          transform: 'rotate(-45deg) translate(2px, -2px)', // Visual tweak to center the "V"
+          transform: 'rotate(-45deg) translate(2px, -2px)', 
         }} />
       </div>
     );
   }
   return (
-    // Cross: Perfectly centered
     <div className="relative w-[30px] h-[30px]">
       <div style={{
         position: 'absolute', width: '36px', height: '5px', backgroundColor: '#000',
@@ -82,8 +81,6 @@ const EventCard = ({ event }: { event: Event }) => {
 
   return (
     <article className="flex flex-col gap-6 md:gap-8 py-8 md:py-12 border-b border-zinc-800 last:border-0 w-full">
-      
-      {/* Image Section */}
       <div className="h-[200px] md:h-[260px] w-full rounded-none overflow-hidden border border-zinc-800 bg-zinc-950 group relative">
         <img 
           src={event.image_url} 
@@ -103,7 +100,6 @@ const EventCard = ({ event }: { event: Event }) => {
         </div>
       </div>
 
-      {/* Content Section */}
       <div className="flex flex-col justify-between h-full">
         <div>
           <span className="font-mono text-[10px] md:text-[11px] tracking-[0.2em] text-zinc-400 uppercase mb-2 md:mb-3 block">
@@ -117,18 +113,13 @@ const EventCard = ({ event }: { event: Event }) => {
           </p>
         </div>
 
-        {/* Info Strip with Custom Status Box */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 py-4 md:py-6 border-y border-dashed border-zinc-700 mb-6 md:mb-8">
-          
-          {/* Status Box Implementation */}
           <div className="flex w-full h-[70px] md:h-[80px] border-[4px] md:border-[6px] border-black rounded-none overflow-hidden bg-[#edf5ff]">
-             {/* Left Icon Area - Centered */}
              <div className={`w-[70px] md:w-[80px] h-full border-r-[4px] md:border-r-[6px] border-black flex items-center justify-center shrink-0 ${isOpen ? 'bg-[#88d66c]' : 'bg-[#ff8a8a]'}`}>
                 <div className="scale-75 md:scale-100 flex items-center justify-center">
                    <StatusIcon type={isOpen ? 'success' : 'fail'} />
                 </div>
              </div>
-             {/* Right Content Area */}
              <div className="flex-grow flex flex-col justify-center px-4 md:px-5 gap-1.5 md:gap-2">
                 <div className="h-[6px] md:h-[8px] bg-black rounded-[4px] w-[50%]" />
                 <div className="flex items-center justify-between">
@@ -159,7 +150,6 @@ const EventCard = ({ event }: { event: Event }) => {
             </span>
           </div>
           
-          {/* Mobile Only Info Row (Compact) */}
           <div className="flex md:hidden justify-between items-center px-1">
              <div className="flex flex-col">
                <span className="font-mono text-[9px] text-zinc-500 uppercase">Prize Pool</span>
@@ -197,7 +187,6 @@ export default function Events() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Filters State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedMode, setSelectedMode] = useState<string>('All');
@@ -208,7 +197,6 @@ export default function Events() {
   const [selectedTeamSize, setSelectedTeamSize] = useState<string>('All');
   const [sortBy, setSortBy] = useState<string>('newest');
   
-  // Location Search
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
 
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -252,7 +240,6 @@ export default function Events() {
     navigate('/auth');
   };
 
-  // --- Derived Filter Options ---
   const categories = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.category).filter(Boolean)))], [events]);
   const modes = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.mode).filter(Boolean)))], [events]);
   const eventTypes = useMemo(() => ['All', ...Array.from(new Set(events.map(e => e.event_type).filter(Boolean)))], [events]);
@@ -297,7 +284,6 @@ export default function Events() {
     return () => clearInterval(interval);
   }, [placeholders]);
 
-  // --- Filter Logic ---
   const filteredEvents = events.filter(event => {
     const query = searchQuery.toLowerCase();
     
@@ -363,6 +349,11 @@ export default function Events() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-inter selection:bg-white/20">
+      <SEO 
+        title="Events & Hackathons" 
+        description="Join live coding battles, hackathons, and workshops. Win prizes and boost your IIT Madras ranking on Codevo."
+        url="https://codevo.co.in/events"
+      />
       <Header session={session} onLogout={handleLogout} />
 
       <main className="pt-24 md:pt-32 pb-24 px-4 md:px-16 w-full relative">
@@ -376,11 +367,9 @@ export default function Events() {
           </p>
         </div>
 
-        {/* --- STICKY FILTER BAR --- */}
         <div className="sticky top-16 md:top-20 z-40 bg-[#050505]/95 backdrop-blur-md py-4 -mx-4 px-4 md:mx-0 md:px-0 border-b border-white/5 md:border-none mb-8 transition-all duration-300">
           <div className="flex flex-row gap-3 w-full">
             
-            {/* Search */}
             <div className="relative flex-1 min-w-0 bg-zinc-900 border border-zinc-700 focus-within:border-zinc-500 transition-colors h-12 flex items-center rounded-none group">
               <Search className="absolute left-3 w-4 h-4 text-zinc-400 z-10 shrink-0" />
               <div className="absolute left-10 right-4 h-full flex items-center pointer-events-none overflow-hidden">
@@ -408,9 +397,7 @@ export default function Events() {
               />
             </div>
 
-            {/* Desktop Filters */}
             <div className="hidden md:flex gap-3">
-              {/* Category */}
               <div className="relative min-w-[150px]">
                 <select 
                   value={selectedCategory}
@@ -427,7 +414,6 @@ export default function Events() {
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               </div>
 
-              {/* Location */}
               <div className="relative min-w-[150px]">
                 <select 
                   value={selectedLocation}
@@ -444,7 +430,6 @@ export default function Events() {
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
               </div>
 
-               {/* Status - No Icon as requested */}
                <div className="relative min-w-[150px]">
                 <select 
                   value={selectedStatus}
@@ -459,7 +444,6 @@ export default function Events() {
               </div>
             </div>
 
-            {/* Sidebar Trigger */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button 
@@ -485,7 +469,6 @@ export default function Events() {
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                       {/* Sort */}
                        <div className="space-y-4">
                           <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Sort By</Label>
                           <RadioGroup value={sortBy} onValueChange={setSortBy} className="gap-3">
@@ -499,7 +482,6 @@ export default function Events() {
                        </div>
                        <Separator className="bg-zinc-800" />
                        
-                       {/* Formats */}
                        <div className="space-y-4">
                           <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Event Format</Label>
                           <div className="grid grid-cols-2 gap-2">
@@ -512,10 +494,8 @@ export default function Events() {
                        </div>
                        <Separator className="bg-zinc-800" />
 
-                       {/* Location Sidebar with Search */}
                        <div className="space-y-4">
                           <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Location</Label>
-                          {/* Search Input for Locations */}
                           <div className="relative">
                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
                              <input 
@@ -542,7 +522,6 @@ export default function Events() {
                        </div>
                        <Separator className="bg-zinc-800" />
 
-                       {/* Team Size */}
                        <div className="space-y-4">
                           <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Team Size</Label>
                           <div className="flex gap-2">
@@ -573,7 +552,6 @@ export default function Events() {
           </div>
         </div>
 
-        {/* Events List */}
         <div className="flex flex-col w-full"> 
           {loading ? (
              <div className="min-h-[400px] flex items-center justify-center md:justify-start">
