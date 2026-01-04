@@ -134,8 +134,12 @@ const Landing = () => {
     }
   };
 
+  // UPDATED: Now scrolls to the Features section
   const handleTryNowClick = () => {
-    navigate('/practice-arena');
+    const element = document.getElementById('features-section');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -426,7 +430,10 @@ const Landing = () => {
         </section>
 
         {/* --- NEW SECTION: FEATURES CAROUSEL --- */}
-        <FeaturesInfiniteCarousel />
+        {/* ADDED ID FOR SCROLL TARGET */}
+        <div id="features-section">
+          <FeaturesInfiniteCarousel />
+        </div>
         
         {/* --- SECTION 3: KEYBOARD & TERMINAL --- */}
         <section className="py-12 md:py-24 relative overflow-hidden bg-black border-t border-white/5">
