@@ -66,7 +66,7 @@ const ProfileIcon = () => (
 export function FeaturesInfiniteCarousel() {
   const navigate = useNavigate();
   
-  // Configure Autoplay with pause on interaction
+  // Autoplay config: 3s delay, pauses on hover/interaction
   const plugin = React.useRef(
     Autoplay({ delay: 3000, stopOnInteraction: false })
   );
@@ -131,25 +131,31 @@ export function FeaturesInfiniteCarousel() {
   return (
     <div className="w-full py-16 bg-black border-t border-white/5 relative overflow-hidden">
       
-      {/* Container restricted to max-7xl to align with other sections */}
+      {/* Container constrained to standard max-width.
+        The Carousel automatically handles responsive resizing.
+      */}
       <div className="container mx-auto px-4 max-w-7xl">
         <Carousel
           opts={{
             align: "start",
             loop: true,
-            dragFree: true, // Enables smooth manual scrolling
+            dragFree: true, // Enables smooth manual scrolling/swiping
           }}
           plugins={[plugin.current]}
           className="w-full"
         >
           <CarouselContent className="-ml-4 pb-4">
             {features.map((feature, index) => (
-              <CarouselItem key={index} className="pl-4 basis-auto">
+              /* RESPONSIVE BASIS:
+                 - md:basis-1/2  -> Shows 2 cards on Tablets
+                 - lg:basis-1/3  -> Shows exactly 3 cards on Desktop
+              */
+              <CarouselItem key={index} className="pl-4 basis-[85%] md:basis-1/2 lg:basis-1/3">
                 <div 
                   onClick={() => handleCardClick(feature.path, feature.status)}
                   className={`
                     group relative 
-                    w-[300px] md:w-[380px] h-[200px] 
+                    h-[220px] w-full
                     bg-[#0d0d0e] rounded-[24px] border border-[#1f1f21] 
                     flex items-center px-6 
                     cursor-pointer transition-colors duration-300 
@@ -157,23 +163,23 @@ export function FeaturesInfiniteCarousel() {
                     ${feature.status === 'coming_soon' ? 'opacity-80' : ''}
                   `}
                 >
-                  {/* Icon Box - Reduced size */}
+                  {/* Icon Box */}
                   <div className="w-[80px] h-[80px] md:w-[100px] md:h-[100px] shrink-0 flex justify-center items-center relative">
                     <feature.icon />
                   </div>
 
                   {/* Content */}
-                  <div className="ml-5 flex flex-col gap-1 z-10 flex-1">
-                    <span className="text-[#d1a5ff] text-xs md:text-sm font-medium capitalize">
+                  <div className="ml-5 flex flex-col gap-1 z-10 flex-1 min-w-0">
+                    <span className="text-[#d1a5ff] text-xs md:text-sm font-medium capitalize truncate">
                       {feature.label}
                     </span>
                     
-                    <h3 className="text-white text-lg md:text-2xl font-semibold leading-tight m-0">
+                    <h3 className="text-white text-lg md:text-xl font-semibold leading-tight m-0 truncate">
                       {feature.title}
-                      <span className="block text-xs md:text-sm font-normal text-gray-500 mt-1">
-                         {feature.subtitle}
-                      </span>
                     </h3>
+                    <span className="block text-xs md:text-sm font-normal text-gray-500 truncate">
+                      {feature.subtitle}
+                    </span>
 
                     {feature.status === "coming_soon" && (
                       <div className="mt-2 w-fit px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-[#88888e] text-[10px]">
@@ -182,7 +188,7 @@ export function FeaturesInfiniteCarousel() {
                     )}
                   </div>
 
-                  {/* Action Button - Only this zooms on hover */}
+                  {/* Action Button - Zoom effect only here */}
                   <div className="absolute bottom-[16px] right-[16px] w-[36px] h-[36px] bg-[#2a2a2c] rounded-full flex justify-center items-center transition-all duration-300 group-hover:bg-white group-hover:scale-110 z-20 shadow-lg">
                     <ArrowUpRight className="w-[18px] h-[18px] text-[#888] stroke-[2.5] transition-colors duration-300 group-hover:text-black" />
                   </div>
