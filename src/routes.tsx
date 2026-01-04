@@ -15,11 +15,15 @@ import SubjectOppeSelection from "./pages/SubjectOppeSelection";
 import SubjectModeSelection from "./pages/SubjectModeSelection";
 import Profile from "./pages/Profile";
 import About from "./pages/About"; 
-import TermsOfService from "./pages/TermsOfService"; 
-import PrivacyPolicy from "./pages/PrivacyPolicy"; 
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
 import Dashboard from "./pages/Dashboard";
+
+// --- LEGAL & SUPPORT PAGES ---
+import TermsOfService from "./pages/TermsOfService"; 
+import PrivacyPolicy from "./pages/PrivacyPolicy"; 
+import CookiePolicy from "./pages/CookiePolicy";
+import Security from "./pages/Security";
 
 // --- ATTENDANCE SYSTEM IMPORTS ---
 import VerifyRegistration from "./pages/VerifyRegistration";
@@ -30,11 +34,14 @@ export const AppRoutes = [
   { path: "/auth", component: Auth, name: "Authentication" },
   { path: "/dashboard", component: Dashboard, name: "Dashboard" },
   { path: "/about", component: About, name: "About Us" },
+  
+  // --- LEGAL ROUTES ---
   { path: "/terms", component: TermsOfService, name: "Terms of Service" },
   { path: "/privacy", component: PrivacyPolicy, name: "Privacy Policy" },
-  
+  { path: "/cookies", component: CookiePolicy, name: "Cookie Policy" },
+  { path: "/security", component: Security, name: "Security" },
+
   // --- ATTENDANCE & VERIFICATION ROUTES ---
-  // Dynamic event types (formType) for various registration tables: workshop, webinar, meetup, contest, hackathon, normal
   { path: "/verify/:formType/:registrationId", component: VerifyRegistration, name: "Verify Registration" },
   { path: "/AdminScanner", component: AdminScanner, name: "Admin Terminal" },
   
