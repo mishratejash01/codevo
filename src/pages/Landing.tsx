@@ -187,19 +187,19 @@ const Landing = () => {
               
               {/* Main Heading: Large & Bold */}
               <h1 
-                className="text-[40px] leading-[1.1] md:text-[88px] tracking-tight md:leading-[1] text-white mb-[24px] text-center" 
+                className="text-[42px] leading-[1.1] md:text-[88px] tracking-tight md:leading-[1] text-white mb-[24px] text-center" 
                 style={{ 
                   fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
                   fontWeight: 500 
                 }}
               >
-                <span className="block">The Best Coding Platform built</span>
+                <span className="block">The Coding Platform built</span>
                 for global developers
               </h1>
 
               {/* Description: Larger Text */}
               <p 
-                className="text-[14px] md:text-[21px] text-[#a1a1aa] max-w-[90%] md:max-w-[850px] mx-auto leading-[1.6] tracking-normal mb-[40px] text-center" 
+                className="text-[16px] md:text-[21px] text-[#a1a1aa] max-w-[90%] md:max-w-[850px] mx-auto leading-[1.6] tracking-normal mb-[40px] text-center" 
                 style={{ fontFamily: 'var(--font-geom)' }}
               >
                 Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale.
