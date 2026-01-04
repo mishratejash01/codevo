@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Timer, Power, LayoutGrid, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { SEO } from '@/components/SEO';
 
 export type QuestionStatus = 'not-visited' | 'visited' | 'attempted' | 'review';
 
@@ -68,6 +69,11 @@ const Index = () => {
 
   return (
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden selection:bg-primary/20">
+      <SEO 
+        title="OPPE Console" 
+        description="IIT Madras BS Degree OPPE Practice Environment. Simulate real exam conditions."
+        url="https://codevo.co.in/practice"
+      />
       <header className="border-b border-white/10 bg-[#09090b] px-4 py-3 flex items-center justify-between z-50 shadow-md shrink-0 h-16">
         <div className="flex items-center gap-4">
           <Button 
