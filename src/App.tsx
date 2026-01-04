@@ -1,12 +1,13 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-// SplashScreen import removed
+import { SplashScreen } from "@/components/SplashScreen";
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
 import { Home, Code2, Calendar, User } from "lucide-react"; 
@@ -15,20 +16,30 @@ import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { AppRoutes } from "./routes";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import AvailabilityGuard from "@/components/AvailabilityGuard";
-
-// --- IMPORT THE VERIFICATION PAGE ---
 import VerifyRegistration from "@/pages/VerifyRegistration";
+
+// 1. IMPORT IT HERE
+import { GoogleAnalytics } from "@/components/GoogleAnalytics"; // <--- ADD THIS LINE
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  // State for showSplash removed
+  const [showSplash, setShowSplash] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
 
   useTimeTracking();
 
-  // useEffect for splash screen timer removed
+  useEffect(() => {
+    const hasSeenSplash = sessionStorage.getItem("has_seen_splash");
+    if (hasSeenSplash) {
+      setShowSplash(false);
+    } else {
+      sessionStorage.setItem("has_seen_splash", "true");
+      const timer = setTimeout(() => setShowSplash(false), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   useEffect(() => {
     const syncRoutes = async () => {
@@ -45,7 +56,6 @@ const AppContent = () => {
     syncRoutes();
   }, []);
 
-  // --- HIDE NAVIGATION ON VERIFICATION PAGE ---
   const hideDockRoutes = ['/', '/practice', '/exam', '/compiler', '/auth', '/verify']; 
   const showDock = !hideDockRoutes.some(path => 
     location.pathname === path || 
@@ -73,7 +83,6 @@ const AppContent = () => {
   const getSectionKey = (path: string): string | null => {
     if (path.startsWith('/degree') || path === '/exam' || path.startsWith('/exam/')) return 'iitm_bs';
     if (path === '/practice-arena' || path.startsWith('/practice-arena/') || path === '/practice' || path.startsWith('/practice/')) return 'practice';
-    // --- MAP VERIFY PAGE TO EVENTS GUARD ---
     if (path === '/events' || path.startsWith('/events/') || path.startsWith('/verify/')) return 'events';
     if (path === '/compiler') return 'compiler';
     if (path === '/leaderboard') return 'leaderboard';
@@ -81,13 +90,14 @@ const AppContent = () => {
     return null;
   };
 
-  // Conditional return for SplashScreen removed
+  if (showSplash) {
+    return <SplashScreen />;
+  }
 
   return (
     <AvailabilityGuard sectionKey="main_website">
       <AnnouncementBanner />
       <Routes>
-        {/* --- MANUAL ROUTE FOR QR SCAN VERIFICATION --- */}
         <Route 
           path="/verify/:registrationId" 
           element={
@@ -128,6 +138,8 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          {/* 2. PLACE IT HERE (Inside BrowserRouter) */}
+          <GoogleAnalytics /> 
           <AppContent />
         </BrowserRouter>
       </TooltipProvider>
