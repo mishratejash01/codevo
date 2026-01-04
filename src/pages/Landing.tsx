@@ -117,7 +117,8 @@ const Landing = () => {
     const rect = e.currentTarget.getBoundingClientRect();
     setButtonPosition({ x: rect.left, y: rect.top, width: rect.width, height: rect.height });
     setIsNavigating(true);
-    setTimeout(() => { session ? navigate('/practice') : navigate('/auth'); }, 800);
+    // Directly navigate to the compiler page
+    setTimeout(() => { navigate('/compiler'); }, 800);
   };
 
   // --- HANDLERS ---
