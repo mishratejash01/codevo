@@ -230,7 +230,7 @@ const PrivacyPolicy = () => {
                   <div className="mt-6 flex flex-col gap-2 text-sm">
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500 w-24">Email:</span>
-                      <a href="mailto:privacy@codevo.co.in" className="text-white hover:underline">privacy@codevo.co.in</a>
+                      <a href="mailto:privacy@codevo.co.in" className="text-white hover:underline">reach@codevo.co.in</a>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500 w-24">Post:</span>
