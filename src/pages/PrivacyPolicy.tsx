@@ -3,7 +3,7 @@ import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ChevronRight, Shield, Lock, Eye, Database, Globe } from 'lucide-react';
+import { ChevronRight, Shield, Lock, Eye, Database } from 'lucide-react';
 
 const SECTIONS = [
   { id: 'introduction', title: '1. Introduction' },
