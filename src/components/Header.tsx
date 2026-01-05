@@ -11,7 +11,8 @@ import {
   Lock,
   Cookie,
   BookOpen,
-  Menu // Imported Menu icon
+  Menu,
+  X // Imported X for custom close button if needed, though Sheet has one
 } from 'lucide-react'; 
 import {
   Popover,
@@ -24,6 +25,7 @@ import {
   SheetTrigger,
   SheetHeader,
   SheetTitle,
+  SheetClose
 } from "@/components/ui/sheet";
 import {
   Accordion,
@@ -37,14 +39,14 @@ import { QRCodeSVG } from 'qrcode.react';
 
 // --- CUSTOM ICONS ---
 const CompilerIcon = () => (
-  <svg viewBox="0 0 100 100" className="w-[22px] h-[22px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+  <svg viewBox="0 0 100 100" className="w-6 h-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
     <rect x="20" y="30" width="60" height="40" rx="4" fill="#222" stroke="#666" strokeWidth="4" />
     <text x="30" y="55" fill="#00ff00" fontFamily="monospace" fontSize="14" fontWeight="bold">{">_"}</text>
   </svg>
 );
 
 const PracticeIcon = () => (
-  <svg viewBox="0 0 100 100" className="w-[22px] h-[22px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+  <svg viewBox="0 0 100 100" className="w-6 h-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
     <defs>
       <radialGradient id="fireGradSmall" cx="50%" cy="50%" r="50%">
         <stop offset="0%" stopColor="#ff6b00" />
@@ -57,7 +59,7 @@ const PracticeIcon = () => (
 );
 
 const ProfileIcon = () => (
-   <svg viewBox="0 0 100 100" className="w-[22px] h-[22px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+   <svg viewBox="0 0 100 100" className="w-6 h-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
      <rect x="20" y="25" width="60" height="50" rx="4" fill="#1a1a1a" stroke="#666" strokeWidth="4" />
      <circle cx="50" cy="45" r="12" fill="#333" stroke="#555" strokeWidth="2" />
      <path d="M30 65 Q50 75 70 65" fill="none" stroke="#555" strokeWidth="3" />
@@ -232,7 +234,6 @@ export function Header({ session, onLogout }: HeaderProps) {
 
             <Link to="/events" className="text-[14px] font-semibold text-white hover:opacity-80 transition-opacity font-sans tracking-wide">Events</Link>
 
-            {/* Try CODéVO Play Button */}
             <Button 
               onClick={() => {
                 const element = document.getElementById('features-section');
@@ -248,34 +249,36 @@ export function Header({ session, onLogout }: HeaderProps) {
 
           {/* --- AUTH & MOBILE MENU SECTION --- */}
           <div className="flex items-center gap-3 shrink-0">
-            {/* Auth Buttons (Visible on Mobile) */}
-            {session ? (
-              <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all outline-none">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20 shadow-[0_0_15px_rgba(34,197,94,0.6)] font-sans">
-                      {userName.charAt(0).toUpperCase()}
+            {/* Desktop Auth */}
+            <div className="hidden md:block">
+              {session ? (
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all outline-none">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20 shadow-[0_0_15px_rgba(34,197,94,0.6)] font-sans">
+                        {userName.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm font-semibold text-white font-sans">{userName}</span>
+                      <FilledDropdownArrow isOpen={popoverOpen} />
                     </div>
-                    <span className="hidden md:inline text-sm font-semibold text-white font-sans">{userName}</span>
-                    <FilledDropdownArrow isOpen={popoverOpen} />
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent sideOffset={16} align="end" className="w-[320px] p-8 bg-black/80 backdrop-blur-xl border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.9)] outline-none rounded-none">
-                  <div className="text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#888888] mb-8 font-sans">Public Profile</p>
-                    <div className="bg-white p-4 inline-block mb-6 rounded-sm">
-                      <QRCodeSVG value={displayUrl} size={140} />
+                  </PopoverTrigger>
+                  <PopoverContent sideOffset={16} align="end" className="w-[320px] p-8 bg-black/80 backdrop-blur-xl border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.9)] outline-none rounded-none">
+                    <div className="text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#888888] mb-8 font-sans">Public Profile</p>
+                      <div className="bg-white p-4 inline-block mb-6 rounded-sm">
+                        <QRCodeSVG value={displayUrl} size={140} />
+                      </div>
+                      <Link to="/profile" className="w-full block py-4 text-[13px] font-bold uppercase tracking-widest bg-white text-black hover:bg-transparent hover:text-white border border-white transition-all font-sans">Edit Profile</Link>
+                      <div className="mt-4 pt-4 border-t border-[#222222]">
+                        <button onClick={onLogout} className="flex items-center w-full text-white text-[13px] font-medium hover:opacity-60 transition-opacity outline-none focus:outline-none focus:ring-0 font-sans"><LogOut className="mr-3 w-[18px] h-[18px]" /> Logout</button>
+                      </div>
                     </div>
-                    <Link to="/profile" className="w-full block py-4 text-[13px] font-bold uppercase tracking-widest bg-white text-black hover:bg-transparent hover:text-white border border-white transition-all font-sans">Edit Profile</Link>
-                    <div className="mt-4 pt-4 border-t border-[#222222]">
-                      <button onClick={onLogout} className="flex items-center w-full text-white text-[13px] font-medium hover:opacity-60 transition-opacity outline-none focus:outline-none focus:ring-0 font-sans"><LogOut className="mr-3 w-[18px] h-[18px]" /> Logout</button>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            ) : (
-              <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white rounded-full px-5 md:px-7 font-semibold h-9 md:h-10 transition-all border border-white/10 backdrop-blur-md text-[13px] md:text-[14px] font-sans" onClick={() => navigate('/auth')}>Sign in</Button>
-            )}
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white rounded-full px-7 font-semibold h-10 transition-all border border-white/10 backdrop-blur-md text-[14px] font-sans" onClick={() => navigate('/auth')}>Sign in</Button>
+              )}
+            </div>
 
             {/* Mobile Hamburger Menu */}
             <div className="md:hidden">
@@ -285,60 +288,101 @@ export function Header({ session, onLogout }: HeaderProps) {
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[300px] bg-black/90 backdrop-blur-xl border-l border-white/10 text-white p-0">
-                  <SheetHeader className="p-6 border-b border-white/10 text-left">
-                    <SheetTitle className="font-neuropol text-xl font-bold tracking-wider text-white">
-                      COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
-                    </SheetTitle>
-                  </SheetHeader>
-                  <div className="flex flex-col h-[calc(100vh-80px)] overflow-y-auto p-6">
-                    <Accordion type="single" collapsible className="w-full space-y-2">
+                {/* Updated SheetContent: side="top" and rounded-b-[2.5rem] */}
+                <SheetContent side="top" className="w-full rounded-b-[2.5rem] bg-black/90 backdrop-blur-xl border-b border-white/10 text-white p-0 overflow-hidden shadow-2xl">
+                  <div className="p-6 md:p-8 flex flex-col h-auto max-h-[85vh] overflow-y-auto">
+                    
+                    {/* Sheet Header */}
+                    <div className="flex items-center justify-between mb-8">
+                       <SheetTitle className="font-neuropol text-xl font-bold tracking-wider text-white">
+                         COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
+                       </SheetTitle>
+                       {/* Default close is usually absolute top right, but putting a custom one if layout needs shift, standard works well too */}
+                       <SheetClose asChild>
+                         <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white">
+                           <X className="w-6 h-6" />
+                         </Button>
+                       </SheetClose>
+                    </div>
+
+                    {/* Navigation Accordion */}
+                    <Accordion type="single" collapsible className="w-full space-y-4 mb-8">
                       <AccordionItem value="products" className="border-b border-white/10">
-                        <AccordionTrigger className="text-sm font-semibold text-white hover:no-underline hover:text-zinc-300">Products</AccordionTrigger>
+                        <AccordionTrigger className="text-lg font-semibold text-white hover:no-underline py-4">Products</AccordionTrigger>
                         <AccordionContent>
-                          <div className="flex flex-col gap-4 pl-4 pt-2 pb-4">
-                             <Link to="/compiler" className="flex items-center gap-3 text-zinc-400 hover:text-white transition-colors" onClick={() => document.getElementById('close-sheet')?.click()}>
-                               <CompilerIcon /> <span className="text-sm">Compiler</span>
+                          <div className="flex flex-col gap-6 pl-2 py-4">
+                             <Link to="/compiler" className="flex items-center gap-4 text-zinc-300 hover:text-white transition-colors group">
+                               <div className="p-2 bg-white/5 rounded-md group-hover:bg-white/10 transition-colors"><CompilerIcon /></div>
+                               <span className="text-base font-medium">Compiler</span>
                              </Link>
-                             <Link to="/practice-arena" className="flex items-center gap-3 text-zinc-400 hover:text-white transition-colors">
-                               <PracticeIcon /> <span className="text-sm">Practice</span>
+                             <Link to="/practice-arena" className="flex items-center gap-4 text-zinc-300 hover:text-white transition-colors group">
+                               <div className="p-2 bg-white/5 rounded-md group-hover:bg-white/10 transition-colors"><PracticeIcon /></div>
+                               <span className="text-base font-medium">Practice</span>
                              </Link>
-                             <Link to="/profile" className="flex items-center gap-3 text-zinc-400 hover:text-white transition-colors">
-                               <ProfileIcon /> <span className="text-sm">Profile Card</span>
+                             <Link to="/profile" className="flex items-center gap-4 text-zinc-300 hover:text-white transition-colors group">
+                               <div className="p-2 bg-white/5 rounded-md group-hover:bg-white/10 transition-colors"><ProfileIcon /></div>
+                               <span className="text-base font-medium">Profile Card</span>
                              </Link>
                           </div>
                         </AccordionContent>
                       </AccordionItem>
                       
                       <AccordionItem value="resources" className="border-b border-white/10">
-                        <AccordionTrigger className="text-sm font-semibold text-white hover:no-underline hover:text-zinc-300">Resources</AccordionTrigger>
+                        <AccordionTrigger className="text-lg font-semibold text-white hover:no-underline py-4">Resources</AccordionTrigger>
                         <AccordionContent>
-                          <div className="flex flex-col gap-4 pl-4 pt-2 pb-4">
-                             <Link to="/contact" className="flex items-center gap-3 text-zinc-400 hover:text-white"><Mail className="w-4 h-4" /> <span className="text-sm">Contact Us</span></Link>
-                             <Link to="/security" className="flex items-center gap-3 text-zinc-400 hover:text-white"><ShieldCheck className="w-4 h-4" /> <span className="text-sm">Security</span></Link>
-                             <Link to="/terms" className="flex items-center gap-3 text-zinc-400 hover:text-white"><FileText className="w-4 h-4" /> <span className="text-sm">Terms</span></Link>
-                             <Link to="/cookies" className="flex items-center gap-3 text-zinc-400 hover:text-white"><Cookie className="w-4 h-4" /> <span className="text-sm">Cookies</span></Link>
-                             <Link to="/privacy" className="flex items-center gap-3 text-zinc-400 hover:text-white"><Lock className="w-4 h-4" /> <span className="text-sm">Privacy</span></Link>
-                             <Link to="/blog" className="flex items-center gap-3 text-zinc-400 hover:text-white"><BookOpen className="w-4 h-4" /> <span className="text-sm">Blog</span></Link>
+                          <div className="flex flex-col gap-5 pl-2 py-4">
+                             <Link to="/contact" className="flex items-center gap-3 text-zinc-400 hover:text-white text-base"><Mail className="w-5 h-5" /> Contact Us</Link>
+                             <Link to="/security" className="flex items-center gap-3 text-zinc-400 hover:text-white text-base"><ShieldCheck className="w-5 h-5" /> Security</Link>
+                             <Link to="/terms" className="flex items-center gap-3 text-zinc-400 hover:text-white text-base"><FileText className="w-5 h-5" /> Terms</Link>
+                             <Link to="/cookies" className="flex items-center gap-3 text-zinc-400 hover:text-white text-base"><Cookie className="w-5 h-5" /> Cookies</Link>
+                             <Link to="/privacy" className="flex items-center gap-3 text-zinc-400 hover:text-white text-base"><Lock className="w-5 h-5" /> Privacy</Link>
+                             <Link to="/blog" className="flex items-center gap-3 text-zinc-400 hover:text-white text-base"><BookOpen className="w-5 h-5" /> Blog</Link>
                           </div>
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
 
-                    <Link to="/events" className="py-4 text-sm font-semibold text-white border-b border-white/10 hover:text-zinc-300 transition-colors">Events</Link>
+                    <Link to="/events" className="text-lg font-semibold text-white hover:text-zinc-300 transition-colors mb-8 block">Events</Link>
 
-                    <div className="mt-8">
+                    {/* Auth & CTAs inside Menu */}
+                    <div className="mt-auto space-y-4">
+                       {session ? (
+                         <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                                {userName.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-white font-bold">{userName}</span>
+                                <span className="text-xs text-zinc-400">Logged In</span>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="icon" onClick={onLogout} className="text-zinc-400 hover:text-white hover:bg-white/10">
+                              <LogOut className="w-5 h-5" />
+                            </Button>
+                         </div>
+                       ) : (
+                         <Button 
+                           size="lg" 
+                           className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/10 h-12 text-base font-semibold" 
+                           onClick={() => navigate('/auth')}
+                         >
+                           Sign in
+                         </Button>
+                       )}
+
                        <Button 
                         onClick={() => {
                           const element = document.getElementById('features-section');
                           if (element) element.scrollIntoView({ behavior: 'smooth' });
                           else navigate('/practice-arena');
                         }}
-                        className="w-full bg-white text-black hover:bg-zinc-200 rounded-full font-bold"
+                        className="w-full bg-white text-black hover:bg-zinc-200 rounded-full font-bold h-12 text-base"
                       >
                         Try CODéVO Play
                       </Button>
                     </div>
+
                   </div>
                 </SheetContent>
               </Sheet>
