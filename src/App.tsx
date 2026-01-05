@@ -22,29 +22,22 @@ const queryClient = new QueryClient();
 
 // --- CUSTOM ICONS FOR DOCK ---
 
-// 1. NEW Home Icon (Based on your CSS Design)
+// 1. NEW Home Icon (Modified: No chimney, White color)
 const HomeIcon = () => (
   <svg viewBox="0 0 180 180" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* Chimney (Behind) */}
-    <rect x="115" y="20" width="26" height="55" rx="4" fill="#1a1a1a" />
-    
     {/* Roof Chevron */}
-    {/* Mimicking the rotated square with rounded corners using a thick stroked path */}
     <path 
       d="M 20 75 L 90 15 L 160 75" 
-      stroke="#1a1a1a" 
+      stroke="white" 
       strokeWidth="24" 
       strokeLinecap="round" 
       strokeLinejoin="round" 
     />
     
-    {/* House Body (Exact Clip Path Logic converted to SVG Path) 
-        Original Path: M 70 0 L 140 45 L 140 100 Q 140 110 130 110 L 90 110 L 90 85 Q 90 70 70 70 Q 50 70 50 85 L 50 110 L 10 110 Q 0 110 0 100 L 0 45 Z
-        Shifted (dx=20, dy=50) to fit under the new roof in this viewbox
-    */}
+    {/* House Body */}
     <path 
       d="M 90 50 L 160 95 L 160 150 Q 160 160 150 160 L 110 160 L 110 135 Q 110 120 90 120 Q 70 120 70 135 L 70 160 L 30 160 Q 20 160 20 150 L 20 95 Z" 
-      fill="#1a1a1a" 
+      fill="white" 
     />
   </svg>
 );
