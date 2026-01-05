@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Button } from '@/components/ui/button';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerClose } from "@/components/ui/drawer";
 import { CodeEditor } from '@/components/CodeEditor';
 import { Language } from '@/hooks/useCodeRunner';
 import { usePyodide } from '@/hooks/usePyodide';
@@ -13,71 +12,35 @@ import { TerminalView } from '@/components/TerminalView';
 import { 
   Loader2, Play, RefreshCw, Terminal as TerminalIcon, 
   Download, Square, Clock, Plus, Minus, Maximize2, Minimize2, 
-  ChevronUp, X
+  ChevronUp, ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// --- PREMIUM CONFIGURATION WITH REAL LOGOS (PRESERVED) ---
+// --- CONFIGURATION (PRESERVED) ---
 
 const LANGUAGES_CONFIG = [
-  { 
-    id: 'python', 
-    name: 'Python', 
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
-  },
-  { 
-    id: 'javascript', 
-    name: 'JavaScript', 
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
-  },
-  { 
-    id: 'java', 
-    name: 'Java', 
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
-  },
-  { 
-    id: 'cpp', 
-    name: 'C++', 
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg',
-  },
-  { 
-    id: 'c', 
-    name: 'C', 
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg',
-  },
-  { 
-    id: 'sql', 
-    name: 'SQL', 
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg',
-  },
-  { 
-    id: 'bash', 
-    name: 'Bash', 
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bash/bash-original.svg',
-  },
+  { id: 'python', name: 'Python', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg' },
+  { id: 'javascript', name: 'JavaScript', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg' },
+  { id: 'java', name: 'Java', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg' },
+  { id: 'cpp', name: 'C++', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg' },
+  { id: 'c', name: 'C', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg' },
+  { id: 'sql', name: 'SQL', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg' },
+  { id: 'bash', name: 'Bash', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bash/bash-original.svg' },
 ] as const;
-
-// --- EXPANDED STARTER TEMPLATES (PRESERVED) ---
 
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
-    case 'java': 
-      return `import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(">> JAVA RUNTIME ACTIVE");\n    }\n}`;
-    case 'cpp': 
-      return `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << ">> SYSTEM INITIALIZED." << endl;\n    return 0;\n}`;
-    case 'c': 
-      return `#include <stdio.h>\n\nint main() {\n    printf(">> C KERNEL LOADED.\\n");\n    return 0;\n}`;
-    case 'javascript': 
-      return `console.log(">> V8 ENGINE ONLINE");`;
-    case 'sql': 
-      return `SELECT 'SQL MATRIX ACTIVE' as status;`;
-    case 'bash': 
-      return `echo ">> BASH SHELL ACTIVE"`;
-    default: 
-      return `print(">> PYTHON NEURAL INTERFACE READY")\n\n# Try writing code here`;
+    case 'java': return `import java.util.*;\nimport java.io.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(">> JAVA RUNTIME ACTIVE");\n    }\n}`;
+    case 'cpp': return `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << ">> SYSTEM INITIALIZED." << endl;\n    return 0;\n}`;
+    case 'c': return `#include <stdio.h>\n\nint main() {\n    printf(">> C KERNEL LOADED.\\n");\n    return 0;\n}`;
+    case 'javascript': return `console.log(">> V8 ENGINE ONLINE");`;
+    case 'sql': return `SELECT 'SQL MATRIX ACTIVE' as status;`;
+    case 'bash': return `echo ">> BASH SHELL ACTIVE"`;
+    default: return `print(">> PYTHON NEURAL INTERFACE READY")\n\n# Try writing code here`;
   }
 };
 
@@ -124,8 +87,8 @@ const Compiler = () => {
   const [isReady, setIsReady] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   
-  // Drawer State
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // Mobile Console State
+  const [isConsoleOpen, setIsConsoleOpen] = useState(false);
   
   const executionStartRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -161,10 +124,10 @@ const Compiler = () => {
   const isLoading = runnerState.isRunning || (isPython && !pythonReady);
   const isExecuting = runnerState.isRunning;
 
-  // Auto-open drawer on execute for mobile
+  // Auto-expand console on execution (Mobile)
   useEffect(() => {
-    if (isExecuting && isMobile && !isDrawerOpen) {
-      setIsDrawerOpen(true);
+    if (isExecuting && isMobile) {
+      setIsConsoleOpen(true);
     }
   }, [isExecuting, isMobile]);
 
@@ -355,7 +318,7 @@ const Compiler = () => {
 
   const TerminalComponent = (
     <div className="flex-1 flex flex-col h-full bg-[#050505]">
-       {/* Toolbar (Only for Desktop) */}
+       {/* Desktop Toolbar */}
        {!isMobile && (
          <div className="h-[48px] px-4 flex items-center justify-between bg-[#080808] border-b border-white/10 shrink-0">
             <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#666666] flex items-center gap-2">
@@ -468,61 +431,70 @@ const Compiler = () => {
       {/* WORKSPACE */}
       <div className="flex-1 flex relative bg-[#0a0a0a] overflow-hidden">
         {isMobile ? (
-          // MOBILE VIEW with DRAWER
-          <div className="w-full h-full flex flex-col">
-             <div className="flex-1 relative overflow-hidden">
+          // --- MOBILE LAYOUT ---
+          <div className="w-full h-full flex flex-col relative">
+             {/* Editor takes remaining space above the console handle */}
+             <div className="flex-1 relative pb-[60px]"> 
                 {EditorComponent}
-                
-                {/* Floating Drawer Trigger */}
-                <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                    <DrawerTrigger asChild>
-                      <div className="absolute bottom-6 right-6 z-40">
-                         <Button className="h-14 w-14 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] bg-white text-black hover:bg-gray-200 border border-white/20 p-0 flex flex-col items-center justify-center gap-0.5">
-                            <TerminalIcon className="w-6 h-6" />
-                            {isExecuting && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-yellow-500 rounded-full animate-pulse border-2 border-[#1e1e1e]" />}
-                         </Button>
-                      </div>
-                    </DrawerTrigger>
-                    
-                    <DrawerContent className="bg-[#0c0c0e] border-t border-white/10 h-[80vh] flex flex-col">
-                       <div className="p-4 flex flex-col h-full gap-4">
-                          <div className="flex justify-center -mt-2 mb-2">
-                             <div className="w-12 h-1.5 bg-white/20 rounded-full" />
-                          </div>
-                          
-                          {/* Mobile Controls */}
-                          <div className="flex items-center justify-between gap-3 shrink-0">
-                             <div className="flex items-center gap-2 flex-1">
-                                {isExecuting ? (
-                                  <Button onClick={handleStop} className="flex-1 bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20">
-                                     <Square className="w-4 h-4 mr-2 fill-current" /> Stop
-                                  </Button>
-                                ) : (
-                                  <Button onClick={handleRun} disabled={isLoading} className="flex-1 bg-white text-black hover:bg-gray-200">
-                                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2 fill-current" />} 
-                                     Execute
-                                  </Button>
-                                )}
-                                <Button onClick={handleDownload} variant="outline" size="icon" className="border-white/10 bg-white/5">
-                                   <Download className="w-4 h-4" />
-                                </Button>
-                             </div>
-                             <DrawerClose asChild>
-                                <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white"><X className="w-5 h-5" /></Button>
-                             </DrawerClose>
-                          </div>
-                          
-                          {/* Terminal in Drawer */}
-                          <div className="flex-1 bg-[#010409] rounded-lg border border-white/5 overflow-hidden relative">
-                             {TerminalComponent}
-                          </div>
-                       </div>
-                    </DrawerContent>
-                </Drawer>
              </div>
+             
+             {/* Sliding Console Panel */}
+             <motion.div 
+                initial={false}
+                animate={{ height: isConsoleOpen ? '60%' : '60px' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="absolute bottom-0 left-0 right-0 bg-[#080808] border-t border-white/10 z-20 flex flex-col shadow-[0_-5px_20px_rgba(0,0,0,0.5)]"
+             >
+                {/* Panel Handle / Toolbar */}
+                <div 
+                   className="h-[60px] px-4 flex items-center justify-between bg-[#121212] shrink-0 cursor-pointer"
+                   onClick={() => setIsConsoleOpen(!isConsoleOpen)} // Clicking the bar toggles it
+                >
+                   <div className="flex items-center gap-2 w-full">
+                       {/* EXECUTE BUTTON - Stops Propagation to prevent toggling when clicked */}
+                       {isExecuting ? (
+                          <Button 
+                             onClick={(e) => { e.stopPropagation(); handleStop(); }} 
+                             className="flex-1 h-9 bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 font-bold text-xs uppercase tracking-widest"
+                          >
+                             <Square className="w-3 h-3 mr-2 fill-current" /> Stop
+                          </Button>
+                       ) : (
+                          <Button 
+                             onClick={(e) => { e.stopPropagation(); handleRun(); }} 
+                             disabled={isLoading}
+                             className="flex-1 h-9 bg-white text-black hover:bg-gray-200 border-none font-bold text-xs uppercase tracking-widest"
+                          >
+                             {isLoading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Play className="w-3 h-3 mr-2 fill-current" />}
+                             Execute
+                          </Button>
+                       )}
+                       
+                       {/* DOWNLOAD BUTTON */}
+                       <Button 
+                          onClick={(e) => { e.stopPropagation(); handleDownload(); }} 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-9 w-9 border-white/10 bg-white/5"
+                       >
+                          <Download className="w-4 h-4" />
+                       </Button>
+
+                       {/* TOGGLE INDICATOR */}
+                       <div className="w-9 h-9 flex items-center justify-center text-zinc-500">
+                          {isConsoleOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                       </div>
+                   </div>
+                </div>
+
+                {/* Console Content (Hidden when collapsed) */}
+                <div className="flex-1 overflow-hidden bg-[#010409] relative">
+                   {TerminalComponent}
+                </div>
+             </motion.div>
           </div>
         ) : (
-          // DESKTOP VIEW
+          // --- DESKTOP LAYOUT ---
           <ResizablePanelGroup direction="horizontal" className="w-full h-full">
             <ResizablePanel defaultSize={60} minSize={30} className="bg-[#050505] flex flex-col">
               {EditorComponent}
