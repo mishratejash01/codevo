@@ -13,8 +13,7 @@ import { CodeEditor } from '@/components/CodeEditor';
 import { 
   Play, Send, ChevronLeft, Loader2, Bug, Terminal, FileCode2, Timer, 
   Home, RefreshCw, CheckCircle2, BookOpen, MessageSquare, History, 
-  Beaker, Sparkles, Zap, Maximize2, Minimize2, ChevronRight, Settings,
-  AlignLeft, Code, Box
+  Beaker, Sparkles, Zap, Maximize2, Minimize2, ChevronRight, Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +29,6 @@ import { PerformanceChart } from '@/components/practice/PerformanceChart';
 import { CustomTestSandbox } from '@/components/practice/CustomTestSandbox';
 import { wrapCodeForExecution, Language as WrapperLanguage } from '@/utils/codeWrappers';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 // Helper to safely display input/output
 const formatValue = (val: any) => {
@@ -42,7 +40,6 @@ export default function PracticeSolver() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
   const { executeWithJudging, runSingleTest, judgingPhase, elapsedMs, resetJudging } = useEnhancedCodeRunner();
 
   const [activeLanguage, setActiveLanguage] = useState<Language>('python');
@@ -52,9 +49,6 @@ export default function PracticeSolver() {
   const [descriptionTab, setDescriptionTab] = useState<'description' | 'editorial' | 'submissions' | 'discussion'>('description');
   const [consoleTab, setConsoleTab] = useState<'testcase' | 'custom' | 'result'>('testcase');
   const [activeTestCaseId, setActiveTestCaseId] = useState(0);
-  
-  // Mobile Tab State
-  const [mobileTab, setMobileTab] = useState<'problem' | 'editor' | 'console'>('problem');
   
   const [executionResult, setExecutionResult] = useState<EnhancedExecutionResult | null>(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -135,9 +129,6 @@ export default function PracticeSolver() {
     setExecutionResult(null);
     setIsRunning(true);
     
-    // Switch to console view on mobile when running
-    if (isMobile) setMobileTab('console');
-    
     const publicTests = testCases.filter(t => t.is_public);
     const result = await executeWithJudging(
       activeLanguage,
@@ -161,7 +152,6 @@ export default function PracticeSolver() {
     setIsSubmitting(true);
     setConsoleTab('result');
     setExecutionResult(null);
-    if (isMobile) setMobileTab('console');
     
     const result = await executeWithJudging(
       activeLanguage,
@@ -187,7 +177,7 @@ export default function PracticeSolver() {
         code, 
         language: activeLanguage, 
         test_cases_passed: testCases.length, 
-        test_cases_total: testCases.length, 
+        test_cases_total: testCases.length,
         runtime_ms: result.runtime_ms, 
         memory_kb: result.memory_kb,
         verdict: result.verdict,
@@ -209,7 +199,6 @@ export default function PracticeSolver() {
     setCode(submittedCode);
     setActiveLanguage(lang as Language);
     setDescriptionTab('description');
-    if (isMobile) setMobileTab('editor');
   };
 
   const handleRetry = () => {
@@ -217,7 +206,6 @@ export default function PracticeSolver() {
     resetJudging();
     setElapsedTime(0);
     timerRef.current = setInterval(() => setElapsedTime(prev => prev + 1), 1000);
-    if (isMobile) setMobileTab('editor');
   };
 
   const toggleFullScreen = () => {
@@ -262,277 +250,6 @@ export default function PracticeSolver() {
     'Hard': 'text-rose-400 bg-rose-500/10 border-rose-500/20',
   }[problem.difficulty] || 'text-white bg-white/10 border-white/20';
 
-  // --- REUSABLE PANELS ---
-  
-  const ProblemPanel = () => (
-    <Tabs value={descriptionTab} onValueChange={(v) => setDescriptionTab(v as any)} className="flex flex-col h-full">
-      <div className="h-10 border-b border-white/5 flex items-center px-2 bg-[#0a0a0c] shrink-0">
-        <TabsList className="h-full bg-transparent p-0 gap-1 w-full justify-start overflow-x-auto no-scrollbar">
-          {[
-            { value: 'description', icon: FileCode2, label: 'Briefing' },
-            { value: 'editorial', icon: BookOpen, label: 'Intel' },
-            { value: 'submissions', icon: History, label: 'Log' },
-            { value: 'discussion', icon: MessageSquare, label: 'Comms' },
-          ].map(tab => (
-            <TabsTrigger 
-              key={tab.value} 
-              value={tab.value} 
-              className="relative h-8 rounded-md px-3 text-[11px] font-bold uppercase tracking-wider text-zinc-500 data-[state=active]:text-white data-[state=active]:bg-white/5 transition-all hover:text-zinc-300 whitespace-nowrap"
-            >
-              <tab.icon className="w-3.5 h-3.5 mr-2" /> {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
-
-      <div className="flex-1 relative bg-[#08080a] overflow-hidden">
-        <TabsContent value="description" className="h-full m-0 data-[state=active]:flex flex-col">
-          <ScrollArea className="flex-1">
-            <div className="p-4 md:p-6 pb-24 max-w-3xl mx-auto">
-              <div className="mb-6 pb-6 border-b border-white/5">
-                <h2 className="text-xl md:text-2xl font-bold text-white mb-3">{problem.title}</h2>
-                <div className="flex flex-wrap gap-2">
-                   {problem.tags?.map((tag:string) => (
-                     <Badge key={tag} variant="secondary" className="bg-white/5 text-zinc-400 hover:text-white border-white/5 text-[10px] uppercase tracking-wider">
-                       #{tag}
-                     </Badge>
-                   ))}
-                </div>
-              </div>
-              <div className="prose prose-invert prose-sm max-w-none text-zinc-300 leading-7 font-sans">
-                <p className="whitespace-pre-wrap">{problem.description}</p>
-              </div>
-              {testCases.length > 0 && (
-                <div className="space-y-4 mt-8">
-                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                    <Sparkles className="w-3 h-3 text-yellow-500" /> Simulation Data
-                  </h3>
-                  {testCases.filter((t: any) => t.is_public).map((t: any, i: number) => (
-                    <div key={i} className="bg-[#0c0c0e] border border-white/5 rounded-xl overflow-hidden shadow-sm">
-                      <div className="px-3 py-2 bg-white/5 border-b border-white/5 flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Scenario {i + 1}</span>
-                        <div className="flex gap-1">
-                           <div className="w-2 h-2 rounded-full bg-red-500/20" />
-                           <div className="w-2 h-2 rounded-full bg-yellow-500/20" />
-                           <div className="w-2 h-2 rounded-full bg-green-500/20" />
-                        </div>
-                      </div>
-                      <div className="p-4 space-y-3 font-mono text-xs">
-                        <div className="space-y-1">
-                          <span className="text-zinc-500 text-[10px] uppercase font-bold">Input Stream</span>
-                          <div className="bg-[#050505] p-2 rounded border border-white/5 text-blue-300">{formatValue(t.input)}</div>
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-zinc-500 text-[10px] uppercase font-bold">Expected Output</span>
-                          <div className="bg-[#050505] p-2 rounded border border-white/5 text-emerald-300">{formatValue(t.output)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="mt-8 space-y-4">
-                 <HintsAccordion hints={hints} hasAttempted={!!hasAttempted} />
-                 <ProblemNotes problemId={problem.id} userId={userId} />
-              </div>
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="editorial" className="h-full m-0">
-          <ScrollArea className="h-full">
-            <div className="p-6">
-              {problem.editorial ? (
-                <div className="prose prose-invert prose-sm max-w-none"><p className="whitespace-pre-wrap">{problem.editorial}</p></div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-[400px] text-zinc-600">
-                  <BookOpen className="w-12 h-12 mb-4 opacity-50" />
-                  <p className="text-sm font-bold uppercase tracking-widest">Classified</p>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="submissions" className="h-full m-0">
-          <SubmissionHistory problemId={problem.id} userId={userId} onSelectSubmission={handleSelectSubmission} />
-        </TabsContent>
-
-        <TabsContent value="discussion" className="h-full m-0">
-          <DiscussionTab problemId={problem.id} userId={userId} />
-        </TabsContent>
-      </div>
-
-      <AnimatePresence>
-        {executionResult?.passed && !isMobile && (
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="absolute bottom-0 left-0 right-0 border-t border-emerald-500/20 bg-[#0c0c0e]/95 backdrop-blur-xl p-0 z-20 shadow-[0_-10px_50px_-10px_rgba(16,185,129,0.2)]"
-          >
-             <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 animate-pulse" />
-             <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                   <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                         <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-                      </div>
-                      <div>
-                         <h3 className="text-lg font-bold text-white">Mission Accomplished</h3>
-                         <p className="text-xs text-emerald-400 font-mono">ALL TEST CASES PASSED</p>
-                      </div>
-                   </div>
-                   <div className="flex gap-2">
-                     <Button variant="outline" size="sm" onClick={handleRetry} className="h-8 text-xs border-white/10 bg-white/5 hover:bg-white/10">
-                       <RefreshCw className="w-3.5 h-3.5 mr-2" /> Optimise
-                     </Button>
-                     <Button size="sm" onClick={() => navigate('/practice-arena')} className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white border-0">
-                       <Home className="w-3.5 h-3.5 mr-2" /> HQ
-                     </Button>
-                   </div>
-                </div>
-                <PerformanceChart
-                  runtimePercentile={executionResult.runtimePercentile || 50}
-                  memoryPercentile={executionResult.memoryPercentile || 50}
-                  runtime_ms={executionResult.runtime_ms}
-                  memory_kb={executionResult.memory_kb}
-                  testsPassed={executionResult.testResults.length}
-                  testsTotal={executionResult.testResults.length}
-                />
-             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Tabs>
-  );
-
-  const EditorPanel = () => (
-    <div className="flex flex-col h-full bg-[#1e1e1e] relative">
-      <div className="absolute top-0 right-0 z-10 p-2 opacity-50 hover:opacity-100 transition-opacity">
-         <Settings className="w-4 h-4 text-zinc-400 cursor-pointer" />
-      </div>
-      <div className="flex-1 relative">
-        <CodeEditor value={code} onChange={setCode} language={activeLanguage} />
-      </div>
-    </div>
-  );
-
-  const ConsolePanel = () => (
-    <div className="bg-[#08080a] flex flex-col h-full">
-      <Tabs value={consoleTab} onValueChange={(v) => setConsoleTab(v as any)} className="w-full h-full flex flex-col">
-        <div className="h-9 border-b border-white/5 flex items-center px-2 bg-[#0c0c0e] shrink-0 justify-between">
-          <TabsList className="h-full bg-transparent p-0 gap-4 overflow-x-auto no-scrollbar justify-start">
-            <TabsTrigger value="testcase" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:text-white text-xs font-medium text-zinc-500 flex items-center gap-2 px-2 hover:text-zinc-300 transition-colors whitespace-nowrap">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Testcase
-            </TabsTrigger>
-            <TabsTrigger value="custom" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:text-purple-400 text-xs font-medium text-zinc-500 flex items-center gap-2 px-2 hover:text-zinc-300 transition-colors whitespace-nowrap">
-              <Beaker className="w-3.5 h-3.5" /> Custom
-            </TabsTrigger>
-            <TabsTrigger value="result" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-400 text-xs font-medium text-zinc-500 flex items-center gap-2 px-2 hover:text-zinc-300 transition-colors whitespace-nowrap">
-              <Terminal className="w-3.5 h-3.5" /> Execution Log
-              {executionResult && (
-                 <span className={cn("ml-1.5 text-[10px] px-1.5 rounded-full font-bold uppercase", executionResult.passed ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400")}>
-                   {executionResult.passed ? 'PASS' : 'FAIL'}
-                 </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <div className="flex-1 overflow-auto p-4 bg-[#08080a] font-mono text-sm relative">
-          <div className="absolute inset-0 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5" />
-          
-          <TabsContent value="testcase" className="mt-0 h-full flex flex-col relative z-10">
-            <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10">
-              {testCases.filter(t => t.is_public).map((_, i) => (
-                <button 
-                  key={i} 
-                  onClick={() => setActiveTestCaseId(i)} 
-                  className={cn(
-                    "px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all border shrink-0", 
-                    activeTestCaseId === i 
-                      ? "bg-white/10 border-white/20 text-white shadow-[0_0_10px_rgba(255,255,255,0.1)]" 
-                      : "bg-transparent border-white/5 text-zinc-600 hover:text-zinc-400 hover:border-white/10"
-                  )}
-                >
-                  Node {i + 1}
-                </button>
-              ))}
-            </div>
-            <div className="flex-1 space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                   <ChevronRight className="w-3 h-3" /> Input Stream
-                </label>
-                <div className="w-full bg-[#0c0c0e] p-4 rounded-lg border border-white/5 text-zinc-300 shadow-inner">
-                   {formatValue(testCases[activeTestCaseId]?.input)}
-                </div>
-              </div>
-              {testCases[activeTestCaseId]?.output && (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
-                     <ChevronRight className="w-3 h-3" /> Expected Output
-                  </label>
-                  <div className="w-full bg-[#0c0c0e] p-4 rounded-lg border border-white/5 text-zinc-500 shadow-inner">
-                     {formatValue(testCases[activeTestCaseId]?.output)}
-                  </div>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="custom" className="mt-0 h-full relative z-10">
-            <CustomTestSandbox
-              defaultInput={testCases[0]?.input ? formatValue(testCases[0].input) : ''}
-              onRunCustomTest={handleRunCustomTest}
-              isRunning={judgingPhase.status === 'running'}
-            />
-          </TabsContent>
-          
-          <TabsContent value="result" className="mt-0 h-full relative z-10">
-            {isJudging ? (
-              <div className="h-full flex flex-col items-center justify-center">
-                 <JudgingLoader phase={judgingPhase} elapsedMs={elapsedMs} />
-              </div>
-            ) : !executionResult ? (
-              <div className="flex flex-col items-center justify-center h-full text-zinc-700 space-y-4">
-                <Zap className="w-12 h-12 opacity-20" />
-                <div className="text-center">
-                  <p className="text-sm font-bold uppercase tracking-widest text-zinc-600">Awaiting Compilation</p>
-                  <p className="text-[10px] text-zinc-700 mt-1">Initiate run sequence to view output logs.</p>
-                </div>
-              </div>
-            ) : executionResult.passed ? (
-               <div className="h-full flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                     <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20 shadow-[0_0_30px_-5px_rgba(16,185,129,0.3)] animate-pulse">
-                        <Sparkles className="w-10 h-10 text-emerald-400" />
-                     </div>
-                     <h3 className="text-xl font-bold text-white">Execution Successful</h3>
-                     <p className="text-zinc-500 text-sm max-w-xs mx-auto">
-                       Code complied with all standard protocols. Efficiency metrics available in the chart.
-                     </p>
-                  </div>
-               </div>
-            ) : (
-              <VerdictDisplay
-                verdict={executionResult.verdict}
-                feedbackMessage={executionResult.feedbackMessage}
-                feedbackSuggestion={executionResult.feedbackSuggestion}
-                failedTestIndex={executionResult.failedTestIndex}
-                testResults={executionResult.testResults}
-                errorDetails={executionResult.errorDetails}
-                runtime_ms={executionResult.runtime_ms}
-                memory_kb={executionResult.memory_kb}
-              />
-            )}
-          </TabsContent>
-        </div>
-      </Tabs>
-    </div>
-  );
-
   return (
     <div className="h-screen flex flex-col bg-[#050505] text-white overflow-hidden font-inter selection:bg-primary/30 relative">
       
@@ -543,44 +260,47 @@ export default function PracticeSolver() {
          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" />
       </div>
 
-      {/* --- HEADER --- */}
-      <header className="h-14 md:h-16 shrink-0 z-50 px-3 md:px-4 flex items-center justify-between border-b border-white/5 bg-[#050505]/80 backdrop-blur-md">
-        <div className="flex items-center gap-2 md:gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/practice-arena')} className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/10 text-zinc-400 hover:text-white transition-all group">
-            <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 group-hover:-translate-x-0.5 transition-transform" />
+      {/* --- COMMAND BAR (Header) --- */}
+      <header className="h-16 shrink-0 z-50 px-4 flex items-center justify-between border-b border-white/5 bg-[#050505]/80 backdrop-blur-md">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/practice-arena')} className="w-10 h-10 rounded-full border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/10 text-zinc-400 hover:text-white transition-all group">
+            <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
           </Button>
           
-          <div className="flex flex-col max-w-[150px] md:max-w-none">
-             <div className="flex items-center gap-2 md:gap-3">
-               <h1 className="font-bold text-xs md:text-base text-white tracking-tight truncate">{problem.title}</h1>
-               <div className={cn("hidden md:block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border", DifficultyColor)}>
+          <div className="flex flex-col">
+             <div className="flex items-center gap-3">
+               <h1 className="font-bold text-sm md:text-base text-white tracking-tight">{problem.title}</h1>
+               <div className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border", DifficultyColor)}>
                  {problem.difficulty}
                </div>
              </div>
-             {!isMobile && (
-               <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono">
-                  <span>ID: {slug?.slice(0, 6).toUpperCase()}</span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-yellow-500" /> {problem.acceptance_rate}% Acceptance
-                  </span>
-               </div>
-             )}
+             <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono">
+                <span>ID: {slug?.slice(0, 6).toUpperCase()}</span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-yellow-500" /> {problem.acceptance_rate}% Acceptance
+                </span>
+             </div>
           </div>
         </div>
 
-        {/* Central Timer (Desktop) */}
-        {!isMobile && (
-          <div className="flex items-center gap-3 px-4 py-1.5 bg-[#0a0a0c] rounded-full border border-white/10 shadow-inner">
-            <Timer className={cn("w-4 h-4", elapsedTime > 600 ? "text-red-400 animate-pulse" : "text-primary")} />
-            <span className="font-mono text-sm font-bold text-white tabular-nums tracking-widest">{formatTime(elapsedTime)}</span>
-          </div>
-        )}
+        {/* Central Timer */}
+        <div className="hidden md:flex items-center gap-3 px-4 py-1.5 bg-[#0a0a0c] rounded-full border border-white/10 shadow-inner">
+          <Timer className={cn("w-4 h-4", elapsedTime > 600 ? "text-red-400 animate-pulse" : "text-primary")} />
+          <span className="font-mono text-sm font-bold text-white tabular-nums tracking-widest">{formatTime(elapsedTime)}</span>
+        </div>
 
         {/* Action Cluster */}
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-1 bg-white/5 rounded-lg p-1 border border-white/5">
+            <BookmarkButton problemId={problem.id} userId={userId} />
+            <LikeDislikeButtons problemId={problem.id} userId={userId} likes={problem.likes || 0} dislikes={problem.dislikes || 0} />
+          </div>
+
+          <div className="h-6 w-px bg-white/10 mx-2 hidden sm:block" />
+
           <Select value={activeLanguage} onValueChange={(v) => setActiveLanguage(v as Language)}>
-            <SelectTrigger className="h-8 md:h-9 w-[110px] md:w-[140px] bg-[#0a0a0c] border-white/10 text-[10px] md:text-xs font-bold text-zinc-300 focus:ring-primary/20 hover:border-white/20 transition-colors">
+            <SelectTrigger className="h-9 w-[140px] bg-[#0a0a0c] border-white/10 text-xs font-bold text-zinc-300 focus:ring-primary/20 hover:border-white/20 transition-colors">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-[#0a0a0c] border-white/10 text-zinc-300">
@@ -592,120 +312,337 @@ export default function PracticeSolver() {
             </SelectContent>
           </Select>
 
-          {!isMobile ? (
-            <>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleRun} 
-                disabled={isRunning || isSubmitting || isJudging} 
-                className="h-9 px-4 text-xs font-bold border-primary/20 text-primary hover:text-primary hover:bg-primary/10 transition-all shadow-[0_0_10px_rgba(var(--primary),0.2)]"
-              >
-                {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2"/> : <Play className="w-3.5 h-3.5 mr-2 fill-current"/>} 
-                Run
-              </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRun} 
+            disabled={isRunning || isSubmitting || isJudging} 
+            className="h-9 px-4 text-xs font-bold border-primary/20 text-primary hover:text-primary hover:bg-primary/10 transition-all shadow-[0_0_10px_rgba(var(--primary),0.2)]"
+          >
+            {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2"/> : <Play className="w-3.5 h-3.5 mr-2 fill-current"/>} 
+            Run
+          </Button>
 
-              <Button 
-                size="sm" 
-                onClick={handleSubmit} 
-                disabled={isSubmitting || isRunning || isJudging} 
-                className="h-9 px-5 text-xs font-bold bg-white text-black hover:bg-zinc-200 hover:scale-105 transition-all shadow-[0_0_15px_-3px_rgba(255,255,255,0.4)]"
-              >
-                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2"/> : <Send className="w-3.5 h-3.5 mr-2"/>} 
-                Submit
-              </Button>
-            </>
-          ) : (
-             // Mobile Action Buttons (Icon Only)
-             <div className="flex items-center gap-1">
-                <Button 
-                  size="icon"
-                  variant="outline" 
-                  onClick={handleRun}
-                  disabled={isRunning || isSubmitting || isJudging}
-                  className="h-8 w-8 border-primary/20 text-primary bg-primary/5"
-                >
-                   {isRunning ? <Loader2 className="w-3 h-3 animate-spin"/> : <Play className="w-3 h-3 fill-current"/>}
-                </Button>
-                <Button 
-                  size="icon"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || isRunning || isJudging}
-                  className="h-8 w-8 bg-white text-black hover:bg-zinc-200"
-                >
-                   {isSubmitting ? <Loader2 className="w-3 h-3 animate-spin"/> : <Send className="w-3 h-3"/>}
-                </Button>
-             </div>
-          )}
+          <Button 
+            size="sm" 
+            onClick={handleSubmit} 
+            disabled={isSubmitting || isRunning || isJudging} 
+            className="h-9 px-5 text-xs font-bold bg-white text-black hover:bg-zinc-200 hover:scale-105 transition-all shadow-[0_0_15px_-3px_rgba(255,255,255,0.4)]"
+          >
+            {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2"/> : <Send className="w-3.5 h-3.5 mr-2"/>} 
+            Submit
+          </Button>
 
-          {!isMobile && (
-            <Button variant="ghost" size="icon" onClick={toggleFullScreen} className="hidden lg:flex w-9 h-9 text-zinc-500 hover:text-white">
-               {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </Button>
-          )}
+          <Button variant="ghost" size="icon" onClick={toggleFullScreen} className="hidden lg:flex w-9 h-9 text-zinc-500 hover:text-white">
+             {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </Button>
         </div>
       </header>
 
       {/* --- WORKSPACE --- */}
-      <div className="flex-1 overflow-hidden relative z-10 flex flex-col">
-        {isMobile ? (
-          // Mobile Layout with Bottom Tabs
-          <>
-            <div className="flex-1 relative overflow-hidden">
-               {mobileTab === 'problem' && <ProblemPanel />}
-               {mobileTab === 'editor' && <EditorPanel />}
-               {mobileTab === 'console' && <ConsolePanel />}
-            </div>
-            
-            {/* Bottom Nav Bar */}
-            <div className="h-14 bg-[#080808] border-t border-white/10 flex items-center justify-around px-2 shrink-0 z-30">
-               <button 
-                  onClick={() => setMobileTab('problem')} 
-                  className={cn("flex flex-col items-center gap-1 p-2 rounded-lg transition-colors", mobileTab === 'problem' ? "text-white" : "text-zinc-600")}
-               >
-                  <AlignLeft className="w-5 h-5" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider">Problem</span>
-               </button>
-               <button 
-                  onClick={() => setMobileTab('editor')} 
-                  className={cn("flex flex-col items-center gap-1 p-2 rounded-lg transition-colors", mobileTab === 'editor' ? "text-white" : "text-zinc-600")}
-               >
-                  <Code className="w-5 h-5" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider">Editor</span>
-               </button>
-               <button 
-                  onClick={() => setMobileTab('console')} 
-                  className={cn("flex flex-col items-center gap-1 p-2 rounded-lg transition-colors", mobileTab === 'console' ? "text-white" : "text-zinc-600")}
-               >
-                  <Box className="w-5 h-5" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider">Console</span>
-               </button>
-            </div>
-          </>
-        ) : (
-          // Desktop Layout with Split Panes
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel defaultSize={40} minSize={25} className="bg-[#08080a]/50 backdrop-blur-sm flex flex-col border-r border-white/5 relative group/left">
-               <ProblemPanel />
-            </ResizablePanel>
+      <div className="flex-1 overflow-hidden relative z-10">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          
+          {/* LEFT PANEL: Problem Intel */}
+          <ResizablePanel defaultSize={40} minSize={25} className="bg-[#08080a]/50 backdrop-blur-sm flex flex-col border-r border-white/5 relative group/left">
+            <Tabs value={descriptionTab} onValueChange={(v) => setDescriptionTab(v as any)} className="flex flex-col h-full">
+              
+              {/* Tabs Header */}
+              <div className="h-10 border-b border-white/5 flex items-center px-2 bg-[#0a0a0c] shrink-0">
+                <TabsList className="h-full bg-transparent p-0 gap-1 w-full justify-start">
+                  {[
+                    { value: 'description', icon: FileCode2, label: 'Briefing' },
+                    { value: 'editorial', icon: BookOpen, label: 'Intel' },
+                    { value: 'submissions', icon: History, label: 'Log' },
+                    { value: 'discussion', icon: MessageSquare, label: 'Comms' },
+                  ].map(tab => (
+                    <TabsTrigger 
+                      key={tab.value} 
+                      value={tab.value} 
+                      className="relative h-8 rounded-md px-3 text-[11px] font-bold uppercase tracking-wider text-zinc-500 data-[state=active]:text-white data-[state=active]:bg-white/5 transition-all hover:text-zinc-300"
+                    >
+                      <tab.icon className="w-3.5 h-3.5 mr-2" /> {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
 
-            <ResizableHandle withHandle className="bg-[#050505] w-1.5 border-l border-r border-white/5 hover:bg-primary/50 transition-colors" />
+              {/* Tab Contents */}
+              <div className="flex-1 relative bg-[#08080a] overflow-hidden">
+                <TabsContent value="description" className="h-full m-0 data-[state=active]:flex flex-col">
+                  <ScrollArea className="flex-1">
+                    <div className="p-6 pb-24 max-w-3xl mx-auto">
+                      {/* Problem Title Block */}
+                      <div className="mb-6 pb-6 border-b border-white/5">
+                        <h2 className="text-2xl font-bold text-white mb-3">{problem.title}</h2>
+                        <div className="flex flex-wrap gap-2">
+                           {problem.tags?.map((tag:string) => (
+                             <Badge key={tag} variant="secondary" className="bg-white/5 text-zinc-400 hover:text-white border-white/5 text-[10px] uppercase tracking-wider">
+                               #{tag}
+                             </Badge>
+                           ))}
+                        </div>
+                      </div>
 
-            <ResizablePanel defaultSize={60}>
-              <ResizablePanelGroup direction="vertical">
-                <ResizablePanel defaultSize={60} className="flex flex-col bg-[#1e1e1e] relative">
-                   <EditorPanel />
-                </ResizablePanel>
+                      {/* Description Text */}
+                      <div className="prose prose-invert prose-sm max-w-none text-zinc-300 leading-7 font-sans">
+                        <p className="whitespace-pre-wrap">{problem.description}</p>
+                      </div>
 
-                <ResizableHandle withHandle className="bg-[#0c0c0e] h-1.5 border-t border-b border-white/5 hover:bg-primary/50 transition-colors" />
-                
-                <ResizablePanel defaultSize={40} className="bg-[#08080a] flex flex-col min-h-[200px]">
-                   <ConsolePanel />
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        )}
+                      {/* Examples */}
+                      {testCases.length > 0 && (
+                        <div className="space-y-4 mt-8">
+                          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                            <Sparkles className="w-3 h-3 text-yellow-500" /> Simulation Data
+                          </h3>
+                          {testCases.filter((t: any) => t.is_public).map((t: any, i: number) => (
+                            <div key={i} className="bg-[#0c0c0e] border border-white/5 rounded-xl overflow-hidden shadow-sm">
+                              <div className="px-3 py-2 bg-white/5 border-b border-white/5 flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Scenario {i + 1}</span>
+                                <div className="flex gap-1">
+                                   <div className="w-2 h-2 rounded-full bg-red-500/20" />
+                                   <div className="w-2 h-2 rounded-full bg-yellow-500/20" />
+                                   <div className="w-2 h-2 rounded-full bg-green-500/20" />
+                                </div>
+                              </div>
+                              <div className="p-4 space-y-3 font-mono text-xs">
+                                <div className="space-y-1">
+                                  <span className="text-zinc-500 text-[10px] uppercase font-bold">Input Stream</span>
+                                  <div className="bg-[#050505] p-2 rounded border border-white/5 text-blue-300">{formatValue(t.input)}</div>
+                                </div>
+                                <div className="space-y-1">
+                                  <span className="text-zinc-500 text-[10px] uppercase font-bold">Expected Output</span>
+                                  <div className="bg-[#050505] p-2 rounded border border-white/5 text-emerald-300">{formatValue(t.output)}</div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="mt-8 space-y-4">
+                         <HintsAccordion hints={hints} hasAttempted={!!hasAttempted} />
+                         <ProblemNotes problemId={problem.id} userId={userId} />
+                      </div>
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                <TabsContent value="editorial" className="h-full m-0">
+                  <ScrollArea className="h-full">
+                    <div className="p-6">
+                      {problem.editorial ? (
+                        <div className="prose prose-invert prose-sm max-w-none"><p className="whitespace-pre-wrap">{problem.editorial}</p></div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-[400px] text-zinc-600">
+                          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                            <BookOpen className="w-8 h-8 opacity-50" />
+                          </div>
+                          <p className="text-sm font-bold uppercase tracking-widest">Classified Information</p>
+                          <p className="text-xs mt-2">Editorial content is currently unavailable.</p>
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                <TabsContent value="submissions" className="h-full m-0">
+                  <SubmissionHistory problemId={problem.id} userId={userId} onSelectSubmission={handleSelectSubmission} />
+                </TabsContent>
+
+                <TabsContent value="discussion" className="h-full m-0">
+                  <DiscussionTab problemId={problem.id} userId={userId} />
+                </TabsContent>
+              </div>
+
+              {/* Success/Verdict Overlay (Bottom of Left Panel) */}
+              <AnimatePresence>
+                {executionResult?.passed && (
+                  <motion.div 
+                    initial={{ y: 100, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 100, opacity: 0 }}
+                    className="absolute bottom-0 left-0 right-0 border-t border-emerald-500/20 bg-[#0c0c0e]/95 backdrop-blur-xl p-0 z-20 shadow-[0_-10px_50px_-10px_rgba(16,185,129,0.2)]"
+                  >
+                     <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 animate-pulse" />
+                     <div className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                           <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                                 <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                              </div>
+                              <div>
+                                 <h3 className="text-lg font-bold text-white">Mission Accomplished</h3>
+                                 <p className="text-xs text-emerald-400 font-mono">ALL TEST CASES PASSED</p>
+                              </div>
+                           </div>
+                           <div className="flex gap-2">
+                             <Button variant="outline" size="sm" onClick={handleRetry} className="h-8 text-xs border-white/10 bg-white/5 hover:bg-white/10">
+                               <RefreshCw className="w-3.5 h-3.5 mr-2" /> Optimise
+                             </Button>
+                             <Button size="sm" onClick={() => navigate('/practice-arena')} className="h-8 text-xs bg-emerald-600 hover:bg-emerald-500 text-white border-0">
+                               <Home className="w-3.5 h-3.5 mr-2" /> HQ
+                             </Button>
+                           </div>
+                        </div>
+                        <PerformanceChart
+                          runtimePercentile={executionResult.runtimePercentile || 50}
+                          memoryPercentile={executionResult.memoryPercentile || 50}
+                          runtime_ms={executionResult.runtime_ms}
+                          memory_kb={executionResult.memory_kb}
+                          testsPassed={executionResult.testResults.length}
+                          testsTotal={executionResult.testResults.length}
+                        />
+                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Tabs>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle className="bg-[#050505] w-1.5 border-l border-r border-white/5 hover:bg-primary/50 transition-colors" />
+
+          {/* RIGHT PANEL: Editor & Console */}
+          <ResizablePanel defaultSize={60}>
+            <ResizablePanelGroup direction="vertical">
+              
+              {/* CODE EDITOR */}
+              <ResizablePanel defaultSize={60} className="flex flex-col bg-[#1e1e1e] relative">
+                <div className="absolute top-0 right-0 z-10 p-2 opacity-50 hover:opacity-100 transition-opacity">
+                   <Settings className="w-4 h-4 text-zinc-400 cursor-pointer" />
+                </div>
+                <div className="flex-1 relative">
+                  <CodeEditor value={code} onChange={setCode} language={activeLanguage} />
+                </div>
+              </ResizablePanel>
+
+              <ResizableHandle withHandle className="bg-[#0c0c0e] h-1.5 border-t border-b border-white/5 hover:bg-primary/50 transition-colors" />
+              
+              {/* CONSOLE / TERMINAL */}
+              <ResizablePanel defaultSize={40} className="bg-[#08080a] flex flex-col min-h-[200px]">
+                <Tabs value={consoleTab} onValueChange={(v) => setConsoleTab(v as any)} className="w-full h-full flex flex-col">
+                  
+                  {/* Console Header */}
+                  <div className="h-9 border-b border-white/5 flex items-center px-2 bg-[#0c0c0e] shrink-0 justify-between">
+                    <TabsList className="h-full bg-transparent p-0 gap-4">
+                      <TabsTrigger value="testcase" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:text-white text-xs font-medium text-zinc-500 flex items-center gap-2 px-2 hover:text-zinc-300 transition-colors">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Testcase
+                      </TabsTrigger>
+                      <TabsTrigger value="custom" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:text-purple-400 text-xs font-medium text-zinc-500 flex items-center gap-2 px-2 hover:text-zinc-300 transition-colors">
+                        <Beaker className="w-3.5 h-3.5" /> Custom
+                      </TabsTrigger>
+                      <TabsTrigger value="result" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-400 text-xs font-medium text-zinc-500 flex items-center gap-2 px-2 hover:text-zinc-300 transition-colors">
+                        <Terminal className="w-3.5 h-3.5" /> Execution Log
+                        {executionResult && (
+                           <span className={cn("ml-1.5 text-[10px] px-1.5 rounded-full font-bold uppercase", executionResult.passed ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400")}>
+                             {executionResult.passed ? 'PASS' : 'FAIL'}
+                           </span>
+                        )}
+                      </TabsTrigger>
+                    </TabsList>
+
+                    {/* Console Actions */}
+                    <div className="flex items-center gap-2 pr-2">
+                       <span className="text-[10px] text-zinc-600 font-mono hidden sm:block">READY_TO_COMPILE</span>
+                       <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    </div>
+                  </div>
+
+                  {/* Console Content */}
+                  <div className="flex-1 overflow-auto p-4 bg-[#08080a] font-mono text-sm relative">
+                    <div className="absolute inset-0 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5" />
+                    
+                    <TabsContent value="testcase" className="mt-0 h-full flex flex-col relative z-10">
+                      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10">
+                        {testCases.filter(t => t.is_public).map((_, i) => (
+                          <button 
+                            key={i} 
+                            onClick={() => setActiveTestCaseId(i)} 
+                            className={cn(
+                              "px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all border", 
+                              activeTestCaseId === i 
+                                ? "bg-white/10 border-white/20 text-white shadow-[0_0_10px_rgba(255,255,255,0.1)]" 
+                                : "bg-transparent border-white/5 text-zinc-600 hover:text-zinc-400 hover:border-white/10"
+                            )}
+                          >
+                            Node {i + 1}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex-1 space-y-6">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                             <ChevronRight className="w-3 h-3" /> Input Stream
+                          </label>
+                          <div className="w-full bg-[#0c0c0e] p-4 rounded-lg border border-white/5 text-zinc-300 shadow-inner">
+                             {formatValue(testCases[activeTestCaseId]?.input)}
+                          </div>
+                        </div>
+                        {testCases[activeTestCaseId]?.output && (
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+                               <ChevronRight className="w-3 h-3" /> Expected Output
+                            </label>
+                            <div className="w-full bg-[#0c0c0e] p-4 rounded-lg border border-white/5 text-zinc-500 shadow-inner">
+                               {formatValue(testCases[activeTestCaseId]?.output)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="custom" className="mt-0 h-full relative z-10">
+                      <CustomTestSandbox
+                        defaultInput={testCases[0]?.input ? formatValue(testCases[0].input) : ''}
+                        onRunCustomTest={handleRunCustomTest}
+                        isRunning={judgingPhase.status === 'running'}
+                      />
+                    </TabsContent>
+                    
+                    <TabsContent value="result" className="mt-0 h-full relative z-10">
+                      {isJudging ? (
+                        <div className="h-full flex flex-col items-center justify-center">
+                           <JudgingLoader phase={judgingPhase} elapsedMs={elapsedMs} />
+                        </div>
+                      ) : !executionResult ? (
+                        <div className="flex flex-col items-center justify-center h-full text-zinc-700 space-y-4">
+                          <Zap className="w-12 h-12 opacity-20" />
+                          <div className="text-center">
+                            <p className="text-sm font-bold uppercase tracking-widest text-zinc-600">Awaiting Compilation</p>
+                            <p className="text-[10px] text-zinc-700 mt-1">Initiate run sequence to view output logs.</p>
+                          </div>
+                        </div>
+                      ) : executionResult.passed ? (
+                         <div className="h-full flex items-center justify-center">
+                            <div className="text-center space-y-4">
+                               <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20 shadow-[0_0_30px_-5px_rgba(16,185,129,0.3)] animate-pulse">
+                                  <Sparkles className="w-10 h-10 text-emerald-400" />
+                               </div>
+                               <h3 className="text-xl font-bold text-white">Execution Successful</h3>
+                               <p className="text-zinc-500 text-sm max-w-xs mx-auto">
+                                 Code complied with all standard protocols. Efficiency metrics available in the chart.
+                               </p>
+                            </div>
+                         </div>
+                      ) : (
+                        <VerdictDisplay
+                          verdict={executionResult.verdict}
+                          feedbackMessage={executionResult.feedbackMessage}
+                          feedbackSuggestion={executionResult.feedbackSuggestion}
+                          failedTestIndex={executionResult.failedTestIndex}
+                          testResults={executionResult.testResults}
+                          errorDetails={executionResult.errorDetails}
+                          runtime_ms={executionResult.runtime_ms}
+                          memory_kb={executionResult.memory_kb}
+                        />
+                      )}
+                    </TabsContent>
+                  </div>
+                </Tabs>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );
