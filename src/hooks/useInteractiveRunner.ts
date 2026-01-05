@@ -43,26 +43,6 @@ const detectPrompt = (output: string): string | null => {
   return null;
 };
 
-// Helper to find the last valid prompt in the output to handle Piston's lack of interactive stopping
-const findLastPromptIndex = (output: string): number => {
-  const patterns = [/: /g, /\? /g, /> /g, /:$/gm, /\?$/gm, />$/gm];
-  let maxIndex = -1;
-  
-  // We scan for specific delimiters that signal a prompt might be here.
-  // We check substrings up to these delimiters to see if they satisfy the prompt detection logic.
-  for (const pattern of patterns) {
-    let match;
-    while ((match = pattern.exec(output)) !== null) {
-      const endIdx = match.index + match[0].length;
-      const sub = output.slice(0, endIdx);
-      if (detectPrompt(sub)) {
-        maxIndex = Math.max(maxIndex, endIdx);
-      }
-    }
-  }
-  return maxIndex;
-};
-
 // Get friendly error messages
 const getFriendlyError = (rawError: string, language: Language): string => {
   const lowerError = rawError.toLowerCase();
@@ -161,15 +141,42 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
           let finalOutput = stdout;
           let forceInput = false;
 
-          // C/C++ Fix: Piston runs to completion (EOF) or Timeout when input is missing.
-          // This causes "future" output (e.g. infinite loops or next steps) to appear before the user types.
-          // We scan for the last valid prompt and truncate the output there to simulate a pause.
+          // FIX: For compiled languages (C/C++), Piston runs to completion (EOF) when input is missing.
+          // This causes "future" prompts and infinite loops to appear in the output immediately.
+          // We scan the output to find the *first* prompt that wasn't satisfied by our input history,
+          // and truncate the output there to simulate a pause.
           if (isCompiledLang) {
-             const lastPromptIdx = findLastPromptIndex(combinedOutput);
-             // If we found a prompt and there is text following it (garbage/future output)
-             if (lastPromptIdx !== -1 && lastPromptIdx < combinedOutput.length) {
-                finalOutput = combinedOutput.slice(0, lastPromptIdx);
-                forceInput = true;
+             const inputsProvided = collectedInputsRef.current.length;
+             let promptCount = 0;
+             
+             // Scan for potential prompt delimiters (colon, question, greater-than)
+             const scanRegex = /[:\?>]/g;
+             let match;
+             
+             while ((match = scanRegex.exec(combinedOutput)) !== null) {
+                // Check substrings ending at the match or shortly after (to handle spaces)
+                const cut1 = match.index + 1;
+                const cut2 = match.index + 2;
+                
+                let foundIndex = -1;
+                
+                // Check if the text up to this point looks like a prompt
+                if (detectPrompt(combinedOutput.slice(0, cut1))) {
+                    foundIndex = cut1;
+                } else if (cut2 <= combinedOutput.length && detectPrompt(combinedOutput.slice(0, cut2))) {
+                    foundIndex = cut2;
+                }
+                
+                if (foundIndex !== -1) {
+                   promptCount++;
+                   // If we found more prompts than we have provided inputs for,
+                   // this is where the program *should* have stopped.
+                   if (promptCount > inputsProvided) {
+                      finalOutput = combinedOutput.slice(0, foundIndex);
+                      forceInput = true;
+                      break;
+                   }
+                }
              }
           }
 
