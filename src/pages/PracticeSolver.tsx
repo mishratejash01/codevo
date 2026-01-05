@@ -4,15 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from '@/components/ui/badge';
 import { useEnhancedCodeRunner, Language, EnhancedExecutionResult } from '@/hooks/useEnhancedCodeRunner';
 import { CodeEditor } from '@/components/CodeEditor';
 import { 
-  Play, Send, ChevronLeft, Loader2, Bug, Terminal, FileCode2, Timer, 
-  Home, RefreshCw, CheckCircle2, BookOpen, MessageSquare, History, 
-  Beaker, Sparkles, Zap, Maximize2, Minimize2, ChevronRight, Settings
+  Play, Send, ChevronLeft, Loader2, Bug, Terminal, BookOpen, 
+  CheckCircle2, Sparkles, Maximize2, Minimize2, Settings, History, MessageSquare, FileCode2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -220,9 +217,9 @@ export default function PracticeSolver() {
   };
 
   if (problemLoading) return (
-    <div className="h-screen bg-[#080808] flex flex-col items-center justify-center gap-4 text-white relative overflow-hidden font-sans">
+    <div className="h-screen bg-[#080808] flex flex-col items-center justify-center gap-4 text-white font-sans">
       <Loader2 className="w-8 h-8 text-[#94a3b8] animate-spin" />
-      <div className="text-[10px] font-mono text-[#475569] uppercase tracking-widest">Loading Environment...</div>
+      <div className="text-[10px] font-mono text-[#475569] uppercase tracking-widest">Initializing Atelier...</div>
     </div>
   );
 
@@ -232,13 +229,20 @@ export default function PracticeSolver() {
         <Bug className="w-8 h-8 text-[#fca5a5]" />
       </div>
       <h1 className="text-xl font-serif italic text-[#f8fafc]">Data Retrieval Failed</h1>
-      <Button variant="outline" onClick={() => navigate('/practice-arena')} className="border-white/10 hover:bg-white/5 text-xs uppercase tracking-widest">
+      <button onClick={() => navigate('/practice-arena')} className="text-[11px] uppercase tracking-widest border-b border-white/20 pb-1 hover:text-white transition-colors">
         Return to Base
-      </Button>
+      </button>
     </div>
   );
 
   const isJudging = judgingPhase.status !== 'idle' && judgingPhase.status !== 'complete';
+
+  // Styles for difficulty badges
+  const difficultyStyles = {
+    'Easy': 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5',
+    'Medium': 'text-amber-400 border-amber-500/20 bg-amber-500/5',
+    'Hard': 'text-rose-400 border-rose-500/20 bg-rose-500/5',
+  }[problem.difficulty] || 'text-white border-white/20 bg-white/5';
 
   return (
     <div className="h-screen flex flex-col bg-[#080808] text-[#f8fafc] font-sans overflow-hidden selection:bg-white/20">
@@ -248,20 +252,21 @@ export default function PracticeSolver() {
         
         {/* Left: Problem Info */}
         <div className="flex items-center gap-5">
-          <button onClick={() => navigate('/practice-arena')} className="text-[#475569] hover:text-[#f8fafc] transition-colors">
+          <button onClick={() => navigate('/practice-arena')} className="text-[#475569] hover:text-[#f8fafc] transition-colors p-2 -ml-2 rounded-full hover:bg-white/5">
             <ChevronLeft className="w-5 h-5" />
           </button>
           
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
              <h1 className="font-serif italic text-lg text-[#f8fafc]">{problem.title}</h1>
-             <span className="text-[10px] uppercase tracking-widest text-[#94a3b8] border border-white/[0.08] px-2 py-0.5 rounded-[2px] ml-3">
+             <span className={cn("text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-[2px] border font-bold", difficultyStyles)}>
                {problem.difficulty}
              </span>
           </div>
         </div>
 
         {/* Center: Chronometer */}
-        <div className="hidden md:block font-mono text-[13px] text-[#475569] tracking-[2px] bg-white/[0.02] px-3 py-1 rounded-[2px] border border-white/[0.08]">
+        <div className="hidden md:flex items-center gap-3 font-mono text-[13px] text-[#475569] tracking-[2px] bg-white/[0.02] px-4 py-1.5 rounded-[2px] border border-white/[0.08]">
+          <Timer className="w-3.5 h-3.5 opacity-50" />
           {formatTime(elapsedTime)}
         </div>
 
@@ -291,7 +296,7 @@ export default function PracticeSolver() {
             disabled={isRunning || isSubmitting || isJudging} 
             className="text-[11px] font-semibold uppercase tracking-widest px-5 py-2 rounded-[2px] border border-white/[0.08] text-[#94a3b8] bg-transparent hover:border-[#94a3b8] hover:text-[#f8fafc] transition-all disabled:opacity-50"
           >
-            {isRunning ? 'Running...' : 'Run Analysis'}
+            {isRunning ? 'Running...' : 'Run Test'}
           </button>
 
           <button 
@@ -299,7 +304,7 @@ export default function PracticeSolver() {
             disabled={isSubmitting || isRunning || isJudging} 
             className="text-[11px] font-semibold uppercase tracking-widest px-5 py-2 rounded-[2px] border border-transparent text-[#080808] bg-[#f8fafc] hover:bg-[#94a3b8] hover:scale-[1.02] transition-all shadow-lg disabled:opacity-50"
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Final'}
+            {isSubmitting ? 'Submitting...' : 'Submit Logic'}
           </button>
 
           <button onClick={toggleFullScreen} className="text-[#475569] hover:text-[#f8fafc] hidden lg:block">
@@ -316,23 +321,24 @@ export default function PracticeSolver() {
           <ResizablePanel defaultSize={40} minSize={25} className="bg-[#0c0c0c] border-r border-white/[0.08] flex flex-col relative group/left">
             
             {/* Tabs Navigation */}
-            <div className="flex px-6 border-b border-white/[0.08] gap-6 shrink-0">
+            <div className="flex px-6 border-b border-white/[0.08] gap-6 shrink-0 bg-[#0c0c0c]">
               {[
-                { value: 'description', label: 'Briefing' },
-                { value: 'editorial', label: 'Editorial' },
-                { value: 'submissions', label: 'Log' },
-                { value: 'discussion', label: 'Comms' },
+                { value: 'description', label: 'Briefing', icon: FileCode2 },
+                { value: 'editorial', label: 'Intel', icon: BookOpen },
+                { value: 'submissions', label: 'Archive', icon: History },
+                { value: 'discussion', label: 'Comms', icon: MessageSquare },
               ].map(tab => (
                 <button
                   key={tab.value}
                   onClick={() => setDescriptionTab(tab.value as any)}
                   className={cn(
-                    "text-[10px] uppercase tracking-[1.5px] py-4 relative transition-colors",
+                    "text-[10px] uppercase tracking-[1.5px] py-4 relative transition-colors flex items-center gap-2",
                     descriptionTab === tab.value 
                       ? "text-[#f8fafc] after:absolute after:bottom-0 after:left-0 after:w-full after:h-[1px] after:bg-[#f8fafc]" 
                       : "text-[#475569] hover:text-[#94a3b8]"
                   )}
                 >
+                  <tab.icon className="w-3 h-3" />
                   {tab.label}
                 </button>
               ))}
@@ -343,25 +349,56 @@ export default function PracticeSolver() {
               {descriptionTab === 'description' && (
                 <ScrollArea className="h-full">
                   <div className="p-10 max-w-3xl mx-auto">
-                    <h2 className="font-serif italic text-3xl text-[#f8fafc] mb-6">{problem.title}</h2>
+                    {/* Problem Title & Tags */}
+                    <div className="mb-8">
+                      <h2 className="font-serif italic text-3xl text-[#f8fafc] mb-4">{problem.title}</h2>
+                      <div className="flex flex-wrap gap-2">
+                        {problem.tags?.map((tag: string) => (
+                          <span key={tag} className="text-[10px] text-[#475569] border border-white/[0.05] px-2 py-1 rounded bg-white/[0.02]">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                     
-                    <div className="text-[15px] leading-relaxed text-[#94a3b8] mb-8 font-sans space-y-4">
+                    {/* Description Content */}
+                    <div className="text-[15px] leading-relaxed text-[#94a3b8] mb-10 font-sans space-y-4">
                       <div className="whitespace-pre-wrap">{problem.description}</div>
                     </div>
 
+                    {/* MacBook Terminal Style Sample Cases */}
                     {testCases.length > 0 && (
-                      <div className="mb-8">
-                        <span className="text-[9px] uppercase tracking-widest text-[#475569] block mb-3">Simulation Data</span>
+                      <div className="mb-10">
+                        <span className="text-[9px] uppercase tracking-widest text-[#475569] block mb-4">Sample Parameters</span>
                         {testCases.filter((t: any) => t.is_public).map((t: any, i: number) => (
-                          <div key={i} className="bg-[#080808] border border-white/[0.08] rounded-[2px] p-4 mb-4">
-                             <div className="mb-2">
-                               <span className="text-[10px] text-[#475569] uppercase tracking-wider block mb-1">Input</span>
-                               <code className="text-[13px] font-mono text-[#d1d1d1]">{formatValue(t.input)}</code>
-                             </div>
-                             <div>
-                               <span className="text-[10px] text-[#475569] uppercase tracking-wider block mb-1">Expected Output</span>
-                               <code className="text-[13px] font-mono text-[#94a3b8]">{formatValue(t.output)}</code>
-                             </div>
+                          <div key={i} className="rounded-lg border border-white/10 bg-[#000] overflow-hidden mb-6 shadow-2xl">
+                            {/* Terminal Header */}
+                            <div className="bg-[#1a1a1a] px-4 py-2 flex items-center gap-2 border-b border-white/5">
+                              <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                              <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                              <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+                              <div className="flex-1 text-center text-[10px] text-zinc-500 font-sans -ml-14">
+                                scenario_{i + 1}.sh
+                              </div>
+                            </div>
+                            {/* Terminal Body */}
+                            <div className="p-5 font-mono text-sm text-zinc-300">
+                              <div className="mb-3">
+                                <span className="text-[#f59e0b] mr-2">$</span>
+                                <span className="text-zinc-500">input_stream</span>
+                              </div>
+                              <div className="pl-4 text-[#94a3b8] mb-4">
+                                {formatValue(t.input)}
+                              </div>
+                              
+                              <div className="mb-3">
+                                <span className="text-[#f59e0b] mr-2">$</span>
+                                <span className="text-zinc-500">expected_output</span>
+                              </div>
+                              <div className="pl-4 text-[#10b981]">
+                                {formatValue(t.output)}
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -534,13 +571,14 @@ export default function PracticeSolver() {
                     </div>
                   )}
 
-                  {consoleTab === 'custom' && (
+                  {/* FIXED: Added 'h-full flex flex-col' so the sandbox takes full height */}
+                  <div className={cn("h-full flex flex-col", consoleTab === 'custom' ? 'block' : 'hidden')}>
                     <CustomTestSandbox
                       defaultInput={testCases[0]?.input ? formatValue(testCases[0].input) : ''}
                       onRunCustomTest={handleRunCustomTest}
                       isRunning={judgingPhase.status === 'running'}
                     />
-                  )}
+                  </div>
 
                   {consoleTab === 'result' && (
                     <div className="h-full">
