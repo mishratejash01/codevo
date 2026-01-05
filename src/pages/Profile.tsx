@@ -134,30 +134,30 @@ const SocialEditBlock = ({
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#121214] border border-white/5 hover:border-white/10 transition-all group">
+    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-[#121214] border border-white/5 hover:border-white/10 transition-all group">
       <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors", colorClass, "bg-white/5 text-gray-400 group-hover:text-white")}>
         <Icon className="w-6 h-6" />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 w-full text-center sm:text-left">
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">{label}</p>
         {isEditing ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full">
             <Input 
               value={tempValue} 
               onChange={(e) => setTempValue(e.target.value)} 
-              className="h-8 bg-black/50 border-white/20 text-sm focus-visible:ring-primary/50"
+              className="h-9 bg-black/50 border-white/20 text-sm focus-visible:ring-primary/50 w-full"
               placeholder={`Enter ${label}...`}
               autoFocus
             />
-            <Button size="icon" className="h-8 w-8 bg-green-600 hover:bg-green-700" onClick={handleSave}><Check className="w-4 h-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-white/10" onClick={() => setIsEditing(false)}><X className="w-4 h-4" /></Button>
+            <Button size="icon" className="h-9 w-9 shrink-0 bg-green-600 hover:bg-green-700" onClick={handleSave}><Check className="w-4 h-4" /></Button>
+            <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 hover:bg-white/10" onClick={() => setIsEditing(false)}><X className="w-4 h-4" /></Button>
           </div>
         ) : (
           <p className="text-sm text-white font-medium truncate font-mono">{value || <span className="text-white/20 italic">Not connected</span>}</p>
         )}
       </div>
       {!isEditing && (
-        <Button size="icon" variant="ghost" className="h-9 w-9 text-white/30 hover:text-white hover:bg-white/10" onClick={() => setIsEditing(true)}>
+        <Button size="icon" variant="ghost" className="h-9 w-9 text-white/30 hover:text-white hover:bg-white/10 sm:ml-auto" onClick={() => setIsEditing(true)}>
           <Edit2 className="w-4 h-4" />
         </Button>
       )}
@@ -167,7 +167,6 @@ const SocialEditBlock = ({
 
 const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData, isOwner: boolean, onEdit?: () => void }) => {
   const [isLinkCopied, setIsLinkCopied] = useState(false);
-  const navigate = useNavigate();
 
   const handleShare = async () => {
     const url = `${window.location.origin}/u/${profile.username}`;
@@ -237,11 +236,11 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
           </div>
 
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">{profile.full_name}</h1>
-            <div onClick={handleLinkClick} className="mt-2 inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer group">
-              {isLinkCopied ? <Check className="w-3 h-3 text-green-400" /> : <LinkIcon className="w-3 h-3 text-white/50 group-hover:text-white" />}
-              <span className="text-sm font-medium text-white/70 group-hover:text-white truncate max-w-[200px]">{displayUrl}</span>
-              <Copy className="w-3 h-3 text-white/30 group-hover:text-white/70 ml-1" />
+            <h1 className="text-2xl font-extrabold text-white tracking-tight break-words px-2">{profile.full_name}</h1>
+            <div onClick={handleLinkClick} className="mt-2 inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-pointer group max-w-full">
+              {isLinkCopied ? <Check className="w-3 h-3 text-green-400 shrink-0" /> : <LinkIcon className="w-3 h-3 text-white/50 group-hover:text-white shrink-0" />}
+              <span className="text-sm font-medium text-white/70 group-hover:text-white truncate">{displayUrl}</span>
+              <Copy className="w-3 h-3 text-white/30 group-hover:text-white/70 ml-1 shrink-0" />
             </div>
             {profile.country && (
               <div className="mt-2 flex items-center justify-center gap-1.5 text-gray-500 text-xs font-medium uppercase tracking-wider">
@@ -270,7 +269,7 @@ const ProfileCardContent = ({ profile, isOwner, onEdit }: { profile: ProfileData
           <div className="p-6 text-center">
             <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-600 mb-3">Education</h2>
             <div className="inline-block text-center">
-              <p className="font-bold text-cyan-400 text-base leading-tight">{profile.institute_name}</p>
+              <p className="font-bold text-cyan-400 text-base leading-tight px-4">{profile.institute_name}</p>
               <p className="text-xs text-gray-400 mt-1 font-medium">{profile.degree} • {profile.branch}</p>
               <p className="text-[10px] text-gray-600 mt-1.5">{profile.start_year} - {profile.end_year}</p>
             </div>
@@ -294,7 +293,6 @@ export const HitMeUpWidget = ({ defaultUsername = "mishratejash01" }) => {
       let query = supabase.from("profiles").select("*");
       if (session?.user?.id) query = query.eq("id", session.user.id);
       else query = query.eq("username", defaultUsername);
-      // FIXED: Use maybeSingle instead of single
       const { data } = await query.maybeSingle();
       if (data) setProfile(data as ProfileData);
     };
@@ -370,7 +368,6 @@ const Profile = () => {
       if (!username) {
         if (!currentUser) { navigate("/auth"); return; }
         
-        // FIXED: maybeSingle to handle missing profiles
         const { data: myProfile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).maybeSingle();
         
         const defaultProfile: ProfileData = {
@@ -420,7 +417,6 @@ const Profile = () => {
         return;
       }
 
-      // FIXED: maybeSingle to resolve 406 Not Acceptable error
       const { data, error } = await supabase.from("profiles").select("*").eq("username", username).maybeSingle();
       
       if (error || !data) { 
@@ -541,7 +537,7 @@ const Profile = () => {
               onClick={handleSave} 
               disabled={!isDirty || isSaving || isCheckingUsername || !!usernameError}
               className={cn(
-                "min-w-[140px] font-bold shadow-lg transition-all",
+                "min-w-[140px] font-bold shadow-lg transition-all w-full sm:w-auto",
                 isDirty ? "bg-primary hover:bg-primary/90 text-white" : "bg-white/10 text-muted-foreground hover:bg-white/15"
               )}
             >
@@ -557,7 +553,7 @@ const Profile = () => {
           
           <div className="space-y-6">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2"><User className="w-4 h-4" /> Identity</h2>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div className="grid gap-2">
                  <Label className="text-xs text-muted-foreground uppercase tracking-wider">Full Name</Label>
                  <Input 
@@ -591,17 +587,19 @@ const Profile = () => {
           <div className="space-y-6">
             <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Visuals</h2>
             <div className="relative rounded-2xl overflow-hidden border border-white/10 group">
-              <div className="h-64 w-full bg-cover bg-center transition-all duration-500" style={{ backgroundImage: `url('${profile.cover_url || COVER_TEMPLATES[0]}')` }}>
+              {/* Responsive Height */}
+              <div className="h-56 sm:h-64 w-full bg-cover bg-center transition-all duration-500" style={{ backgroundImage: `url('${profile.cover_url || COVER_TEMPLATES[0]}')` }}>
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
               </div>
-              <div className="absolute bottom-6 left-8 flex items-end gap-6 z-20">
-                <Avatar className="w-32 h-32 border-4 border-[#09090b] shadow-2xl">
+              {/* Responsive Layout: Stack on mobile, Row on desktop */}
+              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 md:p-8 flex flex-col sm:flex-row items-center sm:items-end gap-4 sm:gap-6 z-20">
+                <Avatar className="w-24 h-24 sm:w-32 sm:h-32 border-4 border-[#09090b] shadow-2xl">
                   <AvatarImage src={profile.avatar_url} className="object-cover" />
                   <AvatarFallback className="bg-[#1a1a1c] text-3xl font-bold">{profile.full_name?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 
-                <div className="mb-4 bg-black/70 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10 shadow-2xl">
-                   <h2 className="text-3xl font-bold text-white tracking-tight mb-0.5">{profile.full_name}</h2>
+                <div className="mb-0 sm:mb-4 bg-black/70 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10 shadow-2xl text-center sm:text-left">
+                   <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-0.5">{profile.full_name}</h2>
                    <p className="text-gray-300 font-medium text-sm tracking-wide">@{profile.username || 'username'}</p>
                 </div>
               </div>
@@ -667,17 +665,17 @@ const Profile = () => {
                                 <img src={reg.event.image_url} alt={reg.event.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
                             </div>
                             <div className="flex-1 py-1">
-                                <div className="flex items-start justify-between">
+                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
                                     <div>
                                         <Badge variant="outline" className="mb-2 border-white/10 text-xs">{reg.participation_type}</Badge>
                                         <h3 className="text-lg font-bold text-white mb-1">{reg.event.title}</h3>
-                                        <div className="flex items-center gap-3 text-xs text-gray-400">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 text-xs text-gray-400">
                                             <span className="flex items-center gap-1"><Calendar className="w-3 h-3"/> {format(new Date(reg.event.start_date), 'MMM d, yyyy')}</span>
                                             <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {reg.event.location}</span>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className={cn("px-2 py-1 rounded text-[10px] font-bold uppercase", 
+                                    <div className="text-left md:text-right mt-2 md:mt-0">
+                                        <div className={cn("inline-block px-2 py-1 rounded text-[10px] font-bold uppercase", 
                                             reg.status === 'verified' ? "bg-green-500/10 text-green-400" : "bg-yellow-500/10 text-yellow-400"
                                         )}>
                                             {reg.status}
