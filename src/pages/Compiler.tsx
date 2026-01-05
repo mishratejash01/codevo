@@ -36,8 +36,10 @@ const LANGUAGES_CONFIG = [
 const getStarterTemplate = (lang: Language) => {
   switch(lang) {
     case 'java': return `public class Main {\n    public static void main(String[] args) {\n        System.out.println(">> JAVA RUNTIME ACTIVE");\n    }\n}`;
-    case 'cpp': return `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << ">> SYSTEM INITIALIZED." << endl;\n    return 0;\n}`;
-    case 'c': return `#include <stdio.h>\n\nint main() {\n    printf(">> C KERNEL LOADED.\\n");\n    return 0;\n}`;
+    // Updated C++ template to disable buffering
+    case 'cpp': return `#include <iostream>\nusing namespace std;\n\nint main() {\n    // Disable buffering for interactive use\n    cout.setf(std::ios::unitbuf);\n    \n    cout << ">> SYSTEM INITIALIZED." << endl;\n    // Example input:\n    // int x;\n    // cout << "Enter number: ";\n    // cin >> x;\n    return 0;\n}`;
+    // Updated C template to disable buffering
+    case 'c': return `#include <stdio.h>\n\nint main() {\n    // Disable buffering for interactive use\n    setbuf(stdout, NULL);\n    \n    printf(">> C KERNEL LOADED.\\n");\n    // Example input:\n    // int x;\n    // printf("Enter number: ");\n    // scanf("%d", &x);\n    return 0;\n}`;
     case 'javascript': return `console.log(">> V8 ENGINE ONLINE");`;
     case 'sql': return `SELECT 'SQL MATRIX ACTIVE' as status;`;
     case 'bash': return `echo ">> BASH SHELL ACTIVE"`;
