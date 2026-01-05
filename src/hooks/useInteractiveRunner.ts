@@ -207,7 +207,9 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
       currentInputLineRef.current = "";
       
       collectedInputsRef.current.push(inputValue);
-      setOutput(prev => prev + '\n');
+      
+      // FIXED: Commented out manual output update to prevent double echo on Enter
+      // setOutput(prev => prev + '\n');
       
       setIsWaitingForInput(false);
       executeWithInputs();
@@ -215,7 +217,9 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
     else if (char === '\x7f' || char === '\b') {
       if (currentInputLineRef.current.length > 0) {
         currentInputLineRef.current = currentInputLineRef.current.slice(0, -1);
-        setOutput(prev => prev.slice(0, -1));
+        
+        // FIXED: Commented out manual output update to prevent double deletion echo
+        // setOutput(prev => prev.slice(0, -1));
       }
     }
     else if (char === '\x03') {
@@ -227,7 +231,10 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
     }
     else if (char.length === 1 && char >= ' ') {
       currentInputLineRef.current += char;
-      setOutput(prev => prev + char);
+      
+      // FIXED: Commented out manual output update to prevent double echo
+      // TerminalView already echoes the character locally
+      // setOutput(prev => prev + char);
     }
   }, [isWaitingForInput, executeWithInputs]);
 
