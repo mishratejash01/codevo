@@ -12,7 +12,7 @@ import {
   Cookie,
   BookOpen,
   Menu,
-  X // Imported X for custom close button if needed, though Sheet has one
+  X 
 } from 'lucide-react'; 
 import {
   Popover,
@@ -249,8 +249,8 @@ export function Header({ session, onLogout }: HeaderProps) {
 
           {/* --- AUTH & MOBILE MENU SECTION --- */}
           <div className="flex items-center gap-3 shrink-0">
-            {/* Desktop Auth */}
-            <div className="hidden md:block">
+            {/* Desktop Auth - Removed hidden md:block to show on mobile too */}
+            <div>
               {session ? (
                 <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                   <PopoverTrigger asChild>
@@ -258,7 +258,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                       <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center text-[11px] font-bold text-white border border-white/20 shadow-[0_0_15px_rgba(34,197,94,0.6)] font-sans">
                         {userName.charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-sm font-semibold text-white font-sans">{userName}</span>
+                      <span className="hidden md:inline text-sm font-semibold text-white font-sans">{userName}</span>
                       <FilledDropdownArrow isOpen={popoverOpen} />
                     </div>
                   </PopoverTrigger>
@@ -276,7 +276,7 @@ export function Header({ session, onLogout }: HeaderProps) {
                   </PopoverContent>
                 </Popover>
               ) : (
-                <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white rounded-full px-7 font-semibold h-10 transition-all border border-white/10 backdrop-blur-md text-[14px] font-sans" onClick={() => navigate('/auth')}>Sign in</Button>
+                <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white rounded-full px-5 md:px-7 font-semibold h-9 md:h-10 transition-all border border-white/10 backdrop-blur-md text-[13px] md:text-[14px] font-sans" onClick={() => navigate('/auth')}>Sign in</Button>
               )}
             </div>
 
@@ -284,11 +284,12 @@ export function Header({ session, onLogout }: HeaderProps) {
             <div className="md:hidden">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-                    <Menu className="h-6 w-6" />
+                  {/* INCREASED HAMBURGER ICON SIZE */}
+                  <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 w-10 h-10">
+                    <Menu className="h-8 w-8" />
                   </Button>
                 </SheetTrigger>
-                {/* Updated SheetContent: side="top" and rounded-b-[2.5rem] */}
+                {/* REMOVED CUSTOM CLOSE BUTTON TO FIX DOUBLE CROSS ISSUE */}
                 <SheetContent side="top" className="w-full rounded-b-[2.5rem] bg-black/90 backdrop-blur-xl border-b border-white/10 text-white p-0 overflow-hidden shadow-2xl">
                   <div className="p-6 md:p-8 flex flex-col h-auto max-h-[85vh] overflow-y-auto">
                     
@@ -297,12 +298,6 @@ export function Header({ session, onLogout }: HeaderProps) {
                        <SheetTitle className="font-neuropol text-xl font-bold tracking-wider text-white">
                          COD<span className="text-[1.2em] lowercase relative top-[1px] mx-[1px] inline-block">é</span>VO
                        </SheetTitle>
-                       {/* Default close is usually absolute top right, but putting a custom one if layout needs shift, standard works well too */}
-                       <SheetClose asChild>
-                         <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white">
-                           <X className="w-6 h-6" />
-                         </Button>
-                       </SheetClose>
                     </div>
 
                     {/* Navigation Accordion */}
@@ -344,7 +339,7 @@ export function Header({ session, onLogout }: HeaderProps) {
 
                     <Link to="/events" className="text-lg font-semibold text-white hover:text-zinc-300 transition-colors mb-8 block">Events</Link>
 
-                    {/* Auth & CTAs inside Menu */}
+                    {/* Auth & CTAs inside Menu - ALSO VISIBLE HERE */}
                     <div className="mt-auto space-y-4">
                        {session ? (
                          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex items-center justify-between">
