@@ -7,18 +7,13 @@ interface SEOProps {
   image?: string; 
 }
 
-export const SEO = ({ 
-  title, 
-  description, 
-  url = 'https://codevo.co.in', 
-  // 👇 UPDATED: Uses absolute URL by default
-  image = 'https://codevo.co.in/og-image.png' 
-}: SEOProps) => {
+export const SEO = ({ title, description, url = 'https://codevo.co.in', image = '/og-image.png' }: SEOProps) => {
   
-  // Ensure image is always absolute (fixes the preview issue)
+  // 👇 FIX: Ensure the image URL is always "Absolute" (starts with https://)
+  // WhatsApp and LinkedIn will IGNORE links that look like "/image.png"
   const absoluteImage = image.startsWith('http') 
     ? image 
-    : `https://codevo.co.in${image}`;
+    : `https://codevo.co.in${image.startsWith('/') ? image : `/${image}`}`;
 
   return (
     <Helmet>
@@ -30,6 +25,7 @@ export const SEO = ({
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={url} />
+      {/* 👇 Uses the fixed absolute URL */}
       <meta property="og:image" content={absoluteImage} />
       <meta property="og:type" content="website" />
       
@@ -37,6 +33,7 @@ export const SEO = ({
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
+      {/* 👇 Uses the fixed absolute URL */}
       <meta name="twitter:image" content={absoluteImage} />
       
       {/* Structured Data for Organization (Helps with Sitelinks) */}
