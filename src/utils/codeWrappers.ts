@@ -449,7 +449,7 @@ ${userImports}
 ${dataStructures}
 ${cleanedUserCode}
 
-class Main {
+public class Main {
     public static void main(String[] args) {
         try {
             Solution sol = new Solution();
