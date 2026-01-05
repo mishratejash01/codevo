@@ -220,7 +220,7 @@ const TermsOfService = () => {
                   <div className="mt-6 flex flex-col gap-2 text-sm">
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500 w-24">Email:</span>
-                      <a href="mailto:legal@codevo.co.in" className="text-white hover:underline">reach@codevo.co.in</a>
+                      <a href="mailto:reach@codevo.co.in" className="text-white hover:underline">reach@codevo.co.in</a>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500 w-24">Address:</span>
