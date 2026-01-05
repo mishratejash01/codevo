@@ -10,7 +10,7 @@ import { CodeEditor } from '@/components/CodeEditor';
 import { 
   Play, Send, ChevronLeft, Loader2, Bug, Terminal, BookOpen, 
   CheckCircle2, Sparkles, Maximize2, Minimize2, Settings, History, 
-  MessageSquare, FileCode2, Timer // Fixed: Timer import added
+  MessageSquare, FileCode2, Timer
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -532,10 +532,10 @@ export default function PracticeSolver() {
                 </div>
 
                 {/* Console Content */}
-                <div className="flex-1 overflow-auto bg-[#080808] font-mono p-6 relative">
+                <div className="flex-1 overflow-auto bg-[#080808] font-mono p-0 relative">
                   
                   {consoleTab === 'testcase' && (
-                    <div className="h-full flex flex-col">
+                    <div className="h-full flex flex-col p-6">
                       <div className="flex gap-2 mb-6">
                         {testCases.filter(t => t.is_public).map((_, i) => (
                           <button 
@@ -572,8 +572,8 @@ export default function PracticeSolver() {
                     </div>
                   )}
 
-                  {/* FIXED: Added 'h-full flex flex-col' so the sandbox takes full height */}
-                  <div className={cn("h-full flex-col", consoleTab === 'custom' ? 'flex' : 'hidden')}>
+                  {/* FIXED: 'custom' tab now uses flex-col and is fully visible */}
+                  <div className={cn("w-full h-full", consoleTab === 'custom' ? 'block' : 'hidden')}>
                     <CustomTestSandbox
                       defaultInput={testCases[0]?.input ? formatValue(testCases[0].input) : ''}
                       onRunCustomTest={handleRunCustomTest}
@@ -582,7 +582,7 @@ export default function PracticeSolver() {
                   </div>
 
                   {consoleTab === 'result' && (
-                    <div className="h-full">
+                    <div className="h-full p-6">
                       {isJudging ? (
                         <div className="h-full flex items-center justify-center">
                            <JudgingLoader phase={judgingPhase} elapsedMs={elapsedMs} />
@@ -619,7 +619,7 @@ export default function PracticeSolver() {
                   )}
                 </div>
 
-                {/* Verdict Banner (Bottom of Console - Always visible if result exists) */}
+                {/* Verdict Banner */}
                 {executionResult?.passed && (
                    <div className="bg-[#0c120c] border-t border-emerald-900/30 px-6 py-4 flex items-center justify-between shrink-0">
                       <div className="font-serif italic text-[#4ade80] text-[15px]">Verification Successful</div>
