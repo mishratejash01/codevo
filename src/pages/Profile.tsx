@@ -153,7 +153,7 @@ const SocialEditBlock = ({
             <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 hover:bg-white/10" onClick={() => setIsEditing(false)}><X className="w-4 h-4" /></Button>
           </div>
         ) : (
-          <p className="text-sm text-white font-medium truncate font-mono">{value || <span className="text-white/20 italic">Not connected</span>}</p>
+          <p className="text-sm text-white font-medium truncate font-sans">{value || <span className="text-white/20 italic">Not connected</span>}</p>
         )}
       </div>
       {!isEditing && (
@@ -525,7 +525,8 @@ const Profile = () => {
   const isDirty = JSON.stringify(profile) !== JSON.stringify(originalProfile);
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-12 px-4 md:px-8 lg:px-12">
+    // UPDATED: Added font-sans and selection style to match Security page
+    <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-12 px-4 md:px-8 lg:px-12 font-sans selection:bg-white/20">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 relative">
         <div className="lg:col-span-7 xl:col-span-8 space-y-10">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
