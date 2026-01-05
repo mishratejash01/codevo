@@ -25,13 +25,8 @@ import { VerdictDisplay } from '@/components/practice/VerdictDisplay';
 import { PerformanceChart } from '@/components/practice/PerformanceChart';
 import { CustomTestSandbox } from '@/components/practice/CustomTestSandbox';
 import { wrapCodeForExecution, Language as WrapperLanguage } from '@/utils/codeWrappers';
+import { normalizeTestCases, getPublicTestCases, formatValue } from '@/utils/testCaseHandler';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// Helper to safely display input/output
-const formatValue = (val: any) => {
-  if (typeof val === 'object' && val !== null) return JSON.stringify(val);
-  return String(val);
-};
 
 export default function PracticeSolver() {
   const { slug } = useParams();
@@ -91,7 +86,10 @@ export default function PracticeSolver() {
     enabled: !!userId && !!problem?.id
   });
 
-  const testCases = Array.isArray(problem?.test_cases) ? problem.test_cases as any[] : [];
+  // Normalize test cases to ensure is_public defaults to true
+  const rawTestCases = Array.isArray(problem?.test_cases) ? problem.test_cases as any[] : [];
+  const testCases = normalizeTestCases(rawTestCases);
+  const publicTestCases = getPublicTestCases(rawTestCases);
   const hints = Array.isArray(problem?.hints) ? problem.hints as string[] : [];
   
   // Fallback starter templates for languages not in the database
@@ -140,11 +138,12 @@ export default function PracticeSolver() {
     setExecutionResult(null);
     setIsRunning(true);
     
-    const publicTests = testCases.filter(t => t.is_public);
+    // Use publicTestCases which already handles the is_public defaulting
+    const testsToRun = publicTestCases.length > 0 ? publicTestCases : [testCases[activeTestCaseId]];
     const result = await executeWithJudging(
       activeLanguage,
       code,
-      publicTests.length > 0 ? publicTests : [testCases[activeTestCaseId]],
+      testsToRun,
       prepareCode
     );
     
@@ -394,7 +393,7 @@ export default function PracticeSolver() {
                     {testCases.length > 0 && (
                       <div className="mb-10">
                         <span className="text-[9px] uppercase tracking-widest text-[#475569] block mb-4">Sample Parameters</span>
-                        {testCases.filter((t: any) => t.is_public).map((t: any, i: number) => (
+                        {publicTestCases.map((t, i) => (
                           <div key={i} className="rounded-lg border border-white/10 bg-[#000] overflow-hidden mb-6 shadow-2xl">
                             {/* Terminal Header */}
                             <div className="bg-[#1a1a1a] px-4 py-2 flex items-center gap-2 border-b border-white/5">
@@ -560,7 +559,7 @@ export default function PracticeSolver() {
                   {consoleTab === 'testcase' && (
                     <div className="h-full flex flex-col p-6">
                       <div className="flex gap-2 mb-6">
-                        {testCases.filter(t => t.is_public).map((_, i) => (
+                        {publicTestCases.map((_, i) => (
                           <button 
                             key={i} 
                             onClick={() => setActiveTestCaseId(i)} 
@@ -580,14 +579,14 @@ export default function PracticeSolver() {
                         <div>
                           <span className="text-[9px] uppercase tracking-widest text-[#475569] block mb-2">Input Stream</span>
                           <div className="bg-[#0c0c0c] border border-white/[0.08] p-4 text-[13px] text-[#d1d1d1]">
-                             {formatValue(testCases[activeTestCaseId]?.input)}
+                             {formatValue(publicTestCases[activeTestCaseId]?.input)}
                           </div>
                         </div>
-                        {testCases[activeTestCaseId]?.output && (
+                        {publicTestCases[activeTestCaseId]?.output && (
                           <div>
                             <span className="text-[9px] uppercase tracking-widest text-[#475569] block mb-2">Expected Output</span>
                             <div className="bg-[#0c0c0c] border border-white/[0.08] p-4 text-[13px] text-[#94a3b8]">
-                               {formatValue(testCases[activeTestCaseId]?.output)}
+                               {formatValue(publicTestCases[activeTestCaseId]?.output)}
                             </div>
                           </div>
                         )}
@@ -598,7 +597,7 @@ export default function PracticeSolver() {
                   {/* FIXED: 'custom' tab now uses flex-col and is fully visible */}
                   <div className={cn("w-full h-full", consoleTab === 'custom' ? 'block' : 'hidden')}>
                     <CustomTestSandbox
-                      defaultInput={testCases[0]?.input ? formatValue(testCases[0].input) : ''}
+                      defaultInput={publicTestCases[0]?.input ? formatValue(publicTestCases[0].input) : ''}
                       onRunCustomTest={handleRunCustomTest}
                       isRunning={judgingPhase.status === 'running'}
                     />
