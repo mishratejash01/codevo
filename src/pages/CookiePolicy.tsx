@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -211,10 +210,8 @@ const CookiePolicy = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };
 
-export default CookiePolicy;
+export default CookiePolicy;s
