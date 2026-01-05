@@ -245,6 +245,16 @@ export const useEnhancedCodeRunner = () => {
   const [judgingPhase, setJudgingPhase] = useState<JudgingPhase>({ status: 'idle' });
   const [elapsedMs, setElapsedMs] = useState(0);
 
+  // Get the correct file name for Piston based on language
+  const getFileName = (language: string): string => {
+    switch (language) {
+      case 'java': return 'Main.java';
+      case 'python': return 'main.py';
+      case 'cpp': return 'main.cpp';
+      default: return 'main';
+    }
+  };
+
   const runPiston = async (
     language: string, 
     version: string, 
@@ -267,7 +277,7 @@ export const useEnhancedCodeRunner = () => {
         body: JSON.stringify({
           language,
           version,
-          files: [{ content: code }],
+          files: [{ name: getFileName(language), content: code }],
           stdin,
         }),
       });

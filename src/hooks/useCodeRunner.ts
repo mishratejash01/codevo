@@ -83,6 +83,19 @@ const getFriendlyError = (rawError: string, language: Language): string => {
   return rawError;
 };
 
+// Get the correct file name for Piston based on language
+const getFileName = (language: string): string => {
+  switch (language) {
+    case 'java': return 'Main.java';
+    case 'python': return 'main.py';
+    case 'cpp': return 'main.cpp';
+    case 'c': return 'main.c';
+    case 'javascript': return 'main.js';
+    case 'typescript': return 'main.ts';
+    default: return 'main';
+  }
+};
+
 export const useCodeRunner = () => {
   const [loading, setLoading] = useState(false);
 
@@ -94,7 +107,7 @@ export const useCodeRunner = () => {
         body: JSON.stringify({
           language,
           version,
-          files: [{ content: code }],
+          files: [{ name: getFileName(language), content: code }],
           stdin,
         }),
       });

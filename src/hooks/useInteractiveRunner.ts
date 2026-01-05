@@ -110,6 +110,19 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
   const executionCountRef = useRef<number>(0);
   const retryCountRef = useRef<number>(0);
 
+  // Get the correct file name for Piston based on language
+  const getFileName = (lang: string): string => {
+    switch (lang) {
+      case 'java': return 'Main.java';
+      case 'python': return 'main.py';
+      case 'cpp': return 'main.cpp';
+      case 'c': return 'main.c';
+      case 'javascript': return 'main.js';
+      case 'typescript': return 'main.ts';
+      default: return 'main';
+    }
+  };
+
   const runPiston = async (
     code: string, 
     stdin: string, 
@@ -126,7 +139,7 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
           body: JSON.stringify({
             language: pistonLang,
             version,
-            files: [{ content: code }],
+            files: [{ name: getFileName(pistonLang), content: code }],
             stdin,
           }),
           signal,
