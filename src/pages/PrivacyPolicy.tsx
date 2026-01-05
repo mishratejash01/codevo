@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Mail, ShieldCheck, FileText, Cookie, Lock, BookOpen } from 'lucide-react';
 
 const SECTIONS = [
   { id: 'introduction', title: '1. Introduction' },
@@ -22,7 +22,9 @@ const PrivacyPolicy = () => {
   const [activeSection, setActiveSection] = useState('introduction');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+    });
 
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 200; // Offset for sticky header
@@ -83,7 +85,7 @@ const PrivacyPolicy = () => {
                       className={cn(
                         "text-left px-4 py-2 text-sm transition-colors duration-200 block w-full rounded-md",
                         activeSection === section.id
-                          ? "text-white font-medium bg-white/5" // Clean active state
+                          ? "text-white font-medium bg-white/5" 
                           : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
                       )}
                     >
@@ -229,7 +231,7 @@ const PrivacyPolicy = () => {
                   <div className="mt-6 flex flex-col gap-2 text-sm">
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500 w-24">Email:</span>
-                      <a href="mailto:privacy@codevo.co.in" className="text-white hover:underline">reach@codevo.co.in</a>
+                      <a href="mailto:reach@codevo.co.in" className="text-white hover:underline">reach@codevo.co.in</a>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500 w-24">Post:</span>
