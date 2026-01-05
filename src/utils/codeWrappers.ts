@@ -1,9 +1,24 @@
 /**
  * LeetCode-style code wrappers for multi-language support
- * Automatically handles driver code injection for Python, JavaScript, TypeScript, Java, and C++
+ * Automatically handles driver code injection for Python, Java, and C++
+ * 
+ * FIXED ISSUES:
+ * - Java: Imports placed at very top, before any class definitions
+ * - Java: Added Arrays import for serialization
+ * - C++: Prevent struct redefinition when starter code has them
+ * - Python: Type definitions placed before user code
  */
 
-import { parseInputForLanguage, parseRawInputWithTypes } from './inputParser';
+import { parseRawInputWithTypes } from './inputParser';
+import { 
+  JAVA_DATA_STRUCTURES, 
+  JAVA_BUILDERS, 
+  JAVA_SERIALIZER,
+  CPP_DATA_STRUCTURES,
+  CPP_BUILDERS,
+  CPP_HELPERS,
+  hasDataStructure 
+} from './dataStructures';
 
 export type Language = 'python' | 'java' | 'cpp';
 
@@ -127,25 +142,44 @@ const wrapPythonCode = (
     return param.value;
   }).join(', ');
 
+  // Check if user code already has ListNode/TreeNode definitions
+  const hasListNode = hasDataStructure(userCode, 'ListNode');
+  const hasTreeNode = hasDataStructure(userCode, 'TreeNode');
+
+  // Build data structure definitions (only if not already present)
+  let dataStructures = '';
+  if (!hasListNode) {
+    dataStructures += `
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+`;
+  }
+  if (!hasTreeNode) {
+    dataStructures += `
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+`;
+  }
+
   // IMPORTANT: Imports and class definitions MUST come BEFORE user code
   // so that type hints like Optional[ListNode] are valid when parsed
   return `# --- Auto-generated imports and type definitions ---
 import sys
 import json
 from typing import List, Optional, Dict, Tuple, Any, Set
-
-# ListNode and TreeNode helpers for common LeetCode problems
-class ListNode:
-    def __init__(self, val=0, next=None):
-        self.val = val
-        self.next = next
-
-class TreeNode:
-    def __init__(self, val=0, left=None, right=None):
-        self.val = val
-        self.left = left
-        self.right = right
-
+from collections import defaultdict, Counter, deque
+from heapq import heappush, heappop, heapify
+from functools import lru_cache, reduce
+from itertools import permutations, combinations, product
+from bisect import bisect_left, bisect_right
+import math
+import re
+${dataStructures}
 def _build_list(arr):
     if not arr: return None
     head = ListNode(arr[0])
@@ -245,7 +279,9 @@ except Exception as e:
 
 /**
  * Java driver code - wraps Solution class with Main method
- * FIXED: Better handling of ListNode parameters - detect from method signature
+ * FIXED: Proper import ordering - imports MUST be at the very top
+ * FIXED: Added Arrays import for serialization
+ * FIXED: Data structure definitions after imports, before user code
  */
 const wrapJavaCode = (
   userCode: string,
@@ -256,18 +292,31 @@ const wrapJavaCode = (
   const methodParams = parseMethodParams(userCode, 'java');
   const parsedParams = parseRawInputWithTypes(rawInput);
   
-  // Common imports needed for LeetCode problems
-  const imports = `import java.util.*;
-import java.util.stream.*;
-`;
-
   // Check if user code already has a main method
   if (userCode.includes('public static void main')) {
-    return imports + userCode;
+    // User has their own main, just add imports if missing
+    if (!userCode.includes('import java')) {
+      return `import java.util.*;
+import java.util.stream.*;
+
+${userCode}`;
+    }
+    return userCode;
   }
   
-  // Check if user already has imports
-  const hasImports = userCode.includes('import java');
+  // Check if user already has imports - we'll strip them and put them at top
+  const userImportMatch = userCode.match(/^((?:import\s+[\w.*]+;\s*)+)/m);
+  let userImports = '';
+  let cleanedUserCode = userCode;
+  
+  if (userImportMatch) {
+    userImports = userImportMatch[1];
+    cleanedUserCode = userCode.replace(userImportMatch[0], '').trim();
+  }
+  
+  // Check if user code already has ListNode/TreeNode definitions
+  const hasListNode = hasDataStructure(userCode, 'ListNode');
+  const hasTreeNode = hasDataStructure(userCode, 'TreeNode');
   
   // Detect the method name and signature from user code
   const methodPatterns = [
@@ -277,14 +326,12 @@ import java.util.stream.*;
   
   let detectedMethod = 'solve';
   let returnType = 'Object';
-  let paramList = '';
   
   for (const pattern of methodPatterns) {
     const match = userCode.match(pattern);
     if (match) {
       returnType = match[1];
       detectedMethod = match[2];
-      paramList = match[3];
       if (detectedMethod !== 'Solution' && detectedMethod !== 'main') {
         break;
       }
@@ -301,7 +348,6 @@ import java.util.stream.*;
       
       // Check if the method parameter type is ListNode
       if (methodParam && methodParam.type.includes('ListNode')) {
-        // Convert array to ListNode
         if (param.type === 'array' || param.type === 'linkedlist') {
           try {
             const arr = JSON.parse(param.value);
@@ -313,8 +359,18 @@ import java.util.stream.*;
           callArgs.push('null');
         }
       } else if (methodParam && methodParam.type.includes('TreeNode')) {
-        // TreeNode handling (placeholder for now)
-        callArgs.push('null');
+        // TreeNode handling
+        if (param.type === 'array' || param.type === 'tree') {
+          try {
+            const arr = JSON.parse(param.value);
+            const intArr = arr.map((v: any) => v === null ? 'null' : v);
+            callArgs.push(`buildTree(new Integer[]{${intArr.join(', ')}})`);
+          } catch {
+            callArgs.push('null');
+          }
+        } else {
+          callArgs.push('null');
+        }
       } else if (param.type === 'linkedlist') {
         // Detected as linkedlist by name
         try {
@@ -322,6 +378,14 @@ import java.util.stream.*;
           callArgs.push(`buildList(new int[]{${arr.join(', ')}})`);
         } catch {
           callArgs.push(`buildList(new int[]{})`);
+        }
+      } else if (param.type === 'tree') {
+        try {
+          const arr = JSON.parse(param.value);
+          const intArr = arr.map((v: any) => v === null ? 'null' : v);
+          callArgs.push(`buildTree(new Integer[]{${intArr.join(', ')}})`);
+        } catch {
+          callArgs.push('null');
         }
       } else if (param.type === 'array') {
         try {
@@ -361,131 +425,60 @@ import java.util.stream.*;
     return callArgs.join(', ');
   };
   
+  // Build data structures section (only if not already present)
+  let dataStructures = '';
+  if (!hasListNode) {
+    dataStructures += JAVA_DATA_STRUCTURES.ListNode + '\n\n';
+  }
+  if (!hasTreeNode) {
+    dataStructures += JAVA_DATA_STRUCTURES.TreeNode + '\n\n';
+  }
+  
   // Wrap with main class if user only has Solution class
   if (userCode.includes('class Solution') && !userCode.includes('class Main')) {
     const callArgs = buildCallArgs();
     
-    return `${imports}
+    // CRITICAL: Imports MUST be at the very top of the file
+    // Order: 1. Imports, 2. Data structures, 3. User's Solution, 4. Main wrapper
+    return `import java.util.*;
+import java.util.stream.*;
+import java.util.function.*;
+import java.math.*;
+${userImports}
 
-// ListNode and TreeNode for common problems
-class ListNode {
-    int val;
-    ListNode next;
-    ListNode() {}
-    ListNode(int val) { this.val = val; }
-    ListNode(int val, ListNode next) { this.val = val; this.next = next; }
-}
-
-class TreeNode {
-    int val;
-    TreeNode left;
-    TreeNode right;
-    TreeNode() {}
-    TreeNode(int val) { this.val = val; }
-    TreeNode(int val, TreeNode left, TreeNode right) {
-        this.val = val;
-        this.left = left;
-        this.right = right;
-    }
-}
-
-${userCode}
+${dataStructures}
+${cleanedUserCode}
 
 class Main {
     public static void main(String[] args) {
         try {
             Solution sol = new Solution();
-            
-            // Direct method call with properly typed arguments
             ${returnType} result = sol.${detectedMethod}(${callArgs});
             System.out.println(serializeOutput(result));
-            
         } catch (Exception e) {
             System.err.println("Runtime Error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
             e.printStackTrace(System.err);
         }
     }
-    
-    static ListNode buildList(int[] arr) {
-        if (arr == null || arr.length == 0) return null;
-        ListNode head = new ListNode(arr[0]);
-        ListNode curr = head;
-        for (int i = 1; i < arr.length; i++) {
-            curr.next = new ListNode(arr[i]);
-            curr = curr.next;
-        }
-        return head;
-    }
-    
-    static String listToString(ListNode head) {
-        StringBuilder sb = new StringBuilder("[");
-        while (head != null) {
-            sb.append(head.val);
-            if (head.next != null) sb.append(",");
-            head = head.next;
-        }
-        sb.append("]");
-        return sb.toString();
-    }
-    
-    static String serializeOutput(Object result) {
-        if (result == null) return "null";
-        if (result instanceof int[]) return Arrays.toString((int[]) result).replace(" ", "");
-        if (result instanceof Integer[]) return Arrays.toString((Integer[]) result).replace(" ", "");
-        if (result instanceof String[]) {
-            String[] arr = (String[]) result;
-            StringBuilder sb = new StringBuilder("[");
-            for (int i = 0; i < arr.length; i++) {
-                sb.append("\\"").append(arr[i]).append("\\"");
-                if (i < arr.length - 1) sb.append(",");
-            }
-            sb.append("]");
-            return sb.toString();
-        }
-        if (result instanceof boolean[]) return Arrays.toString((boolean[]) result).replace(" ", "");
-        if (result instanceof double[]) return Arrays.toString((double[]) result).replace(" ", "");
-        if (result instanceof int[][]) {
-            int[][] arr = (int[][]) result;
-            StringBuilder sb = new StringBuilder("[");
-            for (int i = 0; i < arr.length; i++) {
-                sb.append(Arrays.toString(arr[i]).replace(" ", ""));
-                if (i < arr.length - 1) sb.append(",");
-            }
-            sb.append("]");
-            return sb.toString();
-        }
-        if (result instanceof ListNode) return listToString((ListNode) result);
-        if (result instanceof List) {
-            List<?> list = (List<?>) result;
-            StringBuilder sb = new StringBuilder("[");
-            for (int i = 0; i < list.size(); i++) {
-                Object item = list.get(i);
-                if (item instanceof String) {
-                    sb.append("\\"").append(item).append("\\"");
-                } else if (item instanceof List) {
-                    sb.append(serializeOutput(item));
-                } else {
-                    sb.append(item);
-                }
-                if (i < list.size() - 1) sb.append(",");
-            }
-            sb.append("]");
-            return sb.toString();
-        }
-        if (result instanceof Boolean) return ((Boolean) result) ? "true" : "false";
-        if (result instanceof String) return "\\"" + result + "\\"";
-        return result.toString();
-    }
+${JAVA_BUILDERS}
+${JAVA_SERIALIZER}
 }
 `;
   }
   
-  return hasImports ? userCode : imports + userCode;
+  // User doesn't have Solution class, just wrap with imports
+  return `import java.util.*;
+import java.util.stream.*;
+${userImports}
+
+${dataStructures}
+${cleanedUserCode}`;
 };
 
 /**
  * C++ driver code - includes common headers and wraps Solution class
- * FIXED: Better handling of ListNode* parameters - detect from method signature
+ * FIXED: Prevent struct redefinition when user code already has them
+ * FIXED: Better handling of ListNode* parameters
  */
 const wrapCppCode = (
   userCode: string,
@@ -512,6 +505,8 @@ const wrapCppCode = (
 #include <cmath>
 #include <sstream>
 #include <numeric>
+#include <functional>
+#include <bitset>
 using namespace std;
 `;
 
@@ -523,103 +518,24 @@ using namespace std;
     return hasIncludes ? userCode : includes + userCode;
   }
   
-  // ListNode and TreeNode definitions
-  const dataStructures = `
-// --- ListNode and TreeNode for common problems ---
-struct ListNode {
-    int val;
-    ListNode *next;
-    ListNode() : val(0), next(nullptr) {}
-    ListNode(int x) : val(x), next(nullptr) {}
-    ListNode(int x, ListNode *next) : val(x), next(next) {}
-};
-
-struct TreeNode {
-    int val;
-    TreeNode *left;
-    TreeNode *right;
-    TreeNode() : val(0), left(nullptr), right(nullptr) {}
-    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
-    TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
-};
-
-ListNode* buildList(vector<int>& arr) {
-    if (arr.empty()) return nullptr;
-    ListNode* head = new ListNode(arr[0]);
-    ListNode* curr = head;
-    for (size_t i = 1; i < arr.size(); i++) {
-        curr->next = new ListNode(arr[i]);
-        curr = curr->next;
-    }
-    return head;
-}
-
-string listToString(ListNode* head) {
-    string result = "[";
-    while (head) {
-        result += to_string(head->val);
-        if (head->next) result += ",";
-        head = head->next;
-    }
-    result += "]";
-    return result;
-}
-`;
-
-  // Helper functions for output serialization
-  const helpers = `
-// --- Auto-generated helper functions ---
-template<typename T>
-void printVector(const vector<T>& v) {
-    cout << "[";
-    for (size_t i = 0; i < v.size(); i++) {
-        if (i > 0) cout << ",";
-        cout << v[i];
-    }
-    cout << "]";
-}
-
-template<>
-void printVector(const vector<string>& v) {
-    cout << "[";
-    for (size_t i = 0; i < v.size(); i++) {
-        if (i > 0) cout << ",";
-        cout << "\\"" << v[i] << "\\"";
-    }
-    cout << "]";
-}
-
-template<typename T>
-void printVector2D(const vector<vector<T>>& v) {
-    cout << "[";
-    for (size_t i = 0; i < v.size(); i++) {
-        if (i > 0) cout << ",";
-        printVector(v[i]);
-    }
-    cout << "]";
-}
-
-void printResult(int r) { cout << r; }
-void printResult(long long r) { cout << r; }
-void printResult(double r) { cout << r; }
-void printResult(bool r) { cout << (r ? "true" : "false"); }
-void printResult(const string& r) { cout << "\\"" << r << "\\""; }
-void printResult(const vector<int>& r) { printVector(r); }
-void printResult(const vector<long long>& r) { printVector(r); }
-void printResult(const vector<double>& r) { printVector(r); }
-void printResult(const vector<string>& r) { printVector(r); }
-void printResult(const vector<vector<int>>& r) { printVector2D(r); }
-void printResult(const vector<vector<string>>& r) { printVector2D(r); }
-void printResult(const vector<bool>& r) { 
-    cout << "[";
-    for (size_t i = 0; i < r.size(); i++) {
-        if (i > 0) cout << ",";
-        cout << (r[i] ? "true" : "false");
-    }
-    cout << "]";
-}
-void printResult(ListNode* r) { cout << listToString(r); }
-`;
+  // Check if user code already has ListNode/TreeNode definitions
+  // This prevents redefinition errors
+  const hasListNode = hasDataStructure(userCode, 'ListNode');
+  const hasTreeNode = hasDataStructure(userCode, 'TreeNode');
+  
+  // Build data structures section (only if not already present)
+  let dataStructures = '\n// --- Data Structures ---\n';
+  if (!hasListNode) {
+    dataStructures += CPP_DATA_STRUCTURES.ListNode + '\n\n';
+  }
+  if (!hasTreeNode) {
+    dataStructures += CPP_DATA_STRUCTURES.TreeNode + '\n\n';
+  }
+  
+  // Only add builders if we added the structs
+  if (!hasListNode || !hasTreeNode) {
+    dataStructures += CPP_BUILDERS + '\n';
+  }
 
   // Detect method name from Solution class using improved regex
   const methodPatterns = [
@@ -654,7 +570,6 @@ void printResult(ListNode* r) { cout << listToString(r); }
       
       // Check if method expects ListNode*
       if (methodParam && (methodParam.type.includes('ListNode*') || methodParam.type.includes('ListNode *'))) {
-        // Convert array to ListNode*
         if (param.type === 'array' || param.type === 'linkedlist') {
           try {
             const arr = JSON.parse(param.value);
@@ -669,6 +584,21 @@ void printResult(ListNode* r) { cout << listToString(r); }
           declarations += `    ListNode* ${varName} = nullptr;\n`;
           callArgs.push(varName);
         }
+      } else if (methodParam && (methodParam.type.includes('TreeNode*') || methodParam.type.includes('TreeNode *'))) {
+        if (param.type === 'array' || param.type === 'tree') {
+          try {
+            const arr = JSON.parse(param.value);
+            declarations += `    vector<int> ${varName}_arr = {${arr.join(', ')}};\n`;
+            declarations += `    TreeNode* ${varName} = buildTree(${varName}_arr);\n`;
+            callArgs.push(varName);
+          } catch {
+            declarations += `    TreeNode* ${varName} = nullptr;\n`;
+            callArgs.push(varName);
+          }
+        } else {
+          declarations += `    TreeNode* ${varName} = nullptr;\n`;
+          callArgs.push(varName);
+        }
       } else if (param.type === 'linkedlist') {
         // Detected as linkedlist by name
         try {
@@ -678,6 +608,16 @@ void printResult(ListNode* r) { cout << listToString(r); }
           callArgs.push(varName);
         } catch {
           declarations += `    ListNode* ${varName} = nullptr;\n`;
+          callArgs.push(varName);
+        }
+      } else if (param.type === 'tree') {
+        try {
+          const arr = JSON.parse(param.value);
+          declarations += `    vector<int> ${varName}_arr = {${arr.join(', ')}};\n`;
+          declarations += `    TreeNode* ${varName} = buildTree(${varName}_arr);\n`;
+          callArgs.push(varName);
+        } catch {
+          declarations += `    TreeNode* ${varName} = nullptr;\n`;
           callArgs.push(varName);
         }
       } else if (param.type === 'array' || param.type === 'array2d') {
@@ -731,5 +671,5 @@ ${declarations}        auto result = sol.${detectedMethod}(${callArgs.join(', ')
 
   const mainWrapper = generateCppMainWithDeclarations();
 
-  return (hasIncludes ? '' : includes) + dataStructures + userCode + helpers + mainWrapper;
+  return (hasIncludes ? '' : includes) + dataStructures + userCode + '\n' + CPP_HELPERS + mainWrapper;
 };

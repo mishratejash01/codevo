@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeOutput } from '@/utils/inputParser';
+import { compareOutputs as judgeCompareOutputs, JudgeOptions } from '@/utils/judgeEngine';
 
 const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
 const MAX_RETRIES = 3;
@@ -200,100 +201,15 @@ const getTierBadge = (percentile: number): { tier: string; emoji: string; messag
 };
 
 /**
- * Compare two outputs with enhanced strictness and edge case handling.
- * Handles floating point tolerance, array formatting variations, and boolean casing.
+ * Compare two outputs using the enhanced judge engine.
+ * Supports order-agnostic comparison, floating point tolerance, etc.
  */
-const compareOutputs = (actual: string, expected: string): boolean => {
-  // 1. Trim whitespace from ends (standard for all OJs)
-  const cleanActual = actual.trim();
-  const cleanExpected = expected.trim();
-
-  // 2. Exact match check
-  if (cleanActual === cleanExpected) return true;
-
-  // 3. Normalize common formatting differences
-  const normalizeForComparison = (s: string) => {
-    return s
-      .replace(/\s+/g, ' ')           // Normalize whitespace
-      .replace(/\[\s+/g, '[')         // Remove space after [
-      .replace(/\s+\]/g, ']')         // Remove space before ]
-      .replace(/,\s+/g, ',')          // Remove space after comma
-      .replace(/True/g, 'true')       // Python -> JS boolean
-      .replace(/False/g, 'false')
-      .replace(/None/g, 'null')       // Python -> JS null
-      .replace(/nullptr/g, 'null')    // C++ -> JS null
-      .trim();
-  };
-
-  const normActual = normalizeForComparison(cleanActual);
-  const normExpected = normalizeForComparison(cleanExpected);
-
-  if (normActual === normExpected) return true;
-
-  // 4. Line-by-line comparison (ignoring trailing whitespace per line)
-  const actualLines = cleanActual.split('\n').map(l => l.trimEnd());
-  const expectedLines = cleanExpected.split('\n').map(l => l.trimEnd());
-  
-  if (actualLines.length === expectedLines.length) {
-    let allMatch = true;
-    for (let i = 0; i < actualLines.length; i++) {
-      if (normalizeForComparison(actualLines[i]) !== normalizeForComparison(expectedLines[i])) {
-        allMatch = false;
-        break;
-      }
-    }
-    if (allMatch) return true;
-  }
-
-  // 5. Try parsing as JSON for array/object equality
-  try {
-    const actualParsed = JSON.parse(normActual.replace(/'/g, '"'));
-    const expectedParsed = JSON.parse(normExpected.replace(/'/g, '"'));
-    return JSON.stringify(actualParsed) === JSON.stringify(expectedParsed);
-  } catch {
-    // Not JSON, continue to other comparisons
-  }
-  
-  // 6. Numeric tolerance for floats (epsilon = 1e-6)
-  const actualNum = parseFloat(cleanActual);
-  const expectedNum = parseFloat(cleanExpected);
-  if (!isNaN(actualNum) && !isNaN(expectedNum)) {
-    const epsilon = 1e-6;
-    if (Math.abs(actualNum - expectedNum) < epsilon) return true;
-    // Also check relative error for larger numbers
-    if (Math.abs(expectedNum) > epsilon) {
-      const relativeError = Math.abs((actualNum - expectedNum) / expectedNum);
-      if (relativeError < epsilon) return true;
-    }
-  }
-
-  // 7. Array of floats comparison
-  try {
-    const actualArr = JSON.parse(normActual.replace(/'/g, '"'));
-    const expectedArr = JSON.parse(normExpected.replace(/'/g, '"'));
-    
-    if (Array.isArray(actualArr) && Array.isArray(expectedArr)) {
-      if (actualArr.length === expectedArr.length) {
-        let allClose = true;
-        for (let i = 0; i < actualArr.length; i++) {
-          if (typeof actualArr[i] === 'number' && typeof expectedArr[i] === 'number') {
-            if (Math.abs(actualArr[i] - expectedArr[i]) > 1e-6) {
-              allClose = false;
-              break;
-            }
-          } else if (actualArr[i] !== expectedArr[i]) {
-            allClose = false;
-            break;
-          }
-        }
-        if (allClose) return true;
-      }
-    }
-  } catch {
-    // Not arrays, that's fine
-  }
-
-  return false;
+const compareOutputs = (
+  actual: string, 
+  expected: string, 
+  options: JudgeOptions = {}
+): boolean => {
+  return judgeCompareOutputs(actual, expected, options);
 };
 
 /**
