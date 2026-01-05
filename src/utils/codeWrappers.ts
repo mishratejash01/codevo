@@ -49,6 +49,7 @@ const wrapPythonCode = (
 # --- Auto-generated Driver Code ---
 import sys
 import json
+from typing import List, Optional, Dict, Tuple, Any, Set
 
 # ListNode and TreeNode helpers for common LeetCode problems
 class ListNode:
@@ -427,12 +428,13 @@ const wrapJavaCode = (
   rawInput: string,
   methodSignature?: MethodSignature
 ): string => {
+  // For Java, we need to generate direct method calls instead of using reflection
+  // Parse the raw input to extract values
   const parsedArgs = parseInputForLanguage('java', rawInput);
   
   // Common imports needed for LeetCode problems
   const imports = `import java.util.*;
 import java.util.stream.*;
-import java.lang.reflect.*;
 `;
 
   // Check if user code already has a main method
@@ -442,6 +444,29 @@ import java.lang.reflect.*;
   
   // Check if user already has imports
   const hasImports = userCode.includes('import java');
+  
+  // Detect the method name and signature from user code
+  // Match patterns like: public int[] twoSum(int[] nums, int target)
+  const methodPatterns = [
+    /public\s+(?:static\s+)?(\w+(?:<[^>]+>)?(?:\[\])?)\s+(\w+)\s*\(([^)]*)\)/,
+    /(\w+(?:<[^>]+>)?(?:\[\])?)\s+(\w+)\s*\(([^)]*)\)\s*\{/
+  ];
+  
+  let detectedMethod = 'solve';
+  let returnType = 'Object';
+  let paramList = '';
+  
+  for (const pattern of methodPatterns) {
+    const match = userCode.match(pattern);
+    if (match) {
+      returnType = match[1];
+      detectedMethod = match[2];
+      paramList = match[3];
+      if (detectedMethod !== 'Solution' && detectedMethod !== 'main') {
+        break;
+      }
+    }
+  }
   
   // Wrap with main class if user only has Solution class
   if (userCode.includes('class Solution') && !userCode.includes('class Main')) {
@@ -476,65 +501,14 @@ class Main {
         try {
             Solution sol = new Solution();
             
-            // Find and invoke the first public method (excluding Object methods)
-            Method[] methods = Solution.class.getDeclaredMethods();
-            Method targetMethod = null;
-            for (Method m : methods) {
-                if (Modifier.isPublic(m.getModifiers())) {
-                    targetMethod = m;
-                    break;
-                }
-            }
+            // Direct method call with parsed arguments
+            ${returnType} result = sol.${detectedMethod}(${parsedArgs});
+            System.out.println(serializeOutput(result));
             
-            if (targetMethod != null) {
-                // Parse arguments and invoke with proper types
-                Object[] argsArray = parseArgs(targetMethod, ${parsedArgs});
-                Object result = targetMethod.invoke(sol, argsArray);
-                System.out.println(serializeOutput(result));
-            }
-        } catch (InvocationTargetException e) {
-            System.err.println("Runtime Error: " + e.getCause().getClass().getSimpleName() + ": " + e.getCause().getMessage());
         } catch (Exception e) {
             System.err.println("Runtime Error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            e.printStackTrace(System.err);
         }
-    }
-    
-    static Object[] parseArgs(Method method, Object... rawArgs) {
-        Class<?>[] paramTypes = method.getParameterTypes();
-        Object[] result = new Object[paramTypes.length];
-        
-        for (int i = 0; i < paramTypes.length && i < rawArgs.length; i++) {
-            result[i] = convertArg(rawArgs[i], paramTypes[i]);
-        }
-        return result;
-    }
-    
-    static Object convertArg(Object arg, Class<?> targetType) {
-        if (arg == null) return null;
-        
-        // Handle primitive arrays
-        if (targetType == int[].class && arg instanceof int[]) {
-            return arg;
-        }
-        if (targetType == int[][].class && arg instanceof int[][]) {
-            return arg;
-        }
-        if (targetType == String[].class && arg instanceof String[]) {
-            return arg;
-        }
-        if (targetType == boolean[].class && arg instanceof boolean[]) {
-            return arg;
-        }
-        if (targetType == double[].class && arg instanceof double[]) {
-            return arg;
-        }
-        
-        // Handle List conversions
-        if (targetType == List.class && arg.getClass().isArray()) {
-            return Arrays.asList((Object[]) arg);
-        }
-        
-        return arg;
     }
     
     static ListNode buildList(int[] arr) {
@@ -778,14 +752,35 @@ void printResult(ListNode* r) { cout << listToString(r); }
     }
   }
 
-  const mainWrapper = `
+  // Parse args to generate proper variable declarations for reference parameters
+  // This handles cases like vector<int>& nums which need to be declared before use
+  const generateCppMainWithDeclarations = () => {
+    // For C++, we need to declare variables properly for reference parameters
+    // Parse the parsedArgs and create variable declarations
+    const args = parsedArgs.split(/,\s*(?![^{}]*\})/).map(a => a.trim()).filter(a => a);
+    
+    let declarations = '';
+    let callArgs: string[] = [];
+    
+    args.forEach((arg, i) => {
+      // Check if it's a vector
+      if (arg.startsWith('vector<')) {
+        const varName = `arg${i}`;
+        declarations += `    auto ${varName} = ${arg};\n`;
+        callArgs.push(varName);
+      } else {
+        callArgs.push(arg);
+      }
+    });
+    
+    return `
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
     
     try {
         Solution sol;
-        auto result = sol.${detectedMethod}(${parsedArgs});
+${declarations}        auto result = sol.${detectedMethod}(${callArgs.join(', ')});
         printResult(result);
         cout << endl;
     } catch (const exception& e) {
@@ -795,6 +790,9 @@ int main() {
     return 0;
 }
 `;
+  };
+
+  const mainWrapper = generateCppMainWithDeclarations();
 
   return (hasIncludes ? '' : includes) + dataStructures + userCode + helpers + mainWrapper;
 };
