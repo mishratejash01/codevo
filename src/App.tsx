@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import Dock from "@/components/Dock";
 import { Footer } from "@/components/Footer";
-// Imported standard icons to replace the colored graphics
+// Imported standard non-colored icons
 import { Code2, Calendar, User, Terminal } from "lucide-react"; 
 
 import { AnnouncementBanner } from "@/components/AnnouncementBanner";
