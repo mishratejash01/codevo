@@ -396,7 +396,8 @@ export const useEnhancedCodeRunner = () => {
         });
 
         const test = testCases[i];
-        const codeToRun = prepareCode(code, test.input);
+        // Pass full test object so prepareCode can access both input and output
+        const codeToRun = prepareCode(code, test);
         
         // Execute code
         const result = await runPiston(config.name, config.version, codeToRun, "");

@@ -123,12 +123,29 @@ export default function PracticeSolver() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const prepareCode = (userCode: string, input: any) => {
+  // Build problem context for wrappers (enables interactive, design, Node-variant detection)
+  const problemContext = problem ? {
+    slug: problem.slug,
+    title: problem.title,
+    tags: problem.tags || [],
+    method_signature: problem.method_signature as any
+  } : undefined;
+
+  const prepareCode = (userCode: string, testCase: any) => {
+    // testCase can be full object {input, output} or just input string
+    const input = typeof testCase === 'object' && testCase.input !== undefined ? testCase.input : testCase;
+    const output = typeof testCase === 'object' && testCase.output !== undefined ? testCase.output : '';
     const rawInput = formatValue(input || '');
+    
+    const testCaseContext = { input: rawInput, output: formatValue(output || '') };
+    
     return wrapCodeForExecution(
       activeLanguage as WrapperLanguage,
       userCode,
-      rawInput
+      rawInput,
+      problemContext?.method_signature,
+      problemContext,
+      testCaseContext
     );
   };
 

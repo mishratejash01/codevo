@@ -2,8 +2,9 @@
  * LeetCode-style code wrappers for multi-language support
  * Automatically handles driver code injection for Python, Java, and C++
  * 
- * COMPREHENSIVE FIX:
- * - Java: Main class is placed FIRST to ensure Piston runs it
+ * KEY FIXES:
+ * - Java: Always inject ListNode/TreeNode since helpers reference them
+ * - Java: Helpers placed after data structures to avoid forward references
  * - Design problems: Generates command-based driver code
  * - Interactive problems: Injects hidden API headers
  * - Advanced data structures: Supports Node_Graph, Node_Random, etc.
@@ -12,8 +13,6 @@
 import { parseRawInputWithTypes } from './inputParser';
 import { 
   JAVA_DATA_STRUCTURES, 
-  JAVA_BUILDERS, 
-  JAVA_SERIALIZER,
   CPP_DATA_STRUCTURES,
   CPP_BUILDERS,
   CPP_HELPERS,
@@ -522,17 +521,24 @@ const parseMethodParams = (code: string, language: Language): { name: string; ty
 
 /**
  * Get required data structures for injection
+ * CRITICAL FIX for Java: Always inject ListNode and TreeNode since the helper methods reference them
  */
 const getDataStructuresToInject = (
   userCode: string,
   language: Language,
-  problemContext?: ProblemContext
+  problemContext?: ProblemContext,
+  forceBasicStructures: boolean = false
 ): string => {
   let structures = '';
   
+  // For Java, ALWAYS inject ListNode and TreeNode since JAVA_BUILDERS and JAVA_SERIALIZER reference them
+  const alwaysInjectForJava = language === 'java';
+  
   // Check standard structures
-  const needsListNode = userCode.includes('ListNode') && !hasDataStructure(userCode, 'ListNode');
-  const needsTreeNode = userCode.includes('TreeNode') && !hasDataStructure(userCode, 'TreeNode');
+  const needsListNode = forceBasicStructures || alwaysInjectForJava || 
+    (userCode.includes('ListNode') && !hasDataStructure(userCode, 'ListNode'));
+  const needsTreeNode = forceBasicStructures || alwaysInjectForJava ||
+    (userCode.includes('TreeNode') && !hasDataStructure(userCode, 'TreeNode'));
   
   // Check for Node variants
   const nodeVariant = needsNodeInjection(userCode) 
@@ -540,16 +546,31 @@ const getDataStructuresToInject = (
     : null;
 
   if (language === 'python') {
-    if (needsListNode) structures += PYTHON_DATA_STRUCTURES.ListNode + '\n\n';
-    if (needsTreeNode) structures += PYTHON_DATA_STRUCTURES.TreeNode + '\n\n';
+    if (needsListNode && !hasDataStructure(userCode, 'ListNode')) {
+      structures += PYTHON_DATA_STRUCTURES.ListNode + '\n\n';
+    }
+    if (needsTreeNode && !hasDataStructure(userCode, 'TreeNode')) {
+      structures += PYTHON_DATA_STRUCTURES.TreeNode + '\n\n';
+    }
     if (nodeVariant) structures += PYTHON_DATA_STRUCTURES[nodeVariant] + '\n\n';
   } else if (language === 'java') {
-    if (needsListNode) structures += JAVA_DATA_STRUCTURES.ListNode + '\n\n';
-    if (needsTreeNode) structures += JAVA_DATA_STRUCTURES.TreeNode + '\n\n';
-    if (nodeVariant) structures += JAVA_DATA_STRUCTURES[nodeVariant] + '\n\n';
+    // Always inject for Java unless user defined them
+    if (!hasDataStructure(userCode, 'ListNode')) {
+      structures += JAVA_DATA_STRUCTURES.ListNode + '\n\n';
+    }
+    if (!hasDataStructure(userCode, 'TreeNode')) {
+      structures += JAVA_DATA_STRUCTURES.TreeNode + '\n\n';
+    }
+    if (nodeVariant && !hasDataStructure(userCode, 'Node')) {
+      structures += JAVA_DATA_STRUCTURES[nodeVariant] + '\n\n';
+    }
   } else if (language === 'cpp') {
-    if (needsListNode) structures += CPP_DATA_STRUCTURES.ListNode + '\n\n';
-    if (needsTreeNode) structures += CPP_DATA_STRUCTURES.TreeNode + '\n\n';
+    if (needsListNode && !hasDataStructure(userCode, 'ListNode')) {
+      structures += CPP_DATA_STRUCTURES.ListNode + '\n\n';
+    }
+    if (needsTreeNode && !hasDataStructure(userCode, 'TreeNode')) {
+      structures += CPP_DATA_STRUCTURES.TreeNode + '\n\n';
+    }
     if (nodeVariant) structures += CPP_DATA_STRUCTURES[nodeVariant] + '\n\n';
   }
 
@@ -684,8 +705,110 @@ except Exception as e:
 };
 
 /**
+ * Java helper methods - defined as static methods
+ * These must be placed AFTER data structure definitions
+ */
+const getJavaHelpers = (): string => {
+  return `
+    static ListNode buildList(int[] arr) {
+        if (arr == null || arr.length == 0) return null;
+        ListNode head = new ListNode(arr[0]);
+        ListNode curr = head;
+        for (int i = 1; i < arr.length; i++) {
+            curr.next = new ListNode(arr[i]);
+            curr = curr.next;
+        }
+        return head;
+    }
+    
+    static String listToString(ListNode head) {
+        StringBuilder sb = new StringBuilder("[");
+        while (head != null) {
+            sb.append(head.val);
+            if (head.next != null) sb.append(",");
+            head = head.next;
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+    
+    static TreeNode buildTree(Integer[] arr) {
+        if (arr == null || arr.length == 0 || arr[0] == null) return null;
+        TreeNode root = new TreeNode(arr[0]);
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+        int i = 1;
+        while (!queue.isEmpty() && i < arr.length) {
+            TreeNode node = queue.poll();
+            if (i < arr.length && arr[i] != null) {
+                node.left = new TreeNode(arr[i]);
+                queue.offer(node.left);
+            }
+            i++;
+            if (i < arr.length && arr[i] != null) {
+                node.right = new TreeNode(arr[i]);
+                queue.offer(node.right);
+            }
+            i++;
+        }
+        return root;
+    }
+
+    static String serializeOutput(Object result) {
+        if (result == null) return "null";
+        if (result instanceof int[]) return Arrays.toString((int[]) result).replace(" ", "");
+        if (result instanceof Integer[]) return Arrays.toString((Integer[]) result).replace(" ", "");
+        if (result instanceof String[]) {
+            String[] arr = (String[]) result;
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < arr.length; i++) {
+                sb.append("\\"").append(arr[i]).append("\\"");
+                if (i < arr.length - 1) sb.append(",");
+            }
+            sb.append("]");
+            return sb.toString();
+        }
+        if (result instanceof boolean[]) return Arrays.toString((boolean[]) result).replace(" ", "");
+        if (result instanceof double[]) return Arrays.toString((double[]) result).replace(" ", "");
+        if (result instanceof int[][]) {
+            int[][] arr = (int[][]) result;
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < arr.length; i++) {
+                sb.append(Arrays.toString(arr[i]).replace(" ", ""));
+                if (i < arr.length - 1) sb.append(",");
+            }
+            sb.append("]");
+            return sb.toString();
+        }
+        if (result instanceof ListNode) return listToString((ListNode) result);
+        if (result instanceof List) {
+            List<?> list = (List<?>) result;
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < list.size(); i++) {
+                Object item = list.get(i);
+                if (item instanceof String) {
+                    sb.append("\\"").append(item).append("\\"");
+                } else if (item instanceof List) {
+                    sb.append(serializeOutput(item));
+                } else {
+                    sb.append(item);
+                }
+                if (i < list.size() - 1) sb.append(",");
+            }
+            sb.append("]");
+            return sb.toString();
+        }
+        if (result instanceof Boolean) return ((Boolean) result) ? "true" : "false";
+        if (result instanceof String) return "\\"" + result + "\\"";
+        return result.toString();
+    }`;
+};
+
+/**
  * Java driver code - wraps Solution class with Main method
- * CRITICAL FIX: Main class is placed FIRST so Piston runs the correct entrypoint
+ * CRITICAL FIX: 
+ * 1. Data structures defined BEFORE Main class so helpers can reference them
+ * 2. ListNode and TreeNode ALWAYS injected since helpers reference them
  */
 const wrapJavaCode = (
   userCode: string,
@@ -720,8 +843,8 @@ ${userCode}`;
   // Sanitize: remove 'public' from non-Main classes
   cleanedUserCode = sanitizeJavaCode(cleanedUserCode);
   
-  // Get data structures
-  const dataStructures = getDataStructuresToInject(userCode, 'java', problemContext);
+  // Get data structures - ALWAYS inject for Java
+  const dataStructures = getDataStructuresToInject(userCode, 'java', problemContext, true);
   
   // Detect method name
   const methodPatterns = [
@@ -829,13 +952,21 @@ ${userCode}`;
   
   const callArgs = buildCallArgs();
   
-  // CRITICAL: Main class FIRST, then data structures, then user Solution
+  // CRITICAL FIX: Data structures FIRST, then Main class with helpers
+  // This ensures ListNode and TreeNode are defined before helpers reference them
   return `import java.util.*;
 import java.util.stream.*;
 import java.util.function.*;
 import java.math.*;
 ${userImports}
 
+// --- Data Structures ---
+${dataStructures}
+
+// --- User Solution ---
+${cleanedUserCode}
+
+// --- Main Driver ---
 public class Main {
     public static void main(String[] args) {
         try {
@@ -847,13 +978,8 @@ public class Main {
             e.printStackTrace(System.err);
         }
     }
-${JAVA_BUILDERS}
-${JAVA_SERIALIZER}
+${getJavaHelpers()}
 }
-
-${dataStructures}
-
-${cleanedUserCode}
 `;
 };
 
