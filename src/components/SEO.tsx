@@ -7,7 +7,19 @@ interface SEOProps {
   image?: string; 
 }
 
-export const SEO = ({ title, description, url = 'https://codevo.co.in', image = '/og-image.png' }: SEOProps) => {
+export const SEO = ({ 
+  title, 
+  description, 
+  url = 'https://codevo.co.in', 
+  // 👇 UPDATED: Uses absolute URL by default
+  image = 'https://codevo.co.in/og-image.png' 
+}: SEOProps) => {
+  
+  // Ensure image is always absolute (fixes the preview issue)
+  const absoluteImage = image.startsWith('http') 
+    ? image 
+    : `https://codevo.co.in${image}`;
+
   return (
     <Helmet>
       {/* Standard Metadata */}
@@ -18,14 +30,14 @@ export const SEO = ({ title, description, url = 'https://codevo.co.in', image = 
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={url} />
-      <meta property="og:image" content={image} />
+      <meta property="og:image" content={absoluteImage} />
       <meta property="og:type" content="website" />
       
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
+      <meta name="twitter:image" content={absoluteImage} />
       
       {/* Structured Data for Organization (Helps with Sitelinks) */}
       <script type="application/ld+json">
