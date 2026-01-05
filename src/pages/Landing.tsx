@@ -11,9 +11,9 @@ import { AsteroidGameFrame } from '@/components/AsteroidGameFrame';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FeaturesInfiniteCarousel } from '@/components/FeaturesInfiniteCarousel';
-
 // --- WIDGET IMPORT UPDATED ---
 import { HitMeUpWidget } from '@/components/HitMeUpWidget'; 
+import { SEO } from '@/components/SEO'; // <--- ADDED SEO IMPORT
 
 const TECH_STACK = [
   "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg",
@@ -140,6 +140,14 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-black selection:bg-white/20 flex flex-col relative overflow-hidden">
       
+      {/* --- ADDED SEO COMPONENT --- */}
+      <SEO 
+        title="The Best Coding Platform built for global developers" 
+        description="Over 1 million learners trust CODéVO to achieve what basic tutorials never could — delivering depth, rigor, and lasting impact at scale."
+        url="https://codevo.co.in"
+      />
+      {/* --------------------------- */}
+
       <HitMeUpWidget />
 
       <style>{`
