@@ -12,65 +12,26 @@ interface CRunnerResult {
 }
 
 /**
- * Detect if C program output is waiting for input
- * C programs typically use scanf, getchar, gets, fgets for input
- * When waiting, they usually print a prompt without newline
+ * Find where the prompt ends (before user would type input)
+ * Returns the index right after the prompt text
  */
-const detectCPrompt = (output: string): boolean => {
-  if (!output || output.length === 0) return false;
+const findPromptEndIndex = (output: string): number => {
+  // Common prompt endings
+  const promptEndings = [': ', '? ', '> ', ':', '?', '>'];
   
-  // Rule 1: If output does NOT end with a newline, it's likely a prompt
-  if (!output.endsWith('\n') && output.length > 0) {
-    const lastLine = output.split('\n').pop() || '';
-    // Only consider it a prompt if there's actual content
-    if (lastLine.trim().length > 0) {
-      return true;
-    }
-  }
-  
-  // Rule 2: Check for common prompt patterns
-  const lines = output.split('\n');
-  const lastLine = (lines[lines.length - 1] || '').trim();
-  
-  const promptPatterns = [
-    /[:\?]\s*$/,           // Ends with : or ?
-    />\s*$/,               // Ends with >
-    /enter\s+.+[:\?]?\s*$/i,
-    /input\s+.+[:\?]?\s*$/i,
-    /type\s+.+[:\?]?\s*$/i,
-    /please\s+.+[:\?]?\s*$/i,
-    /^\s*$/,               // Empty last line after content (scanf waiting)
-  ];
-  
-  for (const pattern of promptPatterns) {
-    if (pattern.test(lastLine)) {
-      return true;
-    }
-  }
-  
-  return false;
-};
-
-/**
- * Find the last prompt position in output to truncate future garbage
- */
-const findLastPromptIndex = (output: string): number => {
-  const patterns = [/: /g, /\? /g, /> /g, /:$/gm, /\?$/gm, />$/gm];
   let maxIndex = -1;
   
-  for (const pattern of patterns) {
-    let match;
-    while ((match = pattern.exec(output)) !== null) {
-      maxIndex = Math.max(maxIndex, match.index + match[0].length);
+  for (const ending of promptEndings) {
+    const idx = output.lastIndexOf(ending);
+    if (idx !== -1) {
+      maxIndex = Math.max(maxIndex, idx + ending.length);
     }
   }
   
-  // Also check for output not ending with newline (prompt without delimiter)
-  if (!output.endsWith('\n')) {
-    const lastNewline = output.lastIndexOf('\n');
-    if (lastNewline !== -1 && lastNewline < output.length - 1) {
-      maxIndex = Math.max(maxIndex, output.length);
-    }
+  // If no prompt found but output doesn't end with newline, 
+  // the whole output is the prompt
+  if (maxIndex === -1 && output.length > 0 && !output.endsWith('\n')) {
+    maxIndex = output.length;
   }
   
   return maxIndex;
@@ -84,10 +45,6 @@ const getFriendlyError = (rawError: string): string => {
   
   if (lowerError.includes('segmentation fault') || lowerError.includes('sigsegv')) {
     return "\x1b[31mSegmentation Fault: Memory access error!\x1b[0m";
-  }
-  
-  if (lowerError.includes('time limit') || lowerError.includes('timeout') || lowerError.includes('sigkill')) {
-    return "\x1b[33mTime Limit Exceeded (program may be waiting for input or stuck in loop)\x1b[0m";
   }
   
   if (lowerError.includes('compilation error') || lowerError.includes('error:')) {
@@ -107,6 +64,7 @@ export const useCRunner = (): CRunnerResult => {
   const currentInputLineRef = useRef<string>("");
   const abortControllerRef = useRef<AbortController | null>(null);
   const executionCountRef = useRef<number>(0);
+  const lastShownOutputRef = useRef<string>("");
 
   /**
    * Execute code on Piston with given stdin
@@ -115,7 +73,13 @@ export const useCRunner = (): CRunnerResult => {
     code: string, 
     stdin: string, 
     signal: AbortSignal
-  ): Promise<{ success: boolean; output: string; needsInput: boolean; isCompileError: boolean }> => {
+  ): Promise<{ 
+    success: boolean; 
+    output: string; 
+    needsInput: boolean; 
+    isCompileError: boolean;
+    programCompleted: boolean;
+  }> => {
     const maxRetries = 3;
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -129,90 +93,129 @@ export const useCRunner = (): CRunnerResult => {
             files: [{ name: 'main.c', content: code }],
             stdin,
             compile_timeout: 10000,
-            run_timeout: 10000,
+            run_timeout: 5000, // Shorter timeout to detect input needs faster
           }),
           signal,
         });
         
-        // Handle rate limiting
         if (response.status === 429) {
           if (attempt < maxRetries - 1) {
-            const delay = Math.pow(2, attempt) * 1000;
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
             continue;
           }
-          return { success: false, output: "\x1b[31mRate limit exceeded. Please wait and try again.\x1b[0m", needsInput: false, isCompileError: false };
+          return { 
+            success: false, 
+            output: "\x1b[31mRate limit exceeded. Please wait.\x1b[0m", 
+            needsInput: false, 
+            isCompileError: false,
+            programCompleted: true
+          };
         }
         
         const data = await response.json();
         
-        // Check for compile errors first
+        // Check compile errors
         if (data.compile && data.compile.code !== 0) {
           return {
             success: false,
             output: getFriendlyError(data.compile.stderr || data.compile.output || "Compilation failed"),
             needsInput: false,
-            isCompileError: true
+            isCompileError: true,
+            programCompleted: true
           };
         }
         
         if (data.run) {
           const stdout = data.run.stdout || "";
           const stderr = data.run.stderr || "";
-          const combinedOutput = stdout + stderr;
-          const isError = data.run.code !== 0;
+          const exitCode = data.run.code;
+          const signal = data.run.signal;
           
-          const lowerError = stderr.toLowerCase();
-          const isTimeoutOrKill = lowerError.includes('time limit') || 
-                                   lowerError.includes('timeout') || 
-                                   data.run.signal === 'SIGKILL';
+          // Check if program was killed (timeout/sigkill = waiting for input)
+          const wasKilled = signal === 'SIGKILL' || 
+                           stderr.toLowerCase().includes('timeout') ||
+                           stderr.toLowerCase().includes('time limit');
           
-          let finalOutput = stdout;
-          let needsInput = false;
+          // Program completed successfully if:
+          // - Exit code is 0
+          // - Not killed by signal
+          // - No timeout
+          const programCompleted = exitCode === 0 && !wasKilled;
           
-          // C-specific: Detect if waiting for input based on output pattern
-          // When C program hits scanf/getchar without input, Piston will timeout
-          // We detect this by checking:
-          // 1. Output doesn't end with newline (prompt waiting)
-          // 2. Timeout occurred but there's output (likely waiting for scanf)
-          
-          if (isTimeoutOrKill && stdout.length > 0) {
-            // Program timed out with output - likely waiting for input
-            const lastPromptIdx = findLastPromptIndex(stdout);
-            if (lastPromptIdx > 0) {
-              finalOutput = stdout.slice(0, lastPromptIdx);
-            }
-            needsInput = true;
-          } else if (detectCPrompt(stdout)) {
-            needsInput = true;
-          } else if (isError && !isTimeoutOrKill && collectedInputsRef.current.length === 0 && stdout.length > 0) {
-            // Error on first run with output - might need input
-            needsInput = detectCPrompt(stdout);
+          if (programCompleted) {
+            // Program finished successfully - return full output
+            return {
+              success: true,
+              output: stdout,
+              needsInput: false,
+              isCompileError: false,
+              programCompleted: true
+            };
           }
           
-          // Handle actual runtime errors (not input-related)
-          if (isError && !needsInput && !isTimeoutOrKill) {
+          if (wasKilled && stdout.length > 0) {
+            // Program timed out with output - needs input
+            // Only show up to the prompt, not any garbage after
+            const promptEnd = findPromptEndIndex(stdout);
+            const cleanOutput = promptEnd > 0 ? stdout.slice(0, promptEnd) : stdout;
+            
+            return {
+              success: true,
+              output: cleanOutput,
+              needsInput: true,
+              isCompileError: false,
+              programCompleted: false
+            };
+          }
+          
+          if (wasKilled && stdout.length === 0) {
+            // Timed out with no output - might be waiting for input at start
+            return {
+              success: true,
+              output: "",
+              needsInput: true,
+              isCompileError: false,
+              programCompleted: false
+            };
+          }
+          
+          // Runtime error (not timeout related)
+          if (exitCode !== 0) {
             return {
               success: false,
-              output: getFriendlyError(combinedOutput),
+              output: getFriendlyError(stdout + stderr),
               needsInput: false,
-              isCompileError: false
+              isCompileError: false,
+              programCompleted: true
             };
           }
           
           return {
             success: true,
-            output: finalOutput,
-            needsInput,
-            isCompileError: false
+            output: stdout,
+            needsInput: false,
+            isCompileError: false,
+            programCompleted: true
           };
         }
         
-        return { success: false, output: "Execution failed - no response from server", needsInput: false, isCompileError: false };
+        return { 
+          success: false, 
+          output: "No response from server", 
+          needsInput: false, 
+          isCompileError: false,
+          programCompleted: true
+        };
         
       } catch (e: any) {
         if (e.name === 'AbortError') {
-          return { success: false, output: "^C\nExecution stopped.", needsInput: false, isCompileError: false };
+          return { 
+            success: false, 
+            output: "^C\nExecution stopped.", 
+            needsInput: false, 
+            isCompileError: false,
+            programCompleted: true
+          };
         }
         
         if (attempt < maxRetries - 1) {
@@ -220,11 +223,23 @@ export const useCRunner = (): CRunnerResult => {
           continue;
         }
         
-        return { success: false, output: `\x1b[31mNetwork Error: ${e.message}\x1b[0m`, needsInput: false, isCompileError: false };
+        return { 
+          success: false, 
+          output: `\x1b[31mNetwork Error: ${e.message}\x1b[0m`, 
+          needsInput: false, 
+          isCompileError: false,
+          programCompleted: true
+        };
       }
     }
     
-    return { success: false, output: "Failed after multiple retries", needsInput: false, isCompileError: false };
+    return { 
+      success: false, 
+      output: "Failed after retries", 
+      needsInput: false, 
+      isCompileError: false,
+      programCompleted: true
+    };
   };
 
   /**
@@ -239,21 +254,37 @@ export const useCRunner = (): CRunnerResult => {
     const stdin = collectedInputsRef.current.join('\n');
     const result = await runPiston(codeRef.current, stdin, signal);
     
-    // Check if this is still the current execution
     if (currentExecution !== executionCountRef.current) return;
     if (signal.aborted) return;
     
-    setOutput(result.output);
-    
-    if (result.isCompileError) {
-      // Compilation error - stop execution
+    if (result.programCompleted) {
+      // Program finished - show full output and stop
+      setOutput(result.output);
       setIsRunning(false);
       setIsWaitingForInput(false);
+      lastShownOutputRef.current = result.output;
     } else if (result.needsInput) {
-      // Program needs more input
+      // Program needs input
+      // For re-runs: only show NEW output (after what was already shown)
+      const previouslyShown = lastShownOutputRef.current;
+      
+      if (result.output.startsWith(previouslyShown)) {
+        // Output includes previous output - only add the new part
+        const newPart = result.output.slice(previouslyShown.length);
+        if (newPart.length > 0) {
+          setOutput(prev => prev + newPart);
+          lastShownOutputRef.current = result.output;
+        }
+      } else {
+        // First run or output changed completely
+        setOutput(result.output);
+        lastShownOutputRef.current = result.output;
+      }
+      
       setIsWaitingForInput(true);
     } else {
-      // Program completed
+      // Error case
+      setOutput(result.output);
       setIsRunning(false);
       setIsWaitingForInput(false);
     }
@@ -261,71 +292,72 @@ export const useCRunner = (): CRunnerResult => {
 
   /**
    * Handle terminal input character by character
-   * Terminal handles local echo, we just collect the input
    */
   const writeInput = useCallback((char: string) => {
     if (!isWaitingForInput) return;
     
     if (char === '\r' || char === '\n') {
-      // Enter key - submit the input line
+      // Enter key - submit input
       const inputValue = currentInputLineRef.current;
       currentInputLineRef.current = "";
       
-      // Add to collected inputs
+      // Add the input to collected inputs
       collectedInputsRef.current.push(inputValue);
       
-      // Re-execute with new input
+      // Update what we've "shown" to include the echoed input + newline
+      // This prevents re-showing prompts on re-execution
+      lastShownOutputRef.current += inputValue + '\n';
+      
+      // Re-execute with all inputs
       setIsWaitingForInput(false);
       executeWithInputs();
     }
     else if (char === '\x7f' || char === '\b') {
-      // Backspace - remove last character from current input
+      // Backspace
       if (currentInputLineRef.current.length > 0) {
         currentInputLineRef.current = currentInputLineRef.current.slice(0, -1);
       }
     }
     else if (char === '\x03') {
-      // Ctrl+C - abort execution
+      // Ctrl+C
       abortControllerRef.current?.abort();
       currentInputLineRef.current = "";
       setIsWaitingForInput(false);
       setIsRunning(false);
-      setOutput(prev => prev + '\n^C\n\x1b[33mExecution interrupted\x1b[0m\n');
+      setOutput(prev => prev + '\n^C\n');
     }
     else if (char.length === 1 && char >= ' ') {
-      // Regular printable character - add to input buffer
-      // Note: Terminal handles local echo, we don't update output here
+      // Regular character - just buffer it (terminal handles echo)
       currentInputLineRef.current += char;
     }
   }, [isWaitingForInput, executeWithInputs]);
 
   /**
-   * Stop current execution
+   * Stop execution
    */
   const stopExecution = useCallback(() => {
     abortControllerRef.current?.abort();
     setIsRunning(false);
     setIsWaitingForInput(false);
-    setOutput(prev => prev + '\n^C\n\x1b[33mExecution stopped\x1b[0m\n');
+    setOutput(prev => prev + '\n^C\n');
   }, []);
 
   /**
    * Run C code
    */
   const runCode = useCallback((code: string) => {
-    // Reset state
+    // Reset everything
     codeRef.current = code;
     collectedInputsRef.current = [];
     currentInputLineRef.current = "";
+    lastShownOutputRef.current = "";
     
     setIsRunning(true);
     setOutput("");
     setIsWaitingForInput(false);
     
-    // Create new abort controller
     abortControllerRef.current = new AbortController();
     
-    // Start execution
     executeWithInputs();
   }, [executeWithInputs]);
 
