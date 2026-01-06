@@ -8,6 +8,7 @@ import { Language } from '@/hooks/useCodeRunner';
 import { usePyodide } from '@/hooks/usePyodide';
 import { useJavaScriptRunner } from '@/hooks/useJavaScriptRunner';
 import { useInteractiveRunner } from '@/hooks/useInteractiveRunner';
+import { useCRunner } from '@/hooks/useCRunner';
 import { TerminalView } from '@/components/TerminalView';
 import { 
   Loader2, Play, RefreshCw, Terminal as TerminalIcon, 
@@ -114,14 +115,22 @@ const Compiler = () => {
     isWaitingForInput: interactiveWaitingForInput, writeInput: writeInteractiveInput, stopExecution: stopInteractive,
   } = useInteractiveRunner(activeLanguage);
 
+  // Dedicated C runner for better interactive I/O
+  const {
+    runCode: runC, output: cOutput, isRunning: cRunning,
+    isWaitingForInput: cWaitingForInput, writeInput: writeCInput, stopExecution: stopC,
+  } = useCRunner();
+
   const isPython = activeLanguage === 'python';
   const isJavaScript = activeLanguage === 'javascript';
+  const isC = activeLanguage === 'c';
   
   const getCurrentRunnerState = useCallback(() => {
     if (isPython) return { output: pythonOutput, isRunning: pythonRunning, isWaitingForInput: pythonWaitingForInput, isReady: pythonReady };
-    else if (isJavaScript) return { output: jsOutput, isRunning: jsRunning, isWaitingForInput: jsWaitingForInput, isReady: true };
-    else return { output: interactiveOutput, isRunning: interactiveRunning, isWaitingForInput: interactiveWaitingForInput, isReady: true };
-  }, [isPython, isJavaScript, pythonOutput, pythonRunning, pythonWaitingForInput, pythonReady, jsOutput, jsRunning, jsWaitingForInput, interactiveOutput, interactiveRunning, interactiveWaitingForInput]);
+    if (isJavaScript) return { output: jsOutput, isRunning: jsRunning, isWaitingForInput: jsWaitingForInput, isReady: true };
+    if (isC) return { output: cOutput, isRunning: cRunning, isWaitingForInput: cWaitingForInput, isReady: true };
+    return { output: interactiveOutput, isRunning: interactiveRunning, isWaitingForInput: interactiveWaitingForInput, isReady: true };
+  }, [isPython, isJavaScript, isC, pythonOutput, pythonRunning, pythonWaitingForInput, pythonReady, jsOutput, jsRunning, jsWaitingForInput, cOutput, cRunning, cWaitingForInput, interactiveOutput, interactiveRunning, interactiveWaitingForInput]);
 
   const runnerState = getCurrentRunnerState();
   const isLoading = runnerState.isRunning || (isPython && !pythonReady);
@@ -193,11 +202,15 @@ const Compiler = () => {
     executionStartRef.current = Date.now();
     if (isPython) runPython(code);
     else if (isJavaScript) runJS(code);
+    else if (isC) runC(code);
     else runInteractive(code);
   };
 
   const handleStop = () => {
-    if (isPython) stopPython(); else if (isJavaScript) stopJS(); else stopInteractive();
+    if (isPython) stopPython();
+    else if (isJavaScript) stopJS();
+    else if (isC) stopC();
+    else stopInteractive();
     toast({ title: "Sequence Aborted", description: "Execution terminated.", variant: "destructive" });
   };
 
@@ -220,8 +233,9 @@ const Compiler = () => {
   const handleTerminalInput = useCallback((char: string) => {
     if (isPython) writePythonInput(char);
     else if (isJavaScript) writeJSInput(char);
+    else if (isC) writeCInput(char);
     else writeInteractiveInput(char);
-  }, [isPython, isJavaScript, writePythonInput, writeJSInput, writeInteractiveInput]);
+  }, [isPython, isJavaScript, isC, writePythonInput, writeJSInput, writeCInput, writeInteractiveInput]);
 
   const handleZoom = (side: 'left' | 'right', delta: number) => {
     if (side === 'left') {

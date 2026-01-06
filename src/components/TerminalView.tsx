@@ -114,9 +114,20 @@ export const TerminalView = ({
     // We conditionally apply local echo to avoid double typing in JS/TS.
     term.onData((data) => {
       const currentLang = languageRef.current || 'python';
+      
+      // Languages where the runner handles echo (remote echo)
+      // - JavaScript: useJavaScriptRunner echoes via appendToOutput
+      // - TypeScript: same as JavaScript
+      // - Bash: Piston returns echoed output
+      // 
+      // Languages where terminal must echo locally:
+      // - Python: usePyodide doesn't echo
+      // - C: useCRunner doesn't echo (relies on terminal)
+      // - C++: useInteractiveRunner doesn't echo
+      // - Java: useInteractiveRunner doesn't echo
       const remoteEchoLanguages = ['javascript', 'typescript', 'bash'];
 
-      // Only local echo if the language runner doesn't do it for us
+      // Only do local echo if the language runner doesn't echo for us
       if (!remoteEchoLanguages.includes(currentLang)) {
         term.write(data);
       }
