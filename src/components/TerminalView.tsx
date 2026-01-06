@@ -26,13 +26,23 @@ export const TerminalView = ({
   const writtenCharsRef = useRef<number>(0);
   const isInitializedRef = useRef(false);
   
-  // Ref to track current language inside the closure
+  // Refs to track props inside closures
   const languageRef = useRef(language);
+  const isWaitingForInputRef = useRef(isWaitingForInput);
+  const isRunningRef = useRef(isRunning);
 
-  // Update language ref when prop changes
+  // Update refs when props change
   useEffect(() => {
     languageRef.current = language;
   }, [language]);
+  
+  useEffect(() => {
+    isWaitingForInputRef.current = isWaitingForInput;
+  }, [isWaitingForInput]);
+  
+  useEffect(() => {
+    isRunningRef.current = isRunning;
+  }, [isRunning]);
 
   // Update Font Size dynamically
   useEffect(() => {
@@ -108,23 +118,22 @@ export const TerminalView = ({
       } catch (e) { }
     });
 
-    // --- FIX IS HERE ---
-    // JavaScript/TypeScript runners typically echo input back (Remote Echo).
-    // Python (Pyodide) typically does NOT echo input back (requires Local Echo).
-    // We conditionally apply local echo to avoid double typing in JS/TS.
+    // Handle terminal input
     term.onData((data) => {
       const currentLang = languageRef.current || 'python';
       
+      // For C language: only accept input when waiting for it
+      if (currentLang === 'c') {
+        if (!isWaitingForInputRef.current) {
+          // Not waiting for input - ignore typing (except Ctrl+C)
+          if (data === '\x03') {
+            onInput(data);
+          }
+          return;
+        }
+      }
+      
       // Languages where the runner handles echo (remote echo)
-      // - JavaScript: useJavaScriptRunner echoes via appendToOutput
-      // - TypeScript: same as JavaScript
-      // - Bash: Piston returns echoed output
-      // 
-      // Languages where terminal must echo locally:
-      // - Python: usePyodide doesn't echo
-      // - C: useCRunner doesn't echo (relies on terminal)
-      // - C++: useInteractiveRunner doesn't echo
-      // - Java: useInteractiveRunner doesn't echo
       const remoteEchoLanguages = ['javascript', 'typescript', 'bash'];
 
       // Only do local echo if the language runner doesn't echo for us

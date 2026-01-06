@@ -39,6 +39,64 @@ const countInputCalls = (code: string): number => {
 };
 
 /**
+ * Extract prompt string from printf/puts before first input function (local, no network)
+ */
+const extractPromptFromCode = (code: string): string => {
+  // Find position of first input function
+  const inputPatterns = [
+    /\bscanf\s*\(/,
+    /\bgetchar\s*\(/,
+    /\bgets\s*\(/,
+    /\bfgets\s*\(/,
+  ];
+  
+  let firstInputPos = code.length;
+  for (const pattern of inputPatterns) {
+    const match = pattern.exec(code);
+    if (match && match.index < firstInputPos) {
+      firstInputPos = match.index;
+    }
+  }
+  
+  if (firstInputPos === code.length) return "";
+  
+  // Get code before first input
+  const codeBefore = code.slice(0, firstInputPos);
+  
+  // Find last printf or puts call before the input
+  const printfMatches = [...codeBefore.matchAll(/printf\s*\(\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g)];
+  const putsMatches = [...codeBefore.matchAll(/puts\s*\(\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g)];
+  
+  let lastPrompt = "";
+  let lastPos = -1;
+  
+  for (const match of printfMatches) {
+    if (match.index !== undefined && match.index > lastPos) {
+      lastPos = match.index;
+      // Unescape basic sequences
+      lastPrompt = match[1]
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t')
+        .replace(/\\r/g, '\r')
+        .replace(/\\\\/g, '\\');
+    }
+  }
+  
+  for (const match of putsMatches) {
+    if (match.index !== undefined && match.index > lastPos) {
+      lastPos = match.index;
+      lastPrompt = match[1]
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t')
+        .replace(/\\r/g, '\r')
+        .replace(/\\\\/g, '\\') + '\n'; // puts adds newline
+    }
+  }
+  
+  return lastPrompt;
+};
+
+/**
  * Get user-friendly error messages
  */
 const getFriendlyError = (rawError: string): string => {
@@ -64,8 +122,8 @@ export const useCRunner = (): CRunnerResult => {
   const collectedInputsRef = useRef<string[]>([]);
   const currentInputLineRef = useRef<string>("");
   const abortControllerRef = useRef<AbortController | null>(null);
-  const expectedInputCountRef = useRef<number>(0);
-  const initialPromptRef = useRef<string>("");
+  const expectedInputCountRef = useRef<number>(1);
+  const hasExecutedOnceRef = useRef<boolean>(false);
 
   /**
    * Execute code on Piston with given stdin
@@ -202,44 +260,29 @@ export const useCRunner = (): CRunnerResult => {
   };
 
   /**
-   * Fetch initial prompt by running with short timeout
-   */
-  const fetchInitialPrompt = useCallback(async (): Promise<string> => {
-    const signal = abortControllerRef.current?.signal;
-    if (!signal || signal.aborted) return "";
-    
-    // Run with very short timeout just to capture printf output before scanf
-    const result = await runPiston(codeRef.current, "", signal, 500);
-    
-    if (signal.aborted) return "";
-    
-    // If compile error, show it and stop
-    if (result.isCompileError) {
-      setOutput(result.output);
-      setIsRunning(false);
-      setIsWaitingForInput(false);
-      return "";
-    }
-    
-    // Return whatever output was captured (the prompt)
-    return result.output;
-  }, []);
-
-  /**
    * Execute with all collected inputs
    */
   const executeWithInputs = useCallback(async () => {
     const signal = abortControllerRef.current?.signal;
     if (!signal || signal.aborted) return;
     
+    hasExecutedOnceRef.current = true;
     const stdin = collectedInputsRef.current.join('\n');
     const result = await runPiston(codeRef.current, stdin, signal, 30000);
     
     if (signal.aborted) return;
     
-    if (!result.success) {
-      // Error - show and stop
+    if (result.isCompileError) {
+      // Compile error - show and stop
       setOutput(result.output);
+      setIsRunning(false);
+      setIsWaitingForInput(false);
+      return;
+    }
+    
+    if (!result.success) {
+      // Runtime error - show and stop
+      setOutput(prev => prev + result.output);
       setIsRunning(false);
       setIsWaitingForInput(false);
       return;
@@ -247,68 +290,17 @@ export const useCRunner = (): CRunnerResult => {
     
     // Check if program completed (exit 0, not killed)
     if (result.exitCode === 0 && !result.wasKilled) {
-      // Program finished successfully
-      // Show only the NEW output (after the prompt + user inputs)
-      const promptPart = initialPromptRef.current;
-      const userInputsEchoed = collectedInputsRef.current.join('\n');
-      
-      // The full output includes: prompt + echoed input + rest of output
-      // We need to show: rest of output (the part after user's input is processed)
-      let finalOutput = result.output;
-      
-      // If output starts with the prompt, remove it (we already showed it)
-      if (finalOutput.startsWith(promptPart)) {
-        finalOutput = finalOutput.slice(promptPart.length);
-      }
-      
-      // The echoed input might be in there too - it's OK, terminal already showed it
-      // Just append the result to existing output
-      setOutput(prev => {
-        // prev contains: prompt + user typed input + newline
-        // finalOutput might contain: echoed input + result
-        // We want to show: prev + result (minus any duplicate echoed input)
-        
-        // Simple approach: just append the final output part
-        // Skip any leading input echo
-        const lastInput = collectedInputsRef.current[collectedInputsRef.current.length - 1];
-        if (lastInput && finalOutput.startsWith(lastInput)) {
-          finalOutput = finalOutput.slice(lastInput.length);
-        }
-        
-        return prev + finalOutput;
-      });
-      
+      // Program finished successfully - show full output
+      setOutput(result.output);
       setIsRunning(false);
       setIsWaitingForInput(false);
       return;
     }
     
     if (result.wasKilled) {
-      // Program timed out - needs more input
-      // Show any new prompt that appeared
-      const currentPrompt = initialPromptRef.current;
-      let newOutput = result.output;
-      
-      // Remove the part we've already shown
-      if (newOutput.startsWith(currentPrompt)) {
-        newOutput = newOutput.slice(currentPrompt.length);
-      }
-      
-      // Remove echoed inputs
-      for (const input of collectedInputsRef.current) {
-        if (newOutput.startsWith(input)) {
-          newOutput = newOutput.slice(input.length);
-        }
-        if (newOutput.startsWith('\n')) {
-          newOutput = newOutput.slice(1);
-        }
-      }
-      
-      if (newOutput.length > 0) {
-        setOutput(prev => prev + newOutput);
-        initialPromptRef.current = result.output; // Update for next iteration
-      }
-      
+      // Program timed out waiting for more input
+      // Show current output and wait for more input
+      setOutput(result.output);
       setIsWaitingForInput(true);
       return;
     }
@@ -326,25 +318,25 @@ export const useCRunner = (): CRunnerResult => {
     if (!isWaitingForInput) return;
     
     if (char === '\r' || char === '\n') {
-      // Enter key - submit input
+      // Enter key - submit input line
       const inputValue = currentInputLineRef.current;
       currentInputLineRef.current = "";
       
       // Add the input to collected inputs
       collectedInputsRef.current.push(inputValue);
       
-      // Re-execute with all inputs
+      // Execute with all collected inputs
       setIsWaitingForInput(false);
       executeWithInputs();
     }
     else if (char === '\x7f' || char === '\b') {
-      // Backspace
+      // Backspace - remove last char from buffer
       if (currentInputLineRef.current.length > 0) {
         currentInputLineRef.current = currentInputLineRef.current.slice(0, -1);
       }
     }
     else if (char === '\x03') {
-      // Ctrl+C
+      // Ctrl+C - abort
       abortControllerRef.current?.abort();
       currentInputLineRef.current = "";
       setIsWaitingForInput(false);
@@ -352,7 +344,7 @@ export const useCRunner = (): CRunnerResult => {
       setOutput(prev => prev + '^C\n');
     }
     else if (char.length === 1 && char >= ' ') {
-      // Regular character - just buffer it (terminal handles echo)
+      // Regular character - buffer it (terminal handles visual echo)
       currentInputLineRef.current += char;
     }
   }, [isWaitingForInput, executeWithInputs]);
@@ -375,31 +367,28 @@ export const useCRunner = (): CRunnerResult => {
     codeRef.current = code;
     collectedInputsRef.current = [];
     currentInputLineRef.current = "";
-    initialPromptRef.current = "";
-    expectedInputCountRef.current = countInputCalls(code);
+    expectedInputCountRef.current = Math.max(1, countInputCalls(code));
+    hasExecutedOnceRef.current = false;
+    
+    // Cancel any previous execution
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
     
     setIsRunning(true);
     setOutput("");
     setIsWaitingForInput(false);
     
-    abortControllerRef.current = new AbortController();
-    
     // Check if code has input functions
     if (hasInputFunctions(code)) {
-      // Fetch initial prompt first
-      const prompt = await fetchInitialPrompt();
+      // Extract prompt locally (no network call)
+      const prompt = extractPromptFromCode(code);
       
-      if (abortControllerRef.current?.signal.aborted) return;
-      
-      // If we got an empty prompt or compile error handled, check if still running
-      if (!isRunning) return;
-      
-      // Show prompt and wait for input
-      initialPromptRef.current = prompt;
+      // Show prompt immediately and wait for input
       setOutput(prompt);
       setIsWaitingForInput(true);
+      // Keep isRunning=true so Terminate button works
     } else {
-      // No input functions - just run
+      // No input functions - just run immediately
       const signal = abortControllerRef.current.signal;
       const result = await runPiston(code, "", signal, 30000);
       
@@ -409,7 +398,7 @@ export const useCRunner = (): CRunnerResult => {
       setIsRunning(false);
       setIsWaitingForInput(false);
     }
-  }, [fetchInitialPrompt]);
+  }, []);
 
   return {
     output,
