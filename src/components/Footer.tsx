@@ -38,7 +38,7 @@ export const Footer = () => {
             <h4 className="font-bold text-white mb-6">Products</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li><Link to="/compiler" className="hover:text-white transition-colors">Compiler</Link></li>
-              <li><Link to="/practice-arena" className="hover:text-white transition-colors">Practice Arena</Link></li>
+              <li><Link to="/practice-arena" className="hover:text-white transition-colors">Solve</Link></li>
               <li><Link to="/profile" className="hover:text-white transition-colors">Profile Card</Link></li>
               <li><Link to="/events" className="hover:text-white transition-colors">Events</Link></li>
             </ul>
@@ -58,7 +58,7 @@ export const Footer = () => {
                 </span>
               </li>
               <li><Link to="/docs" className="hover:text-white transition-colors">Documentation</Link></li>
-              <li><Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+              <li><Link to="/auth" className="hover:text-white transition-colors">Contact Us</Link></li>
             </ul>
           </div>
 
