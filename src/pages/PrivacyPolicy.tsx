@@ -233,7 +233,7 @@ const PrivacyPolicy = () => {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500 w-24">Post:</span>
-                      <span className="text-gray-300">Data Protection Officer, CodeVo Inc., San Francisco, CA</span>
+                      <span className="text-gray-300">Data Protection Officer, CodeVo Inc., Chennai, India</span>
                     </div>
                   </div>
                 </section>
