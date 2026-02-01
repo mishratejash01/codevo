@@ -224,7 +224,7 @@ const TermsOfService = () => {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-gray-500 w-24">Address:</span>
-                      <span className="text-gray-300">San Francisco, CA, USA</span>
+                      <span className="text-gray-300">Chennai, India</span>
                     </div>
                   </div>
                 </section>
