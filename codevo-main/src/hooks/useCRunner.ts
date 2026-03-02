@@ -193,7 +193,7 @@ export const useCRunner = (): CRunnerResult => {
         }
         
         const data = await response.json();
-        
+
         // Check compile errors
         if (data.compile && data.compile.code !== 0) {
           return {
@@ -204,7 +204,18 @@ export const useCRunner = (): CRunnerResult => {
             isCompileError: true
           };
         }
-        
+
+        // Some Piston responses put output in compile.output even on success
+        if (!data.run && data.compile && data.compile.code === 0) {
+          return {
+            success: true,
+            output: data.compile.output || data.compile.stdout || "",
+            exitCode: 0,
+            wasKilled: false,
+            isCompileError: false
+          };
+        }
+
         if (data.run) {
           const stdout = data.run.stdout || "";
           const stderr = data.run.stderr || "";
@@ -236,9 +247,10 @@ export const useCRunner = (): CRunnerResult => {
           };
         }
         
-        return { 
-          success: false, 
-          output: "No response from server", 
+        console.error('Unexpected Piston response:', JSON.stringify(data));
+        return {
+          success: false,
+          output: `\x1b[31mUnexpected response from server. Please try again.\x1b[0m`,
           exitCode: null,
           wasKilled: false,
           isCompileError: false
