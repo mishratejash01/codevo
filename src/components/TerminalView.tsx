@@ -122,8 +122,9 @@ export const TerminalView = ({
     term.onData((data) => {
       const currentLang = languageRef.current || 'python';
       
-      // For C language: only accept input when waiting for it
-      if (currentLang === 'c') {
+      // For Piston-based languages: only accept input when waiting for it
+      const strictInputLanguages = ['c', 'java', 'cpp', 'sql'];
+      if (strictInputLanguages.includes(currentLang)) {
         if (!isWaitingForInputRef.current) {
           // Not waiting for input - ignore typing (except Ctrl+C)
           if (data === '\x03') {
@@ -132,13 +133,17 @@ export const TerminalView = ({
           return;
         }
       }
-      
-      // Languages where the runner handles echo (remote echo)
-      const remoteEchoLanguages = ['javascript', 'typescript', 'bash'];
+
+      // Languages where the remote runner handles echo
+      const remoteEchoLanguages = ['bash'];
 
       // Only do local echo if the language runner doesn't echo for us
       if (!remoteEchoLanguages.includes(currentLang)) {
-        term.write(data);
+        if (data === '\r') {
+          term.write('\r\n');  // Convert bare CR to CRLF
+        } else {
+          term.write(data);
+        }
       }
       
       onInput(data);

@@ -3,14 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { normalizeOutput } from '@/utils/inputParser';
 import { compareOutputs as judgeCompareOutputs, JudgeOptions } from '@/utils/judgeEngine';
 
-const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
+// Same-origin proxy -> Vercel serverless function (api/execute.js)
+const EXECUTE_API = '/api/execute';
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 
 export type Language = 'python' | 'java' | 'cpp';
 export type Verdict = 'AC' | 'WA' | 'TLE' | 'MLE' | 'RE' | 'CE' | 'PENDING';
 
-export type JudgingPhase = 
+export type JudgingPhase =
   | { status: 'idle' }
   | { status: 'compiling'; message: string }
   | { status: 'running'; currentTest: number; totalTests: number; message: string }
@@ -81,20 +82,20 @@ const getComparingMessage = () => {
 
 const detectErrorType = (error: string): { type: string; verdict: Verdict } => {
   const errorLower = error.toLowerCase();
-  
+
   if (errorLower.includes('time') && (errorLower.includes('limit') || errorLower.includes('exceeded'))) {
     return { type: 'time_limit', verdict: 'TLE' };
   }
   if (errorLower.includes('memory') && (errorLower.includes('limit') || errorLower.includes('exceeded'))) {
     return { type: 'memory_limit', verdict: 'MLE' };
   }
-  if (errorLower.includes('compile') || errorLower.includes('syntax') || 
+  if (errorLower.includes('compile') || errorLower.includes('syntax') ||
       errorLower.includes('cannot find symbol') || errorLower.includes('expected')) {
     return { type: 'compile_error', verdict: 'CE' };
   }
   if (
-    errorLower.includes('runtime') || 
-    errorLower.includes('segmentation') || 
+    errorLower.includes('runtime') ||
+    errorLower.includes('segmentation') ||
     errorLower.includes('index') ||
     errorLower.includes('null') ||
     errorLower.includes('undefined') ||
@@ -166,47 +167,46 @@ const generateFeedback = (verdict: Verdict, errorType?: string, rawError?: strin
 
 const getTierBadge = (percentile: number): { tier: string; emoji: string; message: string } => {
   if (percentile >= 99) {
-    return { 
-      tier: 'Speed Demon', 
-      emoji: '🔥', 
-      message: "Absolute speed demon! You just smoked 99% of submissions. You sure you didn't write the compiler?" 
+    return {
+      tier: 'Speed Demon',
+      emoji: '🔥',
+      message: "Absolute speed demon! You just smoked 99% of submissions. You sure you didn't write the compiler?"
     };
   }
   if (percentile >= 90) {
-    return { 
-      tier: 'Lightning Fast', 
-      emoji: '⚡', 
-      message: "Lightning fast! Your solution beats 90% of all submissions." 
+    return {
+      tier: 'Lightning Fast',
+      emoji: '⚡',
+      message: "Lightning fast! Your solution beats 90% of all submissions."
     };
   }
   if (percentile >= 75) {
-    return { 
-      tier: 'Well Optimized', 
-      emoji: '🚀', 
-      message: "Well optimized! You're in the top 25% of performers." 
+    return {
+      tier: 'Well Optimized',
+      emoji: '🚀',
+      message: "Well optimized! You're in the top 25% of performers."
     };
   }
   if (percentile >= 50) {
-    return { 
-      tier: 'Solid Solution', 
-      emoji: '✅', 
-      message: "Accepted! You're faster than 50% of users. There's still some room to optimize." 
+    return {
+      tier: 'Solid Solution',
+      emoji: '✅',
+      message: "Accepted! You're faster than 50% of users. There's still some room to optimize."
     };
   }
-  return { 
-    tier: 'Room to Grow', 
-    emoji: '📈', 
-    message: "Accepted! Your solution works—want to try and shave off a few milliseconds?" 
+  return {
+    tier: 'Room to Grow',
+    emoji: '📈',
+    message: "Accepted! Your solution works—want to try and shave off a few milliseconds?"
   };
 };
 
 /**
  * Compare two outputs using the enhanced judge engine.
- * Supports order-agnostic comparison, floating point tolerance, etc.
  */
 const compareOutputs = (
-  actual: string, 
-  expected: string, 
+  actual: string,
+  expected: string,
   options: JudgeOptions = {}
 ): boolean => {
   return judgeCompareOutputs(actual, expected, options);
@@ -214,30 +214,22 @@ const compareOutputs = (
 
 /**
  * Estimate memory usage based on code characteristics
- * Since Piston doesn't return real memory, we estimate based on code length and complexity
  */
 const estimateMemory = (code: string, language: Language): number => {
-  // Base memory varies by language (runtime overhead)
   const baseMemory: Record<Language, number> = {
-    python: 12000,   // ~12MB for Python interpreter
-    java: 25000,     // ~25MB for JVM
-    cpp: 3000,       // ~3MB for compiled C++
+    python: 12000,
+    java: 25000,
+    cpp: 3000,
   };
 
   const base = baseMemory[language] || 10000;
-  
-  // Estimate additional memory based on code complexity
   const codeLength = code.length;
   const arrayCount = (code.match(/\[/g) || []).length;
   const stringCount = (code.match(/["']/g) || []).length / 2;
-  
-  // Each array might use ~100 bytes, each string ~50 bytes
   const additionalMemory = Math.floor(codeLength / 10) + (arrayCount * 100) + (stringCount * 50);
-  
-  // Add some variance (±10%) to make it look more realistic
   const variance = (Math.random() - 0.5) * 0.2;
   const total = base + additionalMemory;
-  
+
   return Math.round(total * (1 + variance));
 };
 
@@ -245,20 +237,9 @@ export const useEnhancedCodeRunner = () => {
   const [judgingPhase, setJudgingPhase] = useState<JudgingPhase>({ status: 'idle' });
   const [elapsedMs, setElapsedMs] = useState(0);
 
-  // Get the correct file name for Piston based on language
-  const getFileName = (language: string): string => {
-    switch (language) {
-      case 'java': return 'Main.java';
-      case 'python': return 'main.py';
-      case 'cpp': return 'main.cpp';
-      default: return 'main';
-    }
-  };
-
-  const runPiston = async (
-    language: string, 
-    version: string, 
-    code: string, 
+  const runViaProxy = async (
+    language: Language,
+    code: string,
     stdin: string = "",
     retryCount: number = 0
   ): Promise<{
@@ -269,91 +250,64 @@ export const useEnhancedCodeRunner = () => {
     memory: number;
   }> => {
     const startTime = performance.now();
-    
+
     try {
-      const response = await fetch(PISTON_API_URL, {
+      const response = await fetch(EXECUTE_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          language,
-          version,
-          files: [{ name: getFileName(language), content: code }],
-          stdin,
-        }),
+        body: JSON.stringify({ source_code: code, language, stdin }),
       });
-      
-      // Handle rate limiting
+
       if (response.status === 429) {
         if (retryCount < MAX_RETRIES) {
           const delay = BASE_DELAY_MS * Math.pow(2, retryCount);
-          console.log(`Rate limited, retrying in ${delay}ms...`);
           await new Promise(r => setTimeout(r, delay));
-          return runPiston(language, version, code, stdin, retryCount + 1);
+          return runViaProxy(language, code, stdin, retryCount + 1);
         }
-        return { 
-          success: false, 
-          output: "", 
-          error: "Server is busy. Please try again in a few seconds.", 
-          executionTime: 0, 
-          memory: 0 
-        };
+        return { success: false, output: "", error: "Server is busy. Please try again in a few seconds.", executionTime: 0, memory: 0 };
       }
-      
-      // Handle other HTTP errors
+
       if (!response.ok) {
         if (retryCount < MAX_RETRIES) {
           const delay = BASE_DELAY_MS * Math.pow(2, retryCount);
           await new Promise(r => setTimeout(r, delay));
-          return runPiston(language, version, code, stdin, retryCount + 1);
+          return runViaProxy(language, code, stdin, retryCount + 1);
         }
-        return { 
-          success: false, 
-          output: "", 
-          error: `Server error (${response.status}). Please try again.`, 
-          executionTime: 0, 
-          memory: 0 
-        };
+        return { success: false, output: "", error: `Server error (${response.status}). Please try again.`, executionTime: 0, memory: 0 };
       }
-      
+
       const data = await response.json();
-      const executionTime = Math.round(performance.now() - startTime);
-      
-      if (data.run) {
-        const stdout = data.run.stdout || "";
-        const stderr = data.run.stderr || "";
-        const output = data.run.output || (stdout + (stderr ? "\n" + stderr : ""));
-        
-        // Estimate memory based on code complexity
-        const memory = estimateMemory(code, language as Language);
-        
-        return {
-          success: data.run.code === 0 && !stderr,
-          output: output.trim(),
-          error: stderr || (data.run.code !== 0 ? output : undefined),
-          executionTime,
-          memory
-        };
+      // Normalized: {stdout, stderr, code, signal, time, memory, isCompileError}
+      // time is already in ms from the proxy
+      const executionTime = data.time ? Math.round(data.time) : Math.round(performance.now() - startTime);
+      const memory = data.memory || estimateMemory(code, language);
+
+      // Compilation Error
+      if (data.isCompileError) {
+        return { success: false, output: "", error: data.stderr || "Compilation failed", executionTime, memory };
       }
-      return { success: false, output: "", error: "Execution failed to start.", executionTime, memory: 0 };
+
+      // Success
+      if (data.code === 0) {
+        return { success: true, output: (data.stdout || "").trim(), executionTime, memory };
+      }
+
+      // TLE
+      if (data.code === -1 || data.signal === 'SIGKILL') {
+        return { success: false, output: (data.stdout || "").trim(), error: "Time Limit Exceeded", executionTime, memory };
+      }
+
+      // Runtime Error or other failure
+      const errorMsg = data.stderr || "Execution failed";
+      return { success: false, output: (data.stdout || "").trim(), error: errorMsg, executionTime, memory };
     } catch (e: any) {
-      // Network error - retry
       if (retryCount < MAX_RETRIES) {
         const delay = BASE_DELAY_MS * Math.pow(2, retryCount);
-        console.log(`Network error, retrying in ${delay}ms...`);
         await new Promise(r => setTimeout(r, delay));
-        return runPiston(language, version, code, stdin, retryCount + 1);
+        return runViaProxy(language, code, stdin, retryCount + 1);
       }
       return { success: false, output: "", error: `Network Error: ${e.message}. Check your connection and try again.`, executionTime: 0, memory: 0 };
     }
-  };
-
-  const getLanguageConfig = (language: Language): { name: string; version: string } => {
-    const configs: Record<Language, { name: string; version: string }> = {
-      python: { name: 'python', version: '3.10.0' },
-      java: { name: 'java', version: '15.0.2' },
-      cpp: { name: 'cpp', version: '10.2.0' },
-    };
-    return configs[language];
   };
 
   const executeWithJudging = useCallback(async (
@@ -370,48 +324,39 @@ export const useEnhancedCodeRunner = () => {
     const testResults: TestResult[] = [];
     let totalRuntime = 0;
     let totalMemory = 0;
-    
-    // Variables to track first failure
+
     let firstFailureIndex = -1;
     let firstFailureVerdict: Verdict | null = null;
     let firstFailureError: { type: string, rawError: string } | undefined = undefined;
 
     try {
       // Phase 1: Compiling
-      setJudgingPhase({ 
-        status: 'compiling', 
+      setJudgingPhase({
+        status: 'compiling',
         message: getCompilingMessage(language)
       });
       await new Promise(r => setTimeout(r, 500));
 
-      const config = getLanguageConfig(language);
-
-      // Phase 2: Running tests (Run ALL tests to populate results)
+      // Phase 2: Running tests
       for (let i = 0; i < testCases.length; i++) {
-        setJudgingPhase({ 
-          status: 'running', 
-          currentTest: i + 1, 
+        setJudgingPhase({
+          status: 'running',
+          currentTest: i + 1,
           totalTests: testCases.length,
           message: getRunningMessage(i + 1, testCases.length)
         });
 
         const test = testCases[i];
-        // Pass full test object so prepareCode can access both input and output
         const codeToRun = prepareCode(code, test);
-        
-        // Execute code
-        const result = await runPiston(config.name, config.version, codeToRun, "");
+        const result = await runViaProxy(language, codeToRun, "");
 
         totalRuntime += result.executionTime;
         totalMemory += result.memory;
 
-        // CRITICAL: Only normalize output if execution succeeded (no compile/runtime error)
-        // This prevents bracket corruption in error messages
         const hasError = !!result.error;
         const cleanOutput = hasError ? (result.output || '') : normalizeOutput(result.output || '');
         const expectedStr = normalizeOutput(String(test.output || ''));
-        
-        // If there's an error, mark as failed without output comparison
+
         let passed = false;
         if (!hasError) {
           passed = compareOutputs(cleanOutput, expectedStr);
@@ -425,43 +370,39 @@ export const useEnhancedCodeRunner = () => {
           testIndex: i
         });
 
-        // If this test failed and it's the first failure, record it
         if (!passed && firstFailureIndex === -1) {
           firstFailureIndex = i;
-          
+
           if (result.error) {
-             // It's a runtime/compile/limit error
              const { type, verdict } = detectErrorType(result.error);
              firstFailureVerdict = verdict;
              firstFailureError = { type, rawError: result.error };
           } else {
-             // It ran successfully but output was wrong
              firstFailureVerdict = 'WA';
           }
         }
       }
 
-      // Phase 3: Comparing / Finalizing
-      setJudgingPhase({ 
-        status: 'comparing', 
+      // Phase 3: Comparing
+      setJudgingPhase({
+        status: 'comparing',
         message: getComparingMessage()
       });
       await new Promise(r => setTimeout(r, 300));
       clearInterval(timer);
 
-      // If there was a failure, return that verdict
       if (firstFailureIndex !== -1) {
         const verdict = firstFailureVerdict || 'WA';
         const feedback = generateFeedback(verdict, firstFailureError?.type, firstFailureError?.rawError);
-        
+
         setJudgingPhase({ status: 'complete', verdict });
-        
+
         return {
           verdict,
           passed: false,
           output: testResults[firstFailureIndex].actual,
           expected: testResults[firstFailureIndex].expected,
-          runtime_ms: Math.round(totalRuntime / (firstFailureIndex + 1)), // Avg up to failure
+          runtime_ms: Math.round(totalRuntime / (firstFailureIndex + 1)),
           memory_kb: Math.round(totalMemory / (firstFailureIndex + 1)),
           feedbackMessage: feedback.message,
           feedbackSuggestion: feedback.suggestion,
@@ -471,11 +412,10 @@ export const useEnhancedCodeRunner = () => {
         };
       }
 
-      // --- Success Path (All tests passed) ---
+      // All tests passed
       const avgRuntime = Math.round(totalRuntime / testCases.length);
       const avgMemory = Math.round(totalMemory / testCases.length);
 
-      // Calculate percentiles from database
       let runtimePercentile = 50;
       let memoryPercentile = 50;
 
@@ -491,11 +431,10 @@ export const useEnhancedCodeRunner = () => {
             p_language: language,
             p_memory_kb: avgMemory
           });
-          
+
           if (rtPercentile !== null) runtimePercentile = rtPercentile;
           if (memPercentile !== null) memoryPercentile = memPercentile;
         } catch (e) {
-          // Fallback to default percentiles if DB fails
           console.warn("Failed to fetch percentiles:", e);
         }
       }
@@ -523,7 +462,7 @@ export const useEnhancedCodeRunner = () => {
       clearInterval(timer);
       const feedback = generateFeedback('RE', 'unknown', error.message);
       setJudgingPhase({ status: 'complete', verdict: 'RE' });
-      
+
       return {
         verdict: 'RE',
         passed: false,
@@ -546,13 +485,12 @@ export const useEnhancedCodeRunner = () => {
     prepareCode: (code: string, input: any) => string
   ) => {
     setJudgingPhase({ status: 'running', currentTest: 1, totalTests: 1, message: 'Running your custom test...' });
-    
-    const config = getLanguageConfig(language);
+
     const codeToRun = prepareCode(code, input);
-    const result = await runPiston(config.name, config.version, codeToRun, "");
-    
+    const result = await runViaProxy(language, codeToRun, "");
+
     setJudgingPhase({ status: 'idle' });
-    
+
     return {
       output: result.output,
       error: result.error,
@@ -566,10 +504,10 @@ export const useEnhancedCodeRunner = () => {
     setElapsedMs(0);
   }, []);
 
-  return { 
-    executeWithJudging, 
+  return {
+    executeWithJudging,
     runSingleTest,
-    judgingPhase, 
+    judgingPhase,
     elapsedMs,
     resetJudging,
     getTierBadge

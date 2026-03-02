@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
-// Piston API
-const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
+// Same-origin proxy -> Vercel serverless function (api/execute.js)
+// Primary: Judge0 CE, Fallback: Wandbox — zero CORS issues
+const EXECUTE_API = '/api/execute';
 
 export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript' | 'typescript' | 'sql' | 'bash';
 
@@ -14,7 +15,7 @@ interface ExecutionResult {
 // Parse common errors into friendly messages
 const getFriendlyError = (rawError: string, language: Language): string => {
   const lowerError = rawError.toLowerCase();
-  
+
   // Java specific errors
   if (language === 'java') {
     if (lowerError.includes('class') && lowerError.includes('public') && lowerError.includes('should be declared in a file')) {
@@ -33,7 +34,7 @@ const getFriendlyError = (rawError: string, language: Language): string => {
       return rawError + "\n\n💡 Tip: You're trying to use a variable that is null. Initialize it first.";
     }
   }
-  
+
   // C/C++ specific errors
   if (language === 'cpp' || language === 'c') {
     if (lowerError.includes('segmentation fault') || lowerError.includes('sigsegv')) {
@@ -46,7 +47,7 @@ const getFriendlyError = (rawError: string, language: Language): string => {
       return rawError + "\n\n💡 Tip: Check for typos or missing #include statements.";
     }
   }
-  
+
   // JavaScript specific errors
   if (language === 'javascript') {
     if (lowerError.includes('referenceerror') && lowerError.includes('is not defined')) {
@@ -56,7 +57,7 @@ const getFriendlyError = (rawError: string, language: Language): string => {
       return rawError + "\n\n💡 Tip: You're trying to use a value in a way that's not allowed (e.g., calling a non-function).";
     }
   }
-  
+
   // Python specific errors
   if (language === 'python') {
     if (lowerError.includes('eoferror') || lowerError.includes('eof when reading')) {
@@ -69,70 +70,62 @@ const getFriendlyError = (rawError: string, language: Language): string => {
       return rawError + "\n\n💡 Tip: This module is not available in the online compiler. Try using standard library modules.";
     }
   }
-  
+
   // Generic timeout error
   if (lowerError.includes('time limit') || lowerError.includes('timeout') || lowerError.includes('timed out')) {
     return "Time Limit Exceeded!\n\n💡 Your code took too long to execute. Possible causes:\n- Infinite loop\n- Inefficient algorithm\n- Waiting for input that wasn't provided";
   }
-  
+
   // Generic memory error
   if (lowerError.includes('memory') || lowerError.includes('out of memory') || lowerError.includes('killed')) {
     return "Memory Limit Exceeded!\n\n💡 Your code used too much memory. Check for:\n- Very large arrays\n- Memory leaks\n- Infinite recursion";
   }
-  
-  return rawError;
-};
 
-// Get the correct file name for Piston based on language
-const getFileName = (language: string): string => {
-  switch (language) {
-    case 'java': return 'Main.java';
-    case 'python': return 'main.py';
-    case 'cpp': return 'main.cpp';
-    case 'c': return 'main.c';
-    case 'javascript': return 'main.js';
-    case 'typescript': return 'main.ts';
-    default: return 'main';
-  }
+  return rawError;
 };
 
 export const useCodeRunner = () => {
   const [loading, setLoading] = useState(false);
 
-  const runPiston = async (language: string, version: string, code: string, stdin: string = "", langType: Language) => {
+  const runViaProxy = async (language: Language, code: string, stdin: string = "") => {
     try {
-      const response = await fetch(PISTON_API_URL, {
+      const response = await fetch(EXECUTE_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          language,
-          version,
-          files: [{ name: getFileName(language), content: code }],
-          stdin,
-        }),
+        body: JSON.stringify({ source_code: code, language, stdin }),
       });
-      const data = await response.json();
-      
-      if (data.run) {
-        const stdout = data.run.stdout || "";
-        const stderr = data.run.stderr || "";
-        const output = data.run.output || ""; 
-        const finalOutput = output ? output : (stdout + stderr).trim();
-        const isError = data.run.code !== 0 || stderr.length > 0;
 
-        return {
-          success: !isError,
-          output: isError ? getFriendlyError(finalOutput, langType) : finalOutput,
-          error: isError ? finalOutput : undefined 
-        };
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(text || `Server error (${response.status})`);
       }
-      return { success: false, output: "Execution failed to start. Please try again.", error: "Execution failed" };
+
+      const data = await response.json();
+
+      // Compile error
+      if (data.isCompileError) {
+        return { success: false, output: getFriendlyError(data.stderr || "Compilation failed", language), error: data.stderr };
+      }
+
+      // Success
+      if (data.code === 0) {
+        return { success: true, output: (data.stdout || "").trim() };
+      }
+
+      // TLE
+      if (data.code === -1 || data.signal === 'SIGKILL') {
+        return { success: false, output: getFriendlyError("Time Limit Exceeded", language), error: "TLE" };
+      }
+
+      // Runtime / other error
+      const errorMsg = data.stderr || "Execution failed";
+      return { success: false, output: getFriendlyError(errorMsg, language), error: errorMsg };
     } catch (e: any) {
       if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-        return { 
-          success: false, 
-          output: "Network Error: Could not connect to the code execution server.\n\n💡 Check your internet connection and try again.", 
-          error: e.message 
+        return {
+          success: false,
+          output: "Network Error: Could not connect to the code execution server.\n\n💡 Check your internet connection and try again.",
+          error: e.message
         };
       }
       return { success: false, output: `Error: ${e.message}`, error: e.message };
@@ -140,25 +133,15 @@ export const useCodeRunner = () => {
   };
 
   const executeCode = async (
-    language: Language, 
-    code: string, 
+    language: Language,
+    code: string,
     input: string = ""
   ): Promise<ExecutionResult> => {
     setLoading(true);
     let result: ExecutionResult = { success: false, output: "" };
 
     try {
-      switch (language) {
-        case 'python': result = await runPiston('python', '3.10.0', code, input, language); break;
-        case 'javascript': result = await runPiston('javascript', '18.15.0', code, input, language); break;
-        case 'typescript': result = await runPiston('typescript', '5.0.3', code, input, language); break;
-        case 'java': result = await runPiston('java', '15.0.2', code, input, language); break;
-        case 'cpp': result = await runPiston('cpp', '10.2.0', code, input, language); break;
-        case 'c': result = await runPiston('c', '10.2.0', code, input, language); break;
-        case 'sql': result = await runPiston('sqlite3', '3.36.0', code, input, language); break;
-        case 'bash': result = await runPiston('bash', '5.0.0', code, input, language); break;
-        default: result = { success: false, output: "Language not supported", error: "Unsupported language" };
-      }
+      result = await runViaProxy(language, code, input);
     } catch (err: any) {
       result = { success: false, output: getFriendlyError(err.message, language), error: err.message };
     } finally {

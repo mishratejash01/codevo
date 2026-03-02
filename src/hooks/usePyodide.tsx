@@ -14,10 +14,11 @@ export const usePyodide = () => {
   const [isReady, setIsReady] = useState(false);
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
-  
+
   const workerRef = useRef<Worker | null>(null);
   const inputLineRef = useRef<string>("");
   const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isReadyRef = useRef(false);
 
   // Initialize the Web Worker
   const initWorker = useCallback(() => {
@@ -28,6 +29,7 @@ export const usePyodide = () => {
     
     // Reset state
     setIsReady(false);
+    isReadyRef.current = false;
     setInitError(null);
     setOutput("");
     setIsRunning(false);
@@ -39,7 +41,7 @@ export const usePyodide = () => {
       
       // Set initialization timeout
       initTimeoutRef.current = setTimeout(() => {
-        if (!isReady) {
+        if (!isReadyRef.current) {
           setInitError('Python initialization timed out. Please refresh the page.');
         }
       }, INIT_TIMEOUT_MS);
@@ -55,6 +57,7 @@ export const usePyodide = () => {
               initTimeoutRef.current = null;
             }
             setIsReady(true);
+            isReadyRef.current = true;
             setInitError(null);
             break;
             
@@ -101,7 +104,7 @@ export const usePyodide = () => {
       setInitError('Failed to create Python worker');
       console.error('Failed to create worker:', err);
     }
-  }, [isReady]);
+  }, []);
 
   // Initialize on mount
   useEffect(() => {
