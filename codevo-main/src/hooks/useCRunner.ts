@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 
-const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
+const JUDGE0_API_URL = 'https://ce.judge0.com/submissions/?base64_encoded=false&wait=true';
+const C_LANGUAGE_ID = 50; // GCC 9.2.0
 
 interface CRunnerResult {
   output: string;
@@ -146,149 +147,84 @@ export const useCRunner = (): CRunnerResult => {
   const previousOutputRef = useRef<string>("");
 
   /**
-   * Execute code on Piston with given stdin
+   * Execute code on Judge0 CE with given stdin
    */
-  const runPiston = async (
-    code: string, 
-    stdin: string, 
+  const runJudge0 = async (
+    code: string,
+    stdin: string,
     signal: AbortSignal,
-    timeout: number = 30000
-  ): Promise<{ 
-    success: boolean; 
-    output: string; 
+  ): Promise<{
+    success: boolean;
+    output: string;
     exitCode: number | null;
     wasKilled: boolean;
     isCompileError: boolean;
   }> => {
     const maxRetries = 3;
-    
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const response = await fetch(PISTON_API_URL, {
+        const response = await fetch(JUDGE0_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            language: 'c',
-            version: '10.2.0',
-            files: [{ name: 'main.c', content: code }],
+            source_code: code,
+            language_id: C_LANGUAGE_ID,
             stdin,
-            compile_timeout: 10000,
-            run_timeout: timeout,
           }),
           signal,
         });
-        
+
         if (response.status === 429) {
           if (attempt < maxRetries - 1) {
             await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
             continue;
           }
-          return { 
-            success: false, 
-            output: "\x1b[31mRate limit exceeded. Please wait.\x1b[0m", 
-            exitCode: null,
-            wasKilled: false,
-            isCompileError: false
-          };
+          return { success: false, output: "\x1b[31mRate limit exceeded. Please wait.\x1b[0m", exitCode: null, wasKilled: false, isCompileError: false };
         }
-        
+
         const data = await response.json();
+        const statusId = data.status?.id;
+        const stdout = data.stdout || "";
+        const stderr = data.stderr || "";
+        const compileOutput = data.compile_output || "";
 
-        // Check compile errors
-        if (data.compile && data.compile.code !== 0) {
-          return {
-            success: false,
-            output: getFriendlyError(data.compile.stderr || data.compile.output || "Compilation failed"),
-            exitCode: data.compile.code,
-            wasKilled: false,
-            isCompileError: true
-          };
+        // Status 6 = Compilation Error
+        if (statusId === 6) {
+          return { success: false, output: getFriendlyError(compileOutput || "Compilation failed"), exitCode: 1, wasKilled: false, isCompileError: true };
         }
 
-        // Some Piston responses put output in compile.output even on success
-        if (!data.run && data.compile && data.compile.code === 0) {
-          return {
-            success: true,
-            output: data.compile.output || data.compile.stdout || "",
-            exitCode: 0,
-            wasKilled: false,
-            isCompileError: false
-          };
+        // Status 5 = Time Limit Exceeded (program waiting for input or infinite loop)
+        if (statusId === 5) {
+          return { success: true, output: stdout, exitCode: null, wasKilled: true, isCompileError: false };
         }
 
-        if (data.run) {
-          const stdout = data.run.stdout || "";
-          const stderr = data.run.stderr || "";
-          const exitCode = data.run.code;
-          const runSignal = data.run.signal;
-          
-          // Check if program was killed (timeout/sigkill = waiting for input)
-          const wasKilled = runSignal === 'SIGKILL' || 
-                           stderr.toLowerCase().includes('timeout') ||
-                           stderr.toLowerCase().includes('time limit');
-          
-          // Runtime error (segfault, etc.)
-          if (exitCode !== 0 && !wasKilled) {
-            return {
-              success: false,
-              output: getFriendlyError(stdout + stderr),
-              exitCode,
-              wasKilled: false,
-              isCompileError: false
-            };
-          }
-          
-          return {
-            success: true,
-            output: stdout,
-            exitCode,
-            wasKilled,
-            isCompileError: false
-          };
+        // Status 3 = Accepted (success)
+        if (statusId === 3) {
+          return { success: true, output: stdout, exitCode: 0, wasKilled: false, isCompileError: false };
         }
-        
-        console.error('Unexpected Piston response:', JSON.stringify(data));
-        return {
-          success: false,
-          output: `\x1b[31mUnexpected response from server. Please try again.\x1b[0m`,
-          exitCode: null,
-          wasKilled: false,
-          isCompileError: false
-        };
-        
+
+        // Status 11+ = Runtime Error
+        if (statusId >= 11) {
+          return { success: false, output: getFriendlyError(stderr || stdout || data.status?.description || "Runtime error"), exitCode: 1, wasKilled: false, isCompileError: false };
+        }
+
+        // Other statuses (wrong answer, etc.)
+        return { success: false, output: getFriendlyError(stderr || stdout || data.message || "Execution failed"), exitCode: data.exit_code ?? null, wasKilled: false, isCompileError: false };
+
       } catch (e: any) {
         if (e.name === 'AbortError') {
-          return { 
-            success: false, 
-            output: "^C\nExecution stopped.", 
-            exitCode: null,
-            wasKilled: false,
-            isCompileError: false
-          };
+          return { success: false, output: "^C\nExecution stopped.", exitCode: null, wasKilled: false, isCompileError: false };
         }
-        
         if (attempt < maxRetries - 1) {
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
           continue;
         }
-        
-        return { 
-          success: false, 
-          output: `\x1b[31mNetwork Error: ${e.message}\x1b[0m`, 
-          exitCode: null,
-          wasKilled: false,
-          isCompileError: false
-        };
+        return { success: false, output: `\x1b[31mNetwork Error: ${e.message}\x1b[0m`, exitCode: null, wasKilled: false, isCompileError: false };
       }
     }
-    
-    return { 
-      success: false, 
-      output: "Failed after retries", 
-      exitCode: null,
-      wasKilled: false,
-      isCompileError: false
-    };
+
+    return { success: false, output: "Failed after retries", exitCode: null, wasKilled: false, isCompileError: false };
   };
 
   /**
@@ -300,7 +236,7 @@ export const useCRunner = (): CRunnerResult => {
     
     hasExecutedOnceRef.current = true;
     const stdin = collectedInputsRef.current.join('\n');
-    const result = await runPiston(codeRef.current, stdin, signal, 30000);
+    const result = await runJudge0(codeRef.current, stdin, signal);
     
     if (signal.aborted) return;
     
@@ -439,7 +375,7 @@ export const useCRunner = (): CRunnerResult => {
     } else {
       // No input functions - just run immediately
       const signal = abortControllerRef.current.signal;
-      const result = await runPiston(code, "", signal, 30000);
+      const result = await runJudge0(code, "", signal);
       
       if (signal.aborted) return;
       

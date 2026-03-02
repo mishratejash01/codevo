@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Language } from './useCodeRunner';
 
-const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
+const JUDGE0_API_URL = 'https://ce.judge0.com/submissions/?base64_encoded=false&wait=true';
 
 interface InteractiveRunnerResult {
   output: string;
@@ -86,15 +86,15 @@ const getFriendlyError = (rawError: string, language: Language): string => {
   return rawError;
 };
 
-const getLanguageConfig = (language: Language): { pistonLang: string; version: string } => {
+const getJudge0LanguageId = (language: Language): number => {
   switch (language) {
-    case 'java': return { pistonLang: 'java', version: '15.0.2' };
-    case 'cpp': return { pistonLang: 'cpp', version: '10.2.0' };
-    case 'c': return { pistonLang: 'c', version: '10.2.0' };
-    case 'typescript': return { pistonLang: 'typescript', version: '5.0.3' };
-    case 'sql': return { pistonLang: 'sqlite3', version: '3.36.0' };
-    case 'bash': return { pistonLang: 'bash', version: '5.0.0' };
-    default: return { pistonLang: 'python', version: '3.10.0' };
+    case 'java': return 62;       // OpenJDK 13.0.1
+    case 'cpp': return 54;        // GCC 9.2.0
+    case 'c': return 50;          // GCC 9.2.0
+    case 'typescript': return 74; // TypeScript 3.7.4
+    case 'sql': return 82;        // SQLite 3.27.2
+    case 'bash': return 46;       // Bash 5.0.0
+    default: return 71;           // Python 3.8.1
   }
 };
 
@@ -111,118 +111,109 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
   const retryCountRef = useRef<number>(0);
   const previousOutputRef = useRef<string>("");
 
-  // Get the correct file name for Piston based on language
-  const getFileName = (lang: string): string => {
-    switch (lang) {
-      case 'java': return 'Main.java';
-      case 'python': return 'main.py';
-      case 'cpp': return 'main.cpp';
-      case 'c': return 'main.c';
-      case 'javascript': return 'main.js';
-      case 'typescript': return 'main.ts';
-      default: return 'main';
-    }
-  };
-
-  const runPiston = async (
-    code: string, 
-    stdin: string, 
+  const runJudge0 = async (
+    code: string,
+    stdin: string,
     signal: AbortSignal
   ): Promise<{ success: boolean; output: string; needsInput: boolean }> => {
-    const { pistonLang, version } = getLanguageConfig(language);
+    const languageId = getJudge0LanguageId(language);
     const maxRetries = 3;
-    
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const response = await fetch(PISTON_API_URL, {
+        const response = await fetch(JUDGE0_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            language: pistonLang,
-            version,
-            files: [{ name: getFileName(pistonLang), content: code }],
+            source_code: code,
+            language_id: languageId,
             stdin,
           }),
           signal,
         });
-        
-        // Handle rate limiting
+
         if (response.status === 429) {
           if (attempt < maxRetries - 1) {
-            const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+            const delay = Math.pow(2, attempt) * 1000;
             setOutput(prev => prev + `\n⏳ Server busy, retrying in ${delay/1000}s...\n`);
             await new Promise(resolve => setTimeout(resolve, delay));
             continue;
           }
           return { success: false, output: "⚠️ Rate limit exceeded. Please wait a moment and try again.", needsInput: false };
         }
-        
-        const data = await response.json();
-        
-        if (data.run) {
-          const stdout = data.run.stdout || "";
-          const stderr = data.run.stderr || "";
-          const combinedOutput = stdout + stderr;
-          const isError = data.run.code !== 0;
-          
-          const lowerError = stderr.toLowerCase();
-          
-          // Enhanced logic to detect if the program is actually waiting for input
-          // rather than just crashing with a timeout.
-          const isTimeoutOrKill = lowerError.includes('time limit') || lowerError.includes('timeout') || data.run.signal === 'SIGKILL';
-          const isCompiledLang = language === 'c' || language === 'cpp';
 
+        const data = await response.json();
+        const statusId = data.status?.id;
+        const stdout = data.stdout || "";
+        const stderr = data.stderr || "";
+        const compileOutput = data.compile_output || "";
+        const isCompiledLang = language === 'c' || language === 'cpp';
+
+        // Status 6 = Compilation Error
+        if (statusId === 6) {
+          return { success: false, output: getFriendlyError(compileOutput || "Compilation failed", language), needsInput: false };
+        }
+
+        // Status 5 = Time Limit Exceeded (likely waiting for input)
+        if (statusId === 5) {
           let finalOutput = stdout;
           let forceInput = false;
 
-          // C/C++ Fix: Piston runs to completion (EOF) or Timeout when input is missing.
-          // This causes "future" output (e.g. infinite loops or next steps) to appear before the user types.
-          // We scan for the last valid prompt and truncate the output there to simulate a pause.
           if (isCompiledLang) {
-             const lastPromptIdx = findLastPromptIndex(combinedOutput);
-             // If we found a prompt and there is text following it (garbage/future output)
-             if (lastPromptIdx !== -1 && lastPromptIdx < combinedOutput.length) {
-                finalOutput = combinedOutput.slice(0, lastPromptIdx);
-                forceInput = true;
-             }
+            const lastPromptIdx = findLastPromptIndex(stdout);
+            if (lastPromptIdx !== -1 && lastPromptIdx < stdout.length) {
+              finalOutput = stdout.slice(0, lastPromptIdx);
+              forceInput = true;
+            }
           }
 
           const needsInput = (
             forceInput ||
-            lowerError.includes('nosuchelementexception') ||
-            lowerError.includes('eof when reading') ||
-            lowerError.includes('eoferror') ||
-            // If it timed out but produced output, assume it's waiting for input (C/C++ specific)
-            (isError && isTimeoutOrKill && stdout.length > 0 && isCompiledLang) ||
-            // Standard check for missing input on empty history
-            (isError && collectedInputsRef.current.length === 0 && stdout.length > 0 && !isTimeoutOrKill)
+            stdout.length > 0 ||
+            collectedInputsRef.current.length === 0
           );
-          
-          return {
-            success: !isError || forceInput,
-            output: isError && !needsInput ? getFriendlyError(combinedOutput, language) : finalOutput,
-            needsInput
-          };
+
+          return { success: needsInput, output: finalOutput, needsInput };
         }
-        
-        return { success: false, output: "Execution failed", needsInput: false };
+
+        // Status 3 = Accepted
+        if (statusId === 3) {
+          return { success: true, output: stdout, needsInput: false };
+        }
+
+        // Status 11+ = Runtime Error
+        if (statusId >= 11) {
+          const errorOutput = stderr || stdout || data.status?.description || "Runtime error";
+          const lowerError = errorOutput.toLowerCase();
+
+          // Java NoSuchElementException = waiting for input
+          if (lowerError.includes('nosuchelementexception')) {
+            return { success: true, output: stdout, needsInput: true };
+          }
+          // EOFError = waiting for input
+          if (lowerError.includes('eof when reading') || lowerError.includes('eoferror')) {
+            return { success: true, output: stdout, needsInput: true };
+          }
+
+          return { success: false, output: getFriendlyError(errorOutput, language), needsInput: false };
+        }
+
+        // Other statuses
+        return { success: false, output: getFriendlyError(stderr || stdout || "Execution failed", language), needsInput: false };
       } catch (e: any) {
         if (e.name === 'AbortError') {
           return { success: false, output: "^C\nExecution stopped.", needsInput: false };
         }
-        
-        // Network error - retry
         if (attempt < maxRetries - 1) {
           const delay = Math.pow(2, attempt) * 1000;
           setOutput(prev => prev + `\n⚠️ Network error, retrying in ${delay/1000}s...\n`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
-        
         return { success: false, output: `Error: ${e.message}`, needsInput: false };
       }
     }
-    
+
     return { success: false, output: "Failed after multiple retries", needsInput: false };
   };
 
@@ -233,7 +224,7 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
     if (!signal || signal.aborted) return;
     
     const stdin = collectedInputsRef.current.join('\n');
-    const result = await runPiston(codeRef.current, stdin, signal);
+    const result = await runJudge0(codeRef.current, stdin, signal);
     
     if (currentExecution !== executionCountRef.current) return;
     if (signal.aborted) return;
