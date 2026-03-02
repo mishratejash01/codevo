@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 
-const JUDGE0_API_URL = 'https://ce.judge0.com/submissions/?base64_encoded=false&wait=true';
-const C_LANGUAGE_ID = 50; // GCC 9.2.0
+// Same-origin proxy -> Vercel serverless function (api/execute.js)
+const EXECUTE_API = '/api/execute';
 
 interface CRunnerResult {
   output: string;
@@ -17,11 +17,9 @@ interface CRunnerResult {
  * doesn't produce false positives on commented-out code or strings.
  */
 const stripCommentsAndStrings = (code: string): string => {
-  // Matches: single-line strings, single-line comments, block comments
   return code.replace(
     /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,
     (match) => {
-      // Replace strings/comments with whitespace of same length to preserve positions
       if (match.startsWith('"') || match.startsWith("'")) return ' '.repeat(match.length);
       return ' '.repeat(match.length);
     }
@@ -61,7 +59,6 @@ const countInputCalls = (code: string): number => {
  * Extract prompt string from printf/puts before first input function (local, no network)
  */
 const extractPromptFromCode = (code: string): string => {
-  // Use stripped code to find the position of the first real input function
   const stripped = stripCommentsAndStrings(code);
   const inputPatterns = [
     /\bscanf\s*\(/,
@@ -79,21 +76,20 @@ const extractPromptFromCode = (code: string): string => {
   }
 
   if (firstInputPos === code.length) return "";
-  
+
   // Get code before first input
   const codeBefore = code.slice(0, firstInputPos);
-  
+
   // Find last printf or puts call before the input
   const printfMatches = [...codeBefore.matchAll(/printf\s*\(\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g)];
   const putsMatches = [...codeBefore.matchAll(/puts\s*\(\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g)];
-  
+
   let lastPrompt = "";
   let lastPos = -1;
-  
+
   for (const match of printfMatches) {
     if (match.index !== undefined && match.index > lastPos) {
       lastPos = match.index;
-      // Unescape basic sequences
       lastPrompt = match[1]
         .replace(/\\n/g, '\n')
         .replace(/\\t/g, '\t')
@@ -101,7 +97,7 @@ const extractPromptFromCode = (code: string): string => {
         .replace(/\\\\/g, '\\');
     }
   }
-  
+
   for (const match of putsMatches) {
     if (match.index !== undefined && match.index > lastPos) {
       lastPos = match.index;
@@ -109,10 +105,10 @@ const extractPromptFromCode = (code: string): string => {
         .replace(/\\n/g, '\n')
         .replace(/\\t/g, '\t')
         .replace(/\\r/g, '\r')
-        .replace(/\\\\/g, '\\') + '\n'; // puts adds newline
+        .replace(/\\\\/g, '\\') + '\n';
     }
   }
-  
+
   return lastPrompt;
 };
 
@@ -121,15 +117,15 @@ const extractPromptFromCode = (code: string): string => {
  */
 const getFriendlyError = (rawError: string): string => {
   const lowerError = rawError.toLowerCase();
-  
+
   if (lowerError.includes('segmentation fault') || lowerError.includes('sigsegv')) {
     return "\x1b[31mSegmentation Fault: Memory access error!\x1b[0m";
   }
-  
+
   if (lowerError.includes('compilation error') || lowerError.includes('error:')) {
     return `\x1b[31mCompilation Error:\x1b[0m\n${rawError}`;
   }
-  
+
   return rawError;
 };
 
@@ -137,7 +133,7 @@ export const useCRunner = (): CRunnerResult => {
   const [output, setOutput] = useState<string>("");
   const [isRunning, setIsRunning] = useState(false);
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
-  
+
   const codeRef = useRef<string>("");
   const collectedInputsRef = useRef<string[]>([]);
   const currentInputLineRef = useRef<string>("");
@@ -147,9 +143,9 @@ export const useCRunner = (): CRunnerResult => {
   const previousOutputRef = useRef<string>("");
 
   /**
-   * Execute code on Judge0 CE with given stdin
+   * Execute code via same-origin proxy
    */
-  const runJudge0 = async (
+  const runViaProxy = async (
     code: string,
     stdin: string,
     signal: AbortSignal,
@@ -164,14 +160,10 @@ export const useCRunner = (): CRunnerResult => {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const response = await fetch(JUDGE0_API_URL, {
+        const response = await fetch(EXECUTE_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            source_code: code,
-            language_id: C_LANGUAGE_ID,
-            stdin,
-          }),
+          body: JSON.stringify({ source_code: code, language: 'c', stdin }),
           signal,
         });
 
@@ -183,34 +175,30 @@ export const useCRunner = (): CRunnerResult => {
           return { success: false, output: "\x1b[31mRate limit exceeded. Please wait.\x1b[0m", exitCode: null, wasKilled: false, isCompileError: false };
         }
 
+        if (!response.ok) {
+          throw new Error(`Server error (${response.status})`);
+        }
+
         const data = await response.json();
-        const statusId = data.status?.id;
-        const stdout = data.stdout || "";
-        const stderr = data.stderr || "";
-        const compileOutput = data.compile_output || "";
+        // Normalized: {stdout, stderr, code, signal, time, memory, isCompileError}
 
-        // Status 6 = Compilation Error
-        if (statusId === 6) {
-          return { success: false, output: getFriendlyError(compileOutput || "Compilation failed"), exitCode: 1, wasKilled: false, isCompileError: true };
+        // Compilation Error
+        if (data.isCompileError) {
+          return { success: false, output: getFriendlyError(data.stderr || "Compilation failed"), exitCode: 1, wasKilled: false, isCompileError: true };
         }
 
-        // Status 5 = Time Limit Exceeded (program waiting for input or infinite loop)
-        if (statusId === 5) {
-          return { success: true, output: stdout, exitCode: null, wasKilled: true, isCompileError: false };
+        // TLE (waiting for input or infinite loop)
+        if (data.code === -1 || data.signal === 'SIGKILL') {
+          return { success: true, output: data.stdout || "", exitCode: null, wasKilled: true, isCompileError: false };
         }
 
-        // Status 3 = Accepted (success)
-        if (statusId === 3) {
-          return { success: true, output: stdout, exitCode: 0, wasKilled: false, isCompileError: false };
+        // Success
+        if (data.code === 0) {
+          return { success: true, output: data.stdout || "", exitCode: 0, wasKilled: false, isCompileError: false };
         }
 
-        // Status 11+ = Runtime Error
-        if (statusId >= 11) {
-          return { success: false, output: getFriendlyError(stderr || stdout || data.status?.description || "Runtime error"), exitCode: 1, wasKilled: false, isCompileError: false };
-        }
-
-        // Other statuses (wrong answer, etc.)
-        return { success: false, output: getFriendlyError(stderr || stdout || data.message || "Execution failed"), exitCode: data.exit_code ?? null, wasKilled: false, isCompileError: false };
+        // Runtime Error
+        return { success: false, output: getFriendlyError(data.stderr || data.stdout || "Runtime error"), exitCode: 1, wasKilled: false, isCompileError: false };
 
       } catch (e: any) {
         if (e.name === 'AbortError') {
@@ -233,13 +221,13 @@ export const useCRunner = (): CRunnerResult => {
   const executeWithInputs = useCallback(async () => {
     const signal = abortControllerRef.current?.signal;
     if (!signal || signal.aborted) return;
-    
+
     hasExecutedOnceRef.current = true;
     const stdin = collectedInputsRef.current.join('\n');
-    const result = await runJudge0(codeRef.current, stdin, signal);
-    
+    const result = await runViaProxy(codeRef.current, stdin, signal);
+
     if (signal.aborted) return;
-    
+
     // Helper: apply delta output to avoid terminal flashing
     const applyDelta = (newOutput: string) => {
       if (newOutput.startsWith(previousOutputRef.current)) {
@@ -254,7 +242,6 @@ export const useCRunner = (): CRunnerResult => {
     };
 
     if (result.isCompileError) {
-      // Compile error - show and stop
       setOutput(result.output);
       previousOutputRef.current = "";
       setIsRunning(false);
@@ -263,7 +250,6 @@ export const useCRunner = (): CRunnerResult => {
     }
 
     if (!result.success) {
-      // Runtime error - show and stop
       setOutput(prev => prev + result.output);
       previousOutputRef.current = "";
       setIsRunning(false);
@@ -297,30 +283,25 @@ export const useCRunner = (): CRunnerResult => {
    */
   const writeInput = useCallback((char: string) => {
     if (!isWaitingForInput) return;
-    
+
     if (char === '\r' || char === '\n') {
-      // Enter key - submit input line
       const inputValue = currentInputLineRef.current;
       currentInputLineRef.current = "";
 
       // Track what user typed so delta calculation accounts for it
       previousOutputRef.current += inputValue + '\n';
 
-      // Add the input to collected inputs
       collectedInputsRef.current.push(inputValue);
 
-      // Execute with all collected inputs
       setIsWaitingForInput(false);
       executeWithInputs();
     }
     else if (char === '\x7f' || char === '\b') {
-      // Backspace - remove last char from buffer
       if (currentInputLineRef.current.length > 0) {
         currentInputLineRef.current = currentInputLineRef.current.slice(0, -1);
       }
     }
     else if (char === '\x03') {
-      // Ctrl+C - abort
       abortControllerRef.current?.abort();
       currentInputLineRef.current = "";
       setIsWaitingForInput(false);
@@ -328,7 +309,6 @@ export const useCRunner = (): CRunnerResult => {
       setOutput(prev => prev + '^C\n');
     }
     else if (char.length === 1 && char >= ' ') {
-      // Regular character - buffer it (terminal handles visual echo)
       currentInputLineRef.current += char;
     }
   }, [isWaitingForInput, executeWithInputs]);
@@ -347,38 +327,30 @@ export const useCRunner = (): CRunnerResult => {
    * Run C code
    */
   const runCode = useCallback(async (code: string) => {
-    // Reset everything
     codeRef.current = code;
     collectedInputsRef.current = [];
     currentInputLineRef.current = "";
     expectedInputCountRef.current = Math.max(1, countInputCalls(code));
     hasExecutedOnceRef.current = false;
     previousOutputRef.current = "";
-    
-    // Cancel any previous execution
+
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
-    
+
     setIsRunning(true);
     setOutput("");
     setIsWaitingForInput(false);
-    
-    // Check if code has input functions
+
     if (hasInputFunctions(code)) {
-      // Extract prompt locally (no network call)
       const prompt = extractPromptFromCode(code);
-      
-      // Show prompt immediately and wait for input
       setOutput(prompt);
       setIsWaitingForInput(true);
-      // Keep isRunning=true so Terminate button works
     } else {
-      // No input functions - just run immediately
       const signal = abortControllerRef.current.signal;
-      const result = await runJudge0(code, "", signal);
-      
+      const result = await runViaProxy(code, "", signal);
+
       if (signal.aborted) return;
-      
+
       setOutput(result.output);
       setIsRunning(false);
       setIsWaitingForInput(false);

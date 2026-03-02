@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
-// Judge0 CE API (replaced Piston which went whitelist-only Feb 2026)
-const JUDGE0_API_URL = 'https://ce.judge0.com/submissions/?base64_encoded=false&wait=true';
+// Same-origin proxy -> Vercel serverless function (api/execute.js)
+// Primary: Judge0 CE, Fallback: Wandbox — zero CORS issues
+const EXECUTE_API = '/api/execute';
 
 export type Language = 'python' | 'java' | 'cpp' | 'c' | 'javascript' | 'typescript' | 'sql' | 'bash';
 
@@ -10,20 +11,6 @@ interface ExecutionResult {
   output: string;
   error?: string;
 }
-
-const getJudge0LanguageId = (language: Language): number => {
-  switch (language) {
-    case 'python': return 71;      // Python 3.8.1
-    case 'java': return 62;        // OpenJDK 13.0.1
-    case 'cpp': return 54;         // GCC 9.2.0
-    case 'c': return 50;           // GCC 9.2.0
-    case 'javascript': return 63;  // Node.js 12.14.0
-    case 'typescript': return 74;  // TypeScript 3.7.4
-    case 'sql': return 82;         // SQLite 3.27.2
-    case 'bash': return 46;        // Bash 5.0.0
-    default: return 71;
-  }
-};
 
 // Parse common errors into friendly messages
 const getFriendlyError = (rawError: string, language: Language): string => {
@@ -100,52 +87,39 @@ const getFriendlyError = (rawError: string, language: Language): string => {
 export const useCodeRunner = () => {
   const [loading, setLoading] = useState(false);
 
-  const runJudge0 = async (langId: number, code: string, stdin: string = "", langType: Language) => {
+  const runViaProxy = async (language: Language, code: string, stdin: string = "") => {
     try {
-      const response = await fetch(JUDGE0_API_URL, {
+      const response = await fetch(EXECUTE_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source_code: code,
-          language_id: langId,
-          stdin,
-        }),
+        body: JSON.stringify({ source_code: code, language, stdin }),
       });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(text || `Server error (${response.status})`);
+      }
+
       const data = await response.json();
-      const statusId = data.status?.id;
-      const stdout = data.stdout || "";
-      const stderr = data.stderr || "";
-      const compileOutput = data.compile_output || "";
 
-      // Compilation Error
-      if (statusId === 6) {
-        return { success: false, output: getFriendlyError(compileOutput || "Compilation failed", langType), error: compileOutput };
+      // Compile error
+      if (data.isCompileError) {
+        return { success: false, output: getFriendlyError(data.stderr || "Compilation failed", language), error: data.stderr };
       }
 
-      // Accepted
-      if (statusId === 3) {
-        return { success: true, output: stdout.trim() };
+      // Success
+      if (data.code === 0) {
+        return { success: true, output: (data.stdout || "").trim() };
       }
 
-      // Time Limit Exceeded
-      if (statusId === 5) {
-        return { success: false, output: getFriendlyError("Time Limit Exceeded", langType), error: "TLE" };
+      // TLE
+      if (data.code === -1 || data.signal === 'SIGKILL') {
+        return { success: false, output: getFriendlyError("Time Limit Exceeded", language), error: "TLE" };
       }
 
-      // Runtime Error (11+)
-      if (statusId >= 11) {
-        const errorMsg = stderr || stdout || data.status?.description || "Runtime error";
-        return { success: false, output: getFriendlyError(errorMsg, langType), error: errorMsg };
-      }
-
-      // Other
-      const finalOutput = (stdout + stderr).trim();
-      const isError = statusId !== 3;
-      return {
-        success: !isError,
-        output: isError ? getFriendlyError(finalOutput || data.status?.description || "Execution failed", langType) : finalOutput,
-        error: isError ? finalOutput : undefined
-      };
+      // Runtime / other error
+      const errorMsg = data.stderr || "Execution failed";
+      return { success: false, output: getFriendlyError(errorMsg, language), error: errorMsg };
     } catch (e: any) {
       if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
         return {
@@ -167,8 +141,7 @@ export const useCodeRunner = () => {
     let result: ExecutionResult = { success: false, output: "" };
 
     try {
-      const langId = getJudge0LanguageId(language);
-      result = await runJudge0(langId, code, input, language);
+      result = await runViaProxy(language, code, input);
     } catch (err: any) {
       result = { success: false, output: getFriendlyError(err.message, language), error: err.message };
     } finally {

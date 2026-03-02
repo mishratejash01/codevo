@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
 import { Language } from './useCodeRunner';
 
-const JUDGE0_API_URL = 'https://ce.judge0.com/submissions/?base64_encoded=false&wait=true';
+// Same-origin proxy -> Vercel serverless function (api/execute.js)
+const EXECUTE_API = '/api/execute';
 
 interface InteractiveRunnerResult {
   output: string;
@@ -16,9 +17,9 @@ interface InteractiveRunnerResult {
 const detectPrompt = (output: string): string | null => {
   if (!output) return null;
   const lines = output.split('\n');
-  const lastLine = lines[lines.length - 1]; // Don't trim immediately to check for trailing newline
-  
-  // Rule 1: If output does NOT end with a newline, it's likely a prompt (e.g. "Enter number: ")
+  const lastLine = lines[lines.length - 1];
+
+  // Rule 1: If output does NOT end with a newline, it's likely a prompt
   if (!output.endsWith('\n') && lastLine.length > 0) {
     return lastLine;
   }
@@ -33,23 +34,21 @@ const detectPrompt = (output: string): string | null => {
     /type\s+.+[:\?]?\s*$/i,
     /please\s+.+[:\?]?\s*$/i,
   ];
-  
+
   for (const pattern of promptPatterns) {
     if (pattern.test(trimmedLast) && trimmedLast.length > 0) {
       return trimmedLast;
     }
   }
-  
+
   return null;
 };
 
-// Helper to find the last valid prompt in the output to handle Piston's lack of interactive stopping
+// Helper to find the last valid prompt in the output
 const findLastPromptIndex = (output: string): number => {
   const patterns = [/: /g, /\? /g, /> /g, /:$/gm, /\?$/gm, />$/gm];
   let maxIndex = -1;
-  
-  // We scan for specific delimiters that signal a prompt might be here.
-  // We check substrings up to these delimiters to see if they satisfy the prompt detection logic.
+
   for (const pattern of patterns) {
     let match;
     while ((match = pattern.exec(output)) !== null) {
@@ -66,43 +65,31 @@ const findLastPromptIndex = (output: string): number => {
 // Get friendly error messages
 const getFriendlyError = (rawError: string, language: Language): string => {
   const lowerError = rawError.toLowerCase();
-  
+
   if (language === 'java') {
     if (lowerError.includes('nosuchelementexception')) {
       return "Waiting for input...";
     }
   }
-  
+
   if (language === 'cpp' || language === 'c') {
     if (lowerError.includes('segmentation fault') || lowerError.includes('sigsegv')) {
       return "Segmentation Fault: Memory access error!";
     }
   }
-  
+
   if (lowerError.includes('time limit') || lowerError.includes('timeout')) {
     return "Time Limit Exceeded!";
   }
-  
-  return rawError;
-};
 
-const getJudge0LanguageId = (language: Language): number => {
-  switch (language) {
-    case 'java': return 62;       // OpenJDK 13.0.1
-    case 'cpp': return 54;        // GCC 9.2.0
-    case 'c': return 50;          // GCC 9.2.0
-    case 'typescript': return 74; // TypeScript 3.7.4
-    case 'sql': return 82;        // SQLite 3.27.2
-    case 'bash': return 46;       // Bash 5.0.0
-    default: return 71;           // Python 3.8.1
-  }
+  return rawError;
 };
 
 export const useInteractiveRunner = (language: Language): InteractiveRunnerResult => {
   const [output, setOutput] = useState<string>("");
   const [isRunning, setIsRunning] = useState(false);
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
-  
+
   const codeRef = useRef<string>("");
   const collectedInputsRef = useRef<string[]>([]);
   const currentInputLineRef = useRef<string>("");
@@ -111,24 +98,19 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
   const retryCountRef = useRef<number>(0);
   const previousOutputRef = useRef<string>("");
 
-  const runJudge0 = async (
+  const runViaProxy = async (
     code: string,
     stdin: string,
     signal: AbortSignal
   ): Promise<{ success: boolean; output: string; needsInput: boolean }> => {
-    const languageId = getJudge0LanguageId(language);
     const maxRetries = 3;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const response = await fetch(JUDGE0_API_URL, {
+        const response = await fetch(EXECUTE_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            source_code: code,
-            language_id: languageId,
-            stdin,
-          }),
+          body: JSON.stringify({ source_code: code, language, stdin }),
           signal,
         });
 
@@ -142,20 +124,23 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
           return { success: false, output: "⚠️ Rate limit exceeded. Please wait a moment and try again.", needsInput: false };
         }
 
-        const data = await response.json();
-        const statusId = data.status?.id;
-        const stdout = data.stdout || "";
-        const stderr = data.stderr || "";
-        const compileOutput = data.compile_output || "";
-        const isCompiledLang = language === 'c' || language === 'cpp';
-
-        // Status 6 = Compilation Error
-        if (statusId === 6) {
-          return { success: false, output: getFriendlyError(compileOutput || "Compilation failed", language), needsInput: false };
+        if (!response.ok) {
+          throw new Error(`Server error (${response.status})`);
         }
 
-        // Status 5 = Time Limit Exceeded (likely waiting for input)
-        if (statusId === 5) {
+        const data = await response.json();
+        // Normalized: {stdout, stderr, code, signal, time, memory, isCompileError}
+        const stdout = data.stdout || "";
+        const stderr = data.stderr || "";
+        const isCompiledLang = language === 'c' || language === 'cpp';
+
+        // Compilation Error
+        if (data.isCompileError) {
+          return { success: false, output: getFriendlyError(stderr || "Compilation failed", language), needsInput: false };
+        }
+
+        // TLE (code === -1 or signal SIGKILL) — likely waiting for input
+        if (data.code === -1 || data.signal === 'SIGKILL') {
           let finalOutput = stdout;
           let forceInput = false;
 
@@ -176,29 +161,23 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
           return { success: needsInput, output: finalOutput, needsInput };
         }
 
-        // Status 3 = Accepted
-        if (statusId === 3) {
+        // Success (code === 0)
+        if (data.code === 0) {
           return { success: true, output: stdout, needsInput: false };
         }
 
-        // Status 11+ = Runtime Error
-        if (statusId >= 11) {
-          const errorOutput = stderr || stdout || data.status?.description || "Runtime error";
-          const lowerError = errorOutput.toLowerCase();
+        // Runtime Error (code === 1) — check if it's actually waiting for input
+        const lowerStderr = stderr.toLowerCase();
 
-          // Java NoSuchElementException = waiting for input
-          if (lowerError.includes('nosuchelementexception')) {
-            return { success: true, output: stdout, needsInput: true };
-          }
-          // EOFError = waiting for input
-          if (lowerError.includes('eof when reading') || lowerError.includes('eoferror')) {
-            return { success: true, output: stdout, needsInput: true };
-          }
-
-          return { success: false, output: getFriendlyError(errorOutput, language), needsInput: false };
+        // Java NoSuchElementException = waiting for input
+        if (lowerStderr.includes('nosuchelementexception')) {
+          return { success: true, output: stdout, needsInput: true };
+        }
+        // EOFError = waiting for input
+        if (lowerStderr.includes('eof when reading') || lowerStderr.includes('eoferror')) {
+          return { success: true, output: stdout, needsInput: true };
         }
 
-        // Other statuses
         return { success: false, output: getFriendlyError(stderr || stdout || "Execution failed", language), needsInput: false };
       } catch (e: any) {
         if (e.name === 'AbortError') {
@@ -220,15 +199,15 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
   const executeWithInputs = useCallback(async () => {
     const currentExecution = ++executionCountRef.current;
     const signal = abortControllerRef.current?.signal;
-    
+
     if (!signal || signal.aborted) return;
-    
+
     const stdin = collectedInputsRef.current.join('\n');
-    const result = await runJudge0(codeRef.current, stdin, signal);
-    
+    const result = await runViaProxy(codeRef.current, stdin, signal);
+
     if (currentExecution !== executionCountRef.current) return;
     if (signal.aborted) return;
-    
+
     // Delta output: only append new content to avoid terminal flashing
     const newOutput = result.output;
     if (newOutput.startsWith(previousOutputRef.current)) {
@@ -242,7 +221,6 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
     }
     previousOutputRef.current = newOutput;
 
-    // Check if we need more input based on Piston result or output analysis
     if (result.needsInput || detectPrompt(result.output)) {
       setIsWaitingForInput(true);
     } else {
@@ -253,7 +231,7 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
 
   const writeInput = useCallback((char: string) => {
     if (!isWaitingForInput) return;
-    
+
     if (char === '\r' || char === '\n') {
       const inputValue = currentInputLineRef.current;
       currentInputLineRef.current = "";
@@ -269,9 +247,6 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
     else if (char === '\x7f' || char === '\b') {
       if (currentInputLineRef.current.length > 0) {
         currentInputLineRef.current = currentInputLineRef.current.slice(0, -1);
-        
-        // FIXED: Commented out manual output update to prevent double deletion echo
-        // setOutput(prev => prev.slice(0, -1));
       }
     }
     else if (char === '\x03') {
@@ -283,10 +258,6 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
     }
     else if (char.length === 1 && char >= ' ') {
       currentInputLineRef.current += char;
-      
-      // FIXED: Commented out manual output update to prevent double echo
-      // TerminalView already echoes the character locally
-      // setOutput(prev => prev + char);
     }
   }, [isWaitingForInput, executeWithInputs]);
 
@@ -307,9 +278,9 @@ export const useInteractiveRunner = (language: Language): InteractiveRunnerResul
     setIsRunning(true);
     setOutput("");
     setIsWaitingForInput(false);
-    
+
     abortControllerRef.current = new AbortController();
-    
+
     executeWithInputs();
   }, [executeWithInputs]);
 
