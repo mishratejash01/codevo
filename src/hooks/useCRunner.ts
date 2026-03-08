@@ -118,6 +118,15 @@ const extractPromptFromCode = (code: string): string => {
 const getFriendlyError = (rawError: string): string => {
   const lowerError = rawError.toLowerCase();
 
+  if (
+    lowerError.includes('server error') ||
+    lowerError.includes('unavailable') ||
+    lowerError.includes('network error') ||
+    lowerError.includes('failed to fetch')
+  ) {
+    return "\x1b[31mExecution server is temporarily unavailable. Please try again in a few seconds.\x1b[0m";
+  }
+
   if (lowerError.includes('segmentation fault') || lowerError.includes('sigsegv')) {
     return "\x1b[31mSegmentation Fault: Memory access error!\x1b[0m";
   }
@@ -176,7 +185,19 @@ export const useCRunner = (): CRunnerResult => {
         }
 
         if (!response.ok) {
-          throw new Error(`Server error (${response.status})`);
+          const errorText = await response.text().catch(() => '');
+          let parsedMessage = '';
+
+          if (errorText) {
+            try {
+              const errorJson = JSON.parse(errorText);
+              parsedMessage = errorJson?.stderr || errorJson?.error || '';
+            } catch {
+              parsedMessage = errorText;
+            }
+          }
+
+          throw new Error(parsedMessage || `Server error (${response.status})`);
         }
 
         const data = await response.json();
@@ -208,7 +229,13 @@ export const useCRunner = (): CRunnerResult => {
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
           continue;
         }
-        return { success: false, output: `\x1b[31mNetwork Error: ${e.message}\x1b[0m`, exitCode: null, wasKilled: false, isCompileError: false };
+        return {
+          success: false,
+          output: getFriendlyError(e.message || 'Network Error'),
+          exitCode: null,
+          wasKilled: false,
+          isCompileError: false,
+        };
       }
     }
 
